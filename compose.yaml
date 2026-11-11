@@ -13,6 +13,8 @@ x-app: &app
     MESSENGER_TRANSPORT_DSN: redis://redis:6379
     REDIS_URL: redis://redis:6379
     MAILER_DSN: smtp://mailer:1025
+    # Liens absolus des e-mails (générés par le worker, hors requête HTTP) : ouvrables depuis Mailpit sur le Mac
+    DEFAULT_URI: http://localhost:${TM_HTTP_PORT:-8090}
     MEILISEARCH_URL: http://meilisearch:7700
     # Dev uniquement : la clé maître sert aux deux usages. En prod, clés dédiées (recherche / administration) via secrets.
     MEILISEARCH_SEARCH_KEY: trouvemoi-dev-master-key

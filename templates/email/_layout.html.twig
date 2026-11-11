@@ -1,0 +1,31 @@
+{#-
+    Gabarit des e-mails transactionnels. Les messageries ne gèrent ni les variables CSS ni les feuilles externes :
+    les couleurs de tokens.css sont recopiées ICI SEULEMENT, en ligne (exception documentée dans DesignTokensTest).
+    Palette : marine #001568 (titres), encre #192c49 (texte), gris #5b6b82 (secondaire), fond #f7f9fc, filet #e0e7f0,
+    bouton = dégradé orange simplifié en aplat #ff7900 avec texte marine (contraste 6,1:1).
+-#}
+{% set palette = {navy: '#001568', ink: '#192c49', muted: '#5b6b82', bg: '#f7f9fc', line: '#e0e7f0', link: '#0057b8', accent: '#b84a00', button: '#ff7900', white: '#ffffff'} %}
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>{{ subject }}</title>
+</head>
+<body style="margin:0;padding:0;background:#f7f9fc;font-family:Poppins,'Segoe UI',Arial,sans-serif;color:#192c49;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f9fc;padding:24px 12px;">
+        <tr><td align="center">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #e0e7f0;border-radius:12px;">
+                <tr><td style="padding:24px 28px 0;font-size:20px;font-weight:700;color:#001568;">TrouveMoi<span style="color:#b84a00;">.com</span></td></tr>
+                <tr><td style="padding:16px 28px 28px;font-size:15px;line-height:24px;">
+                    {% block content %}{% endblock %}
+                </td></tr>
+            </table>
+            <p style="max-width:560px;margin:16px auto 0;font-size:12px;line-height:18px;color:#5b6b82;text-align:center;">
+                E-mail de service envoyé par TrouveMoi.com — il ne contient aucune publicité. Merci de ne pas y répondre.
+            </p>
+        </td></tr>
+    </table>
+</body>
+</html>

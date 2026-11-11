@@ -36,7 +36,8 @@
         min-height: 100vh;
         font: var(--type-body);
         color: var(--color-text);
-        background: var(--background);
+        /* Fond des pages Figma V2 (« Contenu page », jeton --tm-bg), visible jusque sous la vague du pied de page */
+        background: var(--color-surface-alt);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;

@@ -163,4 +163,28 @@ final class UserTest extends TestCase
         self::assertSame('Jean-Éloi d’Aubigné', new PersonName('  Jean-Éloi   d’Aubigné ')->value);
         self::assertSame("N'Diaye", new PersonName("N'Diaye")->value);
     }
+
+    public function testEmailChangeIsVerifiedAndRecorded(): void
+    {
+        $user = $this->user();
+        $user->releaseEvents();
+
+        $user->changeEmail(new Email('Nouvelle@Exemple.test'), $this->now);
+        $user->changeEmail(new Email('nouvelle@exemple.test'), $this->now);
+
+        self::assertSame('Nouvelle@exemple.test', $user->email()->value);
+        self::assertSame(UserStatus::Active, $user->status(), 'adresse prouvée par le lien');
+        self::assertCount(1, $user->releaseEvents());
+    }
+
+    public function testSecretTokensAreRandomAndOnlyTheirHashIsKept(): void
+    {
+        $a = \App\Identity\Application\EmailVerification\SecretToken::generate();
+        $b = \App\Identity\Application\EmailVerification\SecretToken::generate();
+
+        self::assertNotSame($a->plain, $b->plain);
+        self::assertTrue(\App\Identity\Application\EmailVerification\SecretToken::isWellFormed($a->plain));
+        self::assertSame(hash('sha256', $a->plain), $a->hash);
+        self::assertFalse(\App\Identity\Application\EmailVerification\SecretToken::isWellFormed($a->plain.'='));
+    }
 }

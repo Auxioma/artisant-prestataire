@@ -33,6 +33,7 @@ services:
             - '../src/Identity/Application/Command/{EmailAlreadyRegistered,InvalidCurrentPassword}.php'
             - '../src/Identity/Application/Legal/LegalDocumentVersion.php'
             - '../src/Identity/Application/Registration/RegistrationRejected.php'
+            - '../src/Identity/Application/EmailVerification/{EmailToken,SecretToken,InvalidEmailToken}.php'
             - '../src/Identity/Infrastructure/Security/SecurityUser.php'
             - '../src/Shared/Infrastructure/DependencyInjection/'
             - '../src/Catalog/Application/Geo/Port/GeocodedAddress.php'
@@ -90,6 +91,8 @@ services:
     App\Identity\Application\Port\LegalDocuments: '@App\Identity\Infrastructure\Legal\DbalLegalDocuments'
     App\Identity\Application\Port\LegalAcceptanceLog: '@App\Identity\Infrastructure\Legal\DbalLegalAcceptanceLog'
     App\Identity\Application\Port\DisposableEmailDetector: '@App\Identity\Infrastructure\Antifraud\FileDisposableEmailDetector'
+    App\Identity\Application\Port\EmailTokens: '@App\Identity\Infrastructure\EmailVerification\DbalEmailTokens'
+    App\Identity\Application\Port\IdentityMailer: '@App\Identity\Infrastructure\Mailer\SymfonyIdentityMailer'
 
     App\Shared\Infrastructure\Messenger\MessengerCommandBus:
         arguments: { $bus: '@command.bus' }

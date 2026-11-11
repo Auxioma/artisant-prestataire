@@ -43,6 +43,7 @@
         {# CMP placée en tête de document : atteignable au clavier dès l'arrivée (CDC §3.2) #}
         <twig:CookieConsent />
         {% block header %}<twig:Header variant="{{ header_variant ?? 'visitor' }}" active="{{ active_nav ?? null }}" />{% endblock %}
+        {% if header_variant ?? 'visitor' != 'tunnel' %}<twig:EmailVerificationBanner />{% endif %}
         <main id="contenu" tabindex="-1">
             {% block body %}{% endblock %}
         </main>

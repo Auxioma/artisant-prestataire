@@ -31,7 +31,7 @@ use Symfony\Component\Routing\Attribute\Route;
 /** A01 (choix du type de compte) et A02 (inscription client). */
 final class RegistrationController extends AbstractController
 {
-    private const string SESSION_EMAIL = 'identity.signup_email';
+    public const string SESSION_EMAIL = 'identity.signup_email';
     private const string SESSION_TRACKED = 'identity.signup_track';
     private const string TURNSTILE_FIELD = 'cf-turnstile-response';
     private const string CAPTCHA_ACTION = 'signup';

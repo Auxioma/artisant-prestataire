@@ -434,6 +434,57 @@
 
     .tm-auth-message__icon .tm-icon { width: 32px; height: 32px; }
 
+    /* ── A06 : carte d'état et bandeau « Confirmez votre email » ───────────────────────────────── */
+    .tm-state-card {
+        display: grid;
+        gap: 18px;
+        max-width: 380px;
+        margin-inline: auto;
+        padding: var(--space-10);
+    }
+
+    .tm-state-card__icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        border-radius: var(--radius-pill);
+    }
+
+    .tm-state-card__icon--success { background: var(--color-success-bg); color: var(--color-success-text); }
+    .tm-state-card__icon--danger { background: var(--color-danger-bg); color: var(--color-danger-text); }
+    .tm-state-card__icon--info { background: var(--color-surface-section); color: var(--color-link); }
+    .tm-state-card__title { font: var(--type-h2); color: var(--color-heading); }
+    .tm-state-card__form { display: grid; }
+
+    .tm-verify-banner { padding-block: var(--space-3); }
+
+    .tm-verify-banner__inner {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-md);
+        background: var(--color-warning-bg);
+        color: var(--color-warning-text);
+    }
+
+    .tm-verify-banner__text { flex: 1 1 240px; font: var(--type-body-sm); }
+
+    .tm-link-button {
+        min-height: var(--control-height);
+        border: 0;
+        background: none;
+        color: var(--color-link);
+        font: var(--type-button);
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .tm-link-button:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+
     /* ── Documents légaux ─────────────────────────────────────────────────────────────────────── */
     .tm-legal {
         display: grid;

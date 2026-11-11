@@ -113,6 +113,7 @@ enum SettingKey: string
     case AuthPasswordResetTtlMin = 'auth.password_reset_ttl_min';
     case AuthPasswordMinLength = 'auth.password_min_length';
     case AuthEmailVerificationTtlHours = 'auth.email_verification_ttl_hours';
+    case AuthEmailResendCooldownSec = 'auth.email_resend_cooldown_sec';
     case AuthPro2faEnabled = 'auth.pro_2fa_enabled';
     case AdminIdleTimeoutMin = 'admin.idle_timeout_min';
     case AdminReauthMaxAgeMin = 'admin.reauth_max_age_min';
@@ -243,6 +244,7 @@ enum SettingKey: string
             self::AuthPasswordResetTtlMin => $d(T::Integer, 60, 'Validité du lien de réinitialisation (min)', 10, 60, proposed: true),
             // Audit V2.1 : minimum 12 caractères, non abaissable.
             self::AuthPasswordMinLength => $d(T::Integer, 12, 'Longueur minimale du mot de passe', 12, 128, proposed: true),
+            self::AuthEmailResendCooldownSec => $d(T::Integer, 60, 'Délai minimal entre deux envois du lien de vérification (s) — CDC A02', 30, 3600, proposed: true),
             self::AuthEmailVerificationTtlHours => $d(T::Integer, 24, 'Validité du lien de vérification d’e-mail (h) — CDC A02', 1, 72, proposed: true),
             self::AuthPro2faEnabled => $d(T::Boolean, false, '2FA pour les artisans (V2)', proposed: true),
             self::AdminIdleTimeoutMin => $d(T::Integer, 15, 'Déconnexion admin après inactivité (min)', 5, 60, proposed: true),

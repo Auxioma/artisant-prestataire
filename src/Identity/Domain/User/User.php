@@ -6,6 +6,7 @@ namespace App\Identity\Domain\User;
 
 use App\Identity\Domain\User\Event\UserAnonymized;
 use App\Identity\Domain\User\Event\UserDeletionRequested;
+use App\Identity\Domain\User\Event\UserEmailChanged;
 use App\Identity\Domain\User\Event\UserEmailVerified;
 use App\Identity\Domain\User\Event\UserPasswordChanged;
 use App\Identity\Domain\User\Event\UserRegistered;
@@ -79,6 +80,26 @@ final class User extends AggregateRoot
         }
         $this->touch($now);
         $this->recordEvent(new UserEmailVerified($this->id->value, $now));
+    }
+
+    /**
+     * Changement d'adresse confirmé par un lien envoyé à la nouvelle adresse (A06) : elle est donc vérifiée.
+     * L'ancienne adresse est prévenue (E-06) par l'appelant ; les sessions ouvertes sont fermées (SecurityUser).
+     */
+    public function changeEmail(Email $email, \DateTimeImmutable $now): void
+    {
+        $this->assertNotAnonymized();
+        if ($email->canonical() === $this->emailCanonical) {
+            return;
+        }
+        $this->email = $email->value;
+        $this->emailCanonical = $email->canonical();
+        $this->emailVerifiedAt = $now;
+        if (UserStatus::PendingEmail === $this->status) {
+            $this->status = UserStatus::Active;
+        }
+        $this->touch($now);
+        $this->recordEvent(new UserEmailChanged($this->id->value, $now));
     }
 
     public function changePassword(string $newHash, \DateTimeImmutable $now): void
