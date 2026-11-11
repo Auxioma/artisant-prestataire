@@ -61,12 +61,27 @@ final class LayoutTest extends KernelTestCase
 
         self::assertSame('Navigation principale', $header->filter('.tm-header__nav')->attr('aria-label'));
         self::assertSame('Accueil', trim($header->filter('.tm-header__nav [aria-current="page"]')->text()));
-        $mega = $header->filter('button[aria-controls="tm-mega-menu"]');
-        self::assertSame('false', $mega->attr('aria-expanded'));
-        self::assertNotNull($header->filter('#tm-mega-menu')->attr('hidden'));
+        self::assertCount(0, $header->filter('button[aria-controls="tm-mega-menu"]'), 'P01.1 : méga-menu vide → élément masqué');
         self::assertStringContainsString('100 devis offerts', $header->filter('#tm-signup-menu')->text(), 'Valeur lue dans credits.free_on_signup (RG-014)');
         self::assertCount(1, $header->filter('dialog#tm-mobile-menu'));
         self::assertSame('tm-mobile-menu', $header->filter('[aria-haspopup="dialog"]')->attr('aria-controls'));
+    }
+
+    public function testMegaMenuListsActiveCategoriesWithJobs(): void
+    {
+        $bus = self::getContainer()->get(\App\Shared\Application\Bus\CommandBus::class);
+        \assert($bus instanceof \App\Shared\Application\Bus\CommandBus);
+        $bus->dispatch(new \App\Catalog\Application\Command\CreateCategory('Plomberie', 'wrench'));
+        $bus->dispatch(new \App\Catalog\Application\Command\CreateJob('plomberie', 'Plombier'));
+        self::getContainer()->get('cache.catalog')->clear();
+
+        $header = $this->render('Header', ['variant' => 'visitor']);
+        $mega = $header->filter('button[aria-controls="tm-mega-menu"]');
+        self::assertSame('false', $mega->attr('aria-expanded'));
+        self::assertNotNull($header->filter('#tm-mega-menu')->attr('hidden'));
+        self::assertSame('Plomberie', trim($header->filter('.tm-mega__category-link')->text()));
+        self::assertSame('Plombier', trim($header->filter('.tm-mega__job')->text()));
+        self::assertCount(1, $header->filter('.tm-mobile-menu__accordion'));
     }
 
     public function testArtisanHeaderShowsCompactCreditGaugeAndCounters(): void

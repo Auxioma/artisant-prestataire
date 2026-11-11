@@ -90,6 +90,7 @@ enum SettingKey: string
     case HomeProsCount = 'home.pros_count';
     case CatalogPriceRangeSource = 'catalog.price_range_source';
     case CatalogPriceRangeMinSample = 'catalog.price_range_min_sample';
+    case CatalogMegaMenuJobs = 'catalog.megamenu_jobs';
     case PlatformPilotDepartments = 'platform.pilot_departments';
 
     // Modération, messagerie, anti-fraude
@@ -217,6 +218,8 @@ enum SettingKey: string
             self::HomeCategoriesMax => $d(T::Integer, 12, 'Cartes catégories sur l\'accueil', 1, 48),
             self::HomeProsCount => $d(T::Integer, 8, 'Cartes artisans sur l\'accueil', 1, 48),
             self::CatalogPriceRangeSource => $d(T::Choice, 'manual', 'Source des prix indicatifs (Q26)', choices: ['manual', 'computed'], proposed: true),
+            // P01.1 : « 3 à 5 métiers les plus recherchés » par catégorie dans le méga-menu.
+            self::CatalogMegaMenuJobs => $d(T::Integer, 5, 'Métiers par catégorie dans le méga-menu', 3, 5, proposed: true),
             self::CatalogPriceRangeMinSample => $d(T::Integer, 20, 'Échantillon minimum pour un prix calculé', 1, 1000, proposed: true),
             self::PlatformPilotDepartments => $d(T::StringList, ['14', '27', '50', '61', '76'], 'Départements pilotes (Q27)', proposed: true),
 

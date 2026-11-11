@@ -14,6 +14,7 @@ parameters:
         containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
     doctrine:
         allowNullablePropertyForRequiredField: false
+        objectManagerLoader: tests/phpstan/object-manager.php
 
 rules:
     - App\Tools\PHPStan\NoBusinessLiteralRule

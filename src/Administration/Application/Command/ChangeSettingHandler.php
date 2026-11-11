@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Administration\Application\Command;
 
-use App\Administration\Application\Port\AuditTrail;
 use App\Administration\Application\Port\SettingStore;
-use App\Administration\Domain\Audit\AuditRecord;
 use App\Administration\Domain\Event\SettingChanged;
+use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Application\Bus\CommandHandler;
 use App\Shared\Application\Bus\EventBus;
 use App\Shared\Application\Settings\InvalidSettingValue;
 use App\Shared\Application\Settings\SettingKey;
+use App\Shared\Domain\Audit\AuditRecord;
 use App\Shared\Domain\Identifier\IdGenerator;
 use App\Shared\Domain\Time\Clock;
 

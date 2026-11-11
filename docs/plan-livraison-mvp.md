@@ -20,7 +20,8 @@
 | T-109 Composants Twig | ✅ | Button, Field + thème de formulaire Symfony, Select, Checkbox/Radio, Badge, Toast (+ région, flashs), Modal (`<dialog>`), Stepper, CreditGauge, CardArtisan verticale + squelette, EmptyState, Skeleton ; planche `/_dev/components`. Carte horizontale et compacte → T-302 |
 | T-110 Mise en page commune | ✅ | En-tête 4 variantes (visiteur, client, artisan + jauge compacte, tunnel) + méga-menu + menus compte + menu mobile `<dialog>`, pied de page (accordéon mobile, réseaux et newsletter conditionnels), fil d'Ariane + JSON-LD ; **correctif CSP** : CSS chargées par `<link>` (l'import JS bloquait tout le JavaScript) ; planche `/_dev/layout` |
 | T-111 CMP cookies | ✅ | Bandeau non bloquant + préférences `<dialog>`, interrupteurs (`Switch`), cookie `tm_consent` versionné (6 mois), preuve serveur append-only `identity.consent` (IP hachée, origine vérifiée, limite de débit), scripts gardés `type="text/plain"`, `dataLayer` filtré (`assets/lib/analytics.js`), retrait = rechargement ; vérifié en navigateur |
-| T-112 → T-116 | ⬜ | Prochaine étape : référentiel Catalog (T-112) |
+| T-112 Référentiel Catalog | ✅ | Agrégats `Category` (2 niveaux) et `Job` (synonymes, justificatifs, désactivation avec remplacement), mapping XML, cas d'usage audités, slugs réservés, import idempotent du référentiel initial (6 catégories, 24 métiers), méga-menu alimenté et mis en cache, **301 automatiques** (chaînes aplaties, boucles supprimées, préfixe métier × ville). Écrans BO06 → T-209 (back-office authentifié) ; commandes console en attendant |
+| T-113 → T-116 | ⬜ | Prochaine étape : référentiel géographique INSEE + PostGIS (T-113) |
 
 ## Lot 0 — Cadrage *(ce livrable)*
 | ID | Ticket | Réf. | Taille |

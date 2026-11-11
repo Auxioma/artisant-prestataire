@@ -6,6 +6,9 @@ framework:
             # Paramètres administrables (ADR-0007) : invalidés sur SettingChanged.
             cache.settings:
                 adapter: cache.app
+            # Référentiel affiché sur toutes les pages (méga-menu) : invalidé sur les événements Catalog.
+            cache.catalog:
+                adapter: cache.app
 
 when@prod:
     framework:
@@ -18,4 +21,6 @@ when@test:
         cache:
             pools:
                 cache.settings:
+                    adapter: cache.adapter.array
+                cache.catalog:
                     adapter: cache.adapter.array

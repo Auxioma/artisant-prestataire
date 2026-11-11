@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Unit\Administration\Domain;
+namespace App\Tests\Unit\Shared\Domain\Audit;
 
-use App\Administration\Domain\Audit\AuditRecord;
+use App\Shared\Domain\Audit\AuditRecord;
 use App\Shared\Domain\Exception\InvalidValue;
 use PHPUnit\Framework\TestCase;
 

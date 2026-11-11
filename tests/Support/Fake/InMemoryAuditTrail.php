@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Support\Fake;
 
-use App\Administration\Application\Port\AuditTrail;
-use App\Administration\Domain\Audit\AuditRecord;
+use App\Shared\Application\Audit\AuditTrail;
+use App\Shared\Domain\Audit\AuditRecord;
 
 final class InMemoryAuditTrail implements AuditTrail
 {

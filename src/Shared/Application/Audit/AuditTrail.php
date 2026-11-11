@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Administration\Application\Port;
+namespace App\Shared\Application\Audit;
 
-use App\Administration\Domain\Audit\AuditRecord;
+use App\Shared\Domain\Audit\AuditRecord;
 
 interface AuditTrail
 {

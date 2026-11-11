@@ -3,8 +3,13 @@ doctrine:
     dbal:
         url: '%env(resolve:DATABASE_URL)%'
         profiling_collect_backtrace: '%kernel.debug%'
-        # Les tables techniques (messenger_failed, doctrine_migration_versions) restent dans public.
-        schema_filter: '~^(?!messenger_)~'
+        # Seuls les schémas gérés par l'ORM sont comparés au mapping (les tables DBAL — paramètres, audit, outbox,
+        # consentements… — sont décrites par les migrations écrites à la main). Étendre la liste à chaque module ORM.
+        schema_filter: '~^(catalog\.|doctrine_migration_versions$)~'
+        types:
+            slug: App\Shared\Infrastructure\Doctrine\Type\SlugType
+            catalog_category_id: App\Catalog\Infrastructure\Doctrine\Type\CategoryIdType
+            catalog_job_id: App\Catalog\Infrastructure\Doctrine\Type\JobIdType
 
     orm:
         validate_xml_mapping: true
@@ -17,7 +22,12 @@ doctrine:
         #       is_bundle: false
         #       dir: '%kernel.project_dir%/src/Catalog/Infrastructure/Doctrine/Mapping'
         #       prefix: 'App\Catalog\Domain'
-        mappings: {}
+        mappings:
+            Catalog:
+                type: xml
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Catalog/Infrastructure/Doctrine/Mapping'
+                prefix: 'App\Catalog\Domain'
 
 when@test:
     doctrine:

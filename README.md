@@ -30,3 +30,12 @@ APP_ENV=test bin/console doctrine:migrations:migrate -n   # base de test (suffix
 - Aucune valeur métier en dur (RG-014) : on la lit via `SettingsProvider`. Une règle PHPStan dédiée vérifie les policies et les handlers.
 - Commits au format Conventional Commits, avec la référence CDC : `feat(quote): envoi atomique du devis (RG-101)`.
 - Les secrets ne se commitent jamais : utiliser `bin/console secrets:set`. gitleaks tourne en CI.
+
+## Référentiel des services (Catalog)
+
+```bash
+docker compose exec php bin/console app:catalog:import          # référentiel initial (config/catalog/referentiel.yaml), idempotent
+docker compose exec php bin/console app:catalog:tree            # arborescence
+docker compose exec php bin/console app:catalog:job plombier --new-slug=plombier-chauffagiste   # crée les 301
+docker compose exec php bin/console app:catalog:job debouchage --deactivate [--replace-with=plombier]
+```

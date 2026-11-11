@@ -18,6 +18,7 @@ use Twig\TwigFunction;
  *   (annexe A) sans casser la navigation commune.
  * - tm_setting_int() : valeurs métier affichées dans l'interface, toujours lues dans les paramètres (RG-014).
  * - tm_social_links() : réseaux renseignés en BO13 uniquement (aucune URL fictive).
+ * (tm_main_categories() est fournie par le module Catalog : Catalog\UI\Twig\CatalogExtension.)
  */
 final class NavigationExtension extends AbstractExtension
 {
@@ -43,7 +44,6 @@ final class NavigationExtension extends AbstractExtension
             new TwigFunction('tm_route_exists', $this->routeExists(...)),
             new TwigFunction('tm_setting_int', $this->settingInt(...)),
             new TwigFunction('tm_social_links', $this->socialLinks(...)),
-            new TwigFunction('tm_main_categories', $this->mainCategories(...)),
         ];
     }
 
@@ -87,16 +87,5 @@ final class NavigationExtension extends AbstractExtension
         }
 
         return $links;
-    }
-
-    /**
-     * Catégories du méga-menu (ordre et métiers issus du BO06). Alimentées par le module Catalog au ticket T-112 ;
-     * d'ici là, le méga-menu ne propose que « Toutes les catégories » et le dépôt de demande.
-     *
-     * @return list<array{name: string, href: string, icon: string, jobs: list<array{name: string, href: string}>}>
-     */
-    public function mainCategories(): array
-    {
-        return [];
     }
 }

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Administration\Domain\Audit;
+namespace App\Shared\Domain\Audit;
 
 use App\Shared\Domain\Exception\InvalidValue;
 

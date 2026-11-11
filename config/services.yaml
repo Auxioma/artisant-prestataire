@@ -35,7 +35,19 @@ services:
 
     # Ports du module Administration
     App\Administration\Application\Port\SettingStore: '@App\Administration\Infrastructure\Settings\DbalSettingStore'
-    App\Administration\Application\Port\AuditTrail: '@App\Administration\Infrastructure\Audit\DbalAuditTrail'
+    App\Shared\Application\Audit\AuditTrail: '@App\Administration\Infrastructure\Audit\DbalAuditTrail'
+
+    # Ports du module Catalog
+    App\Catalog\Domain\Category\CategoryRepository: '@App\Catalog\Infrastructure\Doctrine\Repository\DoctrineCategoryRepository'
+    App\Catalog\Domain\Job\JobRepository: '@App\Catalog\Infrastructure\Doctrine\Repository\DoctrineJobRepository'
+    App\Catalog\Application\Port\JobUsageCounter: '@App\Catalog\Infrastructure\InterimJobUsageCounter'
+    App\Catalog\UI\Twig\CatalogExtension:
+        arguments: { $catalogCache: '@cache.catalog' }
+    App\Catalog\Infrastructure\Cache\InvalidateMainCategoriesCache:
+        arguments: { $catalogCache: '@cache.catalog' }
+
+    # Ports du module Content
+    App\Content\Application\Port\RedirectStore: '@App\Content\Infrastructure\Redirect\DbalRedirectStore'
 
     # Ports du module Identity
     App\Identity\Application\Port\ConsentLog: '@App\Identity\Infrastructure\Consent\DbalConsentLog'

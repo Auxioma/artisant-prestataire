@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Catalog — métier (BO06, RG-010, A03.3). -->
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Catalog\Domain\Job\Job" table="job" schema="catalog">
+        <unique-constraints>
+            <unique-constraint name="job_slug_uniq" columns="slug"/>
+        </unique-constraints>
+        <indexes>
+            <index name="job_category_position_idx" columns="category_id,position"/>
+        </indexes>
+        <id name="id" type="catalog_job_id" column="id"/>
+        <field name="categoryId" type="catalog_category_id" column="category_id"/>
+        <field name="name" type="string" length="80"/>
+        <field name="slug" type="slug" length="100"/>
+        <field name="position" type="integer"/>
+        <field name="synonyms" type="json">
+            <options><option name="jsonb">true</option></options>
+        </field>
+        <field name="requiredDocuments" type="json" column="required_documents">
+            <options><option name="jsonb">true</option></options>
+        </field>
+        <field name="insuranceRequired" type="boolean" column="insurance_required"/>
+        <field name="decennialRequired" type="boolean" column="decennial_required"/>
+        <field name="active" type="boolean"/>
+        <field name="replacedBy" type="catalog_job_id" column="replaced_by" nullable="true"/>
+        <field name="description" type="text" nullable="true"/>
+        <field name="createdAt" type="datetimetz_immutable" column="created_at"/>
+        <field name="updatedAt" type="datetimetz_immutable" column="updated_at"/>
+        <field name="version" type="integer" version="true"/>
+    </entity>
+</doctrine-mapping>

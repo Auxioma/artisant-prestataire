@@ -25,6 +25,9 @@
     {label: 'Profil', icon: 'user', href: tm_path('client_profile')},
 ] %}
 {% set connected = variant in ['client', 'artisan'] %}
+{# P01.1 : méga-menu vide (aucune catégorie active) → élément masqué #}
+{% set categories = tm_main_categories() %}
+{% set nav = categories is empty ? nav|filter(i => i.mega is not defined) : nav %}
 <header {{ attributes.defaults({class: 'tm-header tm-header--' ~ variant}) }} data-controller="header">
     <div class="tm-header__inner">
         <twig:Logo href="{{ tm_path('public_home') }}" class="tm-header__logo" />
@@ -45,7 +48,6 @@
                                     {{ item.label }}<twig:Icon name="chevD" class="tm-nav-link__chevron tm-icon--inherit" />
                                 </button>
                                 <div class="tm-mega" id="tm-mega-menu" hidden data-disclosure-target="panel">
-                                    {% set categories = tm_main_categories() %}
                                     {% if categories is not empty %}
                                         <ul class="tm-mega__grid">
                                             {% for category in categories %}
@@ -155,17 +157,19 @@
         </div>
         <nav class="tm-mobile-menu__nav" aria-label="Navigation principale">
             <ul class="tm-mobile-menu__list">
+                {% if categories is not empty %}
                 <li>
                     <details class="tm-mobile-menu__accordion">
                         <summary class="tm-mobile-menu__link">Catégories<twig:Icon name="chevD" size="sm" class="tm-mobile-menu__chevron tm-icon--inherit" /></summary>
                         <div class="tm-mobile-menu__panel">
-                            {% for category in tm_main_categories() %}
+                            {% for category in categories %}
                                 <a class="tm-mobile-menu__category" href="{{ category.href }}"><span class="tm-mega__picto"><twig:Icon name="{{ category.icon }}" size="xs" class="tm-icon--inherit" /></span>{{ category.name }}</a>
                             {% endfor %}
                             <a class="tm-mobile-menu__all" href="{{ tm_path('catalog_categories') }}">Toutes les catégories</a>
                         </div>
                     </details>
                 </li>
+                {% endif %}
                 {% for item in nav|filter(i => i.mega is not defined and i.key != 'home') %}
                     <li><a class="tm-mobile-menu__link" href="{{ item.href }}"{% if active == item.key %} aria-current="page"{% endif %}>{{ item.label }}<twig:Icon name="chevR" size="sm" class="tm-icon--inherit" /></a></li>
                 {% endfor %}

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Integration\Administration;
 
-use App\Administration\Application\Port\AuditTrail;
-use App\Administration\Domain\Audit\AuditRecord;
+use App\Shared\Application\Audit\AuditTrail;
+use App\Shared\Domain\Audit\AuditRecord;
 use App\Shared\Domain\Identifier\IdGenerator;
 use App\Shared\Infrastructure\Persistence\DbalValue;
 use Doctrine\DBAL\Connection;

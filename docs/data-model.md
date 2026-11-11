@@ -74,7 +74,7 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 |---|---|---|
 | `category` | id, parent_id NULL, level (`category`/`subcategory`), name, slug, description, image_key, image_alt, icon, accent_token, featured, position, active, seo (jsonb) | **UQ** slug · **IX** (parent_id, position) |
 | `job` | id, subcategory_id, name, slug, description, required_documents (jsonb), insurance_required, decennial_required, labels (jsonb), active, seo (jsonb), replaced_by_job_id | **UQ** slug · **IX** (subcategory_id, active) |
-| `job_synonym` | job_id, term, term_normalized | **UQ** (job_id, term_normalized) · **IX** trigram sur term_normalized |
+| *(synonymes)* | colonne `catalog.job.synonyms` **jsonb** (liste dédoublonnée sans casse ni accents par l'agrégat) | **IX GIN** `job_synonyms_idx` ; la recherche plein texte des synonymes passe par Meilisearch (T-114) — choix T-112 au lieu d'une table dédiée |
 | `questionnaire_form` | id, job_id, version, schema (jsonb), active | **UQ** (job_id, version) |
 | `price_range` | id, job_id, label, low_cents, high_cents, unit, source (`manual`/`computed`), sample_size, updated_at | **CK** low ≤ high |
 | `region` / `department` | code, name, (region_code) | PK code |
@@ -149,7 +149,7 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 | `content.page` / `page_version` / `block` | id, slug, status (`draft`/`scheduled`/`published`), published_at, version ; blocs jsonb **assainis** à l'enregistrement (html-sanitizer) | historique et restauration (BO10.1) |
 | `content.home_block` | id, type (10 blocs P01), position, active, config (jsonb), version | — |
 | `content.post`, `faq_item`, `menu_item`, `media` (alt obligatoire), `label` (i18n) | … | `media.alt` NOT NULL (§9) |
-| `content.redirect` | id, source_path, target_path, code (301/302), hits, created_by | **UQ** source_path — généré automatiquement si un slug change (BO06) |
+| `content.redirect` | id, source_path, target_path, status_code (301/302), match_prefix, origin, hits | **UQ** source_path · **CK** chemins internes (`/…`) et source ≠ cible — généré automatiquement si un slug change (BO06) ; chaînes aplaties et boucles supprimées à l'écriture ; préfixe pour `/{metier}/…` (pages métier × ville) |
 | `content.not_found_log` | path, hits, last_seen_at | rapport 404 (BO12.2) |
 | `notification.template` | code (E-xx), channel, locale, subject, preheader, body_html, body_text, active, version | **UQ** (code, channel, locale) |
 | `notification.notification` | id, user_id, code, payload (jsonb, sans PII superflue), read_at, created_at | **IX** (user_id, read_at NULLS FIRST, created_at DESC) |
@@ -162,6 +162,12 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 | `admin.export_job` | id, admin_id, kind, filters, contains_pii, status, file_key, expires_at | journalisé (BO15.2) |
 | `admin.support_ticket` (V2) | … | BO16 |
 | `shared.outbox_message` | id, type, payload, occurred_at, dispatched_at | **IX** (dispatched_at) WHERE dispatched_at IS NULL |
+
+## 2bis. Mapping Doctrine (T-112)
+
+- Les agrégats persistés par l'ORM (à ce jour `Catalog\Domain\Category\Category`, `Catalog\Domain\Job\Job`) sont mappés en **XML** dans `src/<Module>/Infrastructure/Doctrine/Mapping/`. Les identifiants et slugs passent par des types DBAL dédiés (`catalog_category_id`, `catalog_job_id`, `slug`).
+- **Pas d'association Doctrine entre agrégats** : références par identifiant ; les clés étrangères, CHECK et index spécialisés (GIN, partiels) sont posés dans les migrations écrites à la main.
+- `doctrine.dbal.schema_filter` limite la comparaison mapping ↔ base aux schémas gérés par l'ORM (`catalog`, à étendre) ; les tables DBAL (paramètres, audit, outbox, consentements, redirections) n'y figurent pas. La CI valide le mapping (`doctrine:schema:validate --skip-sync`) et la cohérence des migrations ; la synchronisation stricte n'est pas utilisée car les contraintes ajoutées à la main (FK, GIN) seraient signalées comme des écarts.
 
 ## 3. Verrous et concurrence
 
