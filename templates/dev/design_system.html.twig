@@ -1,0 +1,104 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Design system — TrouveMoi (dev){% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/dev/styleguide.css') }}">
+{% endblock %}
+
+{% set colors = [
+    ['tm-navy', '--primary', 'Titres, navigation'],
+    ['tm-blue', '--secondary', 'Liens, boutons secondaires'],
+    ['tm-orange', '--orange', 'Pictos, accents'],
+    ['tm-orange-ink', '--color-accent-text', 'Orange texte (audit V2.1)'],
+    ['tm-gold', '--orange-light', 'Étoiles'],
+    ['tm-ink', '--color-text', 'Texte courant'],
+    ['tm-muted', '--color-text-muted', 'Texte secondaire (audit V2.1)'],
+    ['tm-line', '--color-border', 'Bordures'],
+    ['tm-ice', '--background-light', 'Fonds de section'],
+    ['tm-bg', '--color-surface-alt', 'Fond d’application'],
+    ['tm-white', '--background', 'Cartes'],
+    ['tm-green', '--color-success-text', 'Disponible, succès'],
+    ['tm-success', '--success', 'Pastilles disponibilité'],
+    ['tm-mint', '--color-success-bg', 'Fond succès'],
+    ['tm-red', '--danger', 'Erreur'],
+    ['tm-red-soft', '--color-danger-bg', 'Fond erreur'],
+    ['tm-blue-soft', '--color-info-bg', 'Fond info'],
+    ['tm-orange-soft', '--color-warning-bg', 'Fond alerte'],
+] %}
+
+{% set type_styles = [
+    ['tm-h1', 'H1 · 32/40 Bold (24/32 mobile)', 'Trouvez un artisan de confiance'],
+    ['tm-h2', 'H2 · 24/32 Bold (20/28 mobile)', 'Les mieux notés près de chez vous'],
+    ['tm-h3', 'H3 · 18/26 SemiBold (16/24 mobile)', 'Plomberie et chauffage'],
+    ['tm-title', 'Title · 20/28 SemiBold', 'Vos demandes en cours'],
+    ['tm-card-title', 'Card title · 16/24 SemiBold', 'AB Rénovation'],
+    ['tm-body', 'Body · 16/24 Regular', 'Texte de lecture fluide : prestations, délais et tarifs.'],
+    ['tm-body-sm', 'Body · 14/21 Regular', 'Intervention sous 48 h au Havre et dans un rayon de 30 km.'],
+    ['tm-body-strong', 'Body strong · 14/21 SemiBold', '3 places restantes'],
+    ['tm-label', 'Label · 14/20 Medium', 'Quel service recherchez-vous ?'],
+    ['tm-caption', 'Caption · 12/18 Medium', 'Métier, prestation ou raison sociale'],
+    ['tm-overline', 'Overline · 12/16 SemiBold +6 %', 'Trouvemoi / bibliothèque'],
+    ['tm-number', 'Number · 40/48 Bold', '72 devis'],
+    ['tm-price', 'Price · 32/40 Bold', '49 € HT'],
+] %}
+
+{% block body %}
+    <div class="tm-container sg-page">
+        <p class="tm-overline">TrouveMoi / Design system V2</p>
+        <h1>Design tokens</h1>
+        <p class="tm-muted">Planche de contrôle T-108 — source : bibliothèque Figma V2 (nœud 59:4) et audit V2.1.</p>
+
+        <section class="sg-section" aria-labelledby="sg-colors">
+            <h2 id="sg-colors" class="tm-section-title">Couleurs</h2>
+            <ul class="sg-swatches">
+                {% for color in colors %}
+                    <li class="sg-swatch">
+                        <span class="sg-swatch__chip sg-chip--{{ color[0] }}" aria-hidden="true"></span>
+                        <span class="tm-body-strong">--{{ color[0] }}</span>
+                        <span class="tm-caption">{{ color[1] }} · {{ color[2] }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+            <div class="sg-gradients">
+                <span class="sg-gradient sg-gradient--orange">--gradient-orange</span>
+                <span class="sg-gradient sg-gradient--blue">--gradient-blue</span>
+            </div>
+        </section>
+
+        <section class="sg-section" aria-labelledby="sg-type">
+            <h2 id="sg-type" class="tm-section-title">Typographie — Poppins</h2>
+            <dl class="sg-type">
+                {% for style in type_styles %}
+                    <div class="sg-type__row">
+                        <dt class="tm-caption">{{ style[1] }}</dt>
+                        <dd class="{{ style[0] }}">{{ style[2] }}</dd>
+                    </div>
+                {% endfor %}
+            </dl>
+        </section>
+
+        <section class="sg-section" aria-labelledby="sg-effects">
+            <h2 id="sg-effects" class="tm-section-title">Rayons, ombres et focus</h2>
+            <div class="sg-effects">
+                <div class="sg-effect sg-effect--card">Carte · rayon 12 · ombre card</div>
+                <div class="sg-effect sg-effect--hover">Survol · ombre hover</div>
+                <div class="sg-effect sg-effect--overlay">Modale · ombre overlay</div>
+                <a class="sg-effect sg-effect--focus" href="#contenu">Focus clavier (Tab)</a>
+            </div>
+        </section>
+
+        <section class="sg-section" aria-labelledby="sg-icons">
+            <h2 id="sg-icons" class="tm-section-title">Icônes — Lucide, trait 2 px ({{ icons|length }})</h2>
+            <ul class="sg-icons">
+                {% for name in icons %}
+                    <li class="sg-icon">
+                        <twig:Icon name="{{ name }}" />
+                        <span class="tm-caption">{{ name }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+            <p class="sg-icons-trade"><twig:Icon name="wrench" trade /> <twig:Icon name="paint" trade /> <twig:Icon name="zap" trade /> <span class="tm-caption">pictos métier (--orange)</span></p>
+        </section>
+    </div>
+{% endblock %}

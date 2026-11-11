@@ -10,5 +10,6 @@
 | [SECURITY.md](SECURITY.md) | Modèle de menaces STRIDE par module, mapping ASVS 4.0.3 N2, en-têtes, rate limits, tests, checklist de pentest |
 | [decisions/points-en-suspens.md](decisions/points-en-suspens.md) | Q1–Q28 (annexe I) + P-01 à P-20, avec la décision par défaut et le paramètre associé |
 | [plan-livraison-mvp.md](plan-livraison-mvp.md) | Tickets du lot 1 au lot 9 (annexe H) |
+| [design-system.md](design-system.md) | Fondations du design system : tokens, polices, icônes, règles d'usage et garde-fous |
 | [traceability.md](traceability.md) | Matrice CDC → code → tests (à alimenter) |
 | [cdc/](cdc/) | Cahier des charges fonctionnel v1.0 (source de vérité) |

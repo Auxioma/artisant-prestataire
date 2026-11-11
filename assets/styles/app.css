@@ -1,3 +1,5 @@
-body {
-    background-color: skyblue;
-}
+/*
+ * Feuille de styles unique de TrouveMoi (CDC §2 : une feuille et des variables partagées pour tout le domaine).
+ * Ordre des couches : tokens → base → components → utilities.
+ */
+@layer tokens, base, components, utilities;
