@@ -20,6 +20,35 @@ framework:
                 timeout: 30
                 max_duration: 300
                 headers: { Accept: 'application/json' }
+            # Services tiers (cadrage §5.3) : hôte fixe, délais courts, aucune URL issue d'une saisie ; réseau privé
+            # interdit par ExternalHttpClientsPass. Reprises automatiques uniquement sur les requêtes idempotentes.
+            sirene.client:
+                base_uri: 'https://api.insee.fr/api-sirene/3.11/'
+                headers: { Accept: 'application/json', X-INSEE-Api-Key-Integration: '%env(INSEE_SIRENE_API_KEY)%' }
+                timeout: 5
+                max_duration: 10
+                retry_failed: { max_retries: 2, delay: 2000 } # quota INSEE : 30 requêtes / minute
+            geocoding.client:
+                base_uri: 'https://data.geopf.fr/geocodage/'
+                headers: { Accept: 'application/json' }
+                timeout: 5
+                max_duration: 10
+                retry_failed: { max_retries: 2 }
+            vies.client:
+                base_uri: 'https://ec.europa.eu/taxation_customs/vies/rest-api/'
+                headers: { Accept: 'application/json' }
+                timeout: 10
+                max_duration: 20
+                retry_failed: { max_retries: 1 }
+            turnstile.client:
+                base_uri: 'https://challenges.cloudflare.com/turnstile/v0/'
+                timeout: 5
+                max_duration: 8
+            hibp.client:
+                base_uri: 'https://api.pwnedpasswords.com/'
+                headers: { Add-Padding: 'true' } # réponses de taille uniforme (k-anonymat renforcé)
+                timeout: 3
+                max_duration: 5
             # Autocomplétion (ADR-0004) : délai court, le repli PostgreSQL prend le relais au-delà.
             meilisearch_search.client:
                 base_uri: '%env(MEILISEARCH_URL)%'

@@ -33,6 +33,10 @@ curl 'http://localhost:8090/api/suggestions?type=lieu&q=st%20etienne'
 
 À lancer après `app:catalog:import` et `app:geo:import` ; ensuite les modifications du référentiel des métiers sont indexées automatiquement par le worker. Si Meilisearch est indisponible, l'endpoint répond depuis PostgreSQL (en-tête `X-Search-Mode: fallback`). Après un changement de variables dans `compose.yaml`, recréer les conteneurs (`docker compose up -d`) : un simple redémarrage garde l'ancien environnement.
 
+## Services tiers
+
+Sirene (INSEE), géocodage BAN (Géoplateforme IGN), VIES, Turnstile et HIBP passent chacun par un client HTTP dédié à hôte fixe, interdit de réseau privé (anti-SSRF). En développement, Turnstile utilise les clés de test publiques de Cloudflare (toujours valides) ; Sirene demande une clé du portail des API de l'INSEE (`INSEE_SIRENE_API_KEY` dans `.env.local`, ou `secrets:set` en production), sans quoi le service est signalé indisponible.
+
 ## Qualité (identique à la CI)
 
 ```bash

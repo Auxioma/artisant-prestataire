@@ -26,6 +26,11 @@ services:
             - '../src/Catalog/Application/Geo/{RegionRecord,DepartmentRecord,CommuneRecord,CommuneRow,ImportReport}.php'
             - '../src/Catalog/Infrastructure/Geo/{GeoApiGouvSource,JsonFileGeoSource,GeoApiPayloadParser}.php'
             - '../src/Search/Application/Port/{JobDocument,PlaceDocument,SearchUnavailable}.php'
+            - '../src/Shared/Application/Integration/'
+            - '../src/Shared/Infrastructure/DependencyInjection/'
+            - '../src/Catalog/Application/Geo/Port/GeocodedAddress.php'
+            - '../src/ArtisanProfile/Application/Port/CompanyRecord.php'
+            - '../src/Billing/Application/Port/VatNumberCheck.php'
             - '../src/Search/Application/Query/{Autocomplete,Suggestions}.php'
 
     # Ports du noyau partagé
@@ -55,6 +60,11 @@ services:
 
     # Ports du module Content
     App\Content\Application\Port\RedirectStore: '@App\Content\Infrastructure\Redirect\DbalRedirectStore'
+
+    App\Catalog\Application\Geo\Port\AddressGeocoder: '@App\Catalog\Infrastructure\Geo\BanAddressGeocoder'
+    App\ArtisanProfile\Application\Port\CompanyRegistry: '@App\ArtisanProfile\Infrastructure\Sirene\InseeSireneCompanyRegistry'
+    App\Billing\Application\Port\VatNumberChecker: '@App\Billing\Infrastructure\Vies\ViesVatNumberChecker'
+    App\Identity\Application\Port\HumanVerification: '@App\Identity\Infrastructure\Turnstile\TurnstileHumanVerification'
 
     # Ports du module Search
     App\Search\Application\Port\AutocompleteIndex: '@App\Search\Infrastructure\Meilisearch\MeilisearchAutocompleteIndex'
@@ -90,4 +100,23 @@ when@test:
             public: true
         test.query_bus:
             alias: App\Shared\Application\Bus\QueryBus
+            public: true
+        # Clients sortants inspectés par ExternalHttpClientsTest (anti-SSRF).
+        test.geo_api.client:
+            alias: geo_api.client
+            public: true
+        test.geocoding.client:
+            alias: geocoding.client
+            public: true
+        test.sirene.client:
+            alias: sirene.client
+            public: true
+        test.vies.client:
+            alias: vies.client
+            public: true
+        test.turnstile.client:
+            alias: turnstile.client
+            public: true
+        test.hibp.client:
+            alias: hibp.client
             public: true

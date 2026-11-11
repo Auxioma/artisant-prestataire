@@ -14,6 +14,7 @@
 | Justificatifs artisans (Kbis, assurance, **pièce d'identité**) | Critique (usurpation d'identité) | ArtisanProfile |
 | Crédits et abonnements | Haute (financier) | Billing |
 | Clés Stripe, Brevo, KEK de chiffrement | Critique | coffre de secrets |
+| Clés Sirene (INSEE) et Turnstile (secrète) | Élevée | coffre de secrets (`INSEE_SIRENE_API_KEY`, `TURNSTILE_SECRET_KEY`) ; le dépôt ne contient que les clés de test publiques de Cloudflare |
 | Clés Meilisearch (recherche / administration) | Élevée | coffre de secrets ; clé de recherche limitée à l'action `search` sur les index `tm_*`, jamais exposée au navigateur (le front passe par `/api/suggestions`) ; clé d'administration réservée au worker et à `app:search:reindex` ; clé maître hors de l'application |
 | Avis certifiés, classement | Haute (réputation, obligations L111-7) | Review, Search |
 | Back-office | Critique (accès global) | Administration |
@@ -123,7 +124,7 @@ S = usurpation · T = altération · R = répudiation · I = divulgation · D = 
 |---|---|---|
 | T | Dépendance compromise | `composer.lock` versionné, `composer audit` bloquant, roave/security-advisories, Dependabot, versions d'image Docker figées par digest |
 | I | Secret commité | gitleaks (pre-commit + CI), coffre `secrets:set`, `.env.local` ignoré |
-| T | SSRF via appels sortants | `HttpClient` scoped par service avec `base_uri` fixe, `NoPrivateNetworkHttpClient`, timeouts, aucune URL fournie par l'utilisateur |
+| T | SSRF via appels sortants | `HttpClient` scoped par service avec `base_uri` fixe, `NoPrivateNetworkHttpClient` posé contre le transport par `ExternalHttpClientsPass` (après résolution de l'URL, donc aussi contre les redirections et le rebond DNS), timeouts, aucune URL fournie par l'utilisateur ; seuls des identifiants validés (SIRET Luhn, n° TVA) ou des paramètres de requête encodés varient — vérifié par `ExternalHttpClientsTest` |
 | T | Désérialisation Messenger | sérialiseur Symfony (JSON) avec types attendus, pas de `unserialize` PHP natif sur des données externes |
 
 ## 3. Mapping ASVS 4.0.3 niveau 2

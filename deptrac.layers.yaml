@@ -23,4 +23,4 @@ deptrac:
     Application: [Domain]
     Infrastructure: [Domain, Application, Framework]
     UI: [Domain, Application, Framework]
-    Kernel: [Framework]
+    Kernel: [Framework, Infrastructure] # racine de composition : enregistre les passes de compilation
