@@ -17,7 +17,8 @@
 | T-106 Socle sécurité | 🟨 | En-têtes, sessions, Argon2id, limites, masquage des PII : faits. Nonces CSP utilisés dès T-110 ; limites branchées aux routes au fil des lots |
 | T-107 AuditLog | ✅ | Partitionnement mensuel reporté à T-806 |
 | T-108 Design system | ✅ | Tokens Figma V2 + audit V2.1, Poppins auto-hébergée, sprite Lucide (39), composant Icon, gabarit de base (nonce CSP, lien d'évitement), planche `/_dev/design-system` ; écarts P-24 à P-27 |
-| T-109 → T-116 | ⬜ | Prochaine étape : composants Twig (T-109) |
+| T-109 Composants Twig | ✅ | Button, Field + thème de formulaire Symfony, Select, Checkbox/Radio, Badge, Toast (+ région, flashs), Modal (`<dialog>`), Stepper, CreditGauge, CardArtisan verticale + squelette, EmptyState, Skeleton ; planche `/_dev/components`. Carte horizontale et compacte → T-302 |
+| T-110 → T-116 | ⬜ | Prochaine étape : header, footer, fil d'Ariane (T-110) |
 
 ## Lot 0 — Cadrage *(ce livrable)*
 | ID | Ticket | Réf. | Taille |

@@ -30,3 +30,26 @@
 - Aucune taille de police sous 12 px.
 - **Aucune couleur codée en dur** (hex, `rgb()`, `hsl()`) hors `tokens.css`, dans les CSS et les gabarits Twig.
 - Chaque `<twig:Icon name="…">` utilisé existe dans le sprite.
+
+## Composants Twig (T-109)
+
+Composants anonymes dans `templates/components/`, styles dans `assets/styles/components/` (couche `@layer components`), comportements Stimulus dans `assets/controllers/`. Planche de contrôle : `/_dev/components` (dev uniquement).
+
+| Composant | Figma | Usage | Accessibilité garantie (testée) |
+|---|---|---|---|
+| `<twig:Button>` | 59:142 | `variant` primary · search · secondary · tertiary · danger ; `href` → lien ; `icon`, `loading`, `disabled`, `block` | libellé conservé en chargement + `aria-busy` ; lien désactivé sans `href` + `aria-disabled` |
+| `<twig:Field>` | 59:219 | champ hors formulaire Symfony (recherche…) ; `help`, `error`, `success`, `icon` | `label for`, `aria-describedby` vers l'aide ou l'erreur, `aria-invalid`, icône d'état |
+| Thème `form/theme.html.twig` | 59:219, 93:1510 | **tous les formulaires Symfony** (enregistré globalement) | idem `Field` ; choix multiples en `fieldset` + `legend` ; aide toujours échappée (même `help_html`) |
+| `<twig:Select>` | 93:1511 | liste native ; `prefix` (« Trier : ») ou `label` masqué | étiquette associée obligatoire |
+| `<twig:Checkbox>` | 93:1510 | case ou radio (`type="radio"`) ; `locked` = toujours actif (P02.3) | zone cliquable ≥ 44 px ; valeur verrouillée soumise via champ caché |
+| `<twig:Badge>` | 59:250 | verified · available · new · promo · featured · pending · refused · neutral · direct | toujours un texte (+ icône), jamais la couleur seule |
+| `<twig:Toast>` / `<twig:ToastRegion>` | 63:72 | région dans `base.html.twig`, alimentée par les flashs `success/info/warning/error` | `aria-live`, `role="alert"` pour les erreurs ; fermeture auto 5 s (jamais pour une erreur), pause au survol/focus |
+| `<twig:Modal>` | 74:121 | `<dialog>` natif, blocs `content` et `actions` ; ouverture via `modal-opener` | focus piégé, Échap, retour du focus au déclencheur, `aria-labelledby` ; bottom sheet < 768 px |
+| `<twig:Stepper>` | 63:102 | `steps`, `current`, `errorStep` | `aria-current="step"`, état textuel masqué ; mobile « Étape n/N » + barre |
+| `<twig:CreditGauge>` | 74:235 | `remaining`, `total`, `state` (normal · alert · critical · exhausted), `status`, `ctaHref` | anneau décoratif, information portée par le texte ; épuisement annoncé (`role="alert"`, RG-106) |
+| `<twig:CardArtisan>` / `<twig:CardArtisanSkeleton>` | 66:32, 66:129 | carte verticale ; `favorite` (null = pas de bouton) | note chiffrée « 4,8 sur 5 » doublant les étoiles ; cœur `aria-pressed` 44 × 44 ; `alt` de la photo ; carte cliquable via le lien du nom |
+| `<twig:EmptyState>` | 74:178 | `variant` empty · error, actions en contenu | erreur annoncée (`role="alert"`) |
+| `<twig:Skeleton>` | 66:129 | lignes de chargement | décoratif ; pulsation coupée en mouvement réduit |
+
+L'**état de la jauge** n'est pas calculé dans le gabarit : l'application le déduit des seuils administrables (`credits.alert_thresholds`, `credits.plan_alert_pct`, RG-105) et le transmet.
+La **carte artisan horizontale** (résultats P02) et la variante **compacte** seront réalisées avec la page de résultats (T-302).

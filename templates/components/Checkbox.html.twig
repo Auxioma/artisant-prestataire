@@ -1,0 +1,11 @@
+{#
+    TM / Checkbox & Radio (Figma 93:1510) — contrôle natif stylé, zone cliquable ≥ 44 px.
+    `locked` : toujours coché, non décochable (filtre « Vérifié », P02.3) ; la valeur reste soumise via un champ caché.
+#}
+{% props id, name, label, value = '1', type = 'checkbox', checked = false, disabled = false, locked = false %}
+<label {{ attributes.defaults({class: 'tm-check' ~ (locked ? ' tm-check--locked')}) }} for="{{ id }}">
+    <input class="tm-check__input" type="{{ type }}" id="{{ id }}" name="{{ name }}" value="{{ value }}"
+        {%- if checked or locked %} checked{% endif %}{% if disabled or locked %} disabled{% endif %}>
+    <span>{{ label }}</span>
+    {% if locked %}<input type="hidden" name="{{ name }}" value="{{ value }}">{% endif %}
+</label>

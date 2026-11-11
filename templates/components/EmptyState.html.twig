@@ -1,0 +1,11 @@
+{#
+    TM / État vide & erreur (Figma 74:178) : picto + titre + texte + actions (annexe B).
+    Erreur : message et chemin de récupération (« Réessayer »), données conservées.
+#}
+{% props variant = 'empty', title, text = null, icon = null, headingLevel = 2 %}
+<section {{ attributes.defaults({class: 'tm-empty tm-empty--' ~ variant}) }}{% if variant == 'error' %} role="alert"{% endif %}>
+    <span class="tm-empty__picto"><twig:Icon name="{{ icon ?? (variant == 'error' ? 'alert' : 'search') }}" /></span>
+    <h{{ headingLevel }} class="tm-empty__title">{{ title }}</h{{ headingLevel }}>
+    {% if text %}<p class="tm-empty__text">{{ text }}</p>{% endif %}
+    <div class="tm-empty__actions">{% block content %}{% endblock %}</div>
+</section>

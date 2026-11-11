@@ -1,0 +1,29 @@
+/* TM / Jauge de crédits (74:235) — PR01.1 ; bordure gauche et anneau à la couleur d'état. */
+@layer components {
+    .tm-credit-gauge {
+        --_state: var(--success);
+        --_text: var(--color-success-text);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-5);
+        padding: var(--space-5) var(--space-6);
+        border-left: 4px solid var(--_state);
+        border-radius: var(--radius-card);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-card);
+    }
+
+    .tm-credit-gauge--alert { --_state: var(--orange-light); --_text: var(--color-accent-text); }
+    .tm-credit-gauge--critical { --_state: var(--orange); --_text: var(--color-accent-text); }
+    .tm-credit-gauge--exhausted { --_state: var(--tm-red); --_text: var(--color-danger-text); }
+
+    .tm-credit-gauge__ring { flex: none; width: 72px; height: 72px; transform: rotate(-90deg); }
+    .tm-credit-gauge__track { stroke: var(--background-light); }
+    .tm-credit-gauge__value { stroke: var(--_state); }
+
+    .tm-credit-gauge__body { flex: 1 1 200px; display: grid; }
+    .tm-credit-gauge__intro { font: var(--type-body-sm); color: var(--color-text); }
+    .tm-credit-gauge__count { font: var(--type-number); letter-spacing: var(--type-number-tracking); color: var(--color-heading); }
+    .tm-credit-gauge__status { font: var(--type-caption); color: var(--_text); }
+}

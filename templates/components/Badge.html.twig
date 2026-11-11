@@ -1,0 +1,12 @@
+{#
+    TM / Badge (Figma 59:250) : verified · available · new · promo · featured · pending · refused · neutral · direct.
+    Libellé par défaut selon la variante ; surcharge possible par le contenu : <twig:Badge variant="pending">Dossier en cours</twig:Badge>
+#}
+{% props variant = 'verified' %}
+{% set defaults = {verified: 'Vérifié', available: 'Disponible', new: 'Nouveau', promo: 'Promo', featured: 'Mis en avant', pending: 'En attente', refused: 'Refusé', neutral: 'Neutre', direct: 'Demande directe'} %}
+{% set icons = {verified: 'check', promo: 'tag', pending: 'clock', refused: 'x'} %}
+<span {{ attributes.defaults({class: 'tm-badge tm-badge--' ~ variant}) }}>
+    {% if variant == 'available' %}<span class="tm-badge__dot" aria-hidden="true"></span>{% endif %}
+    {% if icons[variant] is defined %}<twig:Icon name="{{ icons[variant] }}" />{% endif %}
+    {% block content %}{{ defaults[variant] }}{% endblock %}
+</span>

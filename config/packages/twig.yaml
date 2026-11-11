@@ -1,5 +1,7 @@
 twig:
     file_name_pattern: '*.twig'
+    # Balisage des composants Figma pour tous les formulaires (T-109)
+    form_themes: ['form/theme.html.twig']
 
 when@test:
     twig:

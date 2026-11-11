@@ -1,0 +1,54 @@
+/* TM / État vide & erreur (74:178) et squelettes (annexe B). */
+@layer components {
+    .tm-empty {
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        gap: var(--space-4);
+        padding: var(--space-10) var(--space-6);
+        border: 1px dashed var(--color-border);
+        border-radius: var(--radius-lg);
+        background: var(--color-surface);
+        text-align: center;
+    }
+
+    .tm-empty__picto {
+        display: grid;
+        place-items: center;
+        width: 64px;
+        height: 64px;
+        border-radius: var(--radius-pill);
+        background: var(--color-surface-section);
+        color: var(--color-link);
+    }
+
+    .tm-empty__picto .tm-icon { width: 28px; height: 28px; color: inherit; }
+    .tm-empty--error .tm-empty__picto { background: var(--color-danger-bg); color: var(--color-danger-text); }
+    .tm-empty__title { max-width: 480px; font: var(--type-h3); color: var(--color-heading); }
+    .tm-empty__text { max-width: 440px; font: var(--type-body-sm); color: var(--color-text); }
+    .tm-empty__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3); }
+
+    /* Squelette : pulsation, désactivée en mouvement réduit */
+    .tm-skeleton {
+        display: block;
+        height: 12px;
+        border-radius: 6px;
+        background: var(--background-light);
+        animation: tm-pulse 1.6s ease-in-out infinite;
+    }
+
+    .tm-skeleton--media { height: auto; aspect-ratio: 4 / 3; border-radius: 0; }
+    .tm-skeleton--w120 { width: 120px; }
+    .tm-skeleton--w140 { width: 140px; }
+    .tm-skeleton--w160 { width: 160px; }
+    .tm-skeleton--w200 { width: min(200px, 100%); }
+    .tm-skeleton-group { display: grid; gap: 10px; }
+
+    @keyframes tm-pulse {
+        50% { opacity: 0.55; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .tm-skeleton { animation: none; }
+    }
+}

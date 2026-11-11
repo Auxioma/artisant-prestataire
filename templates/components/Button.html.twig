@@ -1,0 +1,21 @@
+{#
+    TM / Button (Figma 59:142). Variantes : primary (dégradé orange, texte marine) · search (dégradé bleu) · secondary · tertiary · danger.
+    <twig:Button variant="search" icon="search">Rechercher</twig:Button>
+    <twig:Button href="{{ path('…') }}">Déposer ma demande</twig:Button>   (rendu en lien)
+    États : disabled, loading (libellé conservé + spinner, aria-busy).
+#}
+{% props variant = 'primary', type = 'button', href = null, icon = null, iconPosition = 'end', loading = false, disabled = false, block = false %}
+{% set classes = 'tm-button tm-button--' ~ variant ~ (block ? ' tm-button--block') %}
+{% set inner %}
+    {% if loading %}<twig:Icon name="loader" size="xs" class="tm-icon--inherit tm-button__spinner" />{% endif %}
+    {% if icon and iconPosition == 'start' and not loading %}<twig:Icon name="{{ icon }}" size="xs" class="tm-icon--inherit" />{% endif %}
+    <span class="tm-button__label">{% block content %}{% endblock %}</span>
+    {% if icon and iconPosition == 'end' %}<twig:Icon name="{{ icon }}" size="xs" class="tm-icon--inherit" />{% endif %}
+{% endset %}
+{% if href and not disabled and not loading %}
+    <a {{ attributes.defaults({class: classes, href: href}) }}>{{ inner }}</a>
+{% elseif href %}
+    <a {{ attributes.defaults({class: classes, role: 'link', 'aria-disabled': 'true'}) }}{% if loading %} aria-busy="true"{% endif %}>{{ inner }}</a>
+{% else %}
+    <button {{ attributes.defaults({class: classes, type: type}) }}{% if disabled %} disabled{% endif %}{% if loading %} aria-busy="true" aria-disabled="true"{% endif %}>{{ inner }}</button>
+{% endif %}

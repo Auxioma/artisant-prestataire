@@ -1,0 +1,20 @@
+{#
+    TM / Toast (Figma 63:72) : success · info · warning · error. Fermeture auto 5 s sauf erreurs (CDC §3.3),
+    pause au survol/focus (WCAG 2.2.1). À placer dans <twig:ToastRegion> (aria-live) ; erreur = role="alert".
+#}
+{% props variant = 'success', title, message = null, autoclose = null %}
+{% set icons = {success: 'check', info: 'info', warning: 'alert', error: 'alert'} %}
+{% set delay = autoclose ?? (variant == 'error' ? 0 : 5000) %}
+<div {{ attributes.defaults({class: 'tm-toast tm-toast--' ~ variant}) }}
+     data-controller="toast" data-toast-delay-value="{{ delay }}"
+     data-action="mouseenter->toast#pause mouseleave->toast#resume focusin->toast#pause focusout->toast#resume"
+     {% if variant == 'error' %}role="alert"{% else %}role="status"{% endif %}>
+    <span class="tm-toast__icon"><twig:Icon name="{{ icons[variant] }}" size="xs" class="tm-icon--inherit" /></span>
+    <div class="tm-toast__body">
+        <p class="tm-toast__title">{{ title }}</p>
+        {% if message %}<p class="tm-toast__message">{{ message }}</p>{% endif %}
+    </div>
+    <button type="button" class="tm-toast__close" data-action="toast#close" aria-label="Fermer la notification">
+        <twig:Icon name="x" size="xs" class="tm-icon--inherit" />
+    </button>
+</div>

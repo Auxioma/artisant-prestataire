@@ -6,6 +6,11 @@ namespace App\Shared\UI\Http;
 
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -24,5 +29,22 @@ final class DesignSystemController extends AbstractController
         preg_match_all('/<symbol id="([A-Za-z]+)"/', $sprite, $matches);
 
         return $this->render('dev/design_system.html.twig', ['icons' => $matches[1]]);
+    }
+
+    /**
+     * Planche des composants Twig (T-109) dans tous leurs états, dont un formulaire Symfony rendu par le thème TM.
+     */
+    #[Route('/_dev/components', name: 'dev_components', methods: ['GET'], env: 'dev')]
+    public function components(): Response
+    {
+        $form = $this->createFormBuilder(['email' => 'camille@exemple'], ['csrf_protection' => false])
+            ->add('service', TextType::class, ['label' => 'Quel service recherchez-vous ?', 'help' => 'Métier, prestation ou raison sociale', 'attr' => ['placeholder' => 'Ex. Plombier', 'data-icon' => 'search']])
+            ->add('email', EmailType::class, ['label' => 'Adresse email', 'help' => 'Nous ne la partageons jamais.'])
+            ->add('urgence', ChoiceType::class, ['label' => 'Délai souhaité', 'expanded' => true, 'choices' => ['Dès que possible' => 'asap', 'Sous 1 mois' => 'month', 'Pas pressé' => 'later'], 'data' => 'month'])
+            ->add('cgu', CheckboxType::class, ['label' => 'J’accepte les conditions générales d’utilisation'])
+            ->getForm();
+        $form->get('email')->addError(new FormError('Saisissez une adresse email valide (ex. nom@domaine.fr).'));
+
+        return $this->render('dev/components.html.twig', ['form' => $form->createView()]);
     }
 }

@@ -1,0 +1,66 @@
+/* TM / Toast (63:72) — fermeture auto 5 s sauf erreurs (CDC §3.3), annoncés via aria-live. */
+@layer components {
+    .tm-toasts {
+        position: fixed;
+        z-index: var(--z-toast);
+        inset: auto var(--space-4) var(--space-4) var(--space-4);
+        display: grid;
+        gap: var(--space-3);
+        justify-items: end;
+        pointer-events: none;
+    }
+
+    @media (min-width: 768px) {
+        .tm-toasts { inset: var(--space-6) var(--space-6) auto auto; width: 380px; }
+    }
+
+    .tm-toast {
+        --_accent: var(--tm-green);
+        --_soft: var(--color-success-bg);
+        --_icon: var(--color-success-text);
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-3);
+        width: 100%;
+        padding: 14px var(--space-3) 14px var(--space-4);
+        border-left: 4px solid var(--_accent);
+        border-radius: var(--radius-card);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-overlay);
+        pointer-events: auto;
+    }
+
+    .tm-toast--info { --_accent: var(--tm-blue); --_soft: var(--color-info-bg); --_icon: var(--color-info-text); }
+    .tm-toast--warning { --_accent: var(--tm-orange); --_soft: var(--color-warning-bg); --_icon: var(--color-accent-text); }
+    .tm-toast--error { --_accent: var(--tm-red); --_soft: var(--color-danger-bg); --_icon: var(--color-danger-text); }
+
+    .tm-toast__icon {
+        display: grid;
+        place-items: center;
+        flex: none;
+        padding: 6px;
+        border-radius: var(--radius-pill);
+        background: var(--_soft);
+        color: var(--_icon);
+    }
+
+    .tm-toast__body { flex: 1; min-width: 0; display: grid; gap: 2px; }
+    .tm-toast__title { font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-toast__message { font: var(--type-caption); color: var(--color-text); }
+
+    .tm-toast__close {
+        flex: none;
+        display: grid;
+        place-items: center;
+        width: var(--control-height);
+        height: var(--control-height);
+        margin: -13px -10px -13px 0;
+        border: 0;
+        border-radius: var(--radius-pill);
+        background: transparent;
+        color: var(--color-text-muted);
+        cursor: pointer;
+    }
+
+    .tm-toast[hidden] { display: none; }
+}

@@ -1,0 +1,55 @@
+/* TM / Stepper step (63:102) — CDC P11.1 ; mobile : barre linéaire + « Étape n/N ». */
+@layer components {
+    .tm-stepper { display: grid; gap: var(--space-3); }
+
+    .tm-stepper__list {
+        display: none;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        gap: var(--space-6);
+        flex-wrap: wrap;
+    }
+
+    .tm-stepper__step { display: flex; align-items: center; gap: 10px; font: var(--type-label); color: var(--color-heading); }
+
+    .tm-stepper__dot {
+        display: grid;
+        place-items: center;
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-pill);
+        background: var(--tm-green);
+        color: var(--color-text-inverse);
+        font: var(--type-button);
+    }
+
+    .tm-stepper__dot .tm-icon { width: 16px; height: 16px; color: inherit; }
+    .tm-stepper__step--current .tm-stepper__dot { background: var(--orange); color: var(--primary); }
+    .tm-stepper__step--upcoming { color: var(--color-text-muted); }
+    .tm-stepper__step--upcoming .tm-stepper__dot { background: var(--background-light); color: var(--color-text-muted); }
+    .tm-stepper__step--error { color: var(--color-danger-text); }
+    .tm-stepper__step--error .tm-stepper__dot { background: var(--tm-red); }
+
+    .tm-stepper__mobile { display: grid; gap: var(--space-2); }
+    .tm-stepper__count { font: var(--type-label); color: var(--color-heading); }
+
+    .tm-stepper__bar {
+        width: 100%;
+        height: 6px;
+        border: 0;
+        border-radius: var(--radius-pill);
+        background: var(--background-light);
+        appearance: none;
+        overflow: hidden;
+    }
+
+    .tm-stepper__bar::-webkit-progress-bar { background: var(--background-light); }
+    .tm-stepper__bar::-webkit-progress-value { background: var(--orange); border-radius: var(--radius-pill); }
+    .tm-stepper__bar::-moz-progress-bar { background: var(--orange); border-radius: var(--radius-pill); }
+
+    @media (min-width: 768px) {
+        .tm-stepper__list { display: flex; }
+        .tm-stepper__mobile { display: none; }
+    }
+}

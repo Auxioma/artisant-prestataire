@@ -23,9 +23,11 @@ const ICONS = [
     'info' => 'info', 'eye' => 'eye', 'camera' => 'camera', 'sliders' => 'sliders-horizontal',
     'grid' => 'layout-grid', 'mail' => 'mail', 'share' => 'share-2',
 ];
+/** Variantes pleines (fill = currentColor), utilisées par la carte artisan (« icon/star-filled » dans Figma). */
+const FILLED_ICONS = ['starFilled' => 'star', 'heartFilled' => 'heart'];
 
 $symbols = [];
-foreach (ICONS as $id => $lucide) {
+foreach (ICONS + FILLED_ICONS as $id => $lucide) {
     $url = sprintf('https://cdn.jsdelivr.net/npm/lucide-static@%s/icons/%s.svg', LUCIDE_VERSION, $lucide);
     $svg = file_get_contents($url);
     if (false === $svg) {
@@ -46,7 +48,8 @@ foreach (ICONS as $id => $lucide) {
         }
     }
     // Attributs portés par chaque symbole : un <use> n'hérite pas des attributs de la racine du sprite.
-    $symbols[] = sprintf('  <symbol id="%s" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">%s</symbol>', $id, $inner);
+    $fill = array_key_exists($id, FILLED_ICONS) ? 'currentColor' : 'none';
+    $symbols[] = sprintf('  <symbol id="%s" viewBox="0 0 24 24" fill="%s" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">%s</symbol>', $id, $fill, $inner);
 }
 
 $sprite = sprintf(

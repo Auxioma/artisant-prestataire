@@ -1,0 +1,18 @@
+{#
+    TM / Modale de confirmation (Figma 74:121) — <dialog> natif : focus piégé et Échap fournis par le navigateur,
+    retour du focus au déclencheur, bottom sheet en mobile (CDC §3.3).
+    Déclencheur : <twig:Button data-controller="modal-opener" data-modal-opener-dialog-value="envoi-devis" data-action="modal-opener#open">…</twig:Button>
+#}
+{% props id, title, closeLabel = 'Fermer' %}
+<dialog {{ attributes.defaults({class: 'tm-modal', id: id, 'aria-labelledby': id ~ '_title'}) }} data-controller="modal" data-action="click->modal#backdrop close->modal#restoreFocus">
+    <div class="tm-modal__content">
+        <div class="tm-modal__header">
+            <h2 class="tm-modal__title" id="{{ id }}_title">{{ title }}</h2>
+            <button type="button" class="tm-modal__close" data-action="modal#close" aria-label="{{ closeLabel }}">
+                <twig:Icon name="x" size="sm" class="tm-icon--inherit" />
+            </button>
+        </div>
+        {% block content %}{% endblock %}
+        <div class="tm-modal__actions">{% block actions %}{% endblock %}</div>
+    </div>
+</dialog>

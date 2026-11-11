@@ -1,0 +1,35 @@
+/* TM / Badge (59:250) — 12 px Medium, pilule ; couleur + texte (+ icône), jamais la couleur seule. */
+@layer components {
+    .tm-badge {
+        --_bg: var(--color-info-bg);
+        --_fg: var(--color-link);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: var(--space-1) 10px;
+        border-radius: var(--radius-pill);
+        background: var(--_bg);
+        color: var(--_fg);
+        font: var(--type-caption);
+        white-space: nowrap;
+    }
+
+    .tm-badge .tm-icon { width: 14px; height: 14px; color: inherit; }
+
+    .tm-badge--available { --_bg: var(--color-success-bg); --_fg: var(--color-success-text); }
+    .tm-badge--new { --_bg: var(--color-warning-bg); --_fg: var(--color-accent-text); }
+    .tm-badge--promo,
+    .tm-badge--refused { --_bg: var(--color-danger-bg); --_fg: var(--color-danger-text); }
+    .tm-badge--featured { --_bg: var(--color-surface-section); --_fg: var(--color-heading); }
+    .tm-badge--pending { --_bg: var(--color-warning-bg); --_fg: var(--color-accent-text); }
+    .tm-badge--neutral { --_bg: var(--color-surface-alt); --_fg: var(--color-text); border: 1px solid var(--color-border); }
+    .tm-badge--direct { --_bg: var(--primary); --_fg: var(--color-text-inverse); }
+
+    /* Point décoratif « Disponible » (--success), le texte porte l’information */
+    .tm-badge__dot {
+        width: 8px;
+        height: 8px;
+        border-radius: var(--radius-pill);
+        background: var(--success);
+    }
+}

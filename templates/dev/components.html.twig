@@ -1,0 +1,133 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Composants — TrouveMoi (dev){% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('styles/dev/styleguide.css') }}">
+{% endblock %}
+
+{% block body %}
+<div class="tm-container sg-page">
+    <p class="tm-overline">TrouveMoi / Bibliothèque V2</p>
+    <h1>Composants</h1>
+    <p class="tm-muted">Planche de contrôle T-109 — chaque composant dans ses états Figma (nœud 59:4).</p>
+
+    <section class="sg-section" aria-labelledby="sg-buttons">
+        <h2 id="sg-buttons" class="tm-section-title">Boutons</h2>
+        {% for variant in ['primary', 'search', 'secondary', 'tertiary', 'danger'] %}
+            <div class="sg-row">
+                <twig:Button variant="{{ variant }}">Déposer ma demande</twig:Button>
+                <twig:Button variant="{{ variant }}" icon="arrowR">Avec icône</twig:Button>
+                <twig:Button variant="{{ variant }}" disabled>Désactivé</twig:Button>
+                <twig:Button variant="{{ variant }}" loading>Envoi en cours</twig:Button>
+            </div>
+        {% endfor %}
+    </section>
+
+    <section class="sg-section" aria-labelledby="sg-fields">
+        <h2 id="sg-fields" class="tm-section-title">Champs</h2>
+        <div class="sg-columns">
+            <twig:Field id="f1" name="f1" label="Quel service recherchez-vous ?" icon="search" placeholder="Ex. Plombier" help="Métier, prestation ou raison sociale" required />
+            <twig:Field id="f2" name="f2" label="Quel service recherchez-vous ?" icon="search" value="Plombier" help="Métier, prestation ou raison sociale" required />
+            <twig:Field id="f3" name="f3" label="Ville" icon="pin" value="Le Hvre" error="Ville introuvable : vérifiez l’orthographe." required />
+            <twig:Field id="f4" name="f4" label="Ville" icon="pin" value="Le Havre (76600)" success="Ville reconnue" required />
+            <twig:Field id="f5" name="f5" label="Raison sociale" value="Non modifiable" help="Issue de la base Sirene" disabled />
+            <twig:Field id="f6" name="f6" label="Adresse email" type="email" value="camille@exemple.fr" readonly />
+        </div>
+        <div class="sg-row">
+            <twig:Select id="tri" name="tri" prefix="Trier :" value="pertinence" :options="{pertinence: 'Pertinence', distance: 'Distance', notes: 'Meilleures notes', avis: 'Nombre d’avis', dispo: 'Disponibilité la plus proche'}" />
+        </div>
+        <div class="sg-row">
+            <twig:Checkbox id="c1" name="c1" label="Disponible sous 7 jours" />
+            <twig:Checkbox id="c2" name="c2" label="Disponible sous 7 jours" checked />
+            <twig:Checkbox id="c3" name="c3" label="Disponible sous 7 jours" disabled />
+            <twig:Checkbox id="c4" name="verified" label="Professionnels vérifiés uniquement" locked />
+        </div>
+        <div class="sg-row">
+            <twig:Checkbox id="r1" name="r" type="radio" value="a" label="Disponible sous 7 jours" />
+            <twig:Checkbox id="r2" name="r" type="radio" value="b" label="Disponible sous 7 jours" checked />
+            <twig:Checkbox id="r3" name="r3" type="radio" value="c" label="Disponible sous 7 jours" disabled />
+        </div>
+    </section>
+
+    <section class="sg-section" aria-labelledby="sg-form">
+        <h2 id="sg-form" class="tm-section-title">Formulaire Symfony (thème TM)</h2>
+        {{ form_start(form, {attr: {class: 'sg-form', novalidate: 'novalidate'}}) }}
+            {{ form_widget(form) }}
+            <twig:Button type="submit">Envoyer</twig:Button>
+        {{ form_end(form) }}
+    </section>
+
+    <section class="sg-section" aria-labelledby="sg-badges">
+        <h2 id="sg-badges" class="tm-section-title">Badges</h2>
+        <div class="sg-row">
+            {% for variant in ['verified', 'available', 'new', 'promo', 'featured', 'pending', 'refused', 'neutral', 'direct'] %}
+                <twig:Badge variant="{{ variant }}" />
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="sg-section" aria-labelledby="sg-stepper">
+        <h2 id="sg-stepper" class="tm-section-title">Stepper</h2>
+        <twig:Stepper :steps="['Votre besoin', 'Détails', 'Photos', 'Lieu & délai', 'Coordonnées', 'Récapitulatif']" :current="3" label="Étapes du dépôt de demande" />
+        <twig:Stepper :steps="['Compte', 'Entreprise', 'Métiers', 'Zone', 'Justificatifs']" :current="4" :errorStep="2" label="Étapes de l’inscription professionnelle" />
+    </section>
+
+    <section class="sg-section" aria-labelledby="sg-gauge">
+        <h2 id="sg-gauge" class="tm-section-title">Jauge de crédits</h2>
+        <div class="sg-stack">
+            <twig:CreditGauge :remaining="72" :total="100" state="normal" status="devis restants sur 100 gratuits" ctaHref="#" />
+            <twig:CreditGauge :remaining="14" :total="100" state="alert" status="devis restants — pensez à un forfait" ctaHref="#" />
+            <twig:CreditGauge :remaining="6" :total="100" state="critical" status="devis restants" ctaHref="#" />
+            <twig:CreditGauge :remaining="0" :total="100" state="exhausted" status="Crédit épuisé : souscrivez un forfait pour continuer à envoyer des devis" ctaHref="#" />
+        </div>
+    </section>
+
+    <section class="sg-section" aria-labelledby="sg-cards">
+        <h2 id="sg-cards" class="tm-section-title">Cartes artisan</h2>
+        <p class="tm-caption">Données fictives de démonstration [DEMO].</p>
+        <div class="sg-cards" aria-busy="false">
+            <twig:CardArtisan name="Atelier Exemple [DEMO]" href="#" trades="Plomberie · Chauffage +1" :rating="4.8" :reviewsCount="126" location="Le Havre (76) · 3 km" verified available :favorite="false" />
+            <twig:CardArtisan name="Rénov’Démo [DEMO]" href="#" trades="Peinture · Revêtements" :rating="4.2" :reviewsCount="18" location="Rouen (76) · 12 km" verified :favorite="true" />
+            <twig:CardArtisan name="Nouvel artisan [DEMO]" href="#" trades="Électricité" location="Caen (14) · 8 km" verified />
+            <twig:CardArtisanSkeleton />
+        </div>
+    </section>
+
+    <section class="sg-section" aria-labelledby="sg-empty">
+        <h2 id="sg-empty" class="tm-section-title">États vide et erreur</h2>
+        <div class="sg-columns">
+            <twig:EmptyState title="Aucun plombier trouvé dans un rayon de 30 km" text="Élargissez la zone ou déposez une demande : nous la transmettons aux professionnels de la région." :headingLevel="3">
+                <twig:Button variant="secondary">Élargir à 60 km</twig:Button>
+                <twig:Button>Déposer une demande</twig:Button>
+            </twig:EmptyState>
+            <twig:EmptyState variant="error" title="La recherche est momentanément indisponible" text="Vos filtres sont conservés. Réessayez dans quelques instants." :headingLevel="3">
+                <twig:Button variant="search">Réessayer</twig:Button>
+            </twig:EmptyState>
+        </div>
+    </section>
+
+    <section class="sg-section" aria-labelledby="sg-feedback">
+        <h2 id="sg-feedback" class="tm-section-title">Toasts et modale</h2>
+        <div class="sg-toasts">
+            <twig:Toast variant="success" title="Demande envoyée" message="Vous recevrez jusqu’à 3 devis gratuits." :autoclose="0" />
+            <twig:Toast variant="info" title="Dossier en cours de vérification" message="Délai annoncé : 48 h ouvrées." :autoclose="0" />
+            <twig:Toast variant="warning" title="Il vous reste 20 devis" message="Pensez à choisir un forfait." :autoclose="0" />
+            <twig:Toast variant="error" title="La recherche est momentanément indisponible" message="Réessayez dans quelques instants." />
+        </div>
+        <div class="sg-row">
+            <twig:Button variant="secondary" data-controller="modal-opener" data-modal-opener-dialog-value="sg-modal" data-action="modal-opener#open">Ouvrir la modale</twig:Button>
+        </div>
+        <twig:Modal id="sg-modal" title="Envoyer ce devis ?">
+            <twig:block name="content">
+                <p>Cet envoi consommera 1 devis de votre crédit. Il vous restera 71 devis.</p>
+                <p class="tm-callout"><twig:Icon name="info" size="xs" class="tm-icon--inherit" />Le brouillon reste enregistré si vous annulez.</p>
+            </twig:block>
+            <twig:block name="actions">
+                <twig:Button variant="secondary" data-action="modal#close">Annuler</twig:Button>
+                <twig:Button data-action="modal#close">Envoyer le devis</twig:Button>
+            </twig:block>
+        </twig:Modal>
+    </section>
+</div>
+{% endblock %}
