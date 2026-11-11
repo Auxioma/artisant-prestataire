@@ -61,9 +61,13 @@
 | P-18 | Images WhatsApp à la racine du dépôt | 41 visuels de maquettes (version antérieure : « © 2025 », menus et intitulés différents du CDC) | **Non utilisées** comme source : seules les pages Figma V2 `01`, `10`, `00` font foi (cadrage §2) | — | Confirmer qu'elles sont obsolètes |
 | P-19 | Emplacement du CDC | Le PDF est à la racine ; le cadrage l'attend dans `docs/cdc/` | Copie dans `docs/cdc/` ; l'original reste à la racine en attendant ta décision | — | Porteur |
 | P-20 | Domaines et adresses | `admin.trouvemoi.com`, sous-domaine d'envoi (ex. `mail.trouvemoi.com`), `security@` | À créer au lot 1 (DNS : SPF, DKIM, DMARC, CAA) | — | Porteur |
+| P-21 | S3 de développement | Le cadrage cite MinIO, mais ses images ne sont plus publiées sur Docker Hub (vérifié le 2026-11-11) | **SeaweedFS 3.80** en dev (API S3, URLs pré-signées) ; le code reste agnostique (Flysystem S3) | — | Tech |
+| P-22 | Pondérations de recherche | Annexe G : `search.weights` « à calibrer » | Défaut proposé : métier 0,30 · distance 0,25 · note 0,20 · réactivité 0,10 · complétude 0,10 · disponibilité 0,05 (somme = 1, validée) | `search.weights` | Porteur (calibrage après les premières données) |
+| P-23 | Valeurs booléennes en BO | Les champs booléens du BO envoient `1`/`0` | Saisie normalisée (`1/0`, `true/false`, `on/off`) ; libellés « oui/non » à l'affichage seulement | — | Tech |
 
 ## C. Journal des décisions
 
 | Date | Point | Décision | Par |
 |---|---|---|---|
 | 2026-11-11 | — | Création du document (Étape 0) | Équipe dev |
+| 2026-11-11 | Étape 0 | Lancement du développement demandé par le porteur ; les décisions par défaut s'appliquent en attendant les arbitrages Q5, Q18, Q28, P-02, P-05 | Porteur |

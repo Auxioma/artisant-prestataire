@@ -5,6 +5,19 @@
 > Chaque ticket hérite de la **Definition of Done** (cadrage §7) : CI verte, tests (unitaires domaine, intégration, fonctionnels + IDOR), migrations réversibles, conformité Figma sur les 3 breakpoints, états vides/erreur, traçabilité et contrôles ASVS listés dans la PR.
 > Format de commit : `feat(<module>): <résumé> (<réf CDC>)`.
 
+## Avancement
+
+| Ticket | Statut | Remarque |
+|---|---|---|
+| T-101 Squelette + `Shared` | ✅ | Symfony 7.4.23 LTS, PHP 8.4 (plateforme Composer 8.4.27) |
+| T-102 Docker Compose | ✅ | Configuration validée (`docker compose config`) ; images non construites localement (daemon arrêté). S3 dev = SeaweedFS (P-21) |
+| T-103 CI | ✅ | Toutes les étapes exécutées en local avec succès ; premier passage sur GitHub à faire après la création du dépôt distant |
+| T-104 Bus + outbox | ✅ | |
+| T-105 SettingsProvider | ✅ | 101 clés (annexe G + points en suspens) |
+| T-106 Socle sécurité | 🟨 | En-têtes, sessions, Argon2id, limites, masquage des PII : faits. Nonces CSP utilisés dès T-110 ; limites branchées aux routes au fil des lots |
+| T-107 AuditLog | ✅ | Partitionnement mensuel reporté à T-806 |
+| T-108 → T-116 | ⬜ | Prochaines étapes : design system (Figma), référentiels Catalog, stockage de fichiers |
+
 ## Lot 0 — Cadrage *(ce livrable)*
 | ID | Ticket | Réf. | Taille |
 |---|---|---|---|

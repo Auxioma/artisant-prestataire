@@ -172,7 +172,7 @@ Inscription → Sirene (SIRET valide, actif, unique) → justificatifs (upload �
 
 ## 8. Environnements et exploitation
 
-- **Dev** : Docker Compose avec `frankenphp` (ou php-fpm + caddy), `postgres:16` + PostGIS 3.4, `redis:7`, `getmeili/meilisearch`, `clamav/clamav`, `axllent/mailpit`, `minio/minio`, et un worker Messenger et un Scheduler en conteneurs dédiés.
+- **Dev** : Docker Compose avec `frankenphp` (ou php-fpm + caddy), `postgres:16` + PostGIS 3.4, `redis:7`, `getmeili/meilisearch`, `clamav/clamav`, `axllent/mailpit`, et **SeaweedFS** comme S3 privé de développement (les images MinIO ne sont plus publiées sur Docker Hub, voir P-21), plus des conteneurs dédiés pour le worker Messenger, le relais d'outbox et le Scheduler.
 - **CI** (GitHub Actions) : `composer validate`, `composer audit`, PHP-CS-Fixer (dry-run), PHPStan niveau max (+ `phpstan-symfony`, `phpstan-doctrine`), Deptrac, PHPUnit (Unit, Integration avec services Postgres/Redis), tests fonctionnels, gitleaks, lint Twig/YAML/conteneur, `doctrine:schema:validate`.
 - **Prod** (hébergeur UE à choisir, voir points en suspens) : secrets via `secrets:set` (coffre Symfony, clé de déchiffrement hors dépôt), CDN pour les assets et médias publics, sauvegardes PostgreSQL chiffrées quotidiennes (rétention 30 j) avec test de restauration mensuel, supervision (Sentry auto-hébergé ou UE, sans PII), disponibilité cible 99,5 %.
 - **Observabilité** : Monolog JSON avec processeur de masquage des PII (`PiiMaskingProcessor` : emails, téléphones, IBAN, tokens) ; `request_id` corrélé ; métriques Messenger (profondeur des files, échecs).
