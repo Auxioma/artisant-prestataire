@@ -61,3 +61,12 @@ La **carte artisan horizontale** (résultats P02) et la variante **compacte** se
 - Navigation : motif *disclosure* (`disclosure` : Échap, clic extérieur, un seul menu ouvert), menu mobile en `<dialog>` (focus piégé, retour au burger), en-tête collant réduit à 64 px au défilement (`header`).
 - `tm_path('route')` renvoie `#` tant que la page cible n'existe pas (P-32) ; `tm_setting_int()` pour toute valeur métier affichée (ex. « 100 devis offerts ») ; `tm_social_links()` n'affiche que les réseaux renseignés en BO13 (URL HTTPS sur le domaine du réseau).
 - Planche : `/_dev/layout?variant=visitor|client|artisan|tunnel&credits=72|14|0`.
+
+## Consentement cookies (T-111)
+
+- `<twig:CookieConsent />` est inclus dans `base.html.twig` juste après le lien d'évitement. Le bandeau est rendu masqué ; `consent_controller` l'affiche s'il n'existe pas de cookie `tm_consent` valide (version = `cookies.policy_version`, âge < `cookies.consent_months`).
+- **Charger un traceur** : ne jamais l'insérer directement. Utiliser un espace réservé, activé seulement après consentement :
+  `<script type="text/plain" data-consent-category="audience" data-src="https://…" nonce="{{ csp_nonce('script') }}"></script>` (catégories : `audience`, `social`, `marketing` ; ajouter le domaine à la CSP).
+- **Événements analytics** : `import { track } from '../lib/analytics.js'; track('search_submitted', {…})` — nom en snake_case, ignoré sans consentement « mesure d'audience ».
+- Rouvrir les préférences : tout élément portant `data-cookie-consent-open` (ex. « Gérer mes cookies » du pied de page).
+- Incrémenter `cookies.policy_version` en BO redemande le consentement à tous les visiteurs.

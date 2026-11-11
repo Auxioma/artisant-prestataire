@@ -1,0 +1,48 @@
+/* TM / Bandeau cookies (CMP) — Figma 158:1510 : carte flottante en bas d'écran, non bloquante. */
+@layer components {
+    .tm-cmp__banner {
+        position: fixed;
+        z-index: var(--z-cookie-banner);
+        inset: auto var(--space-4) var(--space-4);
+        display: grid;
+        gap: var(--space-4);
+        max-width: var(--container-max);
+        margin-inline: auto;
+        padding: var(--space-5);
+        border-radius: var(--radius-lg);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-overlay);
+    }
+
+    .tm-cmp__banner[hidden] { display: none; }
+
+    @media (min-width: 768px) {
+        .tm-cmp__banner { grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-6); padding: var(--space-6) 28px; }
+    }
+
+    .tm-cmp__picto { display: none; padding: 10px; border-radius: var(--radius-pill); background: var(--background-light); color: var(--color-heading); }
+    @media (min-width: 768px) { .tm-cmp__picto { display: inline-grid; } }
+
+    .tm-cmp__text { display: grid; gap: var(--space-1); justify-items: start; }
+    .tm-cmp__title { font: var(--type-h3); color: var(--color-heading); }
+    .tm-cmp__body { margin: 0; font: var(--type-body-sm); color: var(--color-text); }
+
+    .tm-cmp__customize {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--color-link);
+        font: var(--type-button);
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    /* Refuser et accepter : même niveau visuel (CNIL) */
+    .tm-cmp__actions { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+    @media (min-width: 768px) { .tm-cmp__actions { display: flex; } }
+
+    .tm-cmp__dialog { width: min(720px, calc(100vw - 2 * var(--space-4))); }
+    .tm-cmp__dialog .tm-modal__title { display: flex; align-items: center; gap: var(--space-2); }
+    .tm-cmp__categories { display: grid; border-block: 1px solid var(--color-border); }
+    .tm-cmp__categories > .tm-switch + .tm-switch { border-top: 1px solid var(--color-border); }
+}

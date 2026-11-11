@@ -26,6 +26,8 @@ final class SettingsPersistenceTest extends KernelTestCase
     {
         self::bootKernel();
         $this->connection = self::getContainer()->get(Connection::class);
+        // Indépendant d'un éventuel app:settings:sync sur la base de test (annulé par la transaction DAMA).
+        $this->connection->executeStatement('DELETE FROM admin.setting');
     }
 
     public function testChangeSettingThroughCommandBusWritesValueHistoryAuditAndOutbox(): void

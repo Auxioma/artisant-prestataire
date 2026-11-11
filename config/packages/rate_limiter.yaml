@@ -12,4 +12,5 @@ framework:
         phone_reveal:    { policy: fixed_window,   limit: 20, interval: '1 day' }
         contact:         { policy: fixed_window,   limit: 5,  interval: '1 hour' }
         newsletter:      { policy: fixed_window,   limit: 5,  interval: '1 hour' }
+        cookie_consent:  { policy: sliding_window, limit: 30, interval: '1 hour' }
         stripe_webhook:  { policy: sliding_window, limit: 300, interval: '1 minute' }

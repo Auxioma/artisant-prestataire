@@ -30,11 +30,15 @@ services:
     App\Shared\Application\Bus\CommandBus: '@App\Shared\Infrastructure\Messenger\MessengerCommandBus'
     App\Shared\Application\Bus\QueryBus: '@App\Shared\Infrastructure\Messenger\MessengerQueryBus'
     App\Shared\Application\Bus\EventBus: '@App\Shared\Infrastructure\Messenger\OutboxEventBus'
+    App\Shared\Application\Security\IpAnonymizer: '@App\Shared\Infrastructure\Security\HmacIpAnonymizer'
     App\Shared\Application\Settings\SettingsProvider: '@App\Administration\Infrastructure\Settings\DbalSettingsProvider'
 
     # Ports du module Administration
     App\Administration\Application\Port\SettingStore: '@App\Administration\Infrastructure\Settings\DbalSettingStore'
     App\Administration\Application\Port\AuditTrail: '@App\Administration\Infrastructure\Audit\DbalAuditTrail'
+
+    # Ports du module Identity
+    App\Identity\Application\Port\ConsentLog: '@App\Identity\Infrastructure\Consent\DbalConsentLog'
 
     App\Shared\Infrastructure\Messenger\MessengerCommandBus:
         arguments: { $bus: '@command.bus' }

@@ -24,6 +24,8 @@
         <link rel="stylesheet" href="{{ asset('styles/components/feedback.css') }}">
         <link rel="stylesheet" href="{{ asset('styles/components/credit-gauge.css') }}">
         <link rel="stylesheet" href="{{ asset('styles/components/card-artisan.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/components/switch.css') }}">
+        <link rel="stylesheet" href="{{ asset('styles/components/cookie-consent.css') }}">
         <link rel="stylesheet" href="{{ asset('styles/layout/header.css') }}">
         <link rel="stylesheet" href="{{ asset('styles/layout/breadcrumb.css') }}">
         <link rel="stylesheet" href="{{ asset('styles/layout/footer.css') }}">
@@ -37,6 +39,8 @@
     </head>
     <body>
         <a class="tm-skip-link" href="#contenu">Aller au contenu</a>
+        {# CMP placée en tête de document : atteignable au clavier dès l'arrivée (CDC §3.2) #}
+        <twig:CookieConsent />
         {% block header %}<twig:Header variant="{{ header_variant ?? 'visitor' }}" active="{{ active_nav ?? null }}" />{% endblock %}
         <main id="contenu" tabindex="-1">
             {% block body %}{% endblock %}

@@ -22,6 +22,8 @@ const ICONS = [
     'file' => 'file-text', 'briefcase' => 'briefcase', 'trophy' => 'trophy', 'alert' => 'circle-alert',
     'info' => 'info', 'eye' => 'eye', 'camera' => 'camera', 'sliders' => 'sliders-horizontal',
     'grid' => 'layout-grid', 'mail' => 'mail', 'share' => 'share-2',
+    // Hors planche d'icônes, utilisées par d'autres composants Figma (« icon/cookie » du bandeau CMP, 158:1512)
+    'cookie' => 'cookie',
 ];
 /** Variantes pleines (fill = currentColor), utilisées par la carte artisan (« icon/star-filled » dans Figma). */
 const FILLED_ICONS = ['starFilled' => 'star', 'heartFilled' => 'heart'];

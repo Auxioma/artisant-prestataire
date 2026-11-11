@@ -129,7 +129,7 @@ final class LayoutTest extends KernelTestCase
         self::assertCount(0, $footer->filter('.tm-footer__socials'), 'Aucun réseau affiché sans URL renseignée en BO');
         self::assertCount(0, $footer->filter('.tm-footer__newsletter'), 'Pas de formulaire sans route de traitement');
         self::assertStringContainsString('Comment sont classés les professionnels ?', $footer->text(), 'Information L111-7');
-        self::assertCount(1, $footer->filter('button[data-action="cookie-consent#open"]'), 'Gérer mes cookies (CMP)');
+        self::assertCount(1, $footer->filter('button[data-cookie-consent-open]'), 'Gérer mes cookies (CMP)');
         self::assertStringContainsString('© '.date('Y'), $footer->text());
     }
 
@@ -137,7 +137,7 @@ final class LayoutTest extends KernelTestCase
     {
         $connection = self::getContainer()->get(Connection::class);
         \assert($connection instanceof Connection);
-        $connection->executeStatement("INSERT INTO admin.setting (key, value, type, updated_at) VALUES ('social.linkedin', '\"https://www.linkedin.com/company/trouvemoi\"', 'nullable_url', now())");
+        $connection->executeStatement("INSERT INTO admin.setting (key, value, type, updated_at) VALUES ('social.linkedin', '\"https://www.linkedin.com/company/trouvemoi\"', 'nullable_url', now()) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value");
         self::getContainer()->get('cache.settings')->clear();
         self::assertSame(1, DbalValue::int($connection->fetchOne("SELECT count(*) FROM admin.setting WHERE key = 'social.linkedin'")));
 

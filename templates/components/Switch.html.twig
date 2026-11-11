@@ -1,0 +1,15 @@
+{#
+    TM / Interrupteur (Figma 310:1364) : On · Off · Verrouillé. Case native avec role="switch" (état annoncé « activé / désactivé »).
+    `locked` : toujours actif, non modifiable (ex. cookies nécessaires).
+#}
+{% props id, name, label, description = null, checked = false, locked = false, value = '1' %}
+<div {{ attributes.defaults({class: 'tm-switch' ~ (locked ? ' tm-switch--locked')}) }}>
+    <div class="tm-switch__text">
+        <label class="tm-switch__label" for="{{ id }}">{{ label }}</label>
+        {% if description %}<p class="tm-switch__description" id="{{ id }}_desc">{{ description }}</p>{% endif %}
+    </div>
+    {% if locked %}<span class="tm-switch__state">Toujours actif</span>{% endif %}
+    <input class="tm-switch__input" type="checkbox" role="switch" id="{{ id }}" name="{{ name }}" value="{{ value }}"
+        {%- if checked or locked %} checked{% endif %}{% if locked %} disabled aria-disabled="true"{% endif %}
+        {%- if description %} aria-describedby="{{ id }}_desc"{% endif %}>
+</div>

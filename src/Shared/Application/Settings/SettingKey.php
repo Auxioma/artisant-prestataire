@@ -127,6 +127,7 @@ enum SettingKey: string
     case NotificationsSmsDailyCap = 'notifications.sms_daily_cap';
     case NotificationsSmsEnabled = 'notifications.sms_enabled';
     case CookiesConsentMonths = 'cookies.consent_months';
+    case CookiesPolicyVersion = 'cookies.policy_version';
     case NewsletterProvider = 'newsletter.provider';
 
     // Identité de la plateforme (BO13) — réseaux sociaux du pied de page (vides = non affichés)
@@ -252,6 +253,7 @@ enum SettingKey: string
             self::NotificationsMessageEmailThrottleMin => $d(T::Integer, 15, 'Regroupement des emails de messages (min)', 1, 1440),
             self::NotificationsSmsDailyCap => $d(T::Integer, 3, 'SMS maximum par utilisateur et par jour', 0, 50),
             self::NotificationsSmsEnabled => $d(T::Boolean, false, 'Notifications SMS (V2)', proposed: true),
+            self::CookiesPolicyVersion => $d(T::Integer, 1, 'Version de la politique cookies (l\'incrémenter redemande le consentement)', 1, 10_000, proposed: true),
             self::CookiesConsentMonths => $d(T::Integer, 6, 'Durée du consentement cookies (mois)', 1, 13),
             self::NewsletterProvider => $d(T::Choice, 'brevo', 'Outil de newsletter (Q25)', choices: ['brevo', 'mailchimp', 'internal'], proposed: true),
 

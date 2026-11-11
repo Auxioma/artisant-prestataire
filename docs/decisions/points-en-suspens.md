@@ -73,12 +73,15 @@
 | P-30 | Sélecteur « France ▾ » du pied de page | Présent en Figma, absent du CDC (multilingue en V3, annexe H) | Non affiché au MVP | — | Porteur |
 | P-31 | Logo officiel | Figma : « détouré depuis le fichier fourni ; à remplacer par le SVG officiel » | Fichiers fournis `logos/*.png` déclinés en WebP ×2/×3 (21 Ko) ; remplacement par le SVG dès réception | — | **Porteur : fournir le SVG** |
 | P-32 | Liens vers des pages pas encore développées | En-tête et pied de page référencent des pages livrées aux lots 2 à 8 | `tm_path()` renvoie « # » tant que la route n'existe pas ; le formulaire newsletter n'est rendu que si sa route existe ; noms de routes réservés dans `Header`/`Footer` | — | Tech |
+| P-33 | Panneau de préférences cookies | Figma 395:16148 : catégories « essentiels / performance / personnalisation / marketing », **performance et personnalisation pré-activées**, « Tout accepter » mis en avant (orange) face à « Tout refuser » | **CDC §3.2 + CNIL** : catégories nécessaires / mesure d'audience / réseaux sociaux et vidéos / marketing, **aucune pré-activée**, « Tout accepter » et « Tout refuser » de même niveau (comme dans le bandeau Figma 158:1510) | `cookies.consent_months`, `cookies.policy_version` *(proposé)* | Porteur / DPO |
+| P-34 | Liste des traceurs et textes de la CMP | CDC : textes, catégories, durée et liste des traceurs administrables (BO > Paramètres > Cookies) | Textes par défaut dans le composant ; la durée et la version sont déjà des paramètres ; l'éditeur BO des textes et de la liste des traceurs est rattaché au lot 8 (T-804) | — | Porteur |
 
 ## C. Journal des décisions
 
 | Date | Point | Décision | Par |
 |---|---|---|---|
 | 2026-11-11 | — | Création du document (Étape 0) | Équipe dev |
+| 2026-11-11 | P-33, P-34 | CMP conforme CNIL (aucune catégorie pré-activée, refus au même niveau) en écart avec le panneau Figma | Équipe dev |
 | 2026-11-11 | P-28 à P-32 | En-tête : CDC prioritaire sur Figma pour le contenu des espaces connectés ; pied de page aux couleurs du CDC | Équipe dev |
 | 2026-11-11 | P-05, P-24 à P-27 | Palette et typographie de la Figma V2 (audit V2.1) appliquées au T-108, à valider au titre de RG-001 | Équipe dev |
 | 2026-11-11 | Étape 0 | Lancement du développement demandé par le porteur ; les décisions par défaut s'appliquent en attendant les arbitrages Q5, Q18, Q28, P-02, P-05 | Porteur |

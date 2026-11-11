@@ -59,7 +59,7 @@
                         {% for link in column.links %}
                             <li>
                                 {% if link.consent is defined %}
-                                    <button type="button" class="tm-footer__link" data-action="cookie-consent#open">{{ link.label }}</button>
+                                    <button type="button" class="tm-footer__link" data-cookie-consent-open aria-haspopup="dialog">{{ link.label }}</button>
                                 {% else %}
                                     <a class="tm-footer__link" href="{{ link.href }}">{{ link.label }}</a>
                                 {% endif %}
