@@ -1,12 +1,26 @@
-# see https://symfony.com/doc/current/reference/configuration/framework.html
 framework:
     secret: '%env(APP_SECRET)%'
+    trusted_proxies: '%env(default::TRUSTED_PROXIES)%'
+    trusted_headers: ['x-forwarded-for', 'x-forwarded-proto', 'x-forwarded-port', 'x-forwarded-host']
 
-    # Note that the session will be started ONLY if you read or write from it.
-    session: true
+    # Cadrage §5.1 : cookies Secure, HttpOnly, SameSite=Lax (Strict pour le back-office, lot 2 / T-209).
+    session:
+        name: '%env(SESSION_COOKIE_NAME)%'
+        cookie_secure: auto
+        cookie_httponly: true
+        cookie_samesite: lax
+        cookie_lifetime: 0
+        gc_maxlifetime: 7200
 
-    #esi: true
-    #fragments: true
+    http_method_override: false
+    handle_all_throwables: true
+    php_errors:
+        log: true
+
+when@prod:
+    framework:
+        session:
+            cookie_secure: true
 
 when@test:
     framework:
