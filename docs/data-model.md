@@ -88,7 +88,7 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 | `artisan_job` | artisan_id, job_id, is_main | **PK** (artisan_id, job_id) · **UQ** (artisan_id) WHERE is_main · nombre maximum (`pro.max_jobs`) contrôlé dans le domaine |
 | `service_area` | artisan_id (PK), mode (`radius`/`list`), center `geography(Point)` (centroïde de commune, RG-022), radius_km, departments text[], communes text[] | **CK** radius entre `pro.radius_min/max_km` (contrôlé dans le domaine, bornes en paramètre) |
 | `service_area_commune` | artisan_id, insee | **PK** (artisan_id, insee) · **IX** (insee) → diffusion RG-062 et recherche RG-021 |
-| `document` 🔒 | id, artisan_id, type, storage_key, kek_id, wrapped_dek, mime, size, sha256, expires_at, status (`quarantined`/`pending_review`/`approved`/`rejected`/`expired`/`shredded`), reviewed_by, reviewed_at, reason | **IX** (artisan_id, type) · **IX** (expires_at) WHERE status='approved' → alertes J-30/J-7/J0 (RG-032) et masquage à +15 j (RG-130) |
+| `document` 🔒 | id, artisan_id, type, file_id → `shared.stored_file` (stockage, empreinte, clé enveloppée), expires_at, status (`quarantined`/`pending_review`/`approved`/`rejected`/`expired`/`shredded`), reviewed_by, reviewed_at, reason | **IX** (artisan_id, type) · **IX** (expires_at) WHERE status='approved' → alertes J-30/J-7/J0 (RG-032) et masquage à +15 j (RG-130) |
 | `verification_decision` | id, artisan_id, admin_id, decision (`approved`/`rejected`/`more_info`), reason_code, comment, created_at | append-only (RG-130) |
 | `portfolio_project` / `certification` / `service` | id, artisan_id, … | **IX** artisan_id |
 | `availability_rule` | id, artisan_id, rrule, start_time, end_time, valid_from, valid_to | — |
@@ -102,7 +102,7 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 |---|---|---|
 | `quote_request` | id, number (lisible), client_id, job_id, target_artisan_id NULL, broadcast_to_others, answers (jsonb, validé par le schéma du questionnaire), description, budget_range, address_id 🔒, city_insee, location `geography(Point)` (centroïde ou adresse géocodée, jamais exposée), urgency, desired_date, status (`draft`/`pending_moderation`/`open`/`full`/`awarded`/`completed`/`expired`/`cancelled`/`rejected`), **max_quotes (figé)**, active_quotes_count, risk_score, risk_signals (jsonb), expires_at, reopen_count, duplicate_key (hash métier + adresse), submitted_at, version | **CK** active_quotes_count BETWEEN 0 AND max_quotes · **IX** (status, job_id, city_insee) · **IX** (client_id, status) (RG-065 : nombre de demandes ouvertes) · **IX** (duplicate_key, submitted_at) (anti-doublon 72 h) · **IX** (expires_at) WHERE status IN ('open','full') · **verrou** `FOR UPDATE` à l'envoi d'un devis (RG-101) |
 | `request_draft` | id, owner (user_id ou anon_token_hash), payload (jsonb), email_for_reminder, reminder_consent, updated_at, expires_at | purge à `requests.draft_retention_days` |
-| `request_attachment` | id, request_id, storage_key, mime, size, status (`quarantined`/`available`/`rejected`), position | max `requests.max_photos` (domaine) |
+| `request_attachment` | id, request_id, file_id → `shared.stored_file`, position (statut technique porté par le fichier) | max `requests.max_photos` (domaine) |
 | `request_addendum` | id, request_id, body, created_at | compléments après le premier devis (C02) |
 | `request_dispatch` | request_id, artisan_id, reason (`eligible`/`direct`), notified_at, viewed_at, ignored_at | **PK** (request_id, artisan_id) · **IX** (artisan_id, notified_at DESC) → PR02 |
 | `client_artisan_block` | client_id, artisan_id | **PK** — exclusion de la diffusion |
@@ -162,6 +162,14 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 | `admin.export_job` | id, admin_id, kind, filters, contains_pii, status, file_key, expires_at | journalisé (BO15.2) |
 | `admin.support_ticket` (V2) | … | BO16 |
 | `shared.outbox_message` | id, type, payload, occurred_at, dispatched_at | **IX** (dispatched_at) WHERE dispatched_at IS NULL |
+
+### 2.9 `shared.stored_file` (T-116, ADR-0008)
+
+Registre commun à tous les fichiers (justificatifs, photos de demande, d'avis et de portfolio, pièces jointes, PDF de devis). Les tables métier le référencent par `file_id` au lieu de dupliquer clé de stockage, empreinte et clé chiffrée : un seul pipeline (quarantaine → antivirus → chiffrement) et une seule destruction (crypto-shredding).
+
+| Table | Colonnes principales | Contraintes |
+|---|---|---|
+| `stored_file` 🔒 | id (= clé d'objet S3), purpose, status (`quarantined`/`available`/`rejected`/`shredded`), mime (liste blanche), size, sha256, original_name (nettoyé, ≤ 120, informatif), kek_id, wrapped_dek, rejected_reason, created_at, scanned_at, shredded_at | **CK** kek_id et wrapped_dek présents ensemble · **CK** justificatif disponible ⇒ chiffré · **CK** détruit ⇒ plus de clé · **IX** quarantaine (created_at) · **IX** sha256 · **IX** kek_id (rotation) |
 
 ## 2bis. Mapping Doctrine (T-112)
 

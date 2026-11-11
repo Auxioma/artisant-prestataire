@@ -15,4 +15,5 @@ return [
     Doctrine\Bundle\FixturesBundle\DoctrineFixturesBundle::class => ['dev' => true, 'test' => true],
     Symfony\Bundle\MakerBundle\MakerBundle::class => ['dev' => true],
     DAMA\DoctrineTestBundle\DAMADoctrineTestBundle::class => ['test' => true],
+    League\FlysystemBundle\FlysystemBundle::class => ['all' => true],
 ];

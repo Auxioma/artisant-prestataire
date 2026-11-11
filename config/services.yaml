@@ -27,6 +27,8 @@ services:
             - '../src/Catalog/Infrastructure/Geo/{GeoApiGouvSource,JsonFileGeoSource,GeoApiPayloadParser}.php'
             - '../src/Search/Application/Port/{JobDocument,PlaceDocument,SearchUnavailable}.php'
             - '../src/Shared/Application/Integration/'
+            - '../src/Shared/Application/Storage/{StoredFile,WrappedKey,RejectedUpload,StoredFileNotFound}.php'
+            - '../src/Shared/Application/Storage/Port/SanitizedFile.php'
             - '../src/Shared/Infrastructure/DependencyInjection/'
             - '../src/Catalog/Application/Geo/Port/GeocodedAddress.php'
             - '../src/ArtisanProfile/Application/Port/CompanyRecord.php'
@@ -42,6 +44,12 @@ services:
     App\Shared\Application\Transaction\TransactionManager: '@App\Shared\Infrastructure\Persistence\DbalTransactionManager'
     App\Shared\Application\Security\IpAnonymizer: '@App\Shared\Infrastructure\Security\HmacIpAnonymizer'
     App\Shared\Application\Settings\SettingsProvider: '@App\Administration\Infrastructure\Settings\DbalSettingsProvider'
+    # Stockage de fichiers (ADR-0008)
+    App\Shared\Application\Storage\Port\ObjectStorage: '@App\Shared\Infrastructure\Storage\FlysystemObjectStorage'
+    App\Shared\Application\Storage\Port\FileSanitizer: '@App\Shared\Infrastructure\Storage\NativeFileSanitizer'
+    App\Shared\Application\Storage\Port\AntivirusScanner: '@App\Shared\Infrastructure\Storage\ClamAvScanner'
+    App\Shared\Application\Storage\Port\EnvelopeEncryption: '@App\Shared\Infrastructure\Storage\SodiumEnvelopeEncryption'
+    App\Shared\Application\Storage\Port\StoredFileRepository: '@App\Shared\Infrastructure\Storage\DbalStoredFileRepository'
 
     # Ports du module Administration
     App\Administration\Application\Port\SettingStore: '@App\Administration\Infrastructure\Settings\DbalSettingStore'
@@ -101,6 +109,28 @@ when@test:
         test.query_bus:
             alias: App\Shared\Application\Bus\QueryBus
             public: true
+        # Pipeline de fichiers : conservé dans le conteneur de test avant ses premiers usages (T-207, T-402).
+        test.storage.uploader:
+            alias: App\Shared\Application\Storage\FileUploader
+            public: true
+        test.storage.reader:
+            alias: App\Shared\Application\Storage\FileReader
+            public: true
+        test.storage.shredder:
+            alias: App\Shared\Application\Storage\FileShredder
+            public: true
+        test.storage.object_storage:
+            alias: App\Shared\Application\Storage\Port\ObjectStorage
+            public: true
+        test.storage.quarantine:
+            alias: quarantine.storage
+            public: true
+        test.storage.documents:
+            alias: documents.storage
+            public: true
+        # Antivirus de test (reconnaît la chaîne EICAR) ; ClamAvScanner réel couvert par ClamAvScannerTest.
+        App\Shared\Application\Storage\Port\AntivirusScanner:
+            class: App\Tests\Support\Fake\EicarAntivirusScanner
         # Clients sortants inspectés par ExternalHttpClientsTest (anti-SSRF).
         test.geo_api.client:
             alias: geo_api.client

@@ -14,6 +14,7 @@
 | Justificatifs artisans (Kbis, assurance, **pièce d'identité**) | Critique (usurpation d'identité) | ArtisanProfile |
 | Crédits et abonnements | Haute (financier) | Billing |
 | Clés Stripe, Brevo, KEK de chiffrement | Critique | coffre de secrets |
+| KEK de chiffrement des fichiers (`STORAGE_KEKS`) | Critique | coffre de secrets uniquement ; versionnées (`kek_id` stocké avec chaque fichier), rotation par ajout d'une KEK courante ; la clé nulle de développement est refusée en production |
 | Clés Sirene (INSEE) et Turnstile (secrète) | Élevée | coffre de secrets (`INSEE_SIRENE_API_KEY`, `TURNSTILE_SECRET_KEY`) ; le dépôt ne contient que les clés de test publiques de Cloudflare |
 | Clés Meilisearch (recherche / administration) | Élevée | coffre de secrets ; clé de recherche limitée à l'action `search` sur les index `tm_*`, jamais exposée au navigateur (le front passe par `/api/suggestions`) ; clé d'administration réservée au worker et à `app:search:reindex` ; clé maître hors de l'application |
 | Avis certifiés, classement | Haute (réputation, obligations L111-7) | Review, Search |

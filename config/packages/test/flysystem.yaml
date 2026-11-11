@@ -1,0 +1,13 @@
+# Tests : stockage en mémoire (aucune dépendance à S3).
+flysystem:
+    storages:
+        quarantine.storage:
+            adapter: 'memory'
+            options: ~
+        documents.storage:
+            adapter: 'memory'
+            options: ~
+            temporary_url_generator: 'App\Tests\Support\Fake\FakeTemporaryUrlGenerator'
+
+services:
+    App\Tests\Support\Fake\FakeTemporaryUrlGenerator: ~

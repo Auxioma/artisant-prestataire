@@ -2,9 +2,10 @@
 # Image applicative TrouveMoi — FrankenPHP (Caddy + PHP 8.4). Cibles : dev (Xdebug off par défaut) et prod.
 
 # PHP 8.4.27 minimum (roave/security-advisories) — tag figé sur le patch PHP exact.
+# gd + exif : ré-encodage des images téléversées (ADR-0008 : EXIF retiré, polyglottes neutralisés).
 FROM dunglas/frankenphp:1.13.3-php8.4.27-bookworm AS base
 WORKDIR /app
-RUN install-php-extensions intl pdo_pgsql opcache apcu redis zip sodium \
+RUN install-php-extensions intl pdo_pgsql opcache apcu redis zip sodium gd exif \
  && useradd --uid 1000 --create-home app \
  && chown -R app:app /app /data /config
 COPY --link docker/php/conf.d/10-app.ini $PHP_INI_DIR/conf.d/

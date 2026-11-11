@@ -3,7 +3,7 @@
     {
       "name": "trouvemoi-dev",
       "credentials": [{ "accessKey": "trouvemoi", "secretKey": "trouvemoi-dev-secret" }],
-      "actions": ["Read", "Write", "List", "Tagging"]
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
     }
   ]
 }

@@ -37,6 +37,14 @@ curl 'http://localhost:8090/api/suggestions?type=lieu&q=st%20etienne'
 
 Sirene (INSEE), géocodage BAN (Géoplateforme IGN), VIES, Turnstile et HIBP passent chacun par un client HTTP dédié à hôte fixe, interdit de réseau privé (anti-SSRF). En développement, Turnstile utilise les clés de test publiques de Cloudflare (toujours valides) ; Sirene demande une clé du portail des API de l'INSEE (`INSEE_SIRENE_API_KEY` dans `.env.local`, ou `secrets:set` en production), sans quoi le service est signalé indisponible.
 
+## Stockage de fichiers
+
+```bash
+docker compose exec php bin/console app:storage:setup   # crée les buckets privés (SeaweedFS en dev)
+```
+
+Tout fichier passe par `FileUploader` (contrôle, ré-encodage, quarantaine), puis par l'analyse ClamAV dans le worker, avant d'être disponible. Les justificatifs sont chiffrés avec la clé maîtresse `STORAGE_KEKS`. La valeur de `.env` est une clé nulle de développement, refusée en production. Pour générer une vraie clé : `php -r 'echo "k1:".base64_encode(random_bytes(32));'`, puis `bin/console secrets:set STORAGE_KEKS` et `STORAGE_KEK_CURRENT=k1`. Pour une rotation, ajouter `;k2:…` et passer `STORAGE_KEK_CURRENT` à `k2` : les anciens fichiers restent lisibles.
+
 ## Qualité (identique à la CI)
 
 ```bash
