@@ -1,0 +1,38 @@
+
+###> symfony/framework-bundle ###
+/.env.local
+/.env.local.php
+/.env.*.local
+/config/secrets/prod/prod.decrypt.private.php
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> symfony/asset-mapper ###
+/public/assets/
+/assets/vendor/
+###< symfony/asset-mapper ###
+
+###> friendsofphp/php-cs-fixer ###
+/.php-cs-fixer.php
+/.php-cs-fixer.cache
+###< friendsofphp/php-cs-fixer ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+/.phpunit.cache/
+###< phpunit/phpunit ###
+
+###> trouvemoi ###
+# Sources de travail hors dépôt (maquettes antérieures, doublon du CDC — la version suivie est docs/cdc/)
+/WhatsApp Image *.jpeg
+/TrouveMoi_Cahier_des_charges_fonctionnel.pdf
+# Outillage local
+/.php-cs-fixer.cache
+/var/deptrac/
+/var/phpstan/
+.env.local
+.env.*.local
+/config/secrets/*/*.decrypt.private.php
+###< trouvemoi ###
