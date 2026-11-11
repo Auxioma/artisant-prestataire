@@ -18,6 +18,9 @@ interface IdentityMailer
     /** E-06 : alerte envoyée à l'ancienne adresse après un changement. */
     public function sendEmailChangedAlert(Email $oldAddress, string $firstName, \DateTimeImmutable $at): void;
 
+    /** E-05 : connexion depuis un appareil jamais utilisé pour ce compte. */
+    public function sendNewDeviceAlert(Email $to, string $firstName, string $device, \DateTimeImmutable $at): void;
+
     /** Inscription tentée avec l'adresse d'un compte existant (anti-énumération, A02). */
     public function sendExistingAccountNotice(Email $to, string $firstName): void;
 }

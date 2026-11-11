@@ -97,19 +97,6 @@
         </section>
     </div>
 
-    <section class="tm-container tm-signup-steps" aria-labelledby="etapes-titre">
-        <h2 id="etapes-titre" class="tm-section-title">Comment ça marche ?</h2>
-        <ol class="tm-steps">
-            <li class="tm-steps__item"><span class="tm-steps__badge"><span class="tm-steps__number">1</span><span class="tm-steps__icon"><twig:Icon name="userPlus" /></span></span><strong>Je crée mon compte</strong><span>(en 1 minute)</span></li>
-            <li class="tm-steps__item"><span class="tm-steps__badge"><span class="tm-steps__number">2</span><span class="tm-steps__icon"><twig:Icon name="calCheck" /></span></span><strong>Je complète mon profil</strong><span>(particulier ou professionnel)</span></li>
-            <li class="tm-steps__item"><span class="tm-steps__badge"><span class="tm-steps__number">3</span><span class="tm-steps__icon"><twig:Icon name="rocket" /></span></span><strong>Je profite de tous les services TrouveMoi</strong></li>
-        </ol>
-        <ul class="tm-reassurance">
-            <li><twig:Icon name="shield" trade />Données sécurisées et confidentielles</li>
-            <li><twig:Icon name="users" trade />Un compte unique pour tous vos projets</li>
-            <li><twig:Icon name="zap" trade />Simple, rapide et gratuit</li>
-            <li><twig:Icon name="handshake" trade />Une communauté locale et nationale</li>
-        </ul>
-    </section>
+    {{ include('auth/_how_it_works.html.twig', {reassurance: [['shield', 'Données sécurisées et confidentielles'], ['users', 'Un compte unique pour tous vos projets'], ['zap', 'Simple, rapide et gratuit'], ['handshake', 'Une communauté locale et nationale']]}) }}
 </div>
 {% endblock %}

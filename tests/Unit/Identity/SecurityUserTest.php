@@ -50,12 +50,12 @@ final class SecurityUserTest extends TestCase
     public function testCheckerRejectsInaccessibleAccounts(): void
     {
         $checker = new UserChecker();
-        $checker->checkPreAuth(self::user(status: UserStatus::PendingEmail, verified: false));
+        $checker->checkPostAuth(self::user(status: UserStatus::PendingEmail, verified: false));
 
         $refused = [];
         foreach ([UserStatus::Suspended, UserStatus::DeletionRequested, UserStatus::Anonymized] as $status) {
             try {
-                $checker->checkPreAuth(self::user(status: $status));
+                $checker->checkPostAuth(self::user(status: $status));
             } catch (CustomUserMessageAccountStatusException) {
                 $refused[] = $status;
             }

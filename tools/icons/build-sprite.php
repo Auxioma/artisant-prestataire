@@ -28,6 +28,8 @@ const ICONS = [
     'checkC' => 'circle-check', 'crown' => 'crown', 'userPlus' => 'user-plus', 'users' => 'users',
     'phone' => 'phone', 'lock' => 'lock', 'eyeOff' => 'eye-off', 'calCheck' => 'calendar-check',
     'rocket' => 'rocket', 'handshake' => 'handshake', 'building' => 'building-2',
+    // T-204 (A04)
+    'logIn' => 'log-in',
 ];
 /** Variantes pleines (fill = currentColor), utilisées par la carte artisan (« icon/star-filled » dans Figma). */
 const FILLED_ICONS = ['starFilled' => 'star', 'heartFilled' => 'heart'];

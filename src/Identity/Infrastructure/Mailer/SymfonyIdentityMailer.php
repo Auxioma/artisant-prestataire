@@ -46,6 +46,16 @@ final readonly class SymfonyIdentityMailer implements IdentityMailer
         ]);
     }
 
+    public function sendNewDeviceAlert(Email $to, string $firstName, string $device, \DateTimeImmutable $at): void
+    {
+        $this->send($to, 'Nouvelle connexion à votre compte TrouveMoi', 'email/identity/new_device', 'E-05', [
+            'first_name' => $firstName,
+            'device' => $device,
+            'logged_at' => $at,
+            'reset_link' => $this->absolute('identity_password_forgotten'),
+        ]);
+    }
+
     public function sendExistingAccountNotice(Email $to, string $firstName): void
     {
         $this->send($to, 'Vous avez déjà un compte TrouveMoi', 'email/identity/existing_account', 'A02-existant', [

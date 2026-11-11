@@ -1,0 +1,25 @@
+{#- Accueil provisoire (en attendant P01, lot 3) : aucun contenu fictif, seulement les parcours déjà disponibles. -#}
+{% extends 'base.html.twig' %}
+
+{% block title %}TrouveMoi.com — Artisans & Prestataires{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+
+{% block body %}
+<div class="tm-auth-page">
+    <twig:PageBanner title="Trouvez un artisan de confiance" subtitle="La plateforme TrouveMoi est en cours de construction. Les premiers parcours sont déjà ouverts." image="images/auth/a02-banner" />
+    <section class="tm-container tm-auth-message">
+        <div class="tm-state-card tm-card-panel">
+            {% if app.user %}
+                <h1 class="tm-state-card__title">Bonjour !</h1>
+                <p class="tm-body-sm">Vous êtes connecté avec {{ app.user.userIdentifier }}. Votre espace personnel arrive très bientôt.</p>
+                <twig:Button variant="secondary" href="{{ logout_path('main') }}" block>Se déconnecter</twig:Button>
+            {% else %}
+                <h1 class="tm-state-card__title">Bienvenue sur TrouveMoi</h1>
+                <p class="tm-body-sm">Créez votre compte dès maintenant, ou connectez-vous si vous en avez déjà un.</p>
+                <twig:Button href="{{ path('identity_register_choice') }}" block>Créer mon compte</twig:Button>
+                <twig:Button variant="secondary" href="{{ path('identity_login') }}" block>Se connecter</twig:Button>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

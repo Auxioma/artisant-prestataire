@@ -93,6 +93,8 @@ services:
     App\Identity\Application\Port\DisposableEmailDetector: '@App\Identity\Infrastructure\Antifraud\FileDisposableEmailDetector'
     App\Identity\Application\Port\EmailTokens: '@App\Identity\Infrastructure\EmailVerification\DbalEmailTokens'
     App\Identity\Application\Port\IdentityMailer: '@App\Identity\Infrastructure\Mailer\SymfonyIdentityMailer'
+    App\Identity\Application\Port\KnownDevices: '@App\Identity\Infrastructure\Login\DbalKnownDevices'
+    App\Identity\Application\Port\LoginProtection: '@App\Identity\Infrastructure\Security\SecurityLoginProtection'
 
     App\Shared\Infrastructure\Messenger\MessengerCommandBus:
         arguments: { $bus: '@command.bus' }

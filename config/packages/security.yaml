@@ -20,6 +20,31 @@ security:
             lazy: true
             provider: app_users
             user_checker: App\Identity\Infrastructure\Security\UserChecker
+            entry_point: form_login
+            # A04 : formulaire, CSRF, redirection en liste blanche (LoginSuccessHandler) ; RG-045 : LoginSubscriber
+            form_login:
+                login_path: identity_login
+                check_path: identity_login
+                username_parameter: _username
+                password_parameter: _password
+                enable_csrf: true
+                csrf_token_id: authenticate
+                success_handler: App\Identity\Infrastructure\Security\LoginSuccessHandler
+            # « Rester connecté » : cookie signé (empreinte + e-mail) — invalide dès un changement de mot de passe ou
+            # d'adresse. Durée : auth.remember_me_days (30 j par défaut) ; la valeur ci-dessous en est le plafond (P-44).
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 2592000
+                remember_me_parameter: _remember_me
+                signature_properties: ['password', 'email']
+                secure: auto
+                samesite: lax
+            logout:
+                path: identity_logout
+                target: public_home
+                enable_csrf: true
+                csrf_token_id: logout
+                invalidate_session: true
 
     access_control: []
 

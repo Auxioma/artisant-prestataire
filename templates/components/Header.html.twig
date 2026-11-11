@@ -5,6 +5,8 @@
     Les compteurs et crédits sont fournis par l'application (aucune valeur métier dans le gabarit).
 #}
 {% props variant = 'visitor', active = null, accountName = null, unreadMessages = 0, unreadNotifications = 0, credits = null, quitHref = null %}
+{# Lien de déconnexion à jeton CSRF de session : seulement pour un utilisateur connecté (planches de démonstration : '#') #}
+{% set logout_href = app.user ? logout_path('main') : '#' %}
 {% set nav = [
     {key: 'home', label: 'Accueil', href: tm_path('public_home')},
     {key: 'categories', label: 'Catégories', mega: true},
@@ -131,7 +133,7 @@
                                     <li><a class="tm-dropdown__item" href="{{ item.href }}"><twig:Icon name="{{ item.icon }}" size="xs" class="tm-icon--inherit" />{{ item.label }}</a></li>
                                 {% endfor %}
                             </ul>
-                            <a class="tm-dropdown__item tm-dropdown__item--danger" href="{{ tm_path('identity_logout') }}"><twig:Icon name="x" size="xs" class="tm-icon--inherit" />Se déconnecter</a>
+                            <a class="tm-dropdown__item tm-dropdown__item--danger" href="{{ logout_href }}"><twig:Icon name="x" size="xs" class="tm-icon--inherit" />Se déconnecter</a>
                         </div>
                     </div>
                 {% endif %}
@@ -183,7 +185,7 @@
         <div class="tm-mobile-menu__actions">
             {% if connected %}
                 {% if variant == 'client' %}<twig:Button href="{{ tm_path('request_new') }}" block>Déposer une demande</twig:Button>{% endif %}
-                <twig:Button variant="secondary" href="{{ tm_path('identity_logout') }}" block>Se déconnecter</twig:Button>
+                <twig:Button variant="secondary" href="{{ logout_href }}" block>Se déconnecter</twig:Button>
             {% else %}
                 <twig:Button variant="secondary" href="{{ tm_path('identity_login') }}" block>Se connecter</twig:Button>
                 <twig:Button href="{{ tm_path('identity_register_choice') }}" block>Créer mon compte</twig:Button>

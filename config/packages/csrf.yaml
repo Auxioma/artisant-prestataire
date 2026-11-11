@@ -5,7 +5,8 @@ framework:
             token_id: submit
 
     csrf_protection:
+        # Jetons « sans état » (vérification de l'en-tête Origin) : formulaires et connexion (POST).
+        # La déconnexion est un lien GET (en-tête, menu) : jeton lié à la session, transmis dans l'URL par logout_path().
         stateless_token_ids:
             - submit
             - authenticate
-            - logout

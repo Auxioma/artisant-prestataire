@@ -1,0 +1,12 @@
+{#- « Comment ça marche ? » + réassurance (Figma A02 393:16421 / A04) ; paramètre : reassurance = [[icône, texte], …]. -#}
+<section class="tm-container tm-signup-steps" aria-labelledby="etapes-titre">
+        <h2 id="etapes-titre" class="tm-section-title">Comment ça marche ?</h2>
+        <ol class="tm-steps">
+            <li class="tm-steps__item"><span class="tm-steps__badge"><span class="tm-steps__number">1</span><span class="tm-steps__icon"><twig:Icon name="userPlus" /></span></span><strong>Je crée mon compte</strong><span>(en 1 minute)</span></li>
+            <li class="tm-steps__item"><span class="tm-steps__badge"><span class="tm-steps__number">2</span><span class="tm-steps__icon"><twig:Icon name="calCheck" /></span></span><strong>Je complète mon profil</strong><span>(particulier ou professionnel)</span></li>
+            <li class="tm-steps__item"><span class="tm-steps__badge"><span class="tm-steps__number">3</span><span class="tm-steps__icon"><twig:Icon name="rocket" /></span></span><strong>Je profite de tous les services TrouveMoi</strong></li>
+        </ol>
+        <ul class="tm-reassurance">
+            {% for item in reassurance %}<li><twig:Icon name="{{ item[0] }}" trade />{{ item[1] }}</li>{% endfor %}
+        </ul>
+    </section>
