@@ -172,6 +172,15 @@ Registre commun à tous les fichiers (justificatifs, photos de demande, d'avis e
 |---|---|---|
 | `stored_file` 🔒 | id (= clé d'objet S3), purpose, status (`quarantined`/`available`/`rejected`/`shredded`), mime (liste blanche), size, sha256, original_name (nettoyé, ≤ 120, informatif), kek_id, wrapped_dek, rejected_reason, created_at, scanned_at, shredded_at | **CK** kek_id et wrapped_dek présents ensemble · **CK** justificatif disponible ⇒ chiffré · **CK** détruit ⇒ plus de clé · **IX** quarantaine (created_at) · **IX** sha256 · **IX** kek_id (rotation) |
 
+### 2.10 `notification` (T-206, CDC §6, annexe F, BO11)
+
+| Table | Colonnes principales | Contraintes |
+|---|---|---|
+| `template` | code (`E-01`…`E-48`, `I-01`), label, recipient, channels (`email`/`in_app`/`sms`), variables, subject, preheader, body_html, body_text, in_app_body (syntaxe Twig en **bac à sable**), active, version, customized, updated_at, updated_by | **CK** e-mail actif ⇒ objet + corps HTML et texte ; chargé par `app:notification:sync` (un modèle `customized` n'est jamais écrasé) |
+| `template_version` | code, version, contenus, created_at, created_by | **PK** (code, version) · ajout seul (trigger) |
+| `delivery` | id, code, template_version, channel, user_id, recipient_hash, recipient_masked (`c***@domaine`), status (`queued`/`sent`/`delivered`/`opened`/`bounced`/`complained`/`failed`/`skipped`), provider_message_id, error, created_at, updated_at | **aucune adresse en clair** · IX (created_at), (user_id), (recipient_hash), (provider_message_id) |
+| `in_app` | id, user_id, code, body, link (chemin interne), created_at, read_at | IX non lues par utilisateur |
+
 ## 2bis. Mapping Doctrine (T-112)
 
 - Les agrégats persistés par l'ORM (à ce jour `Catalog\Domain\Category\Category`, `Catalog\Domain\Job\Job`) sont mappés en **XML** dans `src/<Module>/Infrastructure/Doctrine/Mapping/`. Les identifiants et slugs passent par des types DBAL dédiés (`catalog_category_id`, `catalog_job_id`, `slug`).

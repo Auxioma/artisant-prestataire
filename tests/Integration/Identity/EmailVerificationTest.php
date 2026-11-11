@@ -194,6 +194,6 @@ final class EmailVerificationTest extends KernelTestCase
         self::assertCount(1, $mails);
         self::assertSame('camille@exemple.test', $mails[0]->getTo()[0]->getAddress());
         self::assertStringContainsString('Vous en avez déjà un', (string) $mails[0]->getTextBody());
-        self::assertStringContainsString('color:#0057b8', (string) $mails[0]->getHtmlBody(), 'palette du gabarit commun transmise aux messages');
+        self::assertStringContainsString('#0057b8', (string) $mails[0]->getHtmlBody(), 'palette du gabarit commun (EmailPalette)');
     }
 }

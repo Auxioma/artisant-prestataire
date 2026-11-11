@@ -1,0 +1,5 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Une connexion à votre compte TrouveMoi a eu lieu le {{ date|date('d/m/Y à H:i', 'Europe/Paris') }} depuis un appareil que nous ne connaissions pas : <strong>{{ appareil }}</strong>.</p>
+<p>C’était vous ? Aucune action n’est nécessaire.</p>
+<p><strong>Ce n’était pas vous ?</strong> Changez votre mot de passe sans attendre : toutes les sessions ouvertes seront fermées.</p>
+{{ bouton(lien_reinitialisation, 'Sécuriser mon compte') }}

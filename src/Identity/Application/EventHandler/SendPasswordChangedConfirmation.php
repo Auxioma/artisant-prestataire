@@ -22,7 +22,7 @@ final readonly class SendPasswordChangedConfirmation implements EventHandler
     {
         $user = $this->users->find(new UserId($event->userId));
         if (null !== $user && UserStatus::Anonymized !== $user->status()) {
-            $this->mailer->sendPasswordChanged($user->email(), $user->firstName(), $event->at);
+            $this->mailer->sendPasswordChanged($user->email(), $user->firstName(), $event->at, $user->id()->value);
         }
     }
 }

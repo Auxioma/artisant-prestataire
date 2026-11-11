@@ -44,7 +44,7 @@
         <twig:CookieConsent />
         {# Variante d'en-tête : imposée par la page (tunnel…), sinon selon le profil connecté #}
         {% set header_variant = header_variant ?? (app.user is null ? 'visitor' : (is_granted('ROLE_ARTISAN') ? 'artisan' : 'client')) %}
-        {% block header %}<twig:Header variant="{{ header_variant }}" active="{{ active_nav ?? null }}" accountName="{{ app.user ? app.user.userIdentifier : null }}" />{% endblock %}
+        {% block header %}<twig:Header variant="{{ header_variant }}" active="{{ active_nav ?? null }}" accountName="{{ app.user ? app.user.userIdentifier : null }}" unreadNotifications="{{ app.user and app.user.id is defined ? tm_unread_notifications(app.user.id) : 0 }}" />{% endblock %}
         {% if header_variant != 'tunnel' %}<twig:EmailVerificationBanner />{% endif %}
         {# A04 : événement « login » émis une fois, sur la première page après connexion (consentement requis) #}
         {% set login_method = app.request.hasPreviousSession ? app.session.remove('identity.login_track') : null %}

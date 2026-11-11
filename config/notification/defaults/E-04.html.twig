@@ -1,0 +1,5 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Le mot de passe de votre compte TrouveMoi a été modifié le {{ date|date('d/m/Y à H:i', 'Europe/Paris') }}. Toutes les autres sessions ont été fermées.</p>
+<p><strong>Ce n’était pas vous ?</strong> Réinitialisez immédiatement votre mot de passe, puis contactez-nous.</p>
+{{ bouton(lien_reinitialisation, 'Réinitialiser mon mot de passe') }}
+<p class="muted">Besoin d’aide : <a href="{{ lien_aide }}">contactez le support</a>.</p>

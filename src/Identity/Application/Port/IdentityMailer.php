@@ -22,7 +22,8 @@ interface IdentityMailer
     public function sendPasswordResetLink(Email $to, string $firstName, string $token, int $ttlMinutes): void;
 
     /** E-04 : mot de passe modifié. */
-    public function sendPasswordChanged(Email $to, string $firstName, \DateTimeImmutable $at): void;
+    /** @param string|null $userId compte destinataire de la notification in-app (E-04 : canaux E et I) */
+    public function sendPasswordChanged(Email $to, string $firstName, \DateTimeImmutable $at, ?string $userId = null): void;
 
     /** E-05 : connexion depuis un appareil jamais utilisé pour ce compte. */
     public function sendNewDeviceAlert(Email $to, string $firstName, string $device, \DateTimeImmutable $at): void;

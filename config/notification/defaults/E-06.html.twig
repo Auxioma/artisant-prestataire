@@ -1,0 +1,4 @@
+<p>Bonjour {{ prenom }},</p>
+<p>L’adresse e-mail de votre compte TrouveMoi a été remplacée le {{ date|date('d/m/Y à H:i', 'Europe/Paris') }}. Cette adresse ne recevra plus nos messages.</p>
+<p><strong>Ce n’était pas vous ?</strong> Votre compte est peut-être compromis : contactez-nous sans attendre.</p>
+{{ bouton(lien_aide, 'Contacter le support') }}

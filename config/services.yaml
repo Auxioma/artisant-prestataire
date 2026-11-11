@@ -35,6 +35,7 @@ services:
             - '../src/Identity/Application/Registration/RegistrationRejected.php'
             - '../src/Identity/Application/EmailVerification/{EmailToken,SecretToken,InvalidEmailToken}.php'
             - '../src/Identity/Application/PasswordReset/{PasswordResetToken,ResetLinkUnusable}.php'
+            - '../src/Notification/Application/{Notification,Template,RenderedEmail}.php'
             - '../src/Identity/Infrastructure/Security/SecurityUser.php'
             - '../src/Shared/Infrastructure/DependencyInjection/'
             - '../src/Catalog/Application/Geo/Port/GeocodedAddress.php'
@@ -80,6 +81,14 @@ services:
     App\Billing\Application\Port\VatNumberChecker: '@App\Billing\Infrastructure\Vies\ViesVatNumberChecker'
     App\Identity\Application\Port\HumanVerification: '@App\Identity\Infrastructure\Turnstile\TurnstileHumanVerification'
 
+    # Ports du module Notification (CDC §6, annexe F)
+    App\Notification\Application\Notifier: '@App\Notification\Application\NotificationDispatcher'
+    App\Notification\Application\Port\TemplateStore: '@App\Notification\Infrastructure\Persistence\DbalTemplateStore'
+    App\Notification\Application\Port\TemplateRenderer: '@App\Notification\Infrastructure\Template\SandboxedTemplateRenderer'
+    App\Notification\Application\Port\EmailSender: '@App\Notification\Infrastructure\Mailer\SymfonyMailerEmailSender'
+    App\Notification\Application\Port\DeliveryLog: '@App\Notification\Infrastructure\Persistence\DbalDeliveryLog'
+    App\Notification\Application\Port\InAppNotifications: '@App\Notification\Infrastructure\Persistence\DbalInAppNotifications'
+
     # Ports du module Search
     App\Search\Application\Port\AutocompleteIndex: '@App\Search\Infrastructure\Meilisearch\MeilisearchAutocompleteIndex'
 
@@ -93,7 +102,7 @@ services:
     App\Identity\Application\Port\LegalAcceptanceLog: '@App\Identity\Infrastructure\Legal\DbalLegalAcceptanceLog'
     App\Identity\Application\Port\DisposableEmailDetector: '@App\Identity\Infrastructure\Antifraud\FileDisposableEmailDetector'
     App\Identity\Application\Port\EmailTokens: '@App\Identity\Infrastructure\EmailVerification\DbalEmailTokens'
-    App\Identity\Application\Port\IdentityMailer: '@App\Identity\Infrastructure\Mailer\SymfonyIdentityMailer'
+    App\Identity\Application\Port\IdentityMailer: '@App\Identity\Infrastructure\Mailer\NotificationIdentityMailer'
     App\Identity\Application\Port\KnownDevices: '@App\Identity\Infrastructure\Login\DbalKnownDevices'
     App\Identity\Application\Port\LoginProtection: '@App\Identity\Infrastructure\Security\SecurityLoginProtection'
     App\Identity\Application\Port\PasswordResetTokens: '@App\Identity\Infrastructure\PasswordReset\DbalPasswordResetTokens'

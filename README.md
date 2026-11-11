@@ -46,6 +46,15 @@ docker compose exec php bin/console app:legal:publish privacy config/legal/polit
 
 L'inscription (`/inscription/client`) reste indisponible (503) tant que les CGU et la politique de confidentialité n'ont pas de version publiée. Les textes de `config/legal/` sont provisoires et marqués « [À RÉDIGER PAR LE JURISTE] » (Q28). Republier crée une nouvelle version ; `--substantial` exigera une nouvelle acceptation (RG-002).
 
+## Notifications (e-mails)
+
+```bash
+docker compose exec php bin/console app:notification:sync              # catalogue annexe F + modèles par défaut (à chaque déploiement)
+docker compose exec php bin/console app:notification:sync --env=test    # base de test (fait aussi par la CI)
+```
+
+Contenus par défaut : `config/notification/defaults/<code>.{subject,preheader,html,txt,in_app}.twig` (Twig en bac à sable, variables en français comme `prenom` ou `lien`, fonction `bouton(lien, libellé)`). Un modèle modifié en back-office n'est plus remplacé. En dev, les e-mails arrivent dans Mailpit (http://localhost:8025) ; en production `MAILER_DSN=brevo+api://CLÉ@default` via `secrets:set`. Journal d'envoi : table `notification.delivery`.
+
 ## Stockage de fichiers
 
 ```bash

@@ -1,0 +1,8 @@
+Bonjour {{ prenom }},
+
+{% if changement_adresse %}Vous avez demandé à utiliser cette adresse pour votre compte TrouveMoi. Confirmez-la pour terminer le changement :{% else %}Bienvenue sur TrouveMoi ! Confirmez votre adresse e-mail pour pouvoir déposer des demandes et échanger avec les professionnels :{% endif %}
+
+{{ lien }}
+
+Ce lien est valable {{ validite_heures }} heures et ne peut servir qu’une fois.
+Vous n’êtes pas à l’origine de cette demande ? Ignorez simplement cet e-mail : rien ne sera modifié.

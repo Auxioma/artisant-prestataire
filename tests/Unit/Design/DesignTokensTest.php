@@ -130,9 +130,8 @@ final class DesignTokensTest extends TestCase
             glob(self::ROOT.'/templates/{,*/,*/*/}*.twig', \GLOB_BRACE) ?: [],
         );
         foreach ($files as $file) {
-            // tokens.css est la source ; les e-mails ne lisent pas les variables CSS : couleurs en ligne autorisées
-            // uniquement dans les deux gabarits communs (email/_layout, email/_button), jamais dans les messages.
-            if (str_ends_with($file, '/tokens.css') || str_ends_with($file, '/email/_layout.html.twig') || str_ends_with($file, '/email/_button.html.twig')) {
+            // tokens.css est la source (les couleurs des e-mails sont recopiées dans EmailPalette, côté PHP).
+            if (str_ends_with($file, '/tokens.css')) {
                 continue;
             }
             $content = (string) file_get_contents($file);

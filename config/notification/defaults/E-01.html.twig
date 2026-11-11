@@ -1,0 +1,9 @@
+<p>Bonjour {{ prenom }},</p>
+{% if changement_adresse %}
+<p>Vous avez demandé à utiliser cette adresse pour votre compte TrouveMoi. Confirmez-la pour terminer le changement.</p>
+{% else %}
+<p>Bienvenue sur TrouveMoi ! Confirmez votre adresse e-mail pour pouvoir déposer des demandes et échanger avec les professionnels.</p>
+{% endif %}
+{{ bouton(lien, changement_adresse ? 'Confirmer ma nouvelle adresse' : 'Confirmer mon adresse') }}
+<p>Ce lien est valable {{ validite_heures }} heures et ne peut servir qu’une fois.</p>
+<p class="muted">Vous n’êtes pas à l’origine de cette demande ? Ignorez simplement cet e-mail : rien ne sera modifié.</p>
