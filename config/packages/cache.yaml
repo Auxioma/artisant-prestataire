@@ -24,3 +24,6 @@ when@test:
                     adapter: cache.adapter.array
                 cache.catalog:
                     adapter: cache.adapter.array
+                # Limites de débit isolées par exécution de tests (sinon l'état persiste et produit des 429).
+                cache.rate_limiter:
+                    adapter: cache.adapter.array

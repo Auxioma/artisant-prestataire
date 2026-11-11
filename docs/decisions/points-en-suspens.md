@@ -81,6 +81,7 @@
 | Date | Point | Décision | Par |
 |---|---|---|---|
 | 2026-11-11 | — | Création du document (Étape 0) | Équipe dev |
+| 2026-11-11 | Q16 (application) | Référentiel initial : Kbis + RC pro pour tous les métiers, décennale pour Maçon et Rénovation complète — à compléter métier par métier en BO06 | Équipe dev |
 | 2026-11-11 | P-33, P-34 | CMP conforme CNIL (aucune catégorie pré-activée, refus au même niveau) en écart avec le panneau Figma | Équipe dev |
 | 2026-11-11 | P-28 à P-32 | En-tête : CDC prioritaire sur Figma pour le contenu des espaces connectés ; pied de page aux couleurs du CDC | Équipe dev |
 | 2026-11-11 | P-05, P-24 à P-27 | Palette et typographie de la Figma V2 (audit V2.1) appliquées au T-108, à valider au titre de RG-001 | Équipe dev |
