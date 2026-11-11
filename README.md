@@ -37,6 +37,15 @@ curl 'http://localhost:8090/api/suggestions?type=lieu&q=st%20etienne'
 
 Sirene (INSEE), géocodage BAN (Géoplateforme IGN), VIES, Turnstile et HIBP passent chacun par un client HTTP dédié à hôte fixe, interdit de réseau privé (anti-SSRF). En développement, Turnstile utilise les clés de test publiques de Cloudflare (toujours valides) ; Sirene demande une clé du portail des API de l'INSEE (`INSEE_SIRENE_API_KEY` dans `.env.local`, ou `secrets:set` en production), sans quoi le service est signalé indisponible.
 
+## Documents légaux et inscription
+
+```bash
+docker compose exec php bin/console app:legal:publish cgu config/legal/cgu.html
+docker compose exec php bin/console app:legal:publish privacy config/legal/politique-de-confidentialite.html
+```
+
+L'inscription (`/inscription/client`) reste indisponible (503) tant que les CGU et la politique de confidentialité n'ont pas de version publiée. Les textes de `config/legal/` sont provisoires et marqués « [À RÉDIGER PAR LE JURISTE] » (Q28). Republier crée une nouvelle version ; `--substantial` exigera une nouvelle acceptation (RG-002).
+
 ## Stockage de fichiers
 
 ```bash

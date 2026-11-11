@@ -32,6 +32,7 @@
         --tm-red-soft: #fdecec;    /* Fond des messages d'erreur */
         --tm-blue-soft: #e6f0fa;   /* Survol du bouton secondaire, fonds d'info */
         --tm-orange-soft: #fff3e4; /* Fond d'alerte (variable Figma --tm-warning) */
+        --tm-blue-deep: #003a8c;   /* Encart « Professionnel ? » (Figma A02 393:16263) — texte blanc 10,6:1 */
 
         /* ── Variables imposées par le CDC §2.3 ─────────────────────────────────────────────────── */
         --primary: var(--tm-navy);
@@ -78,6 +79,7 @@
         --color-info-text: var(--tm-blue);
         --color-info-bg: var(--tm-blue-soft);
         --color-star: var(--tm-gold);
+        --color-surface-promo: var(--tm-blue-deep);
 
         /* ── Typographie : 21 styles « TM / … » (Figma V2, échelle CDC §2.2) ─────────────────────── */
         --font-weight-regular: 400;
@@ -86,6 +88,9 @@
         --font-weight-bold: 700;
         --font-size-min: 12px; /* audit V2.1 : aucun texte sous 12 px */
 
+        --type-display: 700 54px/62px var(--font-family);       /* Titre de bannière de page (Figma A02 393:16169) */
+        --type-display-mobile: 700 32px/40px var(--font-family);
+        --type-display-sub: 500 22px/30px var(--font-family);
         --type-h1: 700 32px/40px var(--font-family);            --type-h1-tracking: -0.5px;
         --type-h1-mobile: 700 24px/32px var(--font-family);     /* CDC Q22 (24 px mobile) — voir P-25 */
         --type-h2: 700 24px/32px var(--font-family);
@@ -129,6 +134,9 @@
         --shadow-hover: 0 8px 24px rgb(0 21 104 / 0.14);
         --shadow-overlay: 0 16px 40px rgb(0 21 104 / 0.18);
         --overlay-backdrop: rgb(0 21 104 / 0.45);
+        /* Voile de lisibilité de la bannière de page (Figma A02 393:16167) ; plus couvrant sur mobile (texte sur la photo) */
+        --banner-veil: linear-gradient(90deg, rgb(255 255 255 / 0.95) 0%, rgb(255 255 255 / 0.8) 30%, rgb(255 255 255 / 0) 46%);
+        --banner-veil-mobile: linear-gradient(90deg, rgb(255 255 255 / 0.95) 0%, rgb(255 255 255 / 0.85) 55%, rgb(255 255 255 / 0.3) 100%);
 
         /* ── Dimensions et mise en page (CDC §2.4) ───────────────────────────────────────────────── */
         --control-height: 44px;        /* cible tactile minimale (boutons) */

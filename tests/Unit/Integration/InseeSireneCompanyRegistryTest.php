@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Integration;
 
-use App\ArtisanProfile\Infrastructure\Sirene\InseeSireneCompanyRegistry;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
 use App\Shared\Domain\ValueObject\Siret;
+use App\Shared\Infrastructure\Integration\Sirene\InseeSireneCompanyRegistry;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\Exception\TransportException;
 use Symfony\Component\HttpClient\MockHttpClient;

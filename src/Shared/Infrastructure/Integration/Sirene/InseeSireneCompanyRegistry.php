@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\ArtisanProfile\Infrastructure\Sirene;
+namespace App\Shared\Infrastructure\Integration\Sirene;
 
-use App\ArtisanProfile\Application\Port\CompanyRecord;
-use App\ArtisanProfile\Application\Port\CompanyRegistry;
+use App\Shared\Application\Integration\CompanyRecord;
+use App\Shared\Application\Integration\CompanyRegistry;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
 use App\Shared\Domain\ValueObject\Siret;
 use Psr\Log\LoggerInterface;

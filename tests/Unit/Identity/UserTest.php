@@ -52,7 +52,7 @@ final class UserTest extends TestCase
     public function testPlainPasswordIsRefused(): void
     {
         $this->expectException(IdentityRuleViolation::class);
-        User::register(new UserId(self::ID), new Email('a@exemple.test'), UserKind::Client, 'motdepasse-en-clair', new PersonName('A'), new PersonName('B'), $this->now);
+        User::register(new UserId(self::ID), new Email('a@exemple.test'), UserKind::Client, 'motdepasse-en-clair', new PersonName('Al'), new PersonName('Bo'), $this->now);
     }
 
     public function testEmailVerificationActivatesOnce(): void
@@ -146,7 +146,8 @@ final class UserTest extends TestCase
         yield 'vide' => ['  '];
         yield 'balise' => ['<script>'];
         yield 'chiffres' => ['R2D2'];
-        yield 'trop long' => [str_repeat('a', 61)];
+        yield 'une seule lettre' => ['A'];
+        yield 'trop long' => [str_repeat('a', 51)];
         yield 'commence par un tiret' => ['-Anne'];
     }
 

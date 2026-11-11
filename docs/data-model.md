@@ -64,8 +64,9 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 | `session_device` | id, user_id, device_fingerprint_hash, ua_summary, ip_hash, first_seen_at, last_seen_at, revoked_at | **UQ** (user_id, device_fingerprint_hash) — sert à E-05 (nouvel appareil) |
 | `remember_me_token` | series, token_hash, user_id, last_used | géré par Symfony (`signature_properties`: password_hash, email) |
 | `consent` | id, user_id NULL, anon_id, category, granted, policy_version, created_at, expires_at | **IX** (user_id, category, created_at DESC) ; append-only |
-| `legal_document` | id, type (`cgu`/`cgv`/`cgv_pro`/`privacy`), version, content_hash, published_at, substantial | **UQ** (type, version) |
-| `legal_acceptance` | id, user_id, legal_document_id, accepted_at, ip_hash | **UQ** (user_id, legal_document_id) ; append-only (RG-002) |
+| `client_profile` (T-202) | user_id (PK, FK différée), type (`particulier`/`professionnel`), company_name, siret, siret_verified, postal_code, newsletter_opt_in_at, created_at, updated_at | **CK** particulier ⇒ ni raison sociale ni SIRET · **CK** professionnel ⇒ raison sociale · **CK** vérifié ⇒ SIRET présent |
+| `legal_document` | id, type (`cgu`/`cgv`/`cgv_pro`/`privacy`), version, title, content_html (assaini), content_hash, substantial, published_at, published_by | **UQ** (type, version) · **immuable** (trigger) |
+| `legal_acceptance` | id, user_id (FK différée : compte inséré au flush), legal_document_id, content_hash (copie du texte accepté), accepted_at, ip_hash | **UQ** (user_id, legal_document_id) ; append-only (RG-002, trigger) |
 | `login_attempt` | — | pas de table : le rate limiter Redis gère compte + IP (RG-045) ; les échecs sont tracés dans l'AuditLog |
 
 ### 2.2 `catalog`

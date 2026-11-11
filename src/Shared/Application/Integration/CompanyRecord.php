@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\ArtisanProfile\Application\Port;
+namespace App\Shared\Application\Integration;
 
 /** Établissement tel que connu du répertoire Sirene (INSEE). Les champs non diffusés valent null. */
 final readonly class CompanyRecord

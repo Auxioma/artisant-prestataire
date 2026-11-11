@@ -31,10 +31,11 @@ services:
             - '../src/Shared/Application/Storage/Port/SanitizedFile.php'
             - '../src/Identity/Application/Password/WeakPassword.php'
             - '../src/Identity/Application/Command/{EmailAlreadyRegistered,InvalidCurrentPassword}.php'
+            - '../src/Identity/Application/Legal/LegalDocumentVersion.php'
+            - '../src/Identity/Application/Registration/RegistrationRejected.php'
             - '../src/Identity/Infrastructure/Security/SecurityUser.php'
             - '../src/Shared/Infrastructure/DependencyInjection/'
             - '../src/Catalog/Application/Geo/Port/GeocodedAddress.php'
-            - '../src/ArtisanProfile/Application/Port/CompanyRecord.php'
             - '../src/Billing/Application/Port/VatNumberCheck.php'
             - '../src/Search/Application/Query/{Autocomplete,Suggestions}.php'
 
@@ -73,7 +74,7 @@ services:
     App\Content\Application\Port\RedirectStore: '@App\Content\Infrastructure\Redirect\DbalRedirectStore'
 
     App\Catalog\Application\Geo\Port\AddressGeocoder: '@App\Catalog\Infrastructure\Geo\BanAddressGeocoder'
-    App\ArtisanProfile\Application\Port\CompanyRegistry: '@App\ArtisanProfile\Infrastructure\Sirene\InseeSireneCompanyRegistry'
+    App\Shared\Application\Integration\CompanyRegistry: '@App\Shared\Infrastructure\Integration\Sirene\InseeSireneCompanyRegistry'
     App\Billing\Application\Port\VatNumberChecker: '@App\Billing\Infrastructure\Vies\ViesVatNumberChecker'
     App\Identity\Application\Port\HumanVerification: '@App\Identity\Infrastructure\Turnstile\TurnstileHumanVerification'
 
@@ -85,6 +86,10 @@ services:
     App\Identity\Domain\User\UserRepository: '@App\Identity\Infrastructure\Doctrine\Repository\DoctrineUserRepository'
     App\Identity\Application\Port\PasswordHasher: '@App\Identity\Infrastructure\Password\SymfonyPasswordHasher'
     App\Identity\Application\Port\CompromisedPasswordChecker: '@App\Identity\Infrastructure\Password\HibpCompromisedPasswordChecker'
+    App\Identity\Domain\Client\ClientProfileRepository: '@App\Identity\Infrastructure\Doctrine\Repository\DoctrineClientProfileRepository'
+    App\Identity\Application\Port\LegalDocuments: '@App\Identity\Infrastructure\Legal\DbalLegalDocuments'
+    App\Identity\Application\Port\LegalAcceptanceLog: '@App\Identity\Infrastructure\Legal\DbalLegalAcceptanceLog'
+    App\Identity\Application\Port\DisposableEmailDetector: '@App\Identity\Infrastructure\Antifraud\FileDisposableEmailDetector'
 
     App\Shared\Infrastructure\Messenger\MessengerCommandBus:
         arguments: { $bus: '@command.bus' }
@@ -134,6 +139,12 @@ when@test:
         test.storage.documents:
             alias: documents.storage
             public: true
+        App\Identity\Application\Port\HumanVerification:
+            class: App\Tests\Support\Fake\AcceptingHumanVerification
+        # Limites de débit : stockage en mémoire non réinitialisé entre requêtes (comme Redis en production) mais propre
+        # à chaque noyau de test (isolation entre tests, cf. bf78dc0).
+        cache.rate_limiter:
+            class: Symfony\Component\Cache\Adapter\ArrayAdapter
         # Antivirus de test (reconnaît la chaîne EICAR) ; ClamAvScanner réel couvert par ClamAvScannerTest.
         App\Shared\Application\Storage\Port\AntivirusScanner:
             class: App\Tests\Support\Fake\EicarAntivirusScanner

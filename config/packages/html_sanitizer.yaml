@@ -1,0 +1,12 @@
+# Contenus HTML saisis en back-office (pages légales, puis CMS) : liste blanche stricte, aucun script, aucun style.
+framework:
+    html_sanitizer:
+        sanitizers:
+            app.legal_sanitizer:
+                allow_safe_elements: true
+                block_elements: ['div', 'span']
+                drop_elements: ['img', 'iframe', 'form', 'input', 'button', 'svg', 'math', 'style', 'script']
+                allowed_link_schemes: ['https', 'mailto']
+                allow_relative_links: true
+                force_https_urls: true
+                max_input_length: 200000

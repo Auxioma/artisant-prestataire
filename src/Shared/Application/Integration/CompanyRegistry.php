@@ -2,9 +2,8 @@
 
 declare(strict_types=1);
 
-namespace App\ArtisanProfile\Application\Port;
+namespace App\Shared\Application\Integration;
 
-use App\Shared\Application\Integration\ExternalServiceUnavailable;
 use App\Shared\Domain\ValueObject\Siret;
 
 /** Répertoire des entreprises (A03 étape 2, RG-041) — API Sirene de l'INSEE. */

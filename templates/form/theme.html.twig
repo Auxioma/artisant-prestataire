@@ -25,7 +25,8 @@
     {%- else -%}
         {%- set has_errors = errors|length > 0 -%}
         {%- set state = has_errors ? 'error' : (disabled ? 'disabled' : (attr.readonly is defined and attr.readonly ? 'readonly' : null)) -%}
-        <div class="tm-field{{ state ? ' tm-field--' ~ state }}{{ row_attr.class is defined ? ' ' ~ row_attr.class }}">
+        <div class="tm-field{{ state ? ' tm-field--' ~ state }}{{ row_attr.class is defined ? ' ' ~ row_attr.class }}"
+            {%- for attrname, attrvalue in row_attr|filter((v, k) => k != 'class') %} {{ attrname }}="{{ attrvalue }}"{% endfor %}>
             {{- form_label(form) -}}
             <div class="tm-field__control">
                 {%- if attr['data-icon'] is defined -%}<twig:Icon name="{{ attr['data-icon'] }}" size="sm" class="tm-icon--inherit" />{%- endif -%}

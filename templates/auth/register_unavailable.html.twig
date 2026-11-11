@@ -1,0 +1,14 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Inscription momentanément indisponible — TrouveMoi{% endblock %}
+
+{% block body %}
+<div class="tm-auth-page">
+    <section class="tm-container tm-auth-message">
+        <div class="tm-auth-message__card tm-card-panel">
+            <twig:EmptyState icon="info" title="Inscription momentanément indisponible" headingLevel="1"
+                text="Nos conditions d’utilisation sont en cours de mise à jour. Merci de réessayer dans quelques instants." />
+        </div>
+    </section>
+</div>
+{% endblock %}

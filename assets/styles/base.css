@@ -106,6 +106,9 @@
         .tm-section-title { font: var(--type-h2); }
     }
 
+    /* L'attribut hidden l'emporte toujours sur les règles d'affichage des composants (grid, flex, block). */
+    [hidden] { display: none !important; }
+
     a {
         color: var(--color-link);
         text-underline-offset: 0.15em;

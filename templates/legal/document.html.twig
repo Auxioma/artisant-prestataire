@@ -1,0 +1,12 @@
+{#- Document légal versionné (P17, RG-002). HTML assaini à la publication (liste blanche app.legal_sanitizer). -#}
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ document.title }} — TrouveMoi{% endblock %}
+
+{% block body %}
+<article class="tm-container tm-legal">
+    <h1>{{ document.title }}</h1>
+    <p class="tm-caption">Version {{ document.version }} en vigueur depuis le {{ document.publishedAt|date('d/m/Y', 'Europe/Paris') }}</p>
+    <div class="tm-legal__content">{{ document.html|raw }}</div>
+</article>
+{% endblock %}

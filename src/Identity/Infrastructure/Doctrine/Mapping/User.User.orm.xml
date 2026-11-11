@@ -12,6 +12,8 @@
         <field name="status" type="string" length="30" enum-type="App\Identity\Domain\User\UserStatus"/>
         <field name="firstName" type="string" length="60" column="first_name"/>
         <field name="lastName" type="string" length="60" column="last_name"/>
+        <field name="phone" type="string" length="16" nullable="true"/>
+        <field name="phoneVerifiedAt" type="datetimetz_immutable" column="phone_verified_at" nullable="true"/>
         <field name="emailVerifiedAt" type="datetimetz_immutable" column="email_verified_at" nullable="true"/>
         <field name="lastLoginAt" type="datetimetz_immutable" column="last_login_at" nullable="true"/>
         <field name="passwordChangedAt" type="datetimetz_immutable" column="password_changed_at"/>

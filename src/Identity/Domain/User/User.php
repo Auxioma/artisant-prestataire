@@ -13,6 +13,7 @@ use App\Identity\Domain\User\Event\UserReinstated;
 use App\Identity\Domain\User\Event\UserSuspended;
 use App\Shared\Domain\AggregateRoot;
 use App\Shared\Domain\ValueObject\Email;
+use App\Shared\Domain\ValueObject\PhoneNumber;
 
 /**
  * Compte utilisateur (client ou artisan). Le domaine ne voit que l'empreinte du mot de passe, jamais le mot de passe.
@@ -29,6 +30,8 @@ final class User extends AggregateRoot
     private UserStatus $status = UserStatus::PendingEmail;
     private string $firstName;
     private string $lastName;
+    private ?string $phone = null;
+    private ?\DateTimeImmutable $phoneVerifiedAt = null;
     private ?\DateTimeImmutable $emailVerifiedAt = null;
     private ?\DateTimeImmutable $lastLoginAt = null;
     private \DateTimeImmutable $passwordChangedAt;
@@ -94,6 +97,23 @@ final class User extends AggregateRoot
         $this->assertNotAnonymized();
         self::assertHash($newHash);
         $this->passwordHash = $newHash;
+    }
+
+    /** A02 : facultatif à l'inscription, exigé au premier dépôt de demande. Un changement annule la vérification. */
+    public function changePhone(?PhoneNumber $phone, \DateTimeImmutable $now): void
+    {
+        $this->assertNotAnonymized();
+        if ($phone?->value === $this->phone) {
+            return;
+        }
+        $this->phone = $phone?->value;
+        $this->phoneVerifiedAt = null;
+        $this->touch($now);
+    }
+
+    public function phone(): ?PhoneNumber
+    {
+        return null === $this->phone ? null : new PhoneNumber($this->phone);
     }
 
     public function recordLogin(\DateTimeImmutable $now): void
@@ -163,6 +183,8 @@ final class User extends AggregateRoot
         $this->emailCanonical = $this->email;
         $this->firstName = 'Utilisateur';
         $this->lastName = 'supprimé';
+        $this->phone = null;
+        $this->phoneVerifiedAt = null;
         $this->passwordHash = self::UNUSABLE_PASSWORD;
         $this->status = UserStatus::Anonymized;
         $this->anonymizedAt = $now;

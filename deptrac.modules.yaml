@@ -20,7 +20,7 @@ deptrac:
     - { name: Administration, collectors: [{ type: classLike, value: '^App\\Administration\\.*' }] }
   ruleset:
     Shared: ~
-    Identity: [Shared, Notification]
+    Identity: [Shared, Notification, Catalog] # Catalog : référentiel géographique en lecture (code postal, A02)
     Catalog: [Shared]
     ArtisanProfile: [Shared, Catalog, Notification]
     Search: [Shared, Catalog, ArtisanProfile]
