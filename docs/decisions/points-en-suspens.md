@@ -1,0 +1,69 @@
+# Points en suspens — décisions appliquées par défaut
+
+> Statut : **Étape 0 — à valider par le porteur (Auxioma)**.
+> Principe (cadrage §8, RG-014) : chaque question ouverte reçoit **par défaut la recommandation du CDC**. Cette recommandation est portée par un **paramètre administrable**, jamais par du code en dur. Changer de décision revient à changer une valeur en BO13, pas à redéployer.
+> Légende des paramètres : `clé` = déjà en annexe G · `clé` *(proposé)* = nouvelle clé à ajouter à l'annexe G · 🎨 = relève de RG-001 (design token validé par le porteur, pas un paramètre runtime) · ⛔ = hors périmètre MVP (fonctionnalité non construite).
+
+## A. Questions Q1–Q28 de l'annexe I
+
+| # | Sujet | Recommandation CDC = décision par défaut | Paramètre(s) et valeur par défaut | Statut |
+|---|---|---|---|---|
+| Q1 | Consommation de crédit | Seul l'envoi effectif (v1) d'un devis consomme 1 crédit ; consultation, questions, brouillons, révisions et relances sont gratuits (RG-100, RG-110) | `credits.debit_event` = `quote_first_send` *(proposé — seule valeur supportée au MVP)* · `credits.debit_amount` = 1 *(proposé)* | À valider |
+| Q2 | Retrait / annulation | Pas de restitution en cas de retrait (RG-103) ; restitution automatique si la demande est supprimée pour fraude ; restitution si annulation client dans les 24 h **et** demande jugée abusive par la modération (§4.2) | `quotes.withdraw_refund` = non · `credits.refund_on_fraud_deletion` = oui *(proposé)* · `credits.refund_abusive_cancel_hours` = 24 *(proposé)* | À valider |
+| Q3 | Crédit gratuit | Attribution **à la vérification** (RG-044, anti-abus), une seule fois (UQ en base) ; validité illimitée au lancement, à réévaluer à 6 mois | `credits.free_on_signup` = 100 · `credits.free_validity_days` = vide | À valider |
+| Q4 | Ordre de consommation | Gratuit → forfait → additionnels ; les crédits gratuits restants sont conservés à la souscription | `credits.consumption_order` = free,plan,extra · `credits.keep_free_on_subscribe` = oui *(proposé)* | À valider |
+| Q5 | Forfaits | 3 forfaits : Essentiel 30 devis/mois, Pro 80, Premium illimité avec usage raisonnable ; mensuel sans engagement + annuel −2 mois. **Prix non fixés** | Données BO08 (`billing.plan`), seedées en **brouillon** sans prix : `fair_use_cap` Premium *(valeur à fournir)* | **Bloquant pour le lot 6** : prix HT, plafond d'usage raisonnable |
+| Q6 | Report des crédits | Non reportés (expiration en fin de période) | `plans.rollover` = non | À valider |
+| Q7 | Upgrade en cours de période | Crédits de la période = crédits du nouveau forfait − crédits consommés sur la période ; prix au prorata Stripe | `billing.upgrade_credit_mode` = `new_minus_consumed` *(proposé)* · `billing.proration_behavior` = `create_prorations` *(proposé)* | À valider |
+| Q8 | Épuisement | Accès complet sauf l'envoi ; profil visible ; demandes directes reçues avec incitation à souscrire (RG-106) | `credits.exhausted_receive_direct` = oui *(proposé)* · `credits.exhausted_profile_visible` = oui *(proposé)* | À valider |
+| Q9 | Réouverture d'une demande complète | Oui, une fois, vers de nouveaux artisans uniquement (pas ceux déjà refusés). **Classée V2 en annexe H** | `requests.reopen_allowed` = 1 · `requests.reopen_exclude_previous` = oui *(proposé)* · `features.request_reopen` = off au MVP *(proposé)* | Voir P-12 |
+| Q10 | Diffusion | À tous les éligibles, les N premiers l'emportent. KPI « demande complète avant réponse » suivi en BO01 ; passage à une diffusion par vagues si > 30 % | `requests.dispatch_mode` = `all` *(proposé)* · `requests.wave_alert_pct` = 30 *(proposé, alerte KPI uniquement)* | À valider |
+| Q11 | Demande directe | Diffusée aussi aux autres par défaut (case décochable) | `requests.direct_broadcast_default` = oui | À valider |
+| Q12 | Partage des coordonnées | Après acceptation du devis ; masquage automatique avant (RG-080, RG-022bis, RG-112) | `messages.mask_contacts_before_accept` = oui | À valider |
+| Q13 | Téléphone public de l'artisan | Option de l'artisan, affiché au clic, tracé ; avantage de forfait possible | `pro.phone_public_allowed` = oui *(proposé)* · `plan.features.phone_public` (par forfait) | À valider |
+| Q14 | Messages hors demande | Oui, question préalable du client, limitée ; l'artisan ne peut pas démarcher (RG-081) | `messages.pre_question_enabled` = oui *(proposé)* · `messages.pre_question_daily_max` = 3 *(proposé — « limité » sans valeur dans le CDC)* | À valider (valeur) |
+| Q15 | Aperçu avant vérification | Aperçu en lecture seule, sans possibilité de répondre et sans coordonnées | `pro.preview_before_verified` = oui | À valider |
+| Q16 | Justificatifs | Kbis/avis INSEE + assurance pour tous ; décennale pour le gros œuvre ; pièce d'identité supprimée après vérification | `catalog.job.required_documents` / `decennial_required` (par métier, BO06) · `documents.delete_id_after_verification` = oui *(proposé)* · `documents.retention_after_relation_years` = 1 *(proposé)* | À valider |
+| Q17 | Avis | Modération a priori au lancement ; avis hors plateforme en V3 avec mention distincte | `reviews.moderation_mode` = a priori · `reviews.external_enabled` = non *(proposé)* ⛔ | À valider |
+| Q18 | Valeur juridique de l'acceptation | Intention de commande (RG-071), mention explicite dans la modale ; signature électronique en V3 | Texte de la modale en CMS / libellés (`label.quote.accept_notice`) | **Validation juridique requise** |
+| Q19 | Paiement client ↔ artisan | Non au MVP (pas de statut d'intermédiaire de paiement ni de DAC7) ; Stripe Connect étudié en V3 | ⛔ aucun paramètre (fonctionnalité absente) | À valider |
+| Q20 | Mise en avant payante | V2, signalée « Mis en avant », 2 maximum par page, réservée aux forfaits supérieurs | `ranking.sponsored_max_per_page` = 2 *(proposé)* · `features.sponsored` = off ⛔ | V2 |
+| Q21 | Contrastes | CDC : texte marine sur orange ou fond `#E65800`, vert texte `#007A47`. **Figma audit V2.1 (prioritaire sur l'accessibilité)** : texte orange `#B84A00`, gris muted `#5B6B82`, taille minimale 12 px | 🎨 tokens `--orange-text`, `--muted`, `--success-text` | Voir P-05 |
+| Q22 | Titre H1 | Bold 700, 32 px desktop / 24 px mobile | 🎨 tokens `--h1-size-desktop/mobile` (à confronter aux 21 styles texte Figma) | À valider |
+| Q23 | SMS | V2, limités à l'OTP, aux urgences et aux rappels de RDV | `antifraud.sms_verify_request` = non · `notifications.sms_enabled` = non *(proposé)* · `notifications.sms_daily_cap` = 3 | V2 |
+| Q24 | Factures | Stripe Invoicing personnalisé (ADR-0009) | `billing.invoice_engine` = `stripe` *(proposé)* | À valider |
+| Q25 | Newsletter | Brevo (transactionnel + newsletter + SMS) | `newsletter.provider` = `brevo` *(proposé)* · `mailer.provider` = `brevo` *(proposé, DSN dans le coffre)* | À valider |
+| Q26 | Prix indicatifs | Saisie manuelle au lancement ; calcul (médiane, n ≥ 20) ensuite | `catalog.price_range_source` = `manual` *(proposé)* · `catalog.price_range_min_sample` = 20 *(proposé)* | À valider |
+| Q27 | Zone pilote | Normandie (Le Havre, Rouen, Caen) | `platform.pilot_departments` = 14, 27, 50, 61, 76 *(proposé — sert à l'activation des pages villes et aux fixtures)* | À valider |
+| Q28 | Juridique | CGU/CGV, politique d'avis, mentions L111-7 / L111-7-2 rédigées par un juriste avant la production | Pages légales versionnées (RG-002) avec contenu provisoire marqué `[À RÉDIGER PAR LE JURISTE]` | **Validation juridique requise** |
+
+## B. Points complémentaires relevés pendant le cadrage
+
+| # | Sujet | Constat | Décision par défaut proposée | Paramètre | Qui tranche |
+|---|---|---|---|---|---|
+| P-01 | Transport Messenger | Le cadrage laisse le choix Redis / RabbitMQ | **Redis Streams** + outbox (ADR-0011) | DSN d'environnement | Tech |
+| P-02 | Hébergement UE | Hébergeur non désigné (§11 : hébergement UE, DPA) | Hébergeur UE certifié HDS non requis ; besoins : PostgreSQL managé avec PostGIS, Redis, S3 privé, CDN UE | — | **Porteur** |
+| P-03 | Factures | Mentions légales spécifiques éventuellement absentes des factures Stripe | Stripe Invoicing ; bascule interne seulement si une mention manque (ADR-0009) | `billing.invoice_engine` | Porteur + expert-comptable |
+| P-04 | TVA | Stripe Tax vs calcul interne (§5) | **Stripe Tax** ; VIES pour l'autoliquidation UE | `billing.tax_engine` = `stripe_tax` *(proposé)* | Porteur (coût Stripe Tax) |
+| P-05 | Palette | Écart entre la recommandation CDC (Q21 : `#E65800`, `#007A47`) et l'audit Figma V2.1 (`#B84A00`, `#5B6B82`, 12 px). Règle du cadrage : Figma V2.1 l'emporte pour l'accessibilité | Appliquer les valeurs **Figma V2.1** ; reprendre les autres tokens tels quels depuis la page `01 · Design System` au lot 1 ; tout écart restant est signalé ici, rien n'est inventé | 🎨 | Porteur (RG-001) |
+| P-06 | Rôles admin | Le cadrage fixe 5 rôles ; BO14 ajoute « Lecture seule » et des **rôles personnalisés** (matrice module × action) | Presets (5 + Lecture seule) au MVP sur un modèle de **permissions** ; l'éditeur de rôles personnalisés est activable plus tard sans refonte (ADR-0013) | `features.custom_admin_roles` = off *(proposé)* | Porteur |
+| P-07 | Plafonds des gestes commerciaux | Annexe E : Support « plafonné », sans valeur | Support : 20 crédits par geste et 100 par mois ; Finance et Super-admin : sans plafond (motif obligatoire) | `admin.support_max_manual_credits` = 20 · `admin.support_monthly_manual_credits` = 100 *(proposés)* | Porteur |
+| P-08 | Renvoi après retrait | RG-101(d) interdit un 2e devis actif ; rien n'est dit sur un renvoi après retrait | Un seul devis par artisan et par demande, définitif (UQ en base) ; après un retrait, l'artisan ne peut pas renvoyer | `quotes.resend_after_withdraw` = non *(proposé)* | Porteur |
+| P-09 | Retrait sur une demande complète | RG-103 : « la place se libère » | La demande repasse de `complète` à `ouverte` si elle n'a pas expiré ; les artisans éligibles sont à nouveau notifiés (digest) | `requests.renotify_on_slot_freed` = oui *(proposé)* | Porteur |
+| P-10 | Annulation d'une acceptation (RG-072) | « Possible sous 48 h avant le RDV avec motif » ; effet sur les autres devis non précisé | Le devis accepté passe en `refusé` (motif « acceptation annulée ») ; les devis `non retenus` encore valides redeviennent `envoyés` ; la demande redevient `complète` | `quotes.cancel_acceptance_min_hours_before_appointment` = 48 *(proposé)* | Porteur |
+| P-11 | Relance d'un devis (RG-121) | « Une fois après 3 jours sans consultation » | Valeurs paramétrables | `quotes.reminder_after_days` = 3 · `quotes.reminder_max` = 1 *(proposés)* | À valider |
+| P-12 | Réouverture : MVP ou V2 ? | L'annexe G donne `requests.reopen_allowed` = 1, mais l'annexe H classe la réouverture en V2 | Modèle prêt dès le MVP (champ `reopen_count`) ; fonctionnalité désactivée au MVP | `features.request_reopen` = off | Porteur |
+| P-13 | Retentions non listées en annexe G | §11 cite des durées absentes de l'annexe G | Ajouter les clés de rétention (voir `data-model.md` §4) | `requests.retention_years` = 3 · `audit.retention_months` = 12 · `documents.retention_after_relation_years` = 1 *(proposés)* | Porteur / DPO |
+| P-14 | Valeurs de sécurité techniques | Non chiffrées dans le CDC | `auth.remember_me_days` = 30 · `auth.password_reset_ttl_min` = 60 · `auth.password_min_length` = 12 · `admin.idle_timeout_min` = 15 · `admin.reauth_max_age_min` = 5 · `documents.signed_url_ttl_sec` = 300 · limites de débit (SECURITY.md §5) *(proposés)* | idem | Tech + Porteur |
+| P-15 | 2FA artisans | V2 selon A04 / annexe H | Désactivée au MVP, l'architecture la supporte (scheb) | `auth.pro_2fa_enabled` = off *(proposé)* | V2 |
+| P-16 | Suppression de compte d'un artisan abonné | Non traité par le CDC | La demande de suppression programme la résiliation Stripe en fin de période ; anonymisation après `gdpr.deletion_grace_days` ; factures conservées 10 ans | — | Porteur / DPO |
+| P-17 | Validation du mobile à l'inscription pro | A03 : OTP SMS « À valider (coût SMS) » | Désactivée au MVP (cohérent avec Q23) | `antifraud.sms_verify_pro_signup` = non *(proposé)* | Porteur |
+| P-18 | Images WhatsApp à la racine du dépôt | 41 visuels de maquettes (version antérieure : « © 2025 », menus et intitulés différents du CDC) | **Non utilisées** comme source : seules les pages Figma V2 `01`, `10`, `00` font foi (cadrage §2) | — | Confirmer qu'elles sont obsolètes |
+| P-19 | Emplacement du CDC | Le PDF est à la racine ; le cadrage l'attend dans `docs/cdc/` | Copie dans `docs/cdc/` ; l'original reste à la racine en attendant ta décision | — | Porteur |
+| P-20 | Domaines et adresses | `admin.trouvemoi.com`, sous-domaine d'envoi (ex. `mail.trouvemoi.com`), `security@` | À créer au lot 1 (DNS : SPF, DKIM, DMARC, CAA) | — | Porteur |
+
+## C. Journal des décisions
+
+| Date | Point | Décision | Par |
+|---|---|---|---|
+| 2026-11-11 | — | Création du document (Étape 0) | Équipe dev |

@@ -1,0 +1,192 @@
+# Modèle de données — TrouveMoi.com
+
+> Statut : **proposition — Étape 0**. Base : CDC annexe C, complétée par les règles des annexes D et G et par les exigences de sécurité du cadrage.
+> Conventions : PostgreSQL 16 + PostGIS ; un schéma par module (ADR-0003) ; PK `uuid` v7 ; horodatages `timestamptz` en UTC ; montants en **centimes** (`bigint`) avec `currency char(3)` ; statuts en `text` + `CHECK` (miroir des enums du domaine) ; pas de `ON DELETE CASCADE` sur les données métier (suppression RGPD = anonymisation, RG-090).
+
+---
+
+## 1. MCD (vue d'ensemble)
+
+```mermaid
+erDiagram
+  USER ||--o| CLIENT_PROFILE : "a"
+  USER ||--o| ARTISAN_PROFILE : "a"
+  USER ||--o{ SESSION_DEVICE : "possède"
+  USER ||--o{ CONSENT : "donne"
+  USER ||--o{ LEGAL_ACCEPTANCE : "accepte"
+  CLIENT_PROFILE ||--o{ ADDRESS : "a"
+  CLIENT_PROFILE ||--o{ FAVORITE : "ajoute"
+  CATEGORY ||--o{ CATEGORY : "parent"
+  CATEGORY ||--o{ JOB : "contient"
+  JOB ||--o{ JOB_SYNONYM : "a"
+  JOB ||--o| QUESTIONNAIRE_FORM : "a"
+  LOCATION }o--|| DEPARTMENT : "dans"
+  ARTISAN_PROFILE ||--o{ ARTISAN_JOB : "exerce"
+  JOB ||--o{ ARTISAN_JOB : ""
+  ARTISAN_PROFILE ||--|| SERVICE_AREA : "intervient"
+  SERVICE_AREA ||--o{ SERVICE_AREA_COMMUNE : "matérialise"
+  ARTISAN_PROFILE ||--o{ DOCUMENT : "fournit"
+  ARTISAN_PROFILE ||--o{ AVAILABILITY_SLOT : "publie"
+  ARTISAN_PROFILE ||--o{ OFFER : "publie"
+  ARTISAN_PROFILE ||--o{ VERIFICATION_DECISION : "fait l'objet"
+  CLIENT_PROFILE ||--o{ QUOTE_REQUEST : "dépose"
+  QUOTE_REQUEST }o--|| JOB : "pour"
+  QUOTE_REQUEST ||--o{ REQUEST_ATTACHMENT : "a"
+  QUOTE_REQUEST ||--o{ REQUEST_DISPATCH : "diffusée à"
+  QUOTE_REQUEST ||--o{ QUOTE : "reçoit (≤ max_quotes)"
+  ARTISAN_PROFILE ||--o{ QUOTE : "envoie"
+  QUOTE ||--o{ QUOTE_VERSION : "versionné"
+  QUOTE_VERSION ||--o{ QUOTE_LINE : "contient"
+  QUOTE ||--o| APPOINTMENT : "planifie"
+  QUOTE_REQUEST ||--o| CONVERSATION : "fil"
+  CONVERSATION ||--o{ MESSAGE : "contient"
+  QUOTE_REQUEST ||--o| REVIEW : "certifie"
+  ARTISAN_PROFILE ||--|| CREDIT_ACCOUNT : "ancre de verrou"
+  CREDIT_ACCOUNT ||--o{ CREDIT_LEDGER_ENTRY : "écritures"
+  PLAN ||--o{ SUBSCRIPTION : ""
+  ARTISAN_PROFILE ||--o| SUBSCRIPTION : "souscrit"
+  SUBSCRIPTION ||--o{ INVOICE : "facturée"
+  PROMO_CODE ||--o{ PROMO_REDEMPTION : ""
+  REPORT }o--|| USER : "signalé par"
+```
+
+## 2. Tables par module
+
+Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** clé étrangère · **CK** check · 🔒 donnée sensible (chiffrée ou à accès restreint).
+
+### 2.1 `identity`
+
+| Table | Colonnes principales | Contraintes / index |
+|---|---|---|
+| `user` | id, email_canonical, email, password_hash (Argon2id), kind (`client`/`artisan`), status (`pending_email`/`active`/`suspended`/`deletion_requested`/`anonymized`), email_verified_at, phone 🔒, phone_verified_at, first_name, last_name, avatar_key, last_login_at, password_changed_at, deletion_requested_at, created_at, anonymized_at | **UQ** `lower(email_canonical)` WHERE status <> 'anonymized' · **IX** (status, created_at) · **IX** (last_login_at) pour la purge d'inactivité |
+| `password_reset_token` | id, user_id, token_hash (SHA-256), expires_at, used_at, requested_ip_hash | **UQ** token_hash · **IX** (user_id, created_at) pour le quota de 3/h |
+| `email_verification_token` | id, user_id, new_email (changement), token_hash, expires_at, used_at | **UQ** token_hash |
+| `session_device` | id, user_id, device_fingerprint_hash, ua_summary, ip_hash, first_seen_at, last_seen_at, revoked_at | **UQ** (user_id, device_fingerprint_hash) — sert à E-05 (nouvel appareil) |
+| `remember_me_token` | series, token_hash, user_id, last_used | géré par Symfony (`signature_properties`: password_hash, email) |
+| `consent` | id, user_id NULL, anon_id, category, granted, policy_version, created_at, expires_at | **IX** (user_id, category, created_at DESC) ; append-only |
+| `legal_document` | id, type (`cgu`/`cgv`/`cgv_pro`/`privacy`), version, content_hash, published_at, substantial | **UQ** (type, version) |
+| `legal_acceptance` | id, user_id, legal_document_id, accepted_at, ip_hash | **UQ** (user_id, legal_document_id) ; append-only (RG-002) |
+| `login_attempt` | — | pas de table : le rate limiter Redis gère compte + IP (RG-045) ; les échecs sont tracés dans l'AuditLog |
+
+### 2.2 `catalog`
+
+| Table | Colonnes | Contraintes / index |
+|---|---|---|
+| `category` | id, parent_id NULL, level (`category`/`subcategory`), name, slug, description, image_key, image_alt, icon, accent_token, featured, position, active, seo (jsonb) | **UQ** slug · **IX** (parent_id, position) |
+| `job` | id, subcategory_id, name, slug, description, required_documents (jsonb), insurance_required, decennial_required, labels (jsonb), active, seo (jsonb), replaced_by_job_id | **UQ** slug · **IX** (subcategory_id, active) |
+| `job_synonym` | job_id, term, term_normalized | **UQ** (job_id, term_normalized) · **IX** trigram sur term_normalized |
+| `questionnaire_form` | id, job_id, version, schema (jsonb), active | **UQ** (job_id, version) |
+| `price_range` | id, job_id, label, low_cents, high_cents, unit, source (`manual`/`computed`), sample_size, updated_at | **CK** low ≤ high |
+| `region` / `department` | code, name, (region_code) | PK code |
+| `location` (commune) | insee (PK), name, slug, postal_codes text[], department_code, population, centroid `geography(Point,4326)`, seo_page_enabled, seo_text | **IX GiST** centroid · **IX GIN** postal_codes · **UQ** (slug, department_code) |
+
+### 2.3 `artisan`
+
+| Table | Colonnes | Contraintes / index |
+|---|---|---|
+| `artisan_profile` | id, user_id, slug, company_name, trade_name, siret, siren, legal_form, ape, vat_number, vat_status, hq_city_insee (adresse exacte 🔒 dans `hq_address_encrypted`), status (`incomplete`/`pending_verification`/`verified`/`rejected`/`suspended`), verified_at, hidden_reason NULL (`insurance_expired`…), description (sanitized), logo_key, cover_key, phone_public_enabled, completion_rate, rating_avg, rating_bayes, reviews_count, response_time_avg_min, paused_until, featured, created_at | **UQ** user_id · **UQ** siret (RG-041) · **UQ** slug · **IX** (status, hidden_reason) · **FK** user |
+| `artisan_job` | artisan_id, job_id, is_main | **PK** (artisan_id, job_id) · **UQ** (artisan_id) WHERE is_main · nombre maximum (`pro.max_jobs`) contrôlé dans le domaine |
+| `service_area` | artisan_id (PK), mode (`radius`/`list`), center `geography(Point)` (centroïde de commune, RG-022), radius_km, departments text[], communes text[] | **CK** radius entre `pro.radius_min/max_km` (contrôlé dans le domaine, bornes en paramètre) |
+| `service_area_commune` | artisan_id, insee | **PK** (artisan_id, insee) · **IX** (insee) → diffusion RG-062 et recherche RG-021 |
+| `document` 🔒 | id, artisan_id, type, storage_key, kek_id, wrapped_dek, mime, size, sha256, expires_at, status (`quarantined`/`pending_review`/`approved`/`rejected`/`expired`/`shredded`), reviewed_by, reviewed_at, reason | **IX** (artisan_id, type) · **IX** (expires_at) WHERE status='approved' → alertes J-30/J-7/J0 (RG-032) et masquage à +15 j (RG-130) |
+| `verification_decision` | id, artisan_id, admin_id, decision (`approved`/`rejected`/`more_info`), reason_code, comment, created_at | append-only (RG-130) |
+| `portfolio_project` / `certification` / `service` | id, artisan_id, … | **IX** artisan_id |
+| `availability_rule` | id, artisan_id, rrule, start_time, end_time, valid_from, valid_to | — |
+| `availability_slot` | id, artisan_id, starts_at, ends_at, status (`open`/`held`/`booked`/`blocked`), held_until, appointment_id | **IX** (artisan_id, starts_at) WHERE status='open' (RG-013, RG-025) · exclusion `EXCLUDE USING gist (artisan_id WITH =, tstzrange(starts_at, ends_at) WITH &&)` |
+| `offer` | id, artisan_id, title, type, value, reference_price_cents, jobs uuid[], starts_at, ends_at, status, stats (jsonb) | **CK** type <> 'discount' OR reference_price_cents IS NOT NULL (RG-026) |
+| `blocklist` | id, kind (`siret`/`phone`/`iban`/`device`/`email_domain`), value_hash, reason, admin_id | **UQ** (kind, value_hash) |
+
+### 2.4 `request` (QuoteRequest)
+
+| Table | Colonnes | Contraintes / index |
+|---|---|---|
+| `quote_request` | id, number (lisible), client_id, job_id, target_artisan_id NULL, broadcast_to_others, answers (jsonb, validé par le schéma du questionnaire), description, budget_range, address_id 🔒, city_insee, location `geography(Point)` (centroïde ou adresse géocodée, jamais exposée), urgency, desired_date, status (`draft`/`pending_moderation`/`open`/`full`/`awarded`/`completed`/`expired`/`cancelled`/`rejected`), **max_quotes (figé)**, active_quotes_count, risk_score, risk_signals (jsonb), expires_at, reopen_count, duplicate_key (hash métier + adresse), submitted_at, version | **CK** active_quotes_count BETWEEN 0 AND max_quotes · **IX** (status, job_id, city_insee) · **IX** (client_id, status) (RG-065 : nombre de demandes ouvertes) · **IX** (duplicate_key, submitted_at) (anti-doublon 72 h) · **IX** (expires_at) WHERE status IN ('open','full') · **verrou** `FOR UPDATE` à l'envoi d'un devis (RG-101) |
+| `request_draft` | id, owner (user_id ou anon_token_hash), payload (jsonb), email_for_reminder, reminder_consent, updated_at, expires_at | purge à `requests.draft_retention_days` |
+| `request_attachment` | id, request_id, storage_key, mime, size, status (`quarantined`/`available`/`rejected`), position | max `requests.max_photos` (domaine) |
+| `request_addendum` | id, request_id, body, created_at | compléments après le premier devis (C02) |
+| `request_dispatch` | request_id, artisan_id, reason (`eligible`/`direct`), notified_at, viewed_at, ignored_at | **PK** (request_id, artisan_id) · **IX** (artisan_id, notified_at DESC) → PR02 |
+| `client_artisan_block` | client_id, artisan_id | **PK** — exclusion de la diffusion |
+
+### 2.5 `quote`
+
+| Table | Colonnes | Contraintes / index |
+|---|---|---|
+| `quote` | id, number, request_id, artisan_id, current_version, status (`draft`/`sent`/`viewed`/`accepted`/`refused`/`not_selected`/`expired`/`withdrawn`/`request_cancelled`), sent_at, viewed_at, decided_at, decision_reason, reminder_sent_at, valid_until | **UQ** (request_id, artisan_id) (RG-101 d : un seul devis par artisan et par demande, révisions par versions ; voir P-08) · **UQ** (request_id) WHERE status = 'accepted' (RG-072) · **IX** (artisan_id, status, sent_at DESC) |
+| `quote_version` | id, quote_id, version, total_ht_cents, total_vat_cents, total_ttc_cents, deposit_cents, conditions (jsonb), mandatory_mentions_check (jsonb), pdf_key, pdf_sha256, created_at | **UQ** (quote_id, version) ; immuable une fois envoyée |
+| `quote_line` | id, quote_version_id, position, type, label, description, qty (numeric), unit, unit_price_ht_cents, discount_bp, vat_rate_bp, total_ht_cents | **UQ** (quote_version_id, position) |
+| `appointment` | id, quote_id, slot_id, starts_at, ends_at, status (`proposed`/`confirmed`/`completed`/`cancelled`/`rescheduled`), proposed_by, hold_until, confirmed_at, completed_at, cancel_reason | **UQ** (quote_id) WHERE status IN ('proposed','confirmed') · **IX** (hold_until) WHERE status='proposed' (RG-073 : libération) |
+
+### 2.6 `billing`
+
+| Table | Colonnes | Contraintes / index |
+|---|---|---|
+| `credit_account` | artisan_id (PK), stripe_customer_id, created_at | **ancre de verrou** `FOR UPDATE` (ADR-0006) · **UQ** stripe_customer_id |
+| `credit_ledger_entry` | id, artisan_id, type (`free_grant`/`period_grant`/`quote_debit`/`refund`/`manual`/`expiry`/`pack_purchase`), bucket (`free`/`plan`/`extra`), amount (int ≠ 0), period_id NULL, reference_type, reference_id, admin_id, reason, created_at | **append-only** (trigger + REVOKE) · **UQ** (artisan_id) WHERE type='free_grant' (RG-044) · **UQ** (type, reference_type, reference_id) WHERE type IN ('quote_debit','refund','period_grant','expiry') · **CK** amount <> 0 · **CK** type <> 'manual' OR (admin_id IS NOT NULL AND length(reason) > 0) · **IX** (artisan_id, bucket) INCLUDE (amount) |
+| `credit_balance` (read model) | artisan_id, free, plan, extra, updated_at | mis à jour dans la même transaction ; vérifié chaque nuit contre `SUM()` |
+| `plan` | id, code, name, description, price_month_ht_cents, price_year_ht_cents, quotes_per_period, unlimited, fair_use_cap, features (jsonb), visibility, position, status (`draft`/`published`/`archived`), version | **UQ** code · suppression interdite si abonnés (BO08) |
+| `plan_price` | id, plan_id, interval (`month`/`year`), amount_cents, stripe_price_id, active_from, active_to | **UQ** stripe_price_id — nouveau Price à chaque changement de prix |
+| `subscription` | id, artisan_id, plan_id, plan_price_id, interval, status (`incomplete`/`active`/`past_due`/`suspended`/`canceled`), current_period_start, current_period_end, cancel_at_period_end, pending_plan_price_id (downgrade), grace_until, stripe_subscription_id | **UQ** stripe_subscription_id · **UQ** (artisan_id) WHERE status IN ('incomplete','active','past_due','suspended') |
+| `invoice` | id, subscription_id, artisan_id, number, stripe_invoice_id, amount_ht_cents, vat_cents, amount_ttc_cents, status, hosted_url, archive_key, archive_sha256, paid_at | **UQ** stripe_invoice_id · conservation 10 ans |
+| `promo_code` / `promo_redemption` | code, type, value, duration, duration_months, plan_ids, valid_from/to, max_uses, per_user, new_only, stripe_coupon_id, stripe_promotion_code_id / (promo_id, artisan_id, subscription_id, redeemed_at) | **UQ** lower(code) · **IX** (promo_id, artisan_id) |
+| `processed_stripe_event` | event_id (PK), type, received_at, processed_at, status, attempts, last_error, payload_sha256 | idempotence (ADR-0010) |
+| `reconciliation_issue` | id, kind, stripe_ref, local_ref, details, detected_at, resolved_at | — |
+
+### 2.7 `messaging`, `review`, `moderation`
+
+| Table | Colonnes | Contraintes / index |
+|---|---|---|
+| `messaging.conversation` | id, request_id NULL, client_id, artisan_id, kind (`request`/`pre_question`), status, last_message_at | **UQ** (request_id, artisan_id) · **IX** (client_id, last_message_at DESC), (artisan_id, last_message_at DESC) |
+| `messaging.message` | id, conversation_id, sender_user_id, body (masqué), body_original_encrypted 🔒, kek_id, masked, attachments (jsonb), read_at, reported, created_at | **IX** (conversation_id, created_at) · purge `messages.retention_years` |
+| `review.review` | id, request_id, quote_id, client_id, artisan_id, rating, sub_ratings (jsonb), title, body, photos (jsonb), service_date, status (`pending`/`published`/`rejected`/`hidden`/`changes_requested`), risk_score, moderated_by, moderated_at, reason_code, reply_body, reply_status, reply_at, edited_until | **UQ** request_id (RG-033 : un avis par demande) · **CK** rating BETWEEN 1 AND 5 · **IX** (artisan_id, status, created_at DESC) |
+| `moderation.report` | id, target_type, target_id, reporter_user_id, reason_code, comment, status, resolution, handled_by, handled_at | **IX** (status, created_at) · **UQ** (target_type, target_id, reporter_user_id) |
+| `moderation.rule` | id, kind (`banned_word`/`contact_pattern`/`threshold`), value, active, updated_by | — |
+| `moderation.decision` | id, subject_type, subject_id, admin_id, action, reason_code, comment, created_at | append-only |
+
+### 2.8 `content`, `notification`, `admin`
+
+| Table | Colonnes | Remarques |
+|---|---|---|
+| `content.page` / `page_version` / `block` | id, slug, status (`draft`/`scheduled`/`published`), published_at, version ; blocs jsonb **assainis** à l'enregistrement (html-sanitizer) | historique et restauration (BO10.1) |
+| `content.home_block` | id, type (10 blocs P01), position, active, config (jsonb), version | — |
+| `content.post`, `faq_item`, `menu_item`, `media` (alt obligatoire), `label` (i18n) | … | `media.alt` NOT NULL (§9) |
+| `content.redirect` | id, source_path, target_path, code (301/302), hits, created_by | **UQ** source_path — généré automatiquement si un slug change (BO06) |
+| `content.not_found_log` | path, hits, last_seen_at | rapport 404 (BO12.2) |
+| `notification.template` | code (E-xx), channel, locale, subject, preheader, body_html, body_text, active, version | **UQ** (code, channel, locale) |
+| `notification.notification` | id, user_id, code, payload (jsonb, sans PII superflue), read_at, created_at | **IX** (user_id, read_at NULLS FIRST, created_at DESC) |
+| `notification.preference` | user_id, code, channel, enabled, digest_mode | **PK** (user_id, code, channel) |
+| `notification.delivery_log` | id, template_code, recipient_hash, channel, status, provider_message_id, sent_at | rebonds → désactivation de l'email |
+| `admin.admin_user` | id, email, password_hash, totp_secret 🔒 (chiffré), backup_codes_hash, status, last_login_at | séparé de `identity.user` (ADR-0013) |
+| `admin.role` / `role_permission` / `admin_user_role` | presets + rôles personnalisés ; `max_manual_credits` | — |
+| `admin.setting` / `setting_history` | key, value (jsonb), type / before, after, admin_id, reason, changed_at | ADR-0007 |
+| `admin.audit_log` | id, occurred_at, actor_type, actor_id, impersonator_id, action, subject_type, subject_id, ip_hash, ua_summary, context (jsonb sans PII en clair), prev_hash, hash | **append-only** + **chaînage de hash** (inviolabilité) · partitionné par mois · rétention 1 an (BO15.1) |
+| `admin.export_job` | id, admin_id, kind, filters, contains_pii, status, file_key, expires_at | journalisé (BO15.2) |
+| `admin.support_ticket` (V2) | … | BO16 |
+| `shared.outbox_message` | id, type, payload, occurred_at, dispatched_at | **IX** (dispatched_at) WHERE dispatched_at IS NULL |
+
+## 3. Verrous et concurrence
+
+| Opération | Mécanisme | Règle |
+|---|---|---|
+| Envoi d'un devis | `FOR UPDATE` sur `request.quote_request`, puis sur `billing.credit_account` (ordre fixe) | RG-101 |
+| Acceptation d'un devis | `FOR UPDATE` sur `quote_request` + UQ partielle `accepted` | RG-072 |
+| Retrait d'un devis | `FOR UPDATE` sur `quote_request` (décrément de active_quotes_count, `full` → `open`) | RG-103 |
+| Proposition de créneau | `FOR UPDATE` sur `availability_slot` + contrainte d'exclusion | RG-073 |
+| Attribution du crédit gratuit | UQ partielle `free_grant` + `ON CONFLICT DO NOTHING` | RG-044 |
+| Webhook Stripe | PK `processed_stripe_event.event_id` | idempotence |
+| Édition BO (forfaits, paramètres, pages) | verrou optimiste `version` | historique |
+| Tâches Scheduler | `symfony/lock` (store PostgreSQL) — une instance par tâche | — |
+
+## 4. Données personnelles et rétention (§11)
+
+| Donnée | Emplacement | Rétention / purge (Scheduler) | Paramètre |
+|---|---|---|---|
+| Compte inactif | identity.user | 3 ans → relance → anonymisation | `gdpr.inactive_years` |
+| Suppression demandée | identity.user | 14 j de grâce → anonymisation, avis conservés anonymisés | `gdpr.deletion_grace_days` |
+| Demandes, devis, messages | request / quote / messaging | 3 ans après la dernière activité | `messages.retention_years` (+ `requests.retention_years` proposé) |
+| Justificatifs | artisan.document | relation + 1 an ; pièce d'identité supprimée après décision | `documents.retention_after_relation_years` (proposé) |
+| Factures | billing.invoice + archive | 10 ans | légal (non paramétrable à la baisse) |
+| Logs de connexion / audit | admin.audit_log | 1 an (partitions supprimées) | `audit.retention_months` (proposé) |
+| Consentements | identity.consent | 6 mois (redemandé) | `cookies.consent_months` |
+| Brouillons de demande | request.request_draft | 30 j | `requests.draft_retention_days` |
+
+Les IP sont stockées **hachées** (HMAC avec un sel tournant) sauf dans l'AuditLog sécurité. Là, l'IP en clair est conservée 1 an : c'est un intérêt légitime documenté dans le registre des traitements.
