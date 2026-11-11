@@ -23,6 +23,16 @@ docker compose exec php php -d memory_limit=512M bin/console app:geo:import    #
 docker compose exec php bin/console app:geo:seo-pages --min-population=5000  # pages villes SEO (BO07.1)
 ```
 
+## Autocomplétion (Meilisearch)
+
+```bash
+docker compose exec php bin/console app:search:reindex   # reconstruit les index métiers + communes (~10 s, sans coupure)
+curl 'http://localhost:8090/api/suggestions?type=metier&q=plombi'
+curl 'http://localhost:8090/api/suggestions?type=lieu&q=st%20etienne'
+```
+
+À lancer après `app:catalog:import` et `app:geo:import` ; ensuite les modifications du référentiel des métiers sont indexées automatiquement par le worker. Si Meilisearch est indisponible, l'endpoint répond depuis PostgreSQL (en-tête `X-Search-Mode: fallback`). Après un changement de variables dans `compose.yaml`, recréer les conteneurs (`docker compose up -d`) : un simple redémarrage garde l'ancien environnement.
+
 ## Qualité (identique à la CI)
 
 ```bash

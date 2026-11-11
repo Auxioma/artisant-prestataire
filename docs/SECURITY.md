@@ -14,6 +14,7 @@
 | Justificatifs artisans (Kbis, assurance, **pièce d'identité**) | Critique (usurpation d'identité) | ArtisanProfile |
 | Crédits et abonnements | Haute (financier) | Billing |
 | Clés Stripe, Brevo, KEK de chiffrement | Critique | coffre de secrets |
+| Clés Meilisearch (recherche / administration) | Élevée | coffre de secrets ; clé de recherche limitée à l'action `search` sur les index `tm_*`, jamais exposée au navigateur (le front passe par `/api/suggestions`) ; clé d'administration réservée au worker et à `app:search:reindex` ; clé maître hors de l'application |
 | Avis certifiés, classement | Haute (réputation, obligations L111-7) | Review, Search |
 | Back-office | Critique (accès global) | Administration |
 

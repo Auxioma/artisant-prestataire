@@ -14,7 +14,9 @@ x-app: &app
     REDIS_URL: redis://redis:6379
     MAILER_DSN: smtp://mailer:1025
     MEILISEARCH_URL: http://meilisearch:7700
-    MEILISEARCH_API_KEY: trouvemoi-dev-master-key
+    # Dev uniquement : la clé maître sert aux deux usages. En prod, clés dédiées (recherche / administration) via secrets.
+    MEILISEARCH_SEARCH_KEY: trouvemoi-dev-master-key
+    MEILISEARCH_ADMIN_KEY: trouvemoi-dev-master-key
     CLAMAV_DSN: tcp://clamav:3310
     S3_ENDPOINT: http://s3:8333
     S3_ACCESS_KEY: trouvemoi

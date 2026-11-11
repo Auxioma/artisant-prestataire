@@ -27,8 +27,17 @@ jobs:
         ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U trouvemoi" --health-interval 5s --health-timeout 5s --health-retries 10
+      meilisearch:
+        image: getmeili/meilisearch:v1.12
+        env:
+          MEILI_MASTER_KEY: ci-master-key-not-secret
+          MEILI_NO_ANALYTICS: 'true'
+        ports: ['7700:7700']
     env:
       DATABASE_URL: postgresql://trouvemoi:trouvemoi@127.0.0.1:5432/trouvemoi?serverVersion=16&charset=utf8
+      MEILISEARCH_URL: http://127.0.0.1:7700
+      MEILISEARCH_SEARCH_KEY: ci-master-key-not-secret
+      MEILISEARCH_ADMIN_KEY: ci-master-key-not-secret
     steps:
       - uses: actions/checkout@v4
 

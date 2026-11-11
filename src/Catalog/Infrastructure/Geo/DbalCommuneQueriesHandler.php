@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Catalog\Infrastructure\Geo;
 
+use App\Catalog\Application\Geo\Query\CommuneIndexEntries;
 use App\Catalog\Application\Geo\Query\CommunesNear;
 use App\Catalog\Application\Geo\Query\CommuneSummary;
 use App\Catalog\Application\Geo\Query\FindCommunes;
@@ -16,6 +17,8 @@ final readonly class DbalCommuneQueriesHandler implements QueryHandler
 {
     private const int MAX_LIMIT = 1000;
     private const int MAX_RADIUS_KM = 500;
+    private const string FIND_SELECT = 'SELECT c.insee, c.name, c.slug, c.postal_codes, c.department_code, c.population, d.name AS department_name
+        FROM catalog.commune c JOIN catalog.department d ON d.code = c.department_code';
 
     public function __construct(private Connection $connection)
     {
@@ -24,9 +27,24 @@ final readonly class DbalCommuneQueriesHandler implements QueryHandler
     /**
      * @return list<CommuneSummary>
      */
-    public function __invoke(CommunesNear|FindCommunes $query): array
+    public function __invoke(CommunesNear|FindCommunes|CommuneIndexEntries $query): array
     {
-        return $query instanceof CommunesNear ? $this->near($query) : $this->find($query);
+        return match (true) {
+            $query instanceof CommunesNear => $this->near($query),
+            $query instanceof FindCommunes => $this->find($query),
+            default => $this->indexEntries(),
+        };
+    }
+
+    /** @return list<CommuneSummary> */
+    private function indexEntries(): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT c.insee, c.name, c.slug, c.postal_codes, c.department_code, c.population, d.name AS department_name
+             FROM catalog.commune c JOIN catalog.department d ON d.code = c.department_code WHERE c.active ORDER BY c.insee',
+        );
+
+        return array_map($this->summary(...), $rows);
     }
 
     /** @return list<CommuneSummary> */
@@ -59,18 +77,16 @@ final readonly class DbalCommuneQueriesHandler implements QueryHandler
         $limit = max(1, min($query->limit, 50));
         if (1 === preg_match('/^\d{2,5}$/', $term)) {
             $rows = $this->connection->fetchAllAssociative(
-                'SELECT insee, name, slug, postal_codes, department_code, population FROM catalog.commune
-                 WHERE active AND EXISTS (SELECT 1 FROM unnest(postal_codes) cp WHERE cp LIKE :prefix)
-                 ORDER BY population DESC NULLS LAST, name LIMIT :limit',
+                self::FIND_SELECT.' WHERE c.active AND EXISTS (SELECT 1 FROM unnest(c.postal_codes) cp WHERE cp LIKE :prefix)
+                 ORDER BY c.population DESC NULLS LAST, c.name LIMIT :limit',
                 ['prefix' => $term.'%', 'limit' => $limit],
             );
         } else {
             $rows = $this->connection->fetchAllAssociative(
-                'SELECT insee, name, slug, postal_codes, department_code, population FROM catalog.commune
-                 WHERE active AND (catalog.immutable_unaccent(lower(name)) LIKE catalog.immutable_unaccent(lower(:prefix))
-                       OR catalog.immutable_unaccent(lower(name)) % catalog.immutable_unaccent(lower(:term)))
-                 ORDER BY (catalog.immutable_unaccent(lower(name)) LIKE catalog.immutable_unaccent(lower(:prefix))) DESC,
-                          population DESC NULLS LAST, name
+                self::FIND_SELECT.' WHERE c.active AND (catalog.immutable_unaccent(lower(c.name)) LIKE catalog.immutable_unaccent(lower(:prefix))
+                       OR catalog.immutable_unaccent(lower(c.name)) % catalog.immutable_unaccent(lower(:term)))
+                 ORDER BY (catalog.immutable_unaccent(lower(c.name)) LIKE catalog.immutable_unaccent(lower(:prefix))) DESC,
+                          c.population DESC NULLS LAST, c.name
                  LIMIT :limit',
                 ['prefix' => str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $term).'%', 'term' => $term, 'limit' => $limit],
             );
@@ -94,6 +110,7 @@ final readonly class DbalCommuneQueriesHandler implements QueryHandler
             DbalValue::string($row['department_code']),
             null === $row['population'] ? null : DbalValue::int($row['population']),
             isset($row['distance_km']) && is_numeric($row['distance_km']) ? round((float) $row['distance_km'], 1) : null,
+            isset($row['department_name']) ? DbalValue::string($row['department_name']) : null,
         );
     }
 }

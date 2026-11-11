@@ -20,6 +20,16 @@ framework:
                 timeout: 30
                 max_duration: 300
                 headers: { Accept: 'application/json' }
+            # Autocomplétion (ADR-0004) : délai court, le repli PostgreSQL prend le relais au-delà.
+            meilisearch_search.client:
+                base_uri: '%env(MEILISEARCH_URL)%'
+                auth_bearer: '%env(MEILISEARCH_SEARCH_KEY)%'
+                timeout: 1
+                max_duration: 2
+            meilisearch_admin.client:
+                base_uri: '%env(MEILISEARCH_URL)%'
+                auth_bearer: '%env(MEILISEARCH_ADMIN_KEY)%'
+                timeout: 30
 
     http_method_override: false
     handle_all_throwables: true

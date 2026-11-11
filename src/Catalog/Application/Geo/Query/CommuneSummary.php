@@ -17,6 +17,7 @@ final readonly class CommuneSummary
         public string $departmentCode,
         public ?int $population,
         public ?float $distanceKm = null,
+        public ?string $departmentName = null,
     ) {
     }
 }

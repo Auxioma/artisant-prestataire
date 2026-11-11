@@ -25,6 +25,8 @@ services:
             - '../src/Shared/Application/Settings/{SettingDefinition,InvalidSettingValue}.php'
             - '../src/Catalog/Application/Geo/{RegionRecord,DepartmentRecord,CommuneRecord,CommuneRow,ImportReport}.php'
             - '../src/Catalog/Infrastructure/Geo/{GeoApiGouvSource,JsonFileGeoSource,GeoApiPayloadParser}.php'
+            - '../src/Search/Application/Port/{JobDocument,PlaceDocument,SearchUnavailable}.php'
+            - '../src/Search/Application/Query/{Autocomplete,Suggestions}.php'
 
     # Ports du noyau partagé
     App\Shared\Domain\Time\Clock: '@App\Shared\Infrastructure\Time\SystemClock'
@@ -53,6 +55,9 @@ services:
 
     # Ports du module Content
     App\Content\Application\Port\RedirectStore: '@App\Content\Infrastructure\Redirect\DbalRedirectStore'
+
+    # Ports du module Search
+    App\Search\Application\Port\AutocompleteIndex: '@App\Search\Infrastructure\Meilisearch\MeilisearchAutocompleteIndex'
 
     # Ports du module Identity
     App\Identity\Application\Port\ConsentLog: '@App\Identity\Infrastructure\Consent\DbalConsentLog'
