@@ -58,7 +58,7 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 
 | Table | Colonnes principales | Contraintes / index |
 |---|---|---|
-| `user` | id, email_canonical, email, password_hash (Argon2id), kind (`client`/`artisan`), status (`pending_email`/`active`/`suspended`/`deletion_requested`/`anonymized`), email_verified_at, phone 🔒, phone_verified_at, first_name, last_name, avatar_key, last_login_at, password_changed_at, deletion_requested_at, created_at, anonymized_at | **UQ** `lower(email_canonical)` WHERE status <> 'anonymized' · **IX** (status, created_at) · **IX** (last_login_at) pour la purge d'inactivité |
+| `user_account` (T-201 ; « user » est réservé en SQL) | id, email, email_canonical, password_hash (Argon2id), kind (`client`/`artisan`), status (`pending_email`/`active`/`suspended`/`deletion_requested`/`anonymized`), first_name, last_name, email_verified_at, last_login_at, password_changed_at, deletion_requested_at, anonymized_at, created_at, updated_at, version — *à venir avec leurs tickets : phone 🔒 / phone_verified_at, avatar (→ `stored_file`)* | **UQ** `email_canonical` WHERE status <> 'anonymized' · **CK** actif ⇒ e-mail vérifié · **CK** empreinte `$argon2id$` (ou marqueur inutilisable si anonymisé) · **IX** (status, created_at) · **IX** (last_login_at) pour la purge d'inactivité |
 | `password_reset_token` | id, user_id, token_hash (SHA-256), expires_at, used_at, requested_ip_hash | **UQ** token_hash · **IX** (user_id, created_at) pour le quota de 3/h |
 | `email_verification_token` | id, user_id, new_email (changement), token_hash, expires_at, used_at | **UQ** token_hash |
 | `session_device` | id, user_id, device_fingerprint_hash, ua_summary, ip_hash, first_seen_at, last_seen_at, revoked_at | **UQ** (user_id, device_fingerprint_hash) — sert à E-05 (nouvel appareil) |
@@ -175,7 +175,7 @@ Registre commun à tous les fichiers (justificatifs, photos de demande, d'avis e
 
 - Les agrégats persistés par l'ORM (à ce jour `Catalog\Domain\Category\Category`, `Catalog\Domain\Job\Job`) sont mappés en **XML** dans `src/<Module>/Infrastructure/Doctrine/Mapping/`. Les identifiants et slugs passent par des types DBAL dédiés (`catalog_category_id`, `catalog_job_id`, `slug`).
 - **Pas d'association Doctrine entre agrégats** : références par identifiant ; les clés étrangères, CHECK et index spécialisés (GIN, partiels) sont posés dans les migrations écrites à la main.
-- `doctrine.dbal.schema_filter` limite la comparaison mapping ↔ base aux schémas gérés par l'ORM (`catalog`, à étendre) ; les tables DBAL (paramètres, audit, outbox, consentements, redirections) n'y figurent pas. La CI valide le mapping (`doctrine:schema:validate --skip-sync`) et la cohérence des migrations ; la synchronisation stricte n'est pas utilisée car les contraintes ajoutées à la main (FK, GIN) seraient signalées comme des écarts.
+- `doctrine.dbal.schema_filter` limite la comparaison mapping ↔ base aux tables gérées par l'ORM (`catalog.*`, `identity.user_account`, à étendre) ; les tables DBAL (paramètres, audit, outbox, consentements, redirections) n'y figurent pas. La CI valide le mapping (`doctrine:schema:validate --skip-sync`) et la cohérence des migrations ; la synchronisation stricte n'est pas utilisée car les contraintes ajoutées à la main (FK, GIN) seraient signalées comme des écarts.
 
 ## 3. Verrous et concurrence
 

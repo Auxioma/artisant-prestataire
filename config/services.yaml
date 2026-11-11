@@ -29,6 +29,9 @@ services:
             - '../src/Shared/Application/Integration/'
             - '../src/Shared/Application/Storage/{StoredFile,WrappedKey,RejectedUpload,StoredFileNotFound}.php'
             - '../src/Shared/Application/Storage/Port/SanitizedFile.php'
+            - '../src/Identity/Application/Password/WeakPassword.php'
+            - '../src/Identity/Application/Command/{EmailAlreadyRegistered,InvalidCurrentPassword}.php'
+            - '../src/Identity/Infrastructure/Security/SecurityUser.php'
             - '../src/Shared/Infrastructure/DependencyInjection/'
             - '../src/Catalog/Application/Geo/Port/GeocodedAddress.php'
             - '../src/ArtisanProfile/Application/Port/CompanyRecord.php'
@@ -79,6 +82,9 @@ services:
 
     # Ports du module Identity
     App\Identity\Application\Port\ConsentLog: '@App\Identity\Infrastructure\Consent\DbalConsentLog'
+    App\Identity\Domain\User\UserRepository: '@App\Identity\Infrastructure\Doctrine\Repository\DoctrineUserRepository'
+    App\Identity\Application\Port\PasswordHasher: '@App\Identity\Infrastructure\Password\SymfonyPasswordHasher'
+    App\Identity\Application\Port\CompromisedPasswordChecker: '@App\Identity\Infrastructure\Password\HibpCompromisedPasswordChecker'
 
     App\Shared\Infrastructure\Messenger\MessengerCommandBus:
         arguments: { $bus: '@command.bus' }
