@@ -8,31 +8,22 @@ use App\ArtisanProfile\Application\Signup\ChooseJobs;
 use App\ArtisanProfile\Application\Signup\CompanyLookupResult;
 use App\ArtisanProfile\Application\Signup\DeclareCompany;
 use App\ArtisanProfile\Application\Signup\LookupCompany;
-use App\ArtisanProfile\Application\Signup\SignupProgress;
 use App\ArtisanProfile\Application\Signup\SignupRejected;
-use App\ArtisanProfile\Application\Signup\SignupState;
 use App\ArtisanProfile\Domain\Profile\ArtisanRuleViolation;
 use App\Catalog\Application\Query\JobIndexEntries;
 use App\Catalog\Application\Query\JobIndexEntry;
-use App\Shared\Application\Bus\CommandBus;
-use App\Shared\Application\Bus\QueryBus;
-use App\Shared\Application\Security\CurrentUser;
 use App\Shared\Application\Settings\SettingKey;
-use App\Shared\Application\Settings\SettingsProvider;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * A03 — étapes 2 (entreprise, Figma 228:11720) et 3 (métiers, 228:11875) du tunnel d'inscription professionnelle.
- * Accès réservé aux comptes artisan connectés (security.yaml). Progression conservée (« Terminer plus tard »).
+ * A03 — étapes 2 (entreprise, Figma 228:11720) et 3 (métiers, 228:11875) du tunnel d'inscription professionnelle, et
+ * reprise du tunnel. Progression conservée (« Terminer plus tard »).
  */
 #[Route('/inscription/pro')]
-final class ArtisanSignupController extends AbstractController
+final class ArtisanSignupController extends AbstractSignupController
 {
-    public const array STEPS = ['Compte', 'Entreprise', 'Métiers', 'Zone', 'Assurances', 'Justificatifs', 'Profil & récapitulatif'];
     private const array MESSAGES = [
         SignupRejected::SIRET_INVALID => 'Ce numéro SIRET est invalide.',
         SignupRejected::SIRET_TAKEN => 'Cette entreprise est déjà inscrite. Contactez-nous si vous pensez qu’il s’agit d’une erreur.',
@@ -40,24 +31,15 @@ final class ArtisanSignupController extends AbstractController
         SignupRejected::MANUAL_REQUIRED => 'Le répertoire des entreprises ne répond pas : saisissez la raison sociale et le code postal du siège (vérification différée).',
     ];
 
-    public function __construct(
-        private readonly CommandBus $commands,
-        private readonly QueryBus $queries,
-        private readonly CurrentUser $currentUser,
-        private readonly SettingsProvider $settings,
-    ) {
-    }
-
     #[Route('/reprendre', name: 'artisan_signup_resume', methods: ['GET'])]
     public function resume(): Response
     {
-        $step = $this->state()->completedStep;
+        $state = $this->state();
+        if ($state->submitted) {
+            return $this->redirectToRoute('artisan_signup_submitted');
+        }
 
-        return $this->redirectToRoute(match (true) {
-            $step < 2 => 'artisan_signup_company',
-            $step < 3 => 'artisan_signup_jobs',
-            default => 'artisan_signup_next',
-        });
+        return $this->redirectToRoute(self::STEP_ROUTES[min(7, max(2, $state->completedStep + 1))]);
     }
 
     #[Route('/entreprise', name: 'artisan_signup_company', methods: ['GET', 'POST'])]
@@ -117,8 +99,8 @@ final class ArtisanSignupController extends AbstractController
     public function jobs(Request $request): Response
     {
         $state = $this->state();
-        if ($state->completedStep < 2) {
-            return $this->redirectToRoute('artisan_signup_company');
+        if (null !== $redirect = $this->guardStep($state, 3)) {
+            return $redirect;
         }
         $selected = $state->jobIds;
         $main = $state->mainJobId;
@@ -134,7 +116,7 @@ final class ArtisanSignupController extends AbstractController
                 try {
                     $this->commands->dispatch(new ChooseJobs($this->userId(), $selected, (string) $main));
 
-                    return $this->redirectToRoute('artisan_signup_next', status: Response::HTTP_SEE_OTHER);
+                    return $this->redirectToRoute('artisan_signup_area', status: Response::HTTP_SEE_OTHER);
                 } catch (SignupRejected|ArtisanRuleViolation $e) {
                     $error = $e->getMessage();
                 }
@@ -157,32 +139,5 @@ final class ArtisanSignupController extends AbstractController
             'max_jobs' => $this->settings->int(SettingKey::ProMaxJobs),
             'error' => $error,
         ], new Response(status: null === $error ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
-    }
-
-    /** Étapes 4 à 7 (zone, assurances, justificatifs, profil) : T-207b. Progression enregistrée. */
-    #[Route('/suite', name: 'artisan_signup_next', methods: ['GET'])]
-    public function next(): Response
-    {
-        return $this->render('pro_signup/next.html.twig', ['steps' => self::STEPS, 'state' => $this->state()]);
-    }
-
-    private function userId(): string
-    {
-        return $this->currentUser->id() ?? throw new AccessDeniedHttpException();
-    }
-
-    private function state(): SignupState
-    {
-        $state = $this->queries->ask(new SignupProgress($this->userId()));
-        \assert($state instanceof SignupState);
-
-        return $state;
-    }
-
-    private function assertCsrf(Request $request, string $id): void
-    {
-        if (!$this->isCsrfTokenValid($id, $request->request->getString('_token'))) {
-            throw new AccessDeniedHttpException('Jeton CSRF invalide.');
-        }
     }
 }

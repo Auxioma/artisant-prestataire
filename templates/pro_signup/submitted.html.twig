@@ -1,0 +1,37 @@
+{#- A03.7 — écran final (Figma 230:12384) : « En cours de vérification », délai annoncé, crédits offerts à la validation (RG-044), check-list du dossier. -#}
+{% extends 'base.html.twig' %}
+{% set header_variant = 'tunnel' %}
+
+{% block title %}Dossier envoyé — Inscription professionnelle — TrouveMoi{% endblock %}
+
+{% block body %}
+<div class="tm-auth-page tm-pro-signup">
+    <div class="tm-container tm-submitted__page">
+    {% if track_completed %}<div hidden data-controller="analytics" data-analytics-auto-event-value="pro_signup_completed"></div>{% endif %}
+    <section class="tm-card-panel tm-state-card tm-submitted" aria-labelledby="dossier-titre">
+        <span class="tm-state-card__icon tm-state-card__icon--success"><twig:Icon name="check" /></span>
+        <h1 id="dossier-titre" class="tm-state-card__title">Votre dossier est en cours de vérification</h1>
+        <p><twig:Badge variant="pending">Délai annoncé : {{ delay_hours }} h ouvrées</twig:Badge></p>
+        <p class="tm-submitted__credits"><twig:Icon name="tag" size="sm" class="tm-icon--inherit" />{{ free_credits }} devis offerts dès la validation de votre compte</p>
+
+        <div class="tm-submitted__checklist">
+            <h2 class="tm-card-title">Votre dossier</h2>
+            <ul class="tm-check-list">
+                <li><twig:Icon name="check" size="xs" />Entreprise, métiers et zone d’intervention</li>
+                <li><twig:Icon name="check" size="xs" />Assurances et qualifications déclarées</li>
+                {% if has_logo %}<li><twig:Icon name="check" size="xs" />Logo et description</li>
+                {% else %}<li><twig:Icon name="check" size="xs" />Description</li>
+                <li class="tm-check-list__todo"><twig:Icon name="plus" size="xs" /><a href="{{ path('artisan_signup_profile') }}">Ajouter un logo ou une photo</a></li>{% endif %}
+                {% for slot in missing %}
+                    <li class="tm-check-list__todo"><twig:Icon name="plus" size="xs" /><a href="{{ path('artisan_signup_documents', {piece: slot.slotKey}) }}">{{ slot.label }}</a></li>
+                {% endfor %}
+            </ul>
+            {% if missing is not empty %}<p class="tm-caption">La vérification commencera dès réception des pièces manquantes.</p>{% endif %}
+        </div>
+
+        <p class="tm-submitted__info"><twig:Icon name="info" size="sm" class="tm-icon--inherit" />Vous recevrez un e-mail dès la décision. Votre espace pro ouvre avec une prochaine version de la plateforme.</p>
+        <twig:Button href="{{ path('artisan_signup_documents') }}" variant="secondary">Gérer mes justificatifs</twig:Button>
+    </section>
+    </div>
+</div>
+{% endblock %}

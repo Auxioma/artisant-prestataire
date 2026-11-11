@@ -12,6 +12,11 @@ final class SignupRejected extends \DomainException
     public const string SIRET_CLOSED = 'siret_closed';
     public const string MANUAL_REQUIRED = 'manual_required';
     public const string JOBS_INVALID = 'jobs_invalid';
+    public const string AREA_UNKNOWN = 'area_unknown';
+    public const string DATE_INVALID = 'date_invalid';
+    public const string FILE_REJECTED = 'file_rejected';
+    public const string DOCUMENT_UNEXPECTED = 'document_unexpected';
+    public const string DOCUMENTS_MISSING = 'documents_missing';
 
     public function __construct(public readonly string $field, public readonly string $reason, string $message = '')
     {

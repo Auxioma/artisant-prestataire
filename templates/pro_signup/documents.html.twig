@@ -1,0 +1,78 @@
+{#- A03.6 — Justificatifs (Figma 230:12070) : dépôt par pièce attendue (glisser-déposer, fichier ou photo), état de chaque pièce, « Terminer plus tard ». Fonctionne sans JavaScript. -#}
+{% extends 'pro_signup/_layout.html.twig' %}
+{% set step = 6 %}
+
+{% block title %}Vos justificatifs — Inscription professionnelle — TrouveMoi{% endblock %}
+{% block step_title %}Vos justificatifs{% endblock %}
+{% block step_subtitle %}Déposez vos pièces : vous pouvez terminer plus tard.{% endblock %}
+
+{% block step_content %}
+    {% set pending = slots|filter(s => not s.provided and s.required) %}
+    {% set default_slot = selected_slot ?: (pending|first ? (pending|first).slotKey : (slots|first ? (slots|first).slotKey : '')) %}
+    <div class="tm-signup__fields">
+        {% if error %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ error }}</p></div>{% endif %}
+
+        <form method="post" enctype="multipart/form-data" class="tm-dropzone" data-turbo="false" data-controller="dropzone" data-action="dragover->dropzone#over dragleave->dropzone#leave drop->dropzone#drop">
+            <input type="hidden" name="_token" value="{{ csrf_token('artisan_documents') }}">
+            <twig:Icon name="upload" class="tm-dropzone__icon" />
+            <p class="tm-dropzone__title" data-dropzone-target="hint">Glissez vos documents ici</p>
+            <div class="tm-dropzone__slot">
+                <label class="tm-field__label" for="slot">Type de justificatif</label>
+                <div class="tm-select">
+                    <select class="tm-select__input" id="slot" name="slot" required>
+                        {% for slot in slots %}
+                            <option value="{{ slot.slotKey }}"{{ slot.slotKey == default_slot ? ' selected' }}>{{ slot.label }}{{ slot.provided ? ' (remplacer)' }}</option>
+                        {% endfor %}
+                    </select>
+                    <twig:Icon name="chevD" size="xs" class="tm-select__chevron" />
+                </div>
+            </div>
+            <div class="tm-dropzone__buttons">
+                <label class="tm-button tm-button--secondary tm-dropzone__pick">
+                    <twig:Icon name="file" size="sm" class="tm-icon--inherit" />Choisir un fichier
+                    <input class="tm-visually-hidden" type="file" name="document" accept="application/pdf,image/jpeg,image/png,image/webp" data-dropzone-target="input" data-action="change->dropzone#chosen">
+                </label>
+                <label class="tm-button tm-button--tertiary tm-dropzone__pick">
+                    <twig:Icon name="camera" size="sm" class="tm-icon--inherit" />Prendre une photo
+                    <input class="tm-visually-hidden" type="file" name="photo" accept="image/jpeg,image/png,image/webp" capture="environment" data-action="change->dropzone#chosen">
+                </label>
+            </div>
+            <p class="tm-caption">PDF, JPG, PNG · {{ max_mb }} Mo max par fichier · stockage chiffré</p>
+            <twig:Button type="submit" name="action" value="upload" icon="upload" data-dropzone-target="submit">Envoyer le justificatif</twig:Button>
+        </form>
+
+        <ul class="tm-doc-list" aria-label="Pièces attendues">
+            {% for slot in slots %}
+                <li class="tm-doc">
+                    <twig:Icon name="file" size="sm" class="tm-doc__icon" />
+                    <div class="tm-doc__text">
+                        <span class="tm-doc__label">{{ slot.label }}</span>
+                        {% if slot.requiredBy is not empty %}<span class="tm-caption">Exigé pour : {{ slot.requiredBy|join(', ') }}</span>{% endif %}
+                        {% if slot.fileName %}<span class="tm-caption">{{ slot.fileName }} · déposé le {{ slot.uploadedAt|date('d/m/Y', 'Europe/Paris') }}</span>{% endif %}
+                    </div>
+                    {% if slot.status == 'quarantined' %}<twig:Badge variant="pending">Analyse en cours</twig:Badge>
+                    {% elseif slot.status == 'pending_review' %}<twig:Badge variant="available">Ajouté</twig:Badge>
+                    {% elseif slot.status == 'approved' %}<twig:Badge variant="verified">Validé</twig:Badge>
+                    {% elseif slot.status == 'rejected' %}<twig:Badge variant="refused">Refusé — à redéposer</twig:Badge>
+                    {% elseif slot.required %}<twig:Badge variant="pending">À ajouter</twig:Badge>
+                    {% else %}<twig:Badge variant="neutral">Facultatif</twig:Badge>{% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+
+        <form method="post" class="tm-pro-signup__actions" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('artisan_documents') }}">
+            <twig:Button variant="secondary" href="{{ path('artisan_signup_insurance') }}">← Étape précédente</twig:Button>
+            <span class="tm-pro-signup__actions-end">
+                <button type="submit" class="tm-link-button" name="action" value="later">Terminer plus tard</button>
+                <twig:Button type="submit" name="action" value="continue" icon="arrowR">Continuer</twig:Button>
+            </span>
+        </form>
+    </div>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Documents chiffrés, accessibles aux seuls administrateurs habilités, consultations journalisées.</li>
+    <li><twig:Icon name="check" size="xs" />« Terminer plus tard » : passez à la dernière étape ; la vérification attendra les pièces manquantes.</li>
+    <li><twig:Icon name="check" size="xs" />Vous pouvez remplacer une pièce à tout moment.</li>
+{% endblock %}

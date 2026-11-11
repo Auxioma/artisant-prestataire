@@ -36,7 +36,10 @@ services:
             - '../src/Identity/Application/EmailVerification/{EmailToken,SecretToken,InvalidEmailToken}.php'
             - '../src/Identity/Application/PasswordReset/{PasswordResetToken,ResetLinkUnusable}.php'
             - '../src/Notification/Application/{Notification,Template,RenderedEmail}.php'
-            - '../src/ArtisanProfile/Application/Signup/{SignupRejected,CompanyLookupResult,SignupState}.php'
+            - '../src/ArtisanProfile/Application/Signup/{SignupRejected,CompanyLookupResult,SignupState,DocumentSlot}.php'
+            - '../src/Shared/Application/Identity/UserContactDetails.php'
+            - '../src/Catalog/Application/Query/JobRequirement.php'
+            - '../src/Catalog/Application/Geo/Query/Coverage.php'
             - '../src/ArtisanProfile/Domain/'
             - '../src/Identity/Infrastructure/Security/SecurityUser.php'
             - '../src/Shared/Infrastructure/DependencyInjection/'
@@ -94,6 +97,8 @@ services:
 
     # Ports du module ArtisanProfile
     App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository: '@App\ArtisanProfile\Infrastructure\Doctrine\Repository\DoctrineArtisanProfileRepository'
+    App\ArtisanProfile\Domain\Document\ArtisanDocumentRepository: '@App\ArtisanProfile\Infrastructure\Doctrine\Repository\DoctrineArtisanDocumentRepository'
+    App\ArtisanProfile\Application\Port\SignupMailer: '@App\ArtisanProfile\Infrastructure\Mailer\NotificationSignupMailer'
 
     # Ports du module Search
     App\Search\Application\Port\AutocompleteIndex: '@App\Search\Infrastructure\Meilisearch\MeilisearchAutocompleteIndex'

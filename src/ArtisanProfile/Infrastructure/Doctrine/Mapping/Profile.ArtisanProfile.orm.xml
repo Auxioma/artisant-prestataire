@@ -25,6 +25,24 @@
         <field name="jobs" type="json">
             <options><option name="jsonb">true</option></options>
         </field>
+        <field name="areaMode" type="string" length="10" column="area_mode" nullable="true" enum-type="App\ArtisanProfile\Domain\Profile\ServiceAreaMode"/>
+        <field name="areaCenterInsee" type="string" length="5" column="area_center_insee" nullable="true"/>
+        <field name="areaRadiusKm" type="smallint" column="area_radius_km" nullable="true"/>
+        <field name="areaDepartments" type="json" column="area_departments">
+            <options><option name="jsonb">true</option></options>
+        </field>
+        <field name="areaCommunes" type="json" column="area_communes">
+            <options><option name="jsonb">true</option></options>
+        </field>
+        <field name="insurances" type="json">
+            <options><option name="jsonb">true</option></options>
+        </field>
+        <field name="qualifications" type="json">
+            <options><option name="jsonb">true</option></options>
+        </field>
+        <field name="shortDescription" type="string" length="300" column="short_description" nullable="true"/>
+        <field name="logoFileId" type="guid" column="logo_file_id" nullable="true"/>
+        <field name="submittedAt" type="datetimetz_immutable" column="submitted_at" nullable="true"/>
         <field name="createdAt" type="datetimetz_immutable" column="created_at"/>
         <field name="updatedAt" type="datetimetz_immutable" column="updated_at"/>
         <field name="version" type="integer" version="true"/>

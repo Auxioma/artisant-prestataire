@@ -12,6 +12,8 @@ namespace App\Shared\Domain\Storage;
 enum FilePurpose: string
 {
     case ArtisanDocument = 'artisan_document';
+    /** Logo ou photo du profil public (A03.7) : image, non chiffrée, exposée une fois saine. */
+    case ArtisanLogo = 'artisan_logo';
     case RequestPhoto = 'request_photo';
     case MessageAttachment = 'message_attachment';
     case QuotePdf = 'quote_pdf';
@@ -23,7 +25,7 @@ enum FilePurpose: string
     {
         return match ($this) {
             self::ArtisanDocument, self::MessageAttachment => [FileType::Pdf, FileType::Jpeg, FileType::Png, FileType::Webp],
-            self::RequestPhoto, self::ReviewPhoto, self::PortfolioPhoto => [FileType::Jpeg, FileType::Png, FileType::Webp],
+            self::ArtisanLogo, self::RequestPhoto, self::ReviewPhoto, self::PortfolioPhoto => [FileType::Jpeg, FileType::Png, FileType::Webp],
             self::QuotePdf => [FileType::Pdf],
         };
     }

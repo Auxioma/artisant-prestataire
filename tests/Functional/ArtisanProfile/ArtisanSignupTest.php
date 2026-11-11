@@ -85,11 +85,11 @@ final class ArtisanSignupTest extends WebTestCase
         self::assertSelectorTextContains('.tm-job-category', 'Plombier');
         $ids = $crawler->filter('input[name="jobs[]"]')->each(static fn ($n): string => (string) $n->attr('value'));
         $this->client->request('POST', '/inscription/pro/metiers', ['_token' => (string) $crawler->filter('input[name="_token"]')->attr('value'), 'jobs' => $ids, 'main' => $ids[1]]);
-        self::assertResponseRedirects('/inscription/pro/suite', 303);
+        self::assertResponseRedirects('/inscription/pro/zone', 303);
         self::assertSame('3|2', $this->rows("SELECT completed_step || '|' || jsonb_array_length(jobs) FROM artisan.artisan_profile"));
 
         $this->client->request('GET', '/inscription/pro/reprendre');
-        self::assertResponseRedirects('/inscription/pro/suite');
+        self::assertResponseRedirects('/inscription/pro/zone');
     }
 
     /** @return iterable<string, array{array<string, string>, string}> */

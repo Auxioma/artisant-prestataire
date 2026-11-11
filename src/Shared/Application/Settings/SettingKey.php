@@ -68,6 +68,7 @@ enum SettingKey: string
     case ProRadiusMaxKm = 'pro.radius_max_km';
     case ProPreviewBeforeVerified = 'pro.preview_before_verified';
     case ProPhonePublicAllowed = 'pro.phone_public_allowed';
+    case ProVerificationDelayHours = 'pro.verification_delay_hours';
     case AvailabilityBadgeDays = 'availability.badge_days';
     case AppointmentsHoldHours = 'appointments.hold_hours';
     case ReviewsWindowDays = 'reviews.window_days';
@@ -200,6 +201,7 @@ enum SettingKey: string
             self::ProRadiusMaxKm => $d(T::Integer, 150, 'Rayon d\'intervention maximum (km)', 1, 1000),
             self::ProPreviewBeforeVerified => $d(T::Boolean, true, 'Aperçu des demandes avant vérification'),
             self::ProPhonePublicAllowed => $d(T::Boolean, true, 'Option « afficher mon téléphone » (Q13)', proposed: true),
+            self::ProVerificationDelayHours => $d(T::Integer, 48, 'Délai de vérification annoncé aux artisans (heures ouvrées) — CDC A03.7', 1, 720),
             self::AvailabilityBadgeDays => $d(T::Integer, 7, 'Fenêtre du badge Disponible (j)', 1, 60),
             self::AppointmentsHoldHours => $d(T::Integer, 24, 'Verrouillage d\'un créneau proposé (h)', 1, 168),
             self::ReviewsWindowDays => $d(T::Integer, 90, 'Fenêtre de dépôt d\'avis (j)', 1, 730),

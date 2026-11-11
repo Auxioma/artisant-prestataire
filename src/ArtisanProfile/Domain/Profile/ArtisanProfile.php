@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\ArtisanProfile\Domain\Profile;
 
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanCompanyDeclared;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanInsurancesDeclared;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanJobsChosen;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanProfileStarted;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanServiceAreaDefined;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanSignupSubmitted;
 use App\Catalog\Domain\Job\JobId;
 use App\Shared\Domain\AggregateRoot;
 use App\Shared\Domain\ValueObject\Siret;
@@ -22,6 +25,14 @@ final class ArtisanProfile extends AggregateRoot
     public const int STEP_ACCOUNT = 1;
     public const int STEP_COMPANY = 2;
     public const int STEP_JOBS = 3;
+    public const int STEP_AREA = 4;
+    public const int STEP_INSURANCE = 5;
+    public const int STEP_DOCUMENTS = 6;
+    public const int STEP_PROFILE = 7;
+    /** A03.7 — « description courte (300 car.) ». */
+    public const int SHORT_DESCRIPTION_MAX = 300;
+    /** Borne technique du nombre de labels déclarés. */
+    public const int MAX_QUALIFICATIONS = 10;
 
     private ArtisanStatus $status = ArtisanStatus::Incomplete;
     private int $completedStep = self::STEP_ACCOUNT;
@@ -41,6 +52,20 @@ final class ArtisanProfile extends AggregateRoot
     private ?\DateTimeImmutable $siretVerifiedAt = null;
     /** @var list<array{job: string, main: bool}> métiers exercés (projection artisan_job pour la recherche : T-208) */
     private array $jobs = [];
+    private ?ServiceAreaMode $areaMode = null;
+    private ?string $areaCenterInsee = null;
+    private ?int $areaRadiusKm = null;
+    /** @var list<string> */
+    private array $areaDepartments = [];
+    /** @var list<string> */
+    private array $areaCommunes = [];
+    /** @var list<array{kind: string, insurer: string, policy: string, valid_until: string}> */
+    private array $insurances = [];
+    /** @var list<array{name: string, number: string, valid_until: string}> */
+    private array $qualifications = [];
+    private ?string $shortDescription = null;
+    private ?string $logoFileId = null;
+    private ?\DateTimeImmutable $submittedAt = null;
     private \DateTimeImmutable $updatedAt;
     private int $version = 1;
 
@@ -94,9 +119,7 @@ final class ArtisanProfile extends AggregateRoot
     public function chooseJobs(array $jobIds, JobId $main, int $maxJobs, \DateTimeImmutable $now): void
     {
         $this->assertEditable();
-        if (self::STEP_COMPANY > $this->completedStep) {
-            throw new ArtisanRuleViolation('Déclarez d’abord votre entreprise.');
-        }
+        $this->assertStepDone(self::STEP_COMPANY, 'Déclarez d’abord votre entreprise.');
         $unique = [];
         foreach ($jobIds as $jobId) {
             $unique[$jobId->value] = $jobId;
@@ -118,6 +141,108 @@ final class ArtisanProfile extends AggregateRoot
         $this->completedStep = max($this->completedStep, self::STEP_JOBS);
         $this->updatedAt = $now;
         $this->recordEvent(new ArtisanJobsChosen($this->id->value, $now));
+    }
+
+    /** A03.4 — zone d'intervention ; modifiable à tout moment, effet immédiat pour les nouvelles demandes (RG-042). */
+    public function defineServiceArea(ServiceArea $area, \DateTimeImmutable $now): void
+    {
+        $this->assertEditable();
+        $this->assertStepDone(self::STEP_JOBS, 'Choisissez d’abord vos métiers.');
+        $this->areaMode = $area->mode;
+        $this->areaCenterInsee = $area->centerInsee;
+        $this->areaRadiusKm = $area->radiusKm;
+        $this->areaDepartments = $area->departments;
+        $this->areaCommunes = $area->communes;
+        $this->completedStep = max($this->completedStep, self::STEP_AREA);
+        $this->updatedAt = $now;
+        $this->recordEvent(new ArtisanServiceAreaDefined($this->id->value, $now));
+    }
+
+    /**
+     * A03.5 — assurances (une par nature) et labels. Décennale / RC Pro obligatoires selon les métiers exercés (Q16) ;
+     * une attestation dont la date de fin est passée est refusée.
+     *
+     * @param list<Insurance>     $insurances
+     * @param list<Qualification> $qualifications
+     */
+    public function declareInsurances(array $insurances, array $qualifications, InsuranceRequirements $required, \DateTimeImmutable $now): void
+    {
+        $this->assertEditable();
+        $this->assertStepDone(self::STEP_AREA, 'Définissez d’abord votre zone d’intervention.');
+        $byKind = [];
+        foreach ($insurances as $insurance) {
+            if (isset($byKind[$insurance->kind->value])) {
+                throw new ArtisanRuleViolation(\sprintf('%s déclarée deux fois.', $insurance->kind->label()));
+            }
+            if ($insurance->isExpiredOn($now)) {
+                throw new ArtisanRuleViolation('Votre attestation d’assurance semble expirée.');
+            }
+            $byKind[$insurance->kind->value] = $insurance;
+        }
+        foreach ([[InsuranceKind::Decennial, $required->decennial], [InsuranceKind::ProfessionalLiability, $required->liability]] as [$kind, $mandatory]) {
+            if ($mandatory && !isset($byKind[$kind->value])) {
+                throw new ArtisanRuleViolation(\sprintf('%s obligatoire pour vos métiers.', $kind->label()));
+            }
+        }
+        if ($required->any && [] === $byKind) {
+            throw new ArtisanRuleViolation('Déclarez au moins une assurance (décennale ou RC Professionnelle).');
+        }
+        if (\count($qualifications) > self::MAX_QUALIFICATIONS) {
+            throw new ArtisanRuleViolation(\sprintf('%d labels au maximum.', self::MAX_QUALIFICATIONS));
+        }
+        $names = [];
+        foreach ($qualifications as $qualification) {
+            if (isset($names[mb_strtolower($qualification->name)])) {
+                throw new ArtisanRuleViolation(\sprintf('Le label « %s » est déclaré deux fois.', $qualification->name));
+            }
+            if ($qualification->isExpiredOn($now)) {
+                throw new ArtisanRuleViolation(\sprintf('Le label « %s » semble expiré.', $qualification->name));
+            }
+            $names[mb_strtolower($qualification->name)] = true;
+        }
+
+        $this->insurances = array_values(array_map(static fn (Insurance $i): array => $i->toArray(), $byKind));
+        $this->qualifications = array_map(static fn (Qualification $q): array => $q->toArray(), $qualifications);
+        $this->completedStep = max($this->completedStep, self::STEP_INSURANCE);
+        $this->updatedAt = $now;
+        $this->recordEvent(new ArtisanInsurancesDeclared($this->id->value, $now));
+    }
+
+    /** A03.6 — étape franchie, pièces complètes ou non (« Terminer plus tard » : la vérification attend les pièces). */
+    public function completeDocumentsStep(\DateTimeImmutable $now): void
+    {
+        $this->assertEditable();
+        $this->assertStepDone(self::STEP_INSURANCE, 'Déclarez d’abord vos assurances.');
+        $this->completedStep = max($this->completedStep, self::STEP_DOCUMENTS);
+        $this->updatedAt = $now;
+    }
+
+    /** A03.7 — logo ou photo (fichier de `shared.stored_file`, exposé seulement une fois sain). */
+    public function changeLogo(?string $fileId, \DateTimeImmutable $now): void
+    {
+        $this->assertEditable();
+        $this->assertStepDone(self::STEP_DOCUMENTS, 'Déposez d’abord vos justificatifs.');
+        $this->logoFileId = $fileId;
+        $this->updatedAt = $now;
+    }
+
+    /** A03.7 — description courte, puis envoi du dossier : « en attente de vérification » (RG-043). */
+    public function submit(string $shortDescription, \DateTimeImmutable $now): void
+    {
+        $this->assertEditable();
+        $this->assertStepDone(self::STEP_DOCUMENTS, 'Déposez d’abord vos justificatifs.');
+        $description = Text::paragraph($shortDescription, self::SHORT_DESCRIPTION_MAX);
+        if ('' === $description) {
+            throw new ArtisanRuleViolation('Présentez votre activité en quelques mots.');
+        }
+        $this->shortDescription = $description;
+        $this->completedStep = self::STEP_PROFILE;
+        $this->updatedAt = $now;
+        if (ArtisanStatus::Incomplete === $this->status) {
+            $this->status = ArtisanStatus::PendingVerification;
+            $this->submittedAt = $now;
+            $this->recordEvent(new ArtisanSignupSubmitted($this->id->value, $this->userId, $now));
+        }
     }
 
     public function id(): ArtisanProfileId
@@ -195,6 +320,45 @@ final class ArtisanProfile extends AggregateRoot
         }
 
         return null;
+    }
+
+    public function serviceArea(): ?ServiceArea
+    {
+        return null === $this->areaMode ? null : ServiceArea::restore($this->areaMode, $this->areaCenterInsee, $this->areaRadiusKm, $this->areaDepartments, $this->areaCommunes);
+    }
+
+    /** @return list<Insurance> */
+    public function insurances(): array
+    {
+        return array_map(Insurance::fromArray(...), $this->insurances);
+    }
+
+    /** @return list<Qualification> */
+    public function qualifications(): array
+    {
+        return array_map(Qualification::fromArray(...), $this->qualifications);
+    }
+
+    public function shortDescription(): ?string
+    {
+        return $this->shortDescription;
+    }
+
+    public function logoFileId(): ?string
+    {
+        return $this->logoFileId;
+    }
+
+    public function submittedAt(): ?\DateTimeImmutable
+    {
+        return $this->submittedAt;
+    }
+
+    private function assertStepDone(int $step, string $message): void
+    {
+        if ($this->completedStep < $step) {
+            throw new ArtisanRuleViolation($message);
+        }
     }
 
     private function assertEditable(): void

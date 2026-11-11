@@ -519,9 +519,212 @@
 
     .tm-job__main:has(input:disabled) { color: var(--color-text-muted); cursor: default; }
 
+    /* A03.4 — zone d'intervention */
+    .tm-area__panel { display: grid; gap: var(--space-4); }
+    .tm-area__panel[hidden] { display: none; }
+    .tm-area__suggest { position: relative; display: grid; gap: var(--space-2); }
+
+    .tm-area__suggestions {
+        position: absolute;
+        inset-inline: 0;
+        top: calc(100% - var(--space-2));
+        z-index: var(--z-dropdown);
+        margin: 0;
+        padding: var(--space-1);
+        list-style: none;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-overlay);
+    }
+
+    .tm-area__suggestion { padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); cursor: pointer; font: var(--type-body-sm); }
+    .tm-area__suggestion:hover, .tm-area__suggestion[aria-selected='true'] { background: var(--color-info-bg); color: var(--color-link); }
+    .tm-area__choices { display: grid; gap: var(--space-1); }
+    .tm-area__range { gap: var(--space-2); }
+    .tm-area__range-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
+    .tm-area__range-value { font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-range { width: 100%; min-height: var(--control-height); accent-color: var(--color-link); }
+
+    .tm-area__departments {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: var(--space-1) var(--space-4);
+        max-height: 320px;
+        overflow-y: auto;
+        margin: 0;
+        padding: var(--space-2) 0;
+        list-style: none;
+    }
+
+    .tm-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+
+    .tm-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-1);
+        padding-inline-start: var(--space-3);
+        border-radius: var(--radius-pill);
+        background: var(--color-info-bg);
+        color: var(--color-link);
+        font: var(--type-label);
+    }
+
+    .tm-chip__remove {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: var(--control-height);
+        height: var(--control-height);
+        border: 0;
+        border-radius: var(--radius-pill);
+        background: none;
+        color: inherit;
+        cursor: pointer;
+    }
+
+    .tm-chip__remove:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+    .tm-area__preview {
+        display: grid;
+        justify-items: center;
+        gap: var(--space-3);
+        padding: var(--space-6) var(--space-4);
+        border-radius: var(--radius-card);
+        background: var(--color-info-bg);
+        text-align: center;
+    }
+
+    .tm-area__circle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 120px;
+        height: 120px;
+        border: 2px dashed var(--color-link);
+        border-radius: var(--radius-pill);
+        background: var(--color-surface-section);
+        color: var(--orange);
+    }
+
+    .tm-area__circle .tm-icon { width: 28px; height: 28px; color: inherit; }
+
+    .tm-area__coverage { margin: 0; font: var(--type-body-strong); color: var(--color-heading); }
+
+    /* A03.5 — assurances et labels */
+    .tm-insurance { display: grid; gap: var(--space-3); }
+    .tm-insurance > legend { margin-bottom: var(--space-3); }
+    .tm-label-row { display: grid; gap: var(--space-2); justify-items: start; padding-bottom: var(--space-3); border-bottom: 1px solid var(--color-border); }
+    .tm-label-row > .tm-form-grid { width: 100%; }
+
+    /* A03.6 — justificatifs */
+    .tm-dropzone {
+        display: grid;
+        justify-items: center;
+        gap: var(--space-3);
+        padding: var(--space-6) var(--space-4);
+        border: 2px dashed var(--color-border-strong);
+        border-radius: var(--radius-card);
+        background: var(--color-surface-alt);
+        text-align: center;
+    }
+
+    .tm-dropzone--over { border-color: var(--color-link); background: var(--color-info-bg); }
+    .tm-dropzone__icon { width: 32px; height: 32px; color: var(--color-link); }
+    .tm-dropzone__title { margin: 0; font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-dropzone__slot { display: grid; gap: var(--space-1); width: 100%; max-width: 420px; min-width: 0; text-align: start; }
+    .tm-dropzone__slot .tm-select { width: 100%; min-width: 0; }
+    .tm-dropzone__slot .tm-select__input { width: 100%; min-width: 0; text-overflow: ellipsis; }
+    .tm-dropzone__buttons { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+    .tm-dropzone__pick { cursor: pointer; }
+    .tm-dropzone__pick:focus-within { outline: none; box-shadow: var(--focus-ring); }
+
+    .tm-doc-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+
+    .tm-doc {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-3);
+        padding: var(--space-3) var(--space-4);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-surface);
+    }
+
+    .tm-doc__icon { color: var(--color-success-text); flex: none; }
+    .tm-doc__text { display: grid; flex: 1 1 200px; gap: 2px; }
+    .tm-doc__label { font: var(--type-body-sm); color: var(--color-heading); }
+    .tm-pro-signup__actions-end { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+
+    /* A03.7 — profil public express */
+    .tm-profile-step { display: grid; gap: var(--space-5); }
+    .tm-profile-step__card { display: grid; gap: var(--space-2); margin: 0; max-width: 320px; }
+    .tm-logo-picker { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+
+    .tm-logo-picker__preview {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        overflow: hidden;
+        border-radius: var(--radius-pill);
+        background: var(--color-surface-section);
+        color: var(--color-link);
+        flex: none;
+    }
+
+    .tm-logo-picker__preview img { width: 100%; height: 100%; object-fit: cover; }
+    .tm-logo-picker__error { flex-basis: 100%; margin: 0; }
+    .tm-field__textarea { min-height: 96px; padding-block: var(--space-2); resize: vertical; font: var(--type-body); }
+
+    /* A03.7 — dossier envoyé */
+    .tm-submitted__page { padding-top: var(--space-10); }
+    .tm-state-card.tm-submitted { max-width: 600px; justify-items: center; text-align: center; }
+    .tm-submitted p { margin: 0; }
+
+    .tm-submitted__credits {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-2) var(--space-4);
+        border-radius: var(--radius-md);
+        background: var(--color-warning-bg);
+        color: var(--color-warning-text);
+        font: var(--type-body-strong);
+    }
+
+    .tm-submitted__checklist {
+        display: grid;
+        gap: var(--space-3);
+        width: 100%;
+        padding: var(--space-4) var(--space-5);
+        border-radius: var(--radius-md);
+        background: var(--color-surface-alt);
+        text-align: start;
+    }
+
+    .tm-check-list .tm-check-list__todo .tm-icon { color: var(--color-link); }
+
+    .tm-submitted__info {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-2);
+        width: 100%;
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-sm);
+        background: var(--color-info-bg);
+        color: var(--color-info-text);
+        font: var(--type-body-sm);
+        text-align: start;
+    }
+
     @media (min-width: 768px) {
         .tm-siret { grid-template-columns: minmax(0, 1fr) auto; }
         .tm-siret > .tm-button { margin-top: 26px; }
+        .tm-form-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .tm-profile-step { grid-template-columns: minmax(0, 1fr) 280px; align-items: start; }
     }
 
     @media (min-width: 1024px) {

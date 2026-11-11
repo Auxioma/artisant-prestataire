@@ -105,6 +105,7 @@ notifications:
         label: "Dossier d'inscription pro reçu"
         recipient: "Artisan"
         channels: [email]
+        variables: [prenom, entreprise, delai_heures, devis_offerts, lien]
     'E-21':
         label: "Compte vérifié + crédits offerts"
         recipient: "Artisan"
