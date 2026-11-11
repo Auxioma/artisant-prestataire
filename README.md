@@ -16,9 +16,17 @@ open http://localhost:8090/healthz
 Services de développement : Mailpit http://localhost:8025 · Meilisearch http://localhost:7700 · S3 (SeaweedFS) http://localhost:8333 · PostgreSQL `127.0.0.1:5434`.
 Les ports se changent via les variables `TM_HTTP_PORT`, `TM_DB_PORT`, `TM_REDIS_PORT`, `TM_MEILI_PORT`, `TM_MAILPIT_PORT` et `TM_S3_PORT`, à placer dans `.env.local` ou dans l'environnement. Les images sont multi-architecture (Apple Silicon compris).
 
+## Référentiel géographique
+
+```bash
+docker compose exec php php -d memory_limit=512M bin/console app:geo:import    # API officielle (~13 s, idempotent)
+docker compose exec php bin/console app:geo:seo-pages --min-population=5000  # pages villes SEO (BO07.1)
+```
+
 ## Qualité (identique à la CI)
 
 ```bash
+docker compose exec php composer qa   # dans le conteneur : PostGIS requis (absent du PostgreSQL Homebrew)
 composer qa          # PHP-CS-Fixer (dry-run) + PHPStan max + Deptrac (couches et modules) + PHPUnit
 composer cs:fix      # corrige le style
 APP_ENV=test bin/console doctrine:migrations:migrate -n   # base de test (suffixe _test)

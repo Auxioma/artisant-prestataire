@@ -1,0 +1,22 @@
+{
+    "regions": [
+        {"nom": "Normandie", "code": "28"},
+        {"nom": "Île-de-France", "code": "11"}
+    ],
+    "departements": [
+        {"nom": "Seine-Maritime", "code": "76", "codeRegion": "28"},
+        {"nom": "Calvados", "code": "14", "codeRegion": "28"},
+        {"nom": "Paris", "code": "75", "codeRegion": "11"}
+    ],
+    "communes": [
+        {"nom": "Le Havre", "code": "76351", "codesPostaux": ["76620", "76600", "76610"], "centre": {"type": "Point", "coordinates": [0.1312, 49.4958]}, "population": 166687, "codeDepartement": "76", "codeRegion": "28"},
+        {"nom": "Rouen", "code": "76540", "codesPostaux": ["76000", "76100"], "centre": {"type": "Point", "coordinates": [1.0763, 49.4412]}, "population": 114083, "codeDepartement": "76", "codeRegion": "28"},
+        {"nom": "Harfleur", "code": "76341", "codesPostaux": ["76700"], "centre": {"type": "Point", "coordinates": [0.1981, 49.5113]}, "population": 7999, "codeDepartement": "76", "codeRegion": "28"},
+        {"nom": "Caen", "code": "14118", "codesPostaux": ["14000"], "centre": {"type": "Point", "coordinates": [-0.3700, 49.1846]}, "population": 108200, "codeDepartement": "14", "codeRegion": "28"},
+        {"nom": "Évreux", "code": "27229", "codesPostaux": ["27000"], "centre": {"type": "Point", "coordinates": [1.1339, 49.0241]}, "population": 49360, "codeDepartement": "27", "codeRegion": "28"},
+        {"nom": "Paris", "code": "75056", "codesPostaux": ["75001", "75002"], "centre": {"type": "Point", "coordinates": [2.347, 48.8589]}, "population": 2133111, "codeDepartement": "75", "codeRegion": "11"},
+        {"nom": "Saint-Pierre", "code": "97502", "codesPostaux": ["97500"], "centre": {"type": "Point", "coordinates": [-56.17, 46.77]}, "population": 5394, "codeDepartement": "975", "codeRegion": "975"},
+        {"nom": "Coordonnées fausses", "code": "76999", "codesPostaux": ["76999"], "centre": {"type": "Point", "coordinates": [0.1, 200]}, "population": 1, "codeDepartement": "76", "codeRegion": "28"},
+        {"nom": "Fleury-devant-Douaumont", "code": "14999", "codesPostaux": [], "centre": {"type": "Point", "coordinates": [-0.36, 49.18]}, "population": 0, "codeDepartement": "14", "codeRegion": "28"}
+    ]
+}

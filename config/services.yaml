@@ -23,6 +23,8 @@ services:
             - '../src/*/Application/Command/*/*Command.php'
             - '../src/*/Application/Query/*/*Query.php'
             - '../src/Shared/Application/Settings/{SettingDefinition,InvalidSettingValue}.php'
+            - '../src/Catalog/Application/Geo/{RegionRecord,DepartmentRecord,CommuneRecord,CommuneRow,ImportReport}.php'
+            - '../src/Catalog/Infrastructure/Geo/{GeoApiGouvSource,JsonFileGeoSource,GeoApiPayloadParser}.php'
 
     # Ports du noyau partagé
     App\Shared\Domain\Time\Clock: '@App\Shared\Infrastructure\Time\SystemClock'
@@ -30,6 +32,7 @@ services:
     App\Shared\Application\Bus\CommandBus: '@App\Shared\Infrastructure\Messenger\MessengerCommandBus'
     App\Shared\Application\Bus\QueryBus: '@App\Shared\Infrastructure\Messenger\MessengerQueryBus'
     App\Shared\Application\Bus\EventBus: '@App\Shared\Infrastructure\Messenger\OutboxEventBus'
+    App\Shared\Application\Transaction\TransactionManager: '@App\Shared\Infrastructure\Persistence\DbalTransactionManager'
     App\Shared\Application\Security\IpAnonymizer: '@App\Shared\Infrastructure\Security\HmacIpAnonymizer'
     App\Shared\Application\Settings\SettingsProvider: '@App\Administration\Infrastructure\Settings\DbalSettingsProvider'
 
@@ -41,6 +44,8 @@ services:
     App\Catalog\Domain\Category\CategoryRepository: '@App\Catalog\Infrastructure\Doctrine\Repository\DoctrineCategoryRepository'
     App\Catalog\Domain\Job\JobRepository: '@App\Catalog\Infrastructure\Doctrine\Repository\DoctrineJobRepository'
     App\Catalog\Application\Port\JobUsageCounter: '@App\Catalog\Infrastructure\InterimJobUsageCounter'
+    App\Catalog\Application\Geo\Port\GeoReferentialStore: '@App\Catalog\Infrastructure\Geo\DbalGeoReferentialStore'
+    App\Catalog\Application\Geo\Port\GeoReferentialSourceFactory: '@App\Catalog\Infrastructure\Geo\GeoSourceFactory'
     App\Catalog\UI\Twig\CatalogExtension:
         arguments: { $catalogCache: '@cache.catalog' }
     App\Catalog\Infrastructure\Cache\InvalidateMainCategoriesCache:

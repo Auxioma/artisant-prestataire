@@ -78,7 +78,7 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 | `questionnaire_form` | id, job_id, version, schema (jsonb), active | **UQ** (job_id, version) |
 | `price_range` | id, job_id, label, low_cents, high_cents, unit, source (`manual`/`computed`), sample_size, updated_at | **CK** low ≤ high |
 | `region` / `department` | code, name, (region_code) | PK code |
-| `location` (commune) | insee (PK), name, slug, postal_codes text[], department_code, population, centroid `geography(Point,4326)`, seo_page_enabled, seo_text | **IX GiST** centroid · **IX GIN** postal_codes · **UQ** (slug, department_code) |
+| `commune` (T-113) | insee (PK, CK format), name, slug, postal_codes text[], department_code (FK), population, centroid `geography(Point,4326)`, active, seo_page_enabled, seo_text | **IX GiST** centroid · **IX GIN** postal_codes · **IX GIN trigram** `immutable_unaccent(lower(name))` · **UQ** slug (`nom-codepostal`, stable une fois attribué) · communes disparues désactivées, jamais supprimées |
 
 ### 2.3 `artisan`
 

@@ -12,6 +12,15 @@ framework:
         cookie_lifetime: 0
         gc_maxlifetime: 7200
 
+    # Clients HTTP sortants : un client par service, hôte fixe, délais bornés (anti-SSRF — cadrage §5.3).
+    http_client:
+        scoped_clients:
+            geo_api.client:
+                base_uri: 'https://geo.api.gouv.fr'
+                timeout: 30
+                max_duration: 300
+                headers: { Accept: 'application/json' }
+
     http_method_override: false
     handle_all_throwables: true
     php_errors:

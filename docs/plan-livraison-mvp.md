@@ -21,7 +21,8 @@
 | T-110 Mise en page commune | ✅ | En-tête 4 variantes (visiteur, client, artisan + jauge compacte, tunnel) + méga-menu + menus compte + menu mobile `<dialog>`, pied de page (accordéon mobile, réseaux et newsletter conditionnels), fil d'Ariane + JSON-LD ; **correctif CSP** : CSS chargées par `<link>` (l'import JS bloquait tout le JavaScript) ; planche `/_dev/layout` |
 | T-111 CMP cookies | ✅ | Bandeau non bloquant + préférences `<dialog>`, interrupteurs (`Switch`), cookie `tm_consent` versionné (6 mois), preuve serveur append-only `identity.consent` (IP hachée, origine vérifiée, limite de débit), scripts gardés `type="text/plain"`, `dataLayer` filtré (`assets/lib/analytics.js`), retrait = rechargement ; vérifié en navigateur |
 | T-112 Référentiel Catalog | ✅ | Agrégats `Category` (2 niveaux) et `Job` (synonymes, justificatifs, désactivation avec remplacement), mapping XML, cas d'usage audités, slugs réservés, import idempotent du référentiel initial (6 catégories, 24 métiers), méga-menu alimenté et mis en cache, **301 automatiques** (chaînes aplaties, boucles supprimées, préfixe métier × ville). Écrans BO06 → T-209 (back-office authentifié) ; commandes console en attendant |
-| T-113 → T-116 | ⬜ | Prochaine étape : référentiel géographique INSEE + PostGIS (T-113) |
+| T-113 Référentiel géographique | ✅ | Import officiel (API Découpage administratif : COG INSEE, codes postaux, centroïdes) — 18 régions, 101 départements, 34 875 communes en 13 s, idempotent, audité ; slugs stables `nom-cp` ; communes disparues désactivées (garde-fou 90 %) ; COM hors périmètre (P-35) ; requêtes PostGIS par rayon et recherche sans accents / par code postal (index GiST et trigramme vérifiés) ; activation des pages villes par seuil de population ; mise à jour annuelle planifiée (15 février) |
+| T-114 → T-116 | ⬜ | Prochaine étape : autocomplétion Meilisearch (T-114) |
 
 ## Lot 0 — Cadrage *(ce livrable)*
 | ID | Ticket | Réf. | Taille |

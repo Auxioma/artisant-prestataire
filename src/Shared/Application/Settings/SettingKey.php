@@ -86,6 +86,7 @@ enum SettingKey: string
     case SearchPageSize = 'search.page_size';
     case SeoMinProsIndex = 'seo.min_pros_index';
     case SeoMinSample = 'seo.min_sample';
+    case SeoCityPagesMinPopulation = 'seo.city_pages_min_population';
     case HomeCategoriesMax = 'home.categories_max';
     case HomeProsCount = 'home.pros_count';
     case CatalogPriceRangeSource = 'catalog.price_range_source';
@@ -214,6 +215,7 @@ enum SettingKey: string
             self::SearchWeights => $d(T::WeightMap, ['job' => 0.30, 'distance' => 0.25, 'rating' => 0.20, 'responsiveness' => 0.10, 'completion' => 0.10, 'availability' => 0.05], 'Pondérations de pertinence (RG-020)', choices: ['job', 'distance', 'rating', 'responsiveness', 'completion', 'availability']),
             self::SearchPageSize => $d(T::Integer, 20, 'Résultats par page', 5, 100),
             self::SeoMinProsIndex => $d(T::Integer, 3, 'Artisans minimum pour indexer métier × ville', 0, 100),
+            self::SeoCityPagesMinPopulation => $d(T::Integer, 5000, 'Population minimale pour activer une page ville (BO07.1)', 0, 1_000_000, proposed: true),
             self::SeoMinSample => $d(T::Integer, 5, 'Échantillon minimum pour statistiques locales', 1, 1000),
             self::HomeCategoriesMax => $d(T::Integer, 12, 'Cartes catégories sur l\'accueil', 1, 48),
             self::HomeProsCount => $d(T::Integer, 8, 'Cartes artisans sur l\'accueil', 1, 48),
