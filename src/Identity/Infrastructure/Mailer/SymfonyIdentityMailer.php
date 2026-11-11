@@ -46,6 +46,25 @@ final readonly class SymfonyIdentityMailer implements IdentityMailer
         ]);
     }
 
+    public function sendPasswordResetLink(Email $to, string $firstName, string $token, int $ttlMinutes): void
+    {
+        $this->send($to, 'Réinitialisez votre mot de passe TrouveMoi', 'email/identity/password_reset', 'E-03', [
+            'first_name' => $firstName,
+            'link' => $this->urls->generate('identity_password_reset', ['token' => $token], UrlGeneratorInterface::ABSOLUTE_URL),
+            'ttl_minutes' => $ttlMinutes,
+        ]);
+    }
+
+    public function sendPasswordChanged(Email $to, string $firstName, \DateTimeImmutable $at): void
+    {
+        $this->send($to, 'Votre mot de passe TrouveMoi a été modifié', 'email/identity/password_changed', 'E-04', [
+            'first_name' => $firstName,
+            'changed_at' => $at,
+            'reset_link' => $this->absolute('identity_password_forgotten'),
+            'help_link' => $this->absolute('content_contact'),
+        ]);
+    }
+
     public function sendNewDeviceAlert(Email $to, string $firstName, string $device, \DateTimeImmutable $at): void
     {
         $this->send($to, 'Nouvelle connexion à votre compte TrouveMoi', 'email/identity/new_device', 'E-05', [

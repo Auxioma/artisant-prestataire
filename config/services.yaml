@@ -34,6 +34,7 @@ services:
             - '../src/Identity/Application/Legal/LegalDocumentVersion.php'
             - '../src/Identity/Application/Registration/RegistrationRejected.php'
             - '../src/Identity/Application/EmailVerification/{EmailToken,SecretToken,InvalidEmailToken}.php'
+            - '../src/Identity/Application/PasswordReset/{PasswordResetToken,ResetLinkUnusable}.php'
             - '../src/Identity/Infrastructure/Security/SecurityUser.php'
             - '../src/Shared/Infrastructure/DependencyInjection/'
             - '../src/Catalog/Application/Geo/Port/GeocodedAddress.php'
@@ -95,6 +96,7 @@ services:
     App\Identity\Application\Port\IdentityMailer: '@App\Identity\Infrastructure\Mailer\SymfonyIdentityMailer'
     App\Identity\Application\Port\KnownDevices: '@App\Identity\Infrastructure\Login\DbalKnownDevices'
     App\Identity\Application\Port\LoginProtection: '@App\Identity\Infrastructure\Security\SecurityLoginProtection'
+    App\Identity\Application\Port\PasswordResetTokens: '@App\Identity\Infrastructure\PasswordReset\DbalPasswordResetTokens'
 
     App\Shared\Infrastructure\Messenger\MessengerCommandBus:
         arguments: { $bus: '@command.bus' }

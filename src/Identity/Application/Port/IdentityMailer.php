@@ -18,6 +18,12 @@ interface IdentityMailer
     /** E-06 : alerte envoyée à l'ancienne adresse après un changement. */
     public function sendEmailChangedAlert(Email $oldAddress, string $firstName, \DateTimeImmutable $at): void;
 
+    /** E-03 : lien de réinitialisation du mot de passe. */
+    public function sendPasswordResetLink(Email $to, string $firstName, string $token, int $ttlMinutes): void;
+
+    /** E-04 : mot de passe modifié. */
+    public function sendPasswordChanged(Email $to, string $firstName, \DateTimeImmutable $at): void;
+
     /** E-05 : connexion depuis un appareil jamais utilisé pour ce compte. */
     public function sendNewDeviceAlert(Email $to, string $firstName, string $device, \DateTimeImmutable $at): void;
 

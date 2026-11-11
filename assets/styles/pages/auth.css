@@ -492,6 +492,19 @@
     .tm-state-card__icon--info { background: var(--color-surface-section); color: var(--color-link); }
     .tm-state-card__title { font: var(--type-h2); color: var(--color-heading); }
     .tm-state-card__form { display: grid; }
+    .tm-state-card--wide { max-width: 480px; }
+    .tm-state-card__title { overflow-wrap: anywhere; }
+
+    .tm-form-success {
+        display: flex;
+        align-items: flex-start;
+        gap: var(--space-2);
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-sm);
+        background: var(--color-success-bg);
+        color: var(--color-success-text);
+        font: var(--type-body-sm);
+    }
 
     .tm-verify-banner { padding-block: var(--space-3); }
 
