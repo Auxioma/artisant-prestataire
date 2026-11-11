@@ -1,25 +1,105 @@
+# Environnement de développement TrouveMoi (cadrage §3). Versions d'images figées ; digests à figer avant prod (T-906).
+# Démarrage : docker compose up -d --wait ; puis docker compose exec php bin/console doctrine:migrations:migrate
+name: trouvemoi
+
+x-app: &app
+  build: { context: ., target: dev }
+  volumes:
+    - ./:/app
+  environment:
+    SERVER_NAME: ':80'
+    DATABASE_URL: postgresql://trouvemoi:trouvemoi@database:5432/trouvemoi?serverVersion=16&charset=utf8
+    MESSENGER_TRANSPORT_DSN: redis://redis:6379
+    REDIS_URL: redis://redis:6379
+    MAILER_DSN: smtp://mailer:1025
+    MEILISEARCH_URL: http://meilisearch:7700
+    MEILISEARCH_API_KEY: trouvemoi-dev-master-key
+    CLAMAV_DSN: tcp://clamav:3310
+    S3_ENDPOINT: http://s3:8333
+    S3_ACCESS_KEY: trouvemoi
+    S3_SECRET_KEY: trouvemoi-dev-secret
+  depends_on:
+    database: { condition: service_healthy }
+    redis: { condition: service_healthy }
 
 services:
-###> doctrine/doctrine-bundle ###
-  database:
-    image: postgres:${POSTGRES_VERSION:-16}-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-app}
-      # You should definitely change the password in production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
-      POSTGRES_USER: ${POSTGRES_USER:-app}
+  php:
+    <<: *app
+    ports: ['8080:80']
     healthcheck:
-      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
-      timeout: 5s
+      test: ['CMD', 'curl', '-fsS', 'http://localhost/healthz']
+      interval: 10s
       retries: 5
-      start_period: 60s
+
+  worker:
+    <<: *app
+    command: ['php', 'bin/console', 'messenger:consume', 'async_priority', 'stripe_webhooks', 'async', 'file_scan', 'search_index', '--time-limit=3600', '--memory-limit=256M', '-vv']
+    restart: unless-stopped
+
+  outbox-relay:
+    <<: *app
+    command: ['php', 'bin/console', 'app:outbox:relay', '-v']
+    restart: unless-stopped
+
+  scheduler:
+    <<: *app
+    command: ['php', 'bin/console', 'messenger:consume', 'scheduler_default', '--time-limit=3600', '-vv']
+    restart: unless-stopped
+
+  database:
+    image: postgis/postgis:16-3.5-alpine
+    environment:
+      POSTGRES_DB: trouvemoi
+      POSTGRES_USER: trouvemoi
+      POSTGRES_PASSWORD: trouvemoi
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-d', 'trouvemoi', '-U', 'trouvemoi']
+      interval: 5s
+      retries: 10
     volumes:
-      - database_data:/var/lib/postgresql/data:rw
-      # You may use a bind-mounted host directory instead, so that it is harder to accidentally remove the volume and lose all your data!
-      # - ./docker/db/data:/var/lib/postgresql/data:rw
-###< doctrine/doctrine-bundle ###
+      - database_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7.4-alpine
+    command: ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      retries: 10
+    volumes:
+      - redis_data:/data
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    environment:
+      MEILI_MASTER_KEY: trouvemoi-dev-master-key
+      MEILI_ENV: development
+      MEILI_NO_ANALYTICS: 'true'
+    volumes:
+      - meili_data:/meili_data
+
+  clamav:
+    image: clamav/clamav:1.4
+    volumes:
+      - clamav_data:/var/lib/clamav
+
+  mailer:
+    image: axllent/mailpit:v1.21
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+  # Stockage objet S3 privé de développement (SeaweedFS ; les images MinIO ne sont plus publiées sur Docker Hub).
+  s3:
+    image: chrislusf/seaweedfs:3.80
+    command: ['server', '-s3', '-s3.config=/etc/seaweedfs/s3.json', '-dir=/data']
+    volumes:
+      - ./docker/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+      - s3_data:/data
 
 volumes:
-###> doctrine/doctrine-bundle ###
   database_data:
-###< doctrine/doctrine-bundle ###
+  redis_data:
+  meili_data:
+  clamav_data:
+  s3_data:

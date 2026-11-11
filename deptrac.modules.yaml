@@ -1,0 +1,35 @@
+# ADR-0001 — axe 2 : bounded contexts. Un module ne dépend que de Shared et des modules explicitement déclarés
+# (via leurs ports Application). Toute nouvelle dépendance inter-module doit être ajoutée ici, en revue.
+deptrac:
+  paths: [./src]
+  cache_file: var/deptrac/modules.cache
+  layers:
+    - { name: Shared,         collectors: [{ type: classLike, value: '^App\\Shared\\.*' }] }
+    - { name: Identity,       collectors: [{ type: classLike, value: '^App\\Identity\\.*' }] }
+    - { name: Catalog,        collectors: [{ type: classLike, value: '^App\\Catalog\\.*' }] }
+    - { name: ArtisanProfile, collectors: [{ type: classLike, value: '^App\\ArtisanProfile\\.*' }] }
+    - { name: Search,         collectors: [{ type: classLike, value: '^App\\Search\\.*' }] }
+    - { name: QuoteRequest,   collectors: [{ type: classLike, value: '^App\\QuoteRequest\\.*' }] }
+    - { name: Quote,          collectors: [{ type: classLike, value: '^App\\Quote\\.*' }] }
+    - { name: Billing,        collectors: [{ type: classLike, value: '^App\\Billing\\.*' }] }
+    - { name: Messaging,      collectors: [{ type: classLike, value: '^App\\Messaging\\.*' }] }
+    - { name: Review,         collectors: [{ type: classLike, value: '^App\\Review\\.*' }] }
+    - { name: Moderation,     collectors: [{ type: classLike, value: '^App\\Moderation\\.*' }] }
+    - { name: Content,        collectors: [{ type: classLike, value: '^App\\Content\\.*' }] }
+    - { name: Notification,   collectors: [{ type: classLike, value: '^App\\Notification\\.*' }] }
+    - { name: Administration, collectors: [{ type: classLike, value: '^App\\Administration\\.*' }] }
+  ruleset:
+    Shared: ~
+    Identity: [Shared, Notification]
+    Catalog: [Shared]
+    ArtisanProfile: [Shared, Catalog, Notification]
+    Search: [Shared, Catalog, ArtisanProfile]
+    QuoteRequest: [Shared, Catalog, ArtisanProfile, Moderation]
+    Quote: [Shared, QuoteRequest, Billing, ArtisanProfile]
+    Billing: [Shared, Notification]
+    Messaging: [Shared, QuoteRequest, Quote]
+    Review: [Shared, Quote, Moderation]
+    Moderation: [Shared]
+    Content: [Shared, Catalog]
+    Notification: [Shared]
+    Administration: [Shared]

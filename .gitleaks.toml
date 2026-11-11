@@ -1,0 +1,12 @@
+# Analyse de secrets (cadrage §5.9). Les seuls « secrets » tolérés sont les identifiants factices de développement local.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Identifiants de développement local, non utilisés hors Docker Compose"
+paths = [
+  '''^\.env\.dev$''',
+  '''^\.env\.test$''',
+  '''^docker/seaweedfs/s3\.json$''',
+  '''^compose\.yaml$''',
+]
