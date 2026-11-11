@@ -3,6 +3,7 @@
 name: trouvemoi
 
 x-app: &app
+  image: trouvemoi-app:dev
   build: { context: ., target: dev }
   volumes:
     - ./:/app
@@ -25,7 +26,7 @@ x-app: &app
 services:
   php:
     <<: *app
-    ports: ['8080:80']
+    ports: ['${TM_HTTP_PORT:-8090}:80']
     healthcheck:
       test: ['CMD', 'curl', '-fsS', 'http://localhost/healthz']
       interval: 10s
@@ -33,21 +34,24 @@ services:
 
   worker:
     <<: *app
+    healthcheck: { disable: true }   # pas de serveur HTTP : la sonde héritée de l'image ne s'applique pas
     command: ['php', 'bin/console', 'messenger:consume', 'async_priority', 'stripe_webhooks', 'async', 'file_scan', 'search_index', '--time-limit=3600', '--memory-limit=256M', '-vv']
     restart: unless-stopped
 
   outbox-relay:
     <<: *app
+    healthcheck: { disable: true }   # pas de serveur HTTP : la sonde héritée de l'image ne s'applique pas
     command: ['php', 'bin/console', 'app:outbox:relay', '-v']
     restart: unless-stopped
 
   scheduler:
     <<: *app
+    healthcheck: { disable: true }   # pas de serveur HTTP : la sonde héritée de l'image ne s'applique pas
     command: ['php', 'bin/console', 'messenger:consume', 'scheduler_default', '--time-limit=3600', '-vv']
     restart: unless-stopped
 
   database:
-    image: postgis/postgis:16-3.5-alpine
+    image: imresamu/postgis:16-3.5-alpine  # multi-arch (amd64 + arm64) ; postgis/postgis n'a pas d'arm64
     environment:
       POSTGRES_DB: trouvemoi
       POSTGRES_USER: trouvemoi
@@ -79,7 +83,7 @@ services:
       - meili_data:/meili_data
 
   clamav:
-    image: clamav/clamav:1.4
+    image: clamav/clamav-debian:1.4  # variante Debian : amd64 + arm64
     volumes:
       - clamav_data:/var/lib/clamav
 

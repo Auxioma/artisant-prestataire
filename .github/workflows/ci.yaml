@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     services:
       database:
-        image: postgis/postgis:16-3.5-alpine
+        image: imresamu/postgis:16-3.5-alpine
         env:
           POSTGRES_DB: trouvemoi
           POSTGRES_USER: trouvemoi

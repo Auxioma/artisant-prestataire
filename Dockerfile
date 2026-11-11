@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 # Image applicative TrouveMoi — FrankenPHP (Caddy + PHP 8.4). Cibles : dev (Xdebug off par défaut) et prod.
 
-FROM dunglas/frankenphp:1.9-php8.4-bookworm AS base
+# PHP 8.4.27 minimum (roave/security-advisories) — tag figé sur le patch PHP exact.
+FROM dunglas/frankenphp:1.13.3-php8.4.27-bookworm AS base
 WORKDIR /app
 RUN install-php-extensions intl pdo_pgsql opcache apcu redis zip sodium \
  && useradd --uid 1000 --create-home app \

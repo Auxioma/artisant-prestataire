@@ -10,10 +10,11 @@ docker compose up -d --wait
 docker compose exec php composer install
 docker compose exec php bin/console doctrine:migrations:migrate -n
 docker compose exec php bin/console app:settings:sync      # paramètres administrables par défaut (annexe G)
-open http://localhost:8080/healthz
+open http://localhost:8090/healthz
 ```
 
-Services de développement : Mailpit http://localhost:8025 · Meilisearch http://localhost:7700 · S3 (SeaweedFS) http://localhost:8333 · PostgreSQL `127.0.0.1:5433`.
+Services de développement : Mailpit http://localhost:8025 · Meilisearch http://localhost:7700 · S3 (SeaweedFS) http://localhost:8333 · PostgreSQL `127.0.0.1:5434`.
+Les ports se changent via les variables `TM_HTTP_PORT`, `TM_DB_PORT`, `TM_REDIS_PORT`, `TM_MEILI_PORT`, `TM_MAILPIT_PORT` et `TM_S3_PORT`, à placer dans `.env.local` ou dans l'environnement. Les images sont multi-architecture (Apple Silicon compris).
 
 ## Qualité (identique à la CI)
 

@@ -1,12 +1,12 @@
-# Ports exposés en local uniquement (127.0.0.1) pour les outils de développement.
+# Ports exposés en local uniquement (127.0.0.1), surchargeables via .env.local / variables d'environnement.
 services:
   database:
-    ports: ['127.0.0.1:5433:5432']
+    ports: ['127.0.0.1:${TM_DB_PORT:-5434}:5432']
   redis:
-    ports: ['127.0.0.1:6380:6379']
+    ports: ['127.0.0.1:${TM_REDIS_PORT:-6380}:6379']
   meilisearch:
-    ports: ['127.0.0.1:7700:7700']
+    ports: ['127.0.0.1:${TM_MEILI_PORT:-7700}:7700']
   mailer:
-    ports: ['127.0.0.1:8025:8025']
+    ports: ['127.0.0.1:${TM_MAILPIT_PORT:-8025}:8025']
   s3:
-    ports: ['127.0.0.1:8333:8333']
+    ports: ['127.0.0.1:${TM_S3_PORT:-8333}:8333']

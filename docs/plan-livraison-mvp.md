@@ -10,7 +10,7 @@
 | Ticket | Statut | Remarque |
 |---|---|---|
 | T-101 Squelette + `Shared` | ✅ | Symfony 7.4.23 LTS, PHP 8.4 (plateforme Composer 8.4.27) |
-| T-102 Docker Compose | ✅ | Configuration validée (`docker compose config`) ; images non construites localement (daemon arrêté). S3 dev = SeaweedFS (P-21) |
+| T-102 Docker Compose | ✅ | Stack démarrée et vérifiée sur Apple Silicon : PHP 8.4.27 (FrankenPHP 1.13.3), PostGIS 3.5, tous services sains ; circuit asynchrone commande → outbox → Redis → worker vérifié de bout en bout ; suite QA complète verte dans le conteneur. S3 dev = SeaweedFS (P-21) |
 | T-103 CI | ✅ | Toutes les étapes exécutées en local avec succès ; premier passage sur GitHub à faire après la création du dépôt distant |
 | T-104 Bus + outbox | ✅ | |
 | T-105 SettingsProvider | ✅ | 101 clés (annexe G + points en suspens) |
