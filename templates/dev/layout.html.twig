@@ -1,0 +1,19 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mise en page — TrouveMoi (dev){% endblock %}
+
+{% block header %}
+    <twig:Header variant="{{ variant }}" active="home" accountName="Atelier Exemple [DEMO]" :unreadMessages="3" :unreadNotifications="5" :credits="credits" />
+{% endblock %}
+
+{% block body %}
+<div class="tm-container sg-page">
+    <twig:Breadcrumb :items="[{label: 'Accueil', href: '/'}, {label: 'Plomberie', href: '/plomberie'}, {label: 'Le Havre'}]" />
+    <p class="tm-overline">TrouveMoi / Gabarits communs</p>
+    <h1>Mise en page commune</h1>
+    <p class="tm-muted">Planche T-110 — variante d’en-tête : <strong>{{ variant }}</strong>.
+        Autres variantes : <a href="?variant=visitor">visiteur</a> · <a href="?variant=client">client</a> · <a href="?variant=artisan">artisan</a>
+        (<a href="?variant=artisan&credits=14">14 crédits</a>, <a href="?variant=artisan&credits=0">0 crédit</a>) · <a href="?variant=tunnel">tunnel</a>.</p>
+    {% for i in 1..12 %}<p>Contenu de démonstration pour tester l’en-tête collant au défilement ({{ i }}).</p>{% endfor %}
+</div>
+{% endblock %}

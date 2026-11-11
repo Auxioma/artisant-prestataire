@@ -147,11 +147,11 @@ final class DesignTokensTest extends TestCase
     public function testEveryReferencedIconExistsInSprite(): void
     {
         $sprite = (string) file_get_contents(self::ROOT.'/assets/icons/sprite.svg');
-        preg_match_all('/<symbol id="([A-Za-z]+)"/', $sprite, $symbols);
-        self::assertCount(41, $symbols[1], '39 icônes de la bibliothèque Figma V2 + étoile et cœur pleins');
+        preg_match_all('/<symbol id="([A-Za-z-]+)"/', $sprite, $symbols);
+        self::assertCount(46, $symbols[1], '39 icônes Figma V2 + étoile et cœur pleins + 5 réseaux sociaux');
 
         foreach (glob(self::ROOT.'/templates/{,*/,*/*/}*.twig', \GLOB_BRACE) ?: [] as $file) {
-            preg_match_all('/<twig:Icon[^>]*\sname="([A-Za-z]+)"/', (string) file_get_contents($file), $used);
+            preg_match_all('/<twig:Icon[^>]*\sname="([A-Za-z-]+)"/', (string) file_get_contents($file), $used);
             foreach ($used[1] as $name) {
                 self::assertContains($name, $symbols[1], \sprintf('%s : icône « %s » absente du sprite', basename($file), $name));
             }

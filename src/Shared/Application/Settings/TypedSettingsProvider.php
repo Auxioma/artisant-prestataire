@@ -83,6 +83,14 @@ abstract class TypedSettingsProvider implements SettingsProvider
         return $value;
     }
 
+    final public function nullableUrl(SettingKey $key): ?string
+    {
+        $value = $this->typed($key, SettingType::NullableUrl);
+        \assert(null === $value || \is_string($value));
+
+        return $value;
+    }
+
     /**
      * @return int|bool|string|float|list<int>|list<string>|array<string, float>|null
      */

@@ -27,4 +27,6 @@ interface SettingsProvider
 
     /** @return array<string, float> */
     public function weights(SettingKey $key): array;
+
+    public function nullableUrl(SettingKey $key): ?string;
 }

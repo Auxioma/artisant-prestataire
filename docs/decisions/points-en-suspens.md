@@ -68,11 +68,17 @@
 | P-25 | H1 mobile | La Figma V2 annonce 21 styles, mais seuls 20 sont exposés dans la bibliothèque (pas de « H1 mobile ») | `--type-h1-mobile` = Bold **24/32**, selon la recommandation CDC Q22 (32 px desktop / 24 px mobile) | 🎨 | Porteur / designer |
 | P-26 | Couleur du texte courant | CDC §2.2 : texte courant en `--primary` et informations secondaires en `--primary` à 70 % ; Figma V2 : texte `ink #192C49` et secondaire `muted #5B6B82` | **Figma V2** appliqué : `muted` est une correction d'accessibilité de l'audit V2.1 ; `ink` est repris tel quel du design validé ; `--primary` reste la couleur des titres et de la navigation | 🎨 `--color-text`, `--color-text-muted` | Porteur (RG-001) |
 | P-27 | Nom `--warning` | CDC : `--warning: #FFB000` (couleur) ; Figma : `--tm-warning: #FFF3E4` (fond clair) | Nom CDC conservé (`--warning` = orange clair) ; la valeur Figma est exposée en `--tm-orange-soft` / `--color-warning-bg` ; texte d'alerte en `--tm-orange-ink` | 🎨 | Tech |
+| P-28 | En-tête des espaces connectés | CDC §3.1 : client = messagerie (pastille), cloche, avatar + menu, CTA « Déposer une demande » ; artisan = idem + **jauge compacte de crédits** (orange à 20 %, rouge à 0). La variante Figma « Artisan connecté » n'a ni jauge ni messagerie, et ajoute un bouton « Se déconnecter » hors menu | **CDC appliqué** (règle fonctionnelle) ; la déconnexion reste dans le menu compte (et dans le menu mobile) | — | Porteur / designer |
+| P-29 | Pied de page | Bibliothèque 65:49 : fond marine `#0A1F5C` **hors palette** et blancs à opacité codés en dur, alors que sa description et le CDC §2.1 indiquent `--background-light` ; la variante « Public clair » (388:16992) suit le CDC mais n'a pas de case de consentement newsletter (RGPD) ni le lien L111-7 | Structure et contenu de 65:49 (consentement non pré-coché, « Comment sont classés les professionnels ? ») sur fond `--background-light`, vague de la variante claire, couleurs issues des tokens | 🎨 | Porteur (RG-001) |
+| P-30 | Sélecteur « France ▾ » du pied de page | Présent en Figma, absent du CDC (multilingue en V3, annexe H) | Non affiché au MVP | — | Porteur |
+| P-31 | Logo officiel | Figma : « détouré depuis le fichier fourni ; à remplacer par le SVG officiel » | Fichiers fournis `logos/*.png` déclinés en WebP ×2/×3 (21 Ko) ; remplacement par le SVG dès réception | — | **Porteur : fournir le SVG** |
+| P-32 | Liens vers des pages pas encore développées | En-tête et pied de page référencent des pages livrées aux lots 2 à 8 | `tm_path()` renvoie « # » tant que la route n'existe pas ; le formulaire newsletter n'est rendu que si sa route existe ; noms de routes réservés dans `Header`/`Footer` | — | Tech |
 
 ## C. Journal des décisions
 
 | Date | Point | Décision | Par |
 |---|---|---|---|
 | 2026-11-11 | — | Création du document (Étape 0) | Équipe dev |
+| 2026-11-11 | P-28 à P-32 | En-tête : CDC prioritaire sur Figma pour le contenu des espaces connectés ; pied de page aux couleurs du CDC | Équipe dev |
 | 2026-11-11 | P-05, P-24 à P-27 | Palette et typographie de la Figma V2 (audit V2.1) appliquées au T-108, à valider au titre de RG-001 | Équipe dev |
 | 2026-11-11 | Étape 0 | Lancement du développement demandé par le porteur ; les décisions par défaut s'appliquent en attendant les arbitrages Q5, Q18, Q28, P-02, P-05 | Porteur |

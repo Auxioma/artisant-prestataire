@@ -39,6 +39,7 @@
 | Limites de débit | SECURITY.md §5 | `config/packages/rate_limiter.yaml` | — (branchées aux routes aux lots 2 à 7) | T-106 | 🟨 |
 | Charte et design system | CDC §2, RG-001, audit V2.1 | `assets/styles/{tokens,fonts,base}.css`, `assets/icons/sprite.svg`, `templates/components/Icon.html.twig` | `DesignTokensTest` (contrastes AA, couleurs hors tokens, 12 px min., icônes), `DesignSystemPageTest` | T-108 | ✅ |
 | Composants d'interface (annexe B) | CDC §3.3, §9, annexe B | `templates/components/*`, `templates/form/theme.html.twig`, `assets/styles/components/*`, `assets/controllers/{toast,modal,modal_opener}_controller.js` | `TwigComponentsTest` (12), `FormThemeTest` (5) | T-109 | ✅ |
+| En-tête, pied de page, fil d'Ariane | CDC §3.1, §3.3, §7, P01.10, L111-7 | `templates/components/{Header,Footer,Breadcrumb,Logo}.html.twig`, `assets/styles/layout/*`, `assets/controllers/{header,disclosure,footer_accordion}_controller.js`, `Shared\UI\Twig\NavigationExtension` | `LayoutTest` (7, dont la non-régression CSP de l'importmap) | T-110 | ✅ |
 | Identifiants UUID v7 non énumérables | cadrage §5.2 | `AggregateId`, `UuidV7Generator` | `AggregateIdTest` | T-101 | ✅ |
 | Règle de dépendance vérifiée | cadrage §4.1 | `deptrac.layers.yaml`, `deptrac.modules.yaml` | CI (sondes manuelles de violation : détectées) | T-103 | ✅ |
 

@@ -10,7 +10,7 @@ namespace App\Shared\Application\Settings;
 final readonly class SettingDefinition
 {
     /**
-     * @param list<string>|null $choices    valeurs autorisées (Choice), éléments autorisés (StringList) ou critères (WeightMap)
+     * @param list<string>|null $choices    valeurs autorisées (Choice), éléments autorisés (StringList), critères (WeightMap) ou domaines autorisés (NullableUrl)
      * @param bool              $exhaustive StringList : chaque élément de $choices doit figurer (ex. ordre de consommation)
      */
     public function __construct(
@@ -41,6 +41,7 @@ final readonly class SettingDefinition
             SettingType::Choice => $this->choice($key, $raw),
             SettingType::NullableDecimal => $this->nullableDecimal($key, $raw),
             SettingType::WeightMap => $this->weightMap($key, $raw),
+            SettingType::NullableUrl => $this->nullableUrl($key, $raw),
         };
     }
 
@@ -152,6 +153,27 @@ final readonly class SettingDefinition
         }
 
         return $weights;
+    }
+
+    /**
+     * URL HTTPS dont l'hôte appartient aux domaines autorisés (anti-redirection vers un site tiers depuis le BO).
+     */
+    private function nullableUrl(SettingKey $key, mixed $raw): ?string
+    {
+        if (null === $raw || '' === $raw) {
+            return null;
+        }
+        if (!\is_string($raw) || false === filter_var($raw, \FILTER_VALIDATE_URL) || !str_starts_with($raw, 'https://')) {
+            throw InvalidSettingValue::for($key, 'URL https:// attendue');
+        }
+        $host = strtolower((string) parse_url($raw, \PHP_URL_HOST));
+        foreach ($this->choices ?? [] as $domain) {
+            if ($host === $domain || str_ends_with($host, '.'.$domain)) {
+                return $raw;
+            }
+        }
+
+        throw InvalidSettingValue::for($key, 'domaine non autorisé ('.implode(', ', $this->choices ?? []).')');
     }
 
     private function assertBounds(SettingKey $key, int $value): void

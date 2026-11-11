@@ -11,6 +11,7 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormError;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -26,9 +27,28 @@ final class DesignSystemController extends AbstractController
     public function __invoke(#[Autowire('%kernel.project_dir%')] string $projectDir): Response
     {
         $sprite = (string) file_get_contents($projectDir.'/'.self::SPRITE);
-        preg_match_all('/<symbol id="([A-Za-z]+)"/', $sprite, $matches);
+        preg_match_all('/<symbol id="([A-Za-z-]+)"/', $sprite, $matches);
 
         return $this->render('dev/design_system.html.twig', ['icons' => $matches[1]]);
+    }
+
+    /**
+     * Planche de la mise en page commune (T-110) : ?variant=visitor|client|artisan|tunnel, &credits=72|14|0.
+     */
+    #[Route('/_dev/layout', name: 'dev_layout', methods: ['GET'], env: 'dev')]
+    public function layout(Request $request): Response
+    {
+        $variant = $request->query->getString('variant', 'visitor');
+        if (!\in_array($variant, ['visitor', 'client', 'artisan', 'tunnel'], true)) {
+            $variant = 'visitor';
+        }
+        $remaining = $request->query->getInt('credits', 72);
+        $state = 0 === $remaining ? 'exhausted' : ($remaining <= 20 ? 'alert' : 'normal');
+
+        return $this->render('dev/layout.html.twig', [
+            'variant' => $variant,
+            'credits' => ['remaining' => $remaining, 'total' => 100, 'state' => $state],
+        ]);
     }
 
     /**

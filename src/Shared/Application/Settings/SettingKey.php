@@ -129,6 +129,13 @@ enum SettingKey: string
     case CookiesConsentMonths = 'cookies.consent_months';
     case NewsletterProvider = 'newsletter.provider';
 
+    // Identité de la plateforme (BO13) — réseaux sociaux du pied de page (vides = non affichés)
+    case SocialFacebook = 'social.facebook';
+    case SocialInstagram = 'social.instagram';
+    case SocialYoutube = 'social.youtube';
+    case SocialTiktok = 'social.tiktok';
+    case SocialLinkedin = 'social.linkedin';
+
     // Fonctionnalités désactivées au MVP (annexe H)
     case FeaturesRequestReopen = 'features.request_reopen';
     case FeaturesSponsored = 'features.sponsored';
@@ -247,6 +254,12 @@ enum SettingKey: string
             self::NotificationsSmsEnabled => $d(T::Boolean, false, 'Notifications SMS (V2)', proposed: true),
             self::CookiesConsentMonths => $d(T::Integer, 6, 'Durée du consentement cookies (mois)', 1, 13),
             self::NewsletterProvider => $d(T::Choice, 'brevo', 'Outil de newsletter (Q25)', choices: ['brevo', 'mailchimp', 'internal'], proposed: true),
+
+            self::SocialFacebook => $d(T::NullableUrl, null, 'Page Facebook', choices: ['facebook.com'], proposed: true),
+            self::SocialInstagram => $d(T::NullableUrl, null, 'Compte Instagram', choices: ['instagram.com'], proposed: true),
+            self::SocialYoutube => $d(T::NullableUrl, null, 'Chaîne YouTube', choices: ['youtube.com'], proposed: true),
+            self::SocialTiktok => $d(T::NullableUrl, null, 'Compte TikTok', choices: ['tiktok.com'], proposed: true),
+            self::SocialLinkedin => $d(T::NullableUrl, null, 'Page LinkedIn', choices: ['linkedin.com'], proposed: true),
 
             self::FeaturesRequestReopen => $d(T::Boolean, false, 'Réouverture de demande (V2, P-12)', proposed: true),
             self::FeaturesSponsored => $d(T::Boolean, false, 'Mise en avant payante (V2)', proposed: true),

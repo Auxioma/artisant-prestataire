@@ -14,4 +14,5 @@ enum SettingType: string
     case Choice = 'choice';
     case NullableDecimal = 'nullable_decimal';
     case WeightMap = 'weight_map';
+    case NullableUrl = 'nullable_url';
 }

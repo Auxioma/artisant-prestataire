@@ -52,6 +52,19 @@ foreach (ICONS + FILLED_ICONS as $id => $lucide) {
     $symbols[] = sprintf('  <symbol id="%s" viewBox="0 0 24 24" fill="%s" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">%s</symbol>', $id, $fill, $inner);
 }
 
+// Icônes de marque locales (tools/icons/brands/*.svg) : tracés déjà nettoyés, couleur currentColor.
+foreach (glob(__DIR__.'/brands/*.svg') ?: [] as $file) {
+    $doc = new DOMDocument();
+    $doc->loadXML((string) file_get_contents($file), \LIBXML_NONET);
+    $inner = '';
+    foreach ($doc->documentElement?->childNodes ?? [] as $child) {
+        if (\XML_ELEMENT_NODE === $child->nodeType) {
+            $inner .= $doc->saveXML($child);
+        }
+    }
+    $symbols[] = sprintf('  <symbol id="brand-%s" viewBox="0 0 24 24" fill="none">%s</symbol>', basename($file, '.svg'), $inner);
+}
+
 $sprite = sprintf(
     "<svg xmlns=\"http://www.w3.org/2000/svg\" aria-hidden=\"true\">\n  <!-- Lucide %s (ISC, voir assets/icons/LICENSE-lucide.txt) — généré par tools/icons/build-sprite.php -->\n%s\n</svg>\n",
     LUCIDE_VERSION,

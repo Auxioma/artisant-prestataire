@@ -53,3 +53,11 @@ Composants anonymes dans `templates/components/`, styles dans `assets/styles/com
 
 L'**état de la jauge** n'est pas calculé dans le gabarit : l'application le déduit des seuils administrables (`credits.alert_thresholds`, `credits.plan_alert_pct`, RG-105) et le transmet.
 La **carte artisan horizontale** (résultats P02) et la variante **compacte** seront réalisées avec la page de résultats (T-302).
+
+## Mise en page commune (T-110)
+
+- `base.html.twig` rend par défaut `<twig:Header variant="{{ header_variant ?? 'visitor' }}" active="{{ active_nav ?? null }}">` et `<twig:Footer />` ; une page surcharge le bloc `header` pour fournir les compteurs (`unreadMessages`, `unreadNotifications`) et, pour l'artisan, `credits` `{remaining, total, state}` (état calculé par l'application, RG-105).
+- **Feuilles de styles** : chargées par des balises `<link>` dans `base.html.twig`, **jamais importées depuis JavaScript** (AssetMapper les transformerait en modules `data:` bloqués par la CSP, ce qui empêcherait Stimulus de démarrer — test `LayoutTest::testImportmapContainsNoDataUrlModule`).
+- Navigation : motif *disclosure* (`disclosure` : Échap, clic extérieur, un seul menu ouvert), menu mobile en `<dialog>` (focus piégé, retour au burger), en-tête collant réduit à 64 px au défilement (`header`).
+- `tm_path('route')` renvoie `#` tant que la page cible n'existe pas (P-32) ; `tm_setting_int()` pour toute valeur métier affichée (ex. « 100 devis offerts ») ; `tm_social_links()` n'affiche que les réseaux renseignés en BO13 (URL HTTPS sur le domaine du réseau).
+- Planche : `/_dev/layout?variant=visitor|client|artisan|tunnel&credits=72|14|0`.

@@ -28,6 +28,9 @@ final class SettingDefinitionTest extends TestCase
         yield 'pondérations ne sommant pas à 1' => [SettingKey::SearchWeights, ['job' => 0.5, 'distance' => 0.5, 'rating' => 0.5, 'responsiveness' => 0, 'completion' => 0, 'availability' => 0]];
         yield 'pondération manquante' => [SettingKey::SearchWeights, ['job' => 1.0]];
         yield 'booléen illisible' => [SettingKey::PlansRollover, 'peut-être'];
+        yield 'URL non https' => [SettingKey::SocialFacebook, 'http://facebook.com/trouvemoi'];
+        yield 'URL d\'un autre domaine' => [SettingKey::SocialFacebook, 'https://facebook.com.evil.example/trouvemoi'];
+        yield 'URL javascript' => [SettingKey::SocialLinkedin, 'javascript:alert(1)'];
     }
 
     #[DataProvider('invalidValues')]
@@ -44,6 +47,8 @@ final class SettingDefinitionTest extends TestCase
         self::assertTrue(SettingKey::PlansRollover->definition()->normalize(SettingKey::PlansRollover, '1'));
         self::assertFalse(SettingKey::PlansRollover->definition()->normalize(SettingKey::PlansRollover, '0'));
         self::assertSame([80, 90, 100], SettingKey::CreditsAlertThresholds->definition()->normalize(SettingKey::CreditsAlertThresholds, [100, 80, 90]));
+        self::assertSame('https://www.facebook.com/trouvemoi', SettingKey::SocialFacebook->definition()->normalize(SettingKey::SocialFacebook, 'https://www.facebook.com/trouvemoi'));
+        self::assertNull(SettingKey::SocialFacebook->definition()->normalize(SettingKey::SocialFacebook, ''));
         self::assertSame(['plan', 'free', 'extra'], SettingKey::CreditsConsumptionOrder->definition()->normalize(SettingKey::CreditsConsumptionOrder, ['plan', 'free', 'extra']));
     }
 }
