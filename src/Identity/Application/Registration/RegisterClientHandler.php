@@ -5,31 +5,17 @@ declare(strict_types=1);
 namespace App\Identity\Application\Registration;
 
 use App\Catalog\Application\Geo\Query\FindCommunes;
-use App\Identity\Application\Password\PasswordPolicy;
-use App\Identity\Application\Port\DisposableEmailDetector;
-use App\Identity\Application\Port\LegalAcceptanceLog;
-use App\Identity\Application\Port\LegalDocuments;
-use App\Identity\Application\Port\PasswordHasher;
 use App\Identity\Domain\Client\ClientProfile;
 use App\Identity\Domain\Client\ClientProfileRepository;
 use App\Identity\Domain\Client\ClientType;
 use App\Identity\Domain\Legal\LegalDocumentType;
-use App\Identity\Domain\User\Event\RegistrationAttemptedOnExistingAccount;
 use App\Identity\Domain\User\PersonName;
-use App\Identity\Domain\User\User;
 use App\Identity\Domain\User\UserId;
 use App\Identity\Domain\User\UserKind;
-use App\Identity\Domain\User\UserRepository;
-use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Application\Bus\CommandHandler;
-use App\Shared\Application\Bus\EventBus;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Integration\CompanyRegistry;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
-use App\Shared\Application\Settings\SettingKey;
-use App\Shared\Application\Settings\SettingsProvider;
-use App\Shared\Domain\Audit\AuditRecord;
-use App\Shared\Domain\Identifier\IdGenerator;
 use App\Shared\Domain\Time\Clock;
 use App\Shared\Domain\ValueObject\Email;
 use App\Shared\Domain\ValueObject\PhoneNumber;
@@ -45,19 +31,10 @@ final readonly class RegisterClientHandler implements CommandHandler
     private const array REQUIRED_DOCUMENTS = [LegalDocumentType::TermsOfUse, LegalDocumentType::Privacy];
 
     public function __construct(
-        private UserRepository $users,
+        private AccountRegistrar $registrar,
         private ClientProfileRepository $profiles,
-        private PasswordPolicy $policy,
-        private PasswordHasher $hasher,
-        private DisposableEmailDetector $disposable,
-        private LegalDocuments $legal,
-        private LegalAcceptanceLog $acceptances,
         private CompanyRegistry $companies,
         private QueryBus $queries,
-        private SettingsProvider $settings,
-        private EventBus $events,
-        private AuditTrail $audit,
-        private IdGenerator $ids,
         private Clock $clock,
     ) {
     }
@@ -71,70 +48,25 @@ final readonly class RegisterClientHandler implements CommandHandler
         $phone = null === $command->phone || '' === trim($command->phone) ? null : new PhoneNumber($command->phone);
         $type = ClientType::from($command->clientType);
 
-        if ($this->settings->bool(SettingKey::AntifraudBlockDisposableEmails) && $this->disposable->isDisposable($email)) {
-            throw new RegistrationRejected('email', RegistrationRejected::EMAIL_DISPOSABLE);
-        }
-        $documents = $this->requiredDocuments($command->acceptedDocumentIds, $now);
-        $this->policy->assertAcceptable($command->password, $email);
+        $documents = $this->registrar->check($email, $command->password, self::REQUIRED_DOCUMENTS, $command->acceptedDocumentIds);
         $this->assertPostalCodeExists($command->postalCode);
         [$siret, $siretVerified] = ClientType::Business === $type ? $this->checkSiret($command->siret) : [null, false];
 
-        $hash = $this->hasher->hash($command->password); // toujours calculé : pas d'écart de temps révélant un compte existant
-        $existing = $this->users->findByEmail($email);
-        if (null !== $existing) {
-            $this->events->publish(new RegistrationAttemptedOnExistingAccount($existing->id()->value, $now));
-
-            return;
-        }
-
         $userId = new UserId($command->userId);
-        $user = User::register($userId, $email, UserKind::Client, $hash, $firstName, $lastName, $now);
-        $user->changePhone($phone, $now);
+        $user = $this->registrar->register($userId, $email, $command->password, UserKind::Client, $firstName, $lastName, $phone, $documents, $command->ip, $command->ipHash, [
+            'client_type' => $type->value,
+            'newsletter' => $command->newsletter,
+        ]);
+        if (null === $user) {
+            return; // compte existant : même issue, titulaire prévenu (anti-énumération)
+        }
         $profile = ClientType::Business === $type
             ? ClientProfile::business($userId, $command->postalCode, (string) $command->companyName, $siret, $siretVerified, $now)
             : ClientProfile::individual($userId, $command->postalCode, $now);
         if ($command->newsletter) {
             $profile->subscribeToNewsletter($now);
         }
-        $this->users->add($user);
         $this->profiles->add($profile);
-        foreach ($documents as $document) {
-            $this->acceptances->record($this->ids->next(), $userId->value, $document, $now, $command->ipHash);
-        }
-        $this->events->publish(...$user->releaseEvents());
-        $this->audit->record(new AuditRecord(
-            id: $this->ids->next(),
-            occurredAt: $now,
-            actorType: 'user',
-            actorId: $userId->value,
-            action: 'identity.user_registered',
-            subjectType: 'user',
-            subjectId: $userId->value,
-            ip: $command->ip,
-            context: ['kind' => 'client', 'client_type' => $type->value, 'newsletter' => $command->newsletter, 'legal' => implode(',', array_map(static fn ($d): string => $d->type->value.'@'.$d->version, $documents))],
-        ));
-    }
-
-    /**
-     * @param list<string> $acceptedIds
-     *
-     * @return list<\App\Identity\Application\Legal\LegalDocumentVersion>
-     */
-    private function requiredDocuments(array $acceptedIds, \DateTimeImmutable $now): array
-    {
-        $documents = [];
-        foreach (self::REQUIRED_DOCUMENTS as $type) {
-            $current = $this->legal->current($type, $now);
-            if (null === $current) {
-                throw new \LogicException(\sprintf('Aucune version publiée de « %s » : inscription impossible.', $type->label()));
-            }
-            if (!\in_array($current->id, $acceptedIds, true)) {
-                throw new RegistrationRejected('terms', RegistrationRejected::LEGAL_OUTDATED);
-            }
-            $documents[] = $current;
-        }
-
-        return $documents;
     }
 
     private function assertPostalCodeExists(string $postalCode): void

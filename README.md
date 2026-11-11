@@ -42,6 +42,7 @@ Sirene (INSEE), géocodage BAN (Géoplateforme IGN), VIES, Turnstile et HIBP pas
 ```bash
 docker compose exec php bin/console app:legal:publish cgu config/legal/cgu.html
 docker compose exec php bin/console app:legal:publish privacy config/legal/politique-de-confidentialite.html
+docker compose exec php bin/console app:legal:publish cgv_pro config/legal/cgv-professionnels.html   # inscription artisan (A03)
 ```
 
 L'inscription (`/inscription/client`) reste indisponible (503) tant que les CGU et la politique de confidentialité n'ont pas de version publiée. Les textes de `config/legal/` sont provisoires et marqués « [À RÉDIGER PAR LE JURISTE] » (Q28). Republier crée une nouvelle version ; `--substantial` exigera une nouvelle acceptation (RG-002).

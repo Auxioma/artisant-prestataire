@@ -36,6 +36,8 @@ services:
             - '../src/Identity/Application/EmailVerification/{EmailToken,SecretToken,InvalidEmailToken}.php'
             - '../src/Identity/Application/PasswordReset/{PasswordResetToken,ResetLinkUnusable}.php'
             - '../src/Notification/Application/{Notification,Template,RenderedEmail}.php'
+            - '../src/ArtisanProfile/Application/Signup/{SignupRejected,CompanyLookupResult,SignupState}.php'
+            - '../src/ArtisanProfile/Domain/'
             - '../src/Identity/Infrastructure/Security/SecurityUser.php'
             - '../src/Shared/Infrastructure/DependencyInjection/'
             - '../src/Catalog/Application/Geo/Port/GeocodedAddress.php'
@@ -51,6 +53,7 @@ services:
     App\Shared\Application\Transaction\TransactionManager: '@App\Shared\Infrastructure\Persistence\DbalTransactionManager'
     App\Shared\Application\Security\IpAnonymizer: '@App\Shared\Infrastructure\Security\HmacIpAnonymizer'
     App\Shared\Application\Settings\SettingsProvider: '@App\Administration\Infrastructure\Settings\DbalSettingsProvider'
+    App\Shared\Application\Security\CurrentUser: '@App\Identity\Infrastructure\Security\SecurityCurrentUser'
     # Stockage de fichiers (ADR-0008)
     App\Shared\Application\Storage\Port\ObjectStorage: '@App\Shared\Infrastructure\Storage\FlysystemObjectStorage'
     App\Shared\Application\Storage\Port\FileSanitizer: '@App\Shared\Infrastructure\Storage\NativeFileSanitizer'
@@ -88,6 +91,9 @@ services:
     App\Notification\Application\Port\EmailSender: '@App\Notification\Infrastructure\Mailer\SymfonyMailerEmailSender'
     App\Notification\Application\Port\DeliveryLog: '@App\Notification\Infrastructure\Persistence\DbalDeliveryLog'
     App\Notification\Application\Port\InAppNotifications: '@App\Notification\Infrastructure\Persistence\DbalInAppNotifications'
+
+    # Ports du module ArtisanProfile
+    App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository: '@App\ArtisanProfile\Infrastructure\Doctrine\Repository\DoctrineArtisanProfileRepository'
 
     # Ports du module Search
     App\Search\Application\Port\AutocompleteIndex: '@App\Search\Infrastructure\Meilisearch\MeilisearchAutocompleteIndex'
@@ -161,6 +167,8 @@ when@test:
         # à chaque noyau de test (isolation entre tests, cf. bf78dc0).
         cache.rate_limiter:
             class: Symfony\Component\Cache\Adapter\ArrayAdapter
+        App\Shared\Application\Integration\CompanyRegistry:
+            class: App\Tests\Support\Fake\FakeCompanyRegistry
         # Antivirus de test (reconnaît la chaîne EICAR) ; ClamAvScanner réel couvert par ClamAvScannerTest.
         App\Shared\Application\Storage\Port\AntivirusScanner:
             class: App\Tests\Support\Fake\EicarAntivirusScanner

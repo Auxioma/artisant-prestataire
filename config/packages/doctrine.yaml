@@ -5,12 +5,13 @@ doctrine:
         profiling_collect_backtrace: '%kernel.debug%'
         # Seuls les schémas gérés par l'ORM sont comparés au mapping (les tables DBAL — paramètres, audit, outbox,
         # consentements… — sont décrites par les migrations écrites à la main). Étendre la liste à chaque module ORM.
-        schema_filter: '~^(catalog\.|identity\.(user_account|client_profile)$|doctrine_migration_versions$)~'
+        schema_filter: '~^(catalog\.|identity\.(user_account|client_profile)$|artisan\.artisan_profile$|doctrine_migration_versions$)~'
         types:
             slug: App\Shared\Infrastructure\Doctrine\Type\SlugType
             catalog_category_id: App\Catalog\Infrastructure\Doctrine\Type\CategoryIdType
             catalog_job_id: App\Catalog\Infrastructure\Doctrine\Type\JobIdType
             identity_user_id: App\Identity\Infrastructure\Doctrine\Type\UserIdType
+            artisan_profile_id: App\ArtisanProfile\Infrastructure\Doctrine\Type\ArtisanProfileIdType
 
     orm:
         validate_xml_mapping: true
@@ -34,6 +35,11 @@ doctrine:
                 is_bundle: false
                 dir: '%kernel.project_dir%/src/Identity/Infrastructure/Doctrine/Mapping'
                 prefix: 'App\Identity\Domain'
+            ArtisanProfile:
+                type: xml
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/ArtisanProfile/Infrastructure/Doctrine/Mapping'
+                prefix: 'App\ArtisanProfile\Domain'
 
 when@test:
     doctrine:

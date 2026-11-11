@@ -434,6 +434,100 @@
 
     .tm-auth-message__icon .tm-icon { width: 32px; height: 32px; }
 
+    /* ── A03 : tunnel d'inscription professionnelle ──────────────────────────────────────────── */
+    .tm-pro-signup__intro {
+        display: grid;
+        justify-items: center;
+        gap: var(--space-3);
+        padding-block: var(--space-8) var(--space-6);
+        text-align: center;
+    }
+
+    .tm-pro-signup__intro .tm-stepper { width: 100%; max-width: 980px; }
+
+    .tm-pro-signup__grid { display: grid; gap: var(--space-4); align-items: start; }
+
+    .tm-pro-signup__why {
+        display: grid;
+        gap: var(--space-3);
+        padding: var(--space-5);
+        border-radius: var(--radius-card);
+        background: var(--color-info-bg);
+    }
+
+    .tm-pro-signup__actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-3);
+        margin-top: var(--space-2);
+    }
+
+    .tm-siret { display: grid; gap: var(--space-3); align-items: start; }
+
+    .tm-facts {
+        display: grid;
+        margin: 0;
+        border-radius: var(--radius-md);
+        background: var(--color-surface-alt);
+    }
+
+    .tm-facts > div {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-2);
+        padding: var(--space-3) var(--space-4);
+        border-bottom: 1px solid var(--color-border);
+        font: var(--type-body-sm);
+    }
+
+    .tm-facts > div:last-child { border-bottom: 0; }
+    .tm-facts dt { color: var(--color-text-muted); }
+    .tm-facts dd { margin: 0; font-weight: var(--font-weight-semibold); color: var(--color-heading); text-align: end; }
+
+    .tm-inline-choices { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); }
+
+    .tm-job-category { border-bottom: 1px solid var(--color-border); padding-block: var(--space-2); }
+    .tm-job-category > summary { cursor: pointer; font: var(--type-body-strong); color: var(--color-heading); min-height: var(--control-height); display: flex; align-items: center; gap: var(--space-2); }
+    .tm-job-list { list-style: none; margin: 0; padding: 0 0 var(--space-2); display: grid; gap: var(--space-1); }
+
+    .tm-job {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-2);
+        padding-inline: var(--space-3);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        background: var(--color-surface);
+    }
+
+    .tm-job:has(input[type='checkbox']:checked) { border-color: var(--color-border-strong); background: var(--color-info-bg); }
+    .tm-job .tm-check span { display: inline-flex; align-items: center; gap: var(--space-2); }
+
+    .tm-job__main {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2);
+        min-height: var(--control-height);
+        font: var(--type-label);
+        color: var(--color-link);
+        cursor: pointer;
+    }
+
+    .tm-job__main:has(input:disabled) { color: var(--color-text-muted); cursor: default; }
+
+    @media (min-width: 768px) {
+        .tm-siret { grid-template-columns: minmax(0, 1fr) auto; }
+        .tm-siret > .tm-button { margin-top: 26px; }
+    }
+
+    @media (min-width: 1024px) {
+        .tm-pro-signup__grid { grid-template-columns: minmax(0, 1fr) 360px; }
+    }
+
     /* ── A04 : connexion ──────────────────────────────────────────────────────────────────────── */
     .tm-login__title-icon { width: 44px; height: 44px; }
 

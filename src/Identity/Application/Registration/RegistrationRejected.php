@@ -12,6 +12,7 @@ final class RegistrationRejected extends \DomainException
     public const string SIRET_UNKNOWN = 'siret_unknown';
     public const string SIRET_CLOSED = 'siret_closed';
     public const string LEGAL_OUTDATED = 'legal_outdated';
+    public const string MOBILE_REQUIRED = 'mobile_required';
 
     public function __construct(public readonly string $field, public readonly string $reason)
     {

@@ -91,7 +91,7 @@ final class ClientRegistrationTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('.tm-choice-card', 'Je cherche un professionnel');
         self::assertSame('/inscription/client', $crawler->selectLink('Continuer comme client')->attr('href'));
-        self::assertSelectorExists('.tm-choice-card button[disabled]', 'parcours pro (T-207) : bouton désactivé, pas de lien mort');
+        self::assertSame('/inscription/pro', $crawler->selectLink('Créer mon compte pro')->attr('href'));
     }
 
     public function testRegistrationIsUnavailableWithoutPublishedTerms(): void
@@ -161,10 +161,10 @@ final class ClientRegistrationTest extends WebTestCase
     public function testBusinessClientWithSiretIsAcceptedUnverifiedWhenSireneIsUnavailable(): void
     {
         $this->prepare();
-        $this->submit(['clientType' => 'professionnel', 'companyName' => 'Plomberie Fictive', 'siret' => '900 000 001 00017']);
+        $this->submit(['clientType' => 'professionnel', 'companyName' => 'Plomberie Fictive', 'siret' => \App\Tests\Support\Fake\FakeCompanyRegistry::UNAVAILABLE]);
 
         self::assertResponseRedirects();
-        self::assertSame(1, $this->rows("SELECT count(*) FROM identity.client_profile WHERE type = 'professionnel' AND company_name = 'Plomberie Fictive' AND siret = '90000000100017' AND NOT siret_verified"));
+        self::assertSame(1, $this->rows("SELECT count(*) FROM identity.client_profile WHERE type = 'professionnel' AND company_name = 'Plomberie Fictive' AND siret = '90000003500015' AND NOT siret_verified"));
     }
 
     public function testCaptchaFailureAndOutageBlockRegistration(): void

@@ -1,0 +1,44 @@
+{#- A03.3 — Métiers (Figma 228:11875) : 1 à pro.max_jobs métiers, dont un principal ; fonctionne sans JavaScript. -#}
+{% extends 'pro_signup/_layout.html.twig' %}
+{% set step = 3 %}
+
+{% block title %}Vos métiers — Inscription professionnelle — TrouveMoi{% endblock %}
+{% block step_title %}Vos métiers{% endblock %}
+{% block step_subtitle %}Choisissez de 1 à {{ max_jobs }} métiers et désignez votre métier principal.{% endblock %}
+
+{% block step_content %}
+    <form method="post" class="tm-signup__fields" novalidate data-turbo="false" data-controller="job-picker" data-job-picker-max-value="{{ max_jobs }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('artisan_jobs') }}">
+        {% if error %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ error }}</p></div>{% endif %}
+        <twig:Field id="job_search" name="job_search" type="search" label="Rechercher un métier" icon="search" placeholder="Rechercher un métier (ex. carreleur)" autocomplete="off" data-action="input->job-picker#filter" />
+        <p class="tm-label" aria-live="polite" data-job-picker-target="count">Métiers sélectionnés ({{ selected|length }}/{{ max_jobs }})</p>
+
+        {% for category, jobs in categories %}
+            <details class="tm-job-category" data-job-picker-target="category"{% if jobs|filter(j => j.id in selected)|length > 0 or loop.first %} open{% endif %}>
+                <summary>{{ category }} <span class="tm-caption">({{ jobs|length }} métier{{ jobs|length > 1 ? 's' }})</span></summary>
+                <ul class="tm-job-list">
+                    {% for job in jobs %}
+                        {% set checked = job.id in selected %}
+                        <li class="tm-job" data-job-picker-target="job" data-search="{{ (job.name ~ ' ' ~ job.synonyms|join(' '))|lower }}">
+                            <label class="tm-check"><input class="tm-check__input" type="checkbox" name="jobs[]" value="{{ job.id }}"{{ checked ? ' checked' }} data-action="change->job-picker#update"><span><twig:Icon name="wrench" size="xs" trade />{{ job.name }}</span></label>
+                            <label class="tm-job__main"><input type="radio" name="main" value="{{ job.id }}"{{ main == job.id ? ' checked' }}{{ not checked ? ' disabled' }} data-action="change->job-picker#update"><span>Métier principal</span></label>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </details>
+        {% else %}
+            <twig:EmptyState title="Aucun métier disponible" text="Le référentiel des métiers n’est pas encore chargé. Réessayez plus tard ou contactez-nous." />
+        {% endfor %}
+
+        <div class="tm-pro-signup__actions">
+            <twig:Button variant="secondary" href="{{ path('artisan_signup_company') }}">← Étape précédente</twig:Button>
+            <twig:Button type="submit" icon="arrowR">Continuer</twig:Button>
+        </div>
+    </form>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Vos métiers déterminent les demandes que vous recevez.</li>
+    <li><twig:Icon name="check" size="xs" />{{ max_jobs }} métiers au maximum.</li>
+    <li><twig:Icon name="check" size="xs" />Certains métiers exigent un justificatif spécifique (demandé à l’étape 6).</li>
+{% endblock %}

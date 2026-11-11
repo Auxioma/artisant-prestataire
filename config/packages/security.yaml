@@ -46,7 +46,9 @@ security:
                 csrf_token_id: logout
                 invalidate_session: true
 
-    access_control: []
+    access_control:
+        # A03 : étapes 2 à 7 du tunnel professionnel réservées au compte artisan connecté (l'étape 1 est publique)
+        - { path: '^/inscription/pro/', roles: ROLE_ARTISAN }
 
 when@test:
     security:

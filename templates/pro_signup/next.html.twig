@@ -1,0 +1,21 @@
+{#- Étapes 4 à 7 (zone, assurances, justificatifs, profil) : livrées par T-207b. Progression enregistrée. -#}
+{% extends 'pro_signup/_layout.html.twig' %}
+{% set step = 4 %}
+
+{% block title %}Inscription professionnelle — suite — TrouveMoi{% endblock %}
+{% block step_title %}Votre progression est enregistrée{% endblock %}
+{% block step_subtitle %}Compte, entreprise et métiers : c’est fait.{% endblock %}
+
+{% block step_content %}
+    <twig:EmptyState icon="calCheck" title="La suite de l’inscription arrive très bientôt"
+        text="Zone d’intervention, assurances, justificatifs et profil public seront à compléter ici. Vous pourrez reprendre exactement où vous en êtes en vous connectant." />
+    <div class="tm-pro-signup__actions">
+        <twig:Button variant="secondary" href="{{ path('artisan_signup_jobs') }}">← Modifier mes métiers</twig:Button>
+        <twig:Button href="{{ path('public_home') }}">Terminer plus tard</twig:Button>
+    </div>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Votre compte reste « incomplet » tant que le dossier n’est pas envoyé.</li>
+    <li><twig:Icon name="check" size="xs" />Vos {{ tm_setting_int('credits.free_on_signup') }} devis offerts sont attribués à la vérification du dossier.</li>
+{% endblock %}

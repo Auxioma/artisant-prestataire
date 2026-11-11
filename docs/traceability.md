@@ -8,7 +8,7 @@
 | Réf. | Règle (résumé) | Module | Classes (Domain / Application) | Tests | Ticket | Statut |
 |---|---|---|---|---|---|---|
 | RG-014 | Aucune valeur métier en dur | Shared / Administration | `Shared\Application\Settings\{SettingKey, SettingDefinition, SettingsProvider, TypedSettingsProvider}`, `Administration\Application\Command\ChangeSettingHandler`, `Administration\Infrastructure\Settings\{DbalSettingsProvider, DbalSettingStore}`, règle PHPStan `tools/phpstan/NoBusinessLiteralRule` | `SettingKeyTest`, `SettingDefinitionTest`, `ChangeSettingHandlerTest`, `SettingsPersistenceTest` | T-105 | ✅ |
-| RG-041 | SIRET obligatoire, valide, actif, unique | ArtisanProfile | | | T-207 | ⬜ |
+| RG-041 | SIRET obligatoire, valide, actif, unique | ArtisanProfile | `CompanyChecker`, index unique `artisan_profile_siret_uniq` | `ArtisanSignupTest` | T-207a | ✅ |
 | RG-043 | Statuts du compte pro | ArtisanProfile | | | T-208 | ⬜ |
 | RG-044 | Crédit gratuit unique à la vérification | Billing | | | T-211 | ⬜ |
 | RG-045 | Limitation des tentatives, nouvel appareil, non-énumération | Identity | | | T-204 | ⬜ |
@@ -53,6 +53,7 @@
 | Connexion et protection contre la force brute | A04, RG-045, E-05, cadrage §5.1, ASVS 2.2.1 / 3.4 / 5.1.5 | `LoginController`, `LoginSubscriber`, `LoginAttemptGuard`, `TargetPathPolicy`, `LoginSuccessHandler`, `UserChecker`, `RecordLoginHandler`, `DbalKnownDevices`, `security.yaml` (form_login, remember_me, logout) | `LoginTest` (10), `DeviceDescriptionTest` (6), `SecurityUserTest` | T-204 | ✅ (2FA artisans : V2 ; admin : T-209) |
 | Mot de passe oublié et réinitialisation | A05, E-03, E-04, ASVS 2.5.1 / 2.5.6 / 3.3.3 | `PasswordResetController`, `RequestPasswordResetHandler`, `ResetPasswordHandler`, `ResetLinkStatusHandler`, `ResetLinkHolderHandler`, `SendPasswordChangedConfirmation`, `DbalPasswordResetTokens` | `PasswordResetTest` (7) | T-205 | ✅ |
 | Socle des notifications | CDC §6, annexe F, BO11.1 / BO11.2, cadrage §5.9 | `NotificationDispatcher`, `SandboxedTemplateRenderer`, `TemplateCatalogSync`, `SymfonyMailerEmailSender`, `DbalDeliveryLog`, `DbalInAppNotifications`, `NotificationExtension`, `config/notification/*`, `NotificationIdentityMailer` | `NotificationDispatcherTest` (6, dont attaques du bac à sable) | T-206 | ✅ (écrans BO11 : back-office) |
+| Inscription artisan, étapes 1 à 3 | A03.1–A03.3, RG-041, RG-043, P-46 | `ArtisanAccountController`, `RegisterArtisanAccountHandler`, `AccountRegistrar`, `ArtisanSignupController`, `ArtisanProfile`, `CompanyDetails`, `CompanyChecker`, `DeclareCompanyHandler`, `ChooseJobsHandler`, `SignupProgressHandler`, `templates/pro_signup/*`, `job_picker_controller.js` | `ArtisanSignupTest` (13), `ArtisanProfileTest` (7), contrôle navigateur (étapes 2 et 3) | T-207a | ✅ (étapes 4 à 7 : T-207b) |
 | Identifiants UUID v7 non énumérables | cadrage §5.2 | `AggregateId`, `UuidV7Generator` | `AggregateIdTest` | T-101 | ✅ |
 | Règle de dépendance vérifiée | cadrage §4.1 | `deptrac.layers.yaml`, `deptrac.modules.yaml` | CI (sondes manuelles de violation : détectées) | T-103 | ✅ |
 
