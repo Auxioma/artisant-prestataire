@@ -33,6 +33,8 @@ final readonly class DossierView
         public ?string $statusReason,
         public ?string $statusComment,
         public int $completion,
+        public string $userId = '',
+        public ?string $hiddenReason = null,
     ) {
     }
 }

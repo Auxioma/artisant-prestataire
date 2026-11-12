@@ -174,6 +174,8 @@ final readonly class VerificationQueriesHandler implements QueryHandler
             $profile->statusReason(),
             $profile->statusComment(),
             $profile->completionRate(),
+            $profile->userId(),
+            $profile->hiddenReason(),
         );
     }
 

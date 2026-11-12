@@ -27,4 +27,7 @@ interface SignupMailer
 
     /** E-25 — justificatif bientôt expiré (J-30, J-7) ou expiré. */
     public function sendDocumentExpiry(string $email, string $firstName, string $documentLabel, \DateTimeImmutable $expiresOn, int $daysLeft, bool $expired, string $userId): void;
+
+    /** E-26 — compte professionnel suspendu (motif) ou réactivé. */
+    public function sendAccountStatus(string $email, string $firstName, bool $suspended, ?string $reason, string $userId): void;
 }

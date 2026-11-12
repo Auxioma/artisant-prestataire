@@ -42,6 +42,8 @@ services:
             - '../src/Catalog/Application/Query/JobRequirement.php'
             - '../src/Catalog/Application/Geo/Query/Coverage.php'
             - '../src/Billing/Application/Credit/CreditBalance.php'
+            - '../src/ArtisanProfile/Application/Admin/ArtisanListPage.php'
+            - '../src/Identity/Application/Admin/ClientListPage.php'
             - '../src/ArtisanProfile/Domain/'
             - '../src/Administration/Application/Team/{TeamRejected,InvitationToken,AdminMemberView}.php'
             - '../src/Administration/Infrastructure/Security/AdminSecurityUser.php'

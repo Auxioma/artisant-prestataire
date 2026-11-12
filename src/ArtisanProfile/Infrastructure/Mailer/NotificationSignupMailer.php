@@ -54,6 +54,11 @@ final readonly class NotificationSignupMailer implements SignupMailer
         $this->notifier->notify(new Notification('E-25', $email, $userId, ['prenom' => $firstName, 'piece' => $documentLabel, 'date_expiration' => $expiresOn, 'jours' => $daysLeft, 'expire' => $expired, 'lien' => $link], $link));
     }
 
+    public function sendAccountStatus(string $email, string $firstName, bool $suspended, ?string $reason, string $userId): void
+    {
+        $this->notifier->notify(new Notification('E-26', $email, $userId, ['prenom' => $firstName, 'suspendu' => $suspended, 'motif' => $reason, 'lien_aide' => $this->urls->generate('artisan_signup_submitted', [], UrlGeneratorInterface::ABSOLUTE_URL)]));
+    }
+
     /** @param array<string, scalar|null> $variables */
     private function notify(string $code, string $email, string $userId, array $variables): void
     {

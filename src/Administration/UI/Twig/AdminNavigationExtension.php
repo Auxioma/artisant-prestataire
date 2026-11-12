@@ -23,7 +23,8 @@ final class AdminNavigationExtension extends AbstractExtension
     /** Écran de chaque rubrique (route), quand il existe. */
     private const array ROUTES = [
         'dashboard' => 'admin_dashboard',
-        'artisans' => 'admin_artisans_queue',
+        'clients' => 'admin_clients',
+        'artisans' => 'admin_artisans',
         'catalog' => 'admin_catalog',
         'notifications' => 'admin_notifications',
         'settings' => 'admin_settings',

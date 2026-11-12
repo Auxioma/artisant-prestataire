@@ -12,7 +12,9 @@ use App\ArtisanProfile\Domain\Profile\ArtisanProfile;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfileId;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanMoreInfoRequested;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanReinstated;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanRejected;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanSuspended;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanVerified;
 use App\ArtisanProfile\Domain\Profile\RejectionReason;
 use App\Shared\Application\Bus\EventHandler;
@@ -22,7 +24,7 @@ use App\Shared\Application\Identity\UserContactDetails;
 use App\Shared\Application\Settings\SettingKey;
 use App\Shared\Application\Settings\SettingsProvider;
 
-/** Issue de la vérification BO03 notifiée à l'artisan : E-21 (vérifié), E-22 (refus ou complément), E-24 (pièce contrôlée). */
+/** Décisions BO03 notifiées à l'artisan : E-21 (vérifié), E-22 (refus ou complément), E-24 (pièce contrôlée), E-26 (suspension, réactivation). */
 final readonly class SendVerificationOutcome implements EventHandler
 {
     public function __construct(
@@ -35,7 +37,7 @@ final readonly class SendVerificationOutcome implements EventHandler
     ) {
     }
 
-    public function __invoke(ArtisanVerified|ArtisanRejected|ArtisanMoreInfoRequested|ArtisanDocumentReviewed $event): void
+    public function __invoke(ArtisanVerified|ArtisanRejected|ArtisanMoreInfoRequested|ArtisanDocumentReviewed|ArtisanSuspended|ArtisanReinstated $event): void
     {
         $profile = $this->profiles->find(new ArtisanProfileId($event->profileId));
         $contact = null === $profile ? null : $this->queries->ask(new UserContact($profile->userId()));
@@ -47,6 +49,8 @@ final readonly class SendVerificationOutcome implements EventHandler
         match (true) {
             $event instanceof ArtisanVerified => $this->mailer->sendVerified($contact->email, $contact->firstName, $company, $this->settings->int(SettingKey::CreditsFreeOnSignup), $profile->userId()),
             $event instanceof ArtisanRejected => $this->mailer->sendRejectedOrMoreInfo($contact->email, $contact->firstName, $company, true, RejectionReason::tryFrom($event->reason)?->label(), $event->comment, $profile->userId()),
+            $event instanceof ArtisanSuspended => $this->mailer->sendAccountStatus($contact->email, $contact->firstName, true, $event->reason, $profile->userId()),
+            $event instanceof ArtisanReinstated => $this->mailer->sendAccountStatus($contact->email, $contact->firstName, false, null, $profile->userId()),
             $event instanceof ArtisanMoreInfoRequested => $this->mailer->sendRejectedOrMoreInfo($contact->email, $contact->firstName, $company, false, null, $event->message, $profile->userId()),
             default => $this->mailer->sendDocumentReviewed($contact->email, $contact->firstName, $this->documentLabel($profile, $event), 'approved' === $event->status, $event->reason, $profile->userId()),
         };

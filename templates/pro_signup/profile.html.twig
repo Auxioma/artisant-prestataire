@@ -31,10 +31,10 @@
                 </div>
                 <div class="tm-field{{ errors.description is defined ? ' tm-field--error' }}" data-controller="char-count" data-char-count-max-value="{{ description_max }}">
                     <label class="tm-field__label" for="description">Description courte ({{ description_max }} car.)<abbr class="tm-field__required" title="obligatoire">*</abbr></label>
-                    <textarea class="tm-field__input tm-field__textarea" id="description" name="description" rows="3" maxlength="{{ description_max }}" required
+                    <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="description" name="description" rows="3" maxlength="{{ description_max }}" required
                               aria-describedby="description_count{{ errors.description is defined ? ' description_error' }}"{{ errors.description is defined ? ' aria-invalid="true"' }}
                               placeholder="Ex. : Plombier chauffagiste depuis 2009 : dépannage, chauffe-eau, salles de bains."
-                              data-char-count-target="input" data-action="input->char-count#update">{{ description }}</textarea>
+                              data-char-count-target="input" data-action="input->char-count#update">{{ description }}</textarea></div>
                     {% if errors.description is defined %}<p class="tm-field__error" id="description_error">{{ errors.description }}</p>{% endif %}
                     <p class="tm-caption" id="description_count" data-char-count-target="count">{{ description|length }} / {{ description_max }}</p>
                 </div>

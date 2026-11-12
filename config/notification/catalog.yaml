@@ -135,6 +135,7 @@ notifications:
         label: "Compte suspendu / réactivé"
         recipient: "Artisan / client"
         channels: [email]
+        variables: [prenom, suspendu, motif, lien_aide]
     'E-30':
         label: "Nouvelle demande compatible (immédiat ou digest)"
         recipient: "Artisan"

@@ -1,0 +1,10 @@
+<p>Bonjour {{ prenom }},</p>
+{% if suspendu %}
+<p>Votre compte TrouveMoi a été suspendu par notre équipe.</p>
+<p><strong>Motif :</strong> {{ motif }}</p>
+<p>Pendant la suspension, votre profil et vos actions sur la plateforme sont bloqués. Pour toute question ou contestation, contactez-nous.</p>
+{{ bouton(lien_aide, 'Nous contacter') }}
+{% else %}
+<p>Bonne nouvelle : votre compte TrouveMoi est de nouveau actif. Vous pouvez reprendre vos activités sur la plateforme.</p>
+{{ bouton(lien_aide, 'Une question ? Nous contacter') }}
+{% endif %}

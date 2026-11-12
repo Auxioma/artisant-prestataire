@@ -30,4 +30,7 @@ interface IdentityMailer
 
     /** Inscription tentée avec l'adresse d'un compte existant (anti-énumération, A02). */
     public function sendExistingAccountNotice(Email $to, string $firstName): void;
+
+    /** E-26 — compte suspendu (avec motif) ou réactivé. */
+    public function sendAccountStatus(Email $to, string $firstName, bool $suspended, ?string $reason, string $userId): void;
 }

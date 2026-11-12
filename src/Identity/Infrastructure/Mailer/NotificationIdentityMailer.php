@@ -72,6 +72,16 @@ final readonly class NotificationIdentityMailer implements IdentityMailer
     }
 
     /** Page pas encore livrée : racine du site (aucun lien mort dans un e-mail). */
+    public function sendAccountStatus(Email $to, string $firstName, bool $suspended, ?string $reason, string $userId): void
+    {
+        $this->notifier->notify(new Notification('E-26', $to->value, $userId, [
+            'prenom' => $firstName,
+            'suspendu' => $suspended,
+            'motif' => $reason,
+            'lien_aide' => $this->absolute('content_contact'),
+        ]));
+    }
+
     private function absolute(string $route): string
     {
         try {

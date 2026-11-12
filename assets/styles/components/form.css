@@ -77,6 +77,9 @@
     .tm-field__error ul { margin: 0; padding: 0; list-style: none; }
     .tm-field__success { color: var(--color-success-text); }
 
+    .tm-field__control:has(textarea) { align-items: stretch; padding-block: var(--space-2); }
+    .tm-field__control:has(textarea) .tm-field__textarea { width: 100%; border: 0; padding: 0; }
+
     .tm-field--error .tm-field__control { border: 2px solid var(--tm-red); padding-inline: calc(var(--space-4) - 1px); }
     .tm-field--error .tm-field__status { display: block; color: var(--color-danger-text); }
     .tm-field--success .tm-field__control { border-color: var(--tm-green); }

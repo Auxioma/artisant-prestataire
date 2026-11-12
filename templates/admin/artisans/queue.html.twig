@@ -5,7 +5,7 @@
 {% block body %}
     {{ include('admin/_page_header.html.twig', {title: 'Artisans et vérification', crumbs: ['Utilisateurs'], subtitle: items|length ~ ' dossier' ~ (items|length > 1 ? 's') ~ ' en attente (délai cible ' ~ delay_hours ~ ' h)'}) }}
     <nav class="tm-admin-tabs" aria-label="Sections artisans">
-        <span class="tm-admin-tab is-disabled">Liste des artisans <span class="tm-admin__soon">Bientôt</span></span>
+        <a class="tm-admin-tab" href="{{ path('admin_artisans') }}">Liste des artisans</a>
         <a class="tm-admin-tab is-active" href="{{ path('admin_artisans_queue') }}" aria-current="page">File de vérification ({{ items|length }})</a>
         <span class="tm-admin-tab is-disabled">Justificatifs expirants <span class="tm-admin__soon">Bientôt</span></span>
     </nav>
@@ -92,7 +92,7 @@
                                         <input type="hidden" name="_token" value="{{ csrf_token('admin_artisan_review_' ~ doc.id) }}">
                                         <button type="submit" class="tm-link-button" name="decision" value="approve">Valider la pièce</button>
                                         <label class="tm-visually-hidden" for="reason_{{ doc.id }}">Motif du refus de {{ slot.label }}</label>
-                                        <input class="tm-field__input tm-verif__reason" id="reason_{{ doc.id }}" name="reason" maxlength="200" placeholder="Motif si refus">
+                                        <div class="tm-field__control"><input class="tm-field__input tm-verif__reason" id="reason_{{ doc.id }}" name="reason" maxlength="200" placeholder="Motif si refus"></div>
                                         <button type="submit" class="tm-link-button tm-admin-danger" name="decision" value="reject">Refuser</button>
                                     </form>
                                 {% endif %}
@@ -120,7 +120,7 @@
                     <input type="hidden" name="_token" value="{{ csrf_token('admin_artisan_decision_' ~ dossier.profileId) }}">
                     <div class="tm-field">
                         <label class="tm-field__label" for="decision_message">Message à l’artisan (obligatoire si complément ; précise un refus)</label>
-                        <textarea class="tm-field__input tm-field__textarea" id="decision_message" name="message" rows="2" maxlength="500" placeholder="Ex. : merci de transmettre une attestation décennale valable au-delà du 30/11/2026."></textarea>
+                        <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="decision_message" name="message" rows="2" maxlength="500" placeholder="Ex. : merci de transmettre une attestation décennale valable au-delà du 30/11/2026."></textarea></div>
                     </div>
                     <div class="tm-field">
                         <label class="tm-field__label" for="decision_reason">Motif normalisé (refus)</label>

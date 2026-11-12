@@ -48,14 +48,6 @@ final class VerificationController extends AbstractController
     ) {
     }
 
-    /** BO03.1 (liste complète) : T-213 ; d'ici là, la rubrique ouvre la file de vérification. */
-    #[Route('', name: 'admin_artisans', methods: ['GET'])]
-    #[IsGranted('admin.artisans.view')]
-    public function index(): Response
-    {
-        return $this->redirectToRoute('admin_artisans_queue');
-    }
-
     #[Route('/a-verifier', name: 'admin_artisans_queue', methods: ['GET'])]
     #[IsGranted('admin.artisans.view')]
     public function queue(Request $request, SettingsProvider $settings): Response

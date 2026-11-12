@@ -1,0 +1,8 @@
+{#- Statut RG-043 d'un compte pro (+ masquage RG-130). -#}
+{% if hidden|default(false) %}<twig:Badge variant="refused">Masqué</twig:Badge>
+{% elseif status == 'verified' %}<twig:Badge variant="verified">Vérifié</twig:Badge>
+{% elseif status == 'pending_verification' %}<twig:Badge variant="pending">À vérifier</twig:Badge>
+{% elseif status == 'incomplete' %}<twig:Badge variant="neutral">Inscription en cours</twig:Badge>
+{% elseif status == 'rejected' %}<twig:Badge variant="refused">Refusé</twig:Badge>
+{% elseif status == 'suspended' %}<twig:Badge variant="refused">Suspendu</twig:Badge>
+{% endif %}
