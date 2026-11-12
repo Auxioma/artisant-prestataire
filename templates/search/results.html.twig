@@ -7,7 +7,6 @@
 {% set h1 = (job ? job.name : 'Professionnels') ~ (place ? ' à ' ~ place.name ~ ' et alentours' : '') %}
 {% set count = result ? result.total : 0 %}
 {% set active_filters = (selected_jobs|length > 1 ? 1 : 0) + (note ? 1 : 0) + labels|length %}
-{% set profile_route = tm_path('public_artisan_profile') != '#' %}
 <div class="tm-search"{% if result %} data-controller="analytics" data-analytics-auto-event-value="{{ count > 0 ? 'search_results_view' : 'search_no_result' }}" data-analytics-auto-type-value="{{ count }}"{% endif %}>
     <div class="tm-search__top">
         <div class="tm-container">
@@ -100,7 +99,7 @@
                             <twig:CardArtisanRow
                                 name="{{ a.name }}"
                                 anchor="resultat-{{ loop.index }}"
-                                href="{{ profile_route ? tm_path('public_artisan_profile', {id: a.profileId}) : null }}"
+                                href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}"
                                 trades="{{ a.jobIds|map(id => job_names[id] ?? null)|filter(n => n)|join(' · ') }}"
                                 location="{{ a.communeName ?? '—' }}{{ a.departmentCode ? ' (' ~ a.departmentCode ~ ')' }}"
                                 :distance="a.distanceKm"

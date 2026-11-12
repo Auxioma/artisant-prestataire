@@ -1,0 +1,107 @@
+/*
+ * P10 (T-303) — fiche artisan publique (Figma 98:763) : en-tête, navigation par ancres collante, sections, colonne
+ * « Contact » collante au-delà de 1024 px, professionnels similaires. Mobile d'abord.
+ */
+@layer components {
+    .tm-profile { background: var(--color-surface-alt); padding-bottom: var(--space-12); }
+    .tm-profile__top { background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
+    .tm-profile__top > .tm-container { display: grid; gap: var(--space-4); padding-block: var(--space-4) var(--space-5); }
+
+    .tm-profile__header { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+    .tm-profile__logo { width: 72px; height: 72px; border-radius: var(--radius-card); overflow: hidden; border: 1px solid var(--color-border); background: var(--color-info-bg); display: grid; place-items: center; }
+    .tm-profile__logo img { width: 100%; height: 100%; object-fit: cover; }
+    .tm-profile__initials { font: var(--type-h2); color: var(--color-link); }
+    .tm-profile__identity { display: grid; gap: var(--space-2); min-width: 0; }
+    .tm-profile__name { margin: 0; font: var(--type-h1-mobile); color: var(--color-heading); overflow-wrap: anywhere; }
+    .tm-profile__badges { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+    .tm-profile__no-review { font: var(--type-body-sm); color: var(--color-text-muted); }
+    .tm-profile__trades { margin: 0; font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-profile__facts { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: 0; padding: 0; list-style: none; font: var(--type-body-sm); color: var(--color-text-muted); }
+    .tm-profile__facts li { display: inline-flex; align-items: center; gap: var(--space-1); }
+
+    .tm-profile__verified { position: relative; }
+    .tm-profile__verified summary { list-style: none; cursor: pointer; border-radius: var(--radius-pill); }
+    .tm-profile__verified summary::-webkit-details-marker { display: none; }
+    .tm-profile__verified summary:focus-visible { box-shadow: var(--focus-ring); outline: none; }
+    .tm-profile__verified-panel {
+        position: absolute;
+        z-index: 5;
+        inset-inline-start: 0;
+        top: calc(100% + var(--space-2));
+        width: min(320px, calc(100vw - 2 * var(--space-4)));
+        display: grid;
+        gap: var(--space-2);
+        padding: var(--space-4);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-card);
+        font: var(--type-body-sm);
+    }
+    .tm-profile__verified-panel p, .tm-profile__verified-panel ul { margin: 0; }
+    .tm-profile__verified-panel ul { display: grid; gap: var(--space-1); padding: 0; list-style: none; }
+    .tm-profile__verified-panel li { display: flex; gap: var(--space-2); align-items: center; color: var(--color-success-text); }
+
+    .tm-profile__nav { position: sticky; top: 0; z-index: 4; background: var(--color-surface); border-top: 1px solid var(--color-border); }
+    .tm-profile__nav ul { display: flex; gap: var(--space-5); margin: 0 auto; padding-block: 0; list-style: none; overflow-x: auto; scrollbar-width: none; }
+    .tm-profile__nav a { display: inline-flex; align-items: center; min-height: 48px; white-space: nowrap; color: var(--color-text-muted); font: var(--type-label); text-decoration: none; border-bottom: 2px solid transparent; }
+    .tm-profile__nav a:hover, .tm-profile__nav a:focus-visible { color: var(--color-link); border-bottom-color: var(--color-link); }
+
+    .tm-profile__layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); align-items: start; padding-top: var(--space-5); }
+    .tm-profile__main { display: grid; gap: var(--space-4); min-width: 0; }
+    .tm-profile__section {
+        display: grid;
+        gap: var(--space-3);
+        padding: var(--space-5);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        background: var(--color-surface);
+        scroll-margin-top: 64px;
+    }
+    .tm-profile__section h2 { margin: 0; font: var(--type-h2-mobile); color: var(--color-heading); }
+    .tm-profile__section h3 { margin: 0; font: var(--type-h3-mobile); color: var(--color-heading); }
+    .tm-profile__section p { margin: 0; }
+    .tm-profile__description { white-space: pre-line; }
+    .tm-profile__muted { color: var(--color-text-muted); font: var(--type-body-sm); }
+    .tm-profile__fine { color: var(--color-text-muted); font: var(--type-caption); }
+    .tm-profile__fine .tm-icon { display: inline-block; vertical-align: -2px; }
+    .tm-profile__chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .tm-profile__chips li { padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--color-info-bg); color: var(--color-heading); font: var(--type-label); }
+
+    .tm-profile__credentials { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+    .tm-profile__credential { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-3); align-items: center; padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+    .tm-profile__credential > .tm-icon { color: var(--color-link); }
+    .tm-profile__credential > .tm-badge { grid-column: 2; justify-self: start; }
+    .tm-profile__credential-name { font: var(--type-body-strong); color: var(--color-heading); }
+
+    .tm-profile__legal { display: grid; gap: var(--space-2); margin: 0; }
+    .tm-profile__legal div { display: grid; gap: 2px; }
+    .tm-profile__legal dt { font: var(--type-caption); color: var(--color-text-muted); }
+    .tm-profile__legal dd { margin: 0; color: var(--color-heading); overflow-wrap: anywhere; }
+
+    .tm-profile__aside { scroll-margin-top: 64px; }
+    .tm-profile__contact { display: grid; gap: var(--space-4); padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); box-shadow: var(--shadow-card); }
+    .tm-profile__contact h2 { margin: 0; font: var(--type-h3); color: var(--color-heading); overflow-wrap: anywhere; }
+    .tm-profile__contact p { margin: 0; }
+    .tm-profile__phone, .tm-profile__share { display: grid; gap: var(--space-2); }
+    .tm-profile__phone .tm-button { width: 100%; }
+
+    .tm-profile__similar { padding-top: var(--space-8); }
+    .tm-profile__similar h2 { margin: 0 0 var(--space-4); font: var(--type-h2-mobile); color: var(--color-heading); }
+    .tm-profile__similar-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
+
+    @media (min-width: 768px) {
+        .tm-profile__logo { width: 112px; height: 112px; }
+        .tm-profile__name { font: var(--type-h1); letter-spacing: var(--type-h1-tracking); }
+        .tm-profile__section h2, .tm-profile__similar h2 { font: var(--type-h2); }
+        .tm-profile__legal { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .tm-profile__credential { grid-template-columns: auto minmax(0, 1fr) auto; }
+        .tm-profile__credential > .tm-badge { grid-column: auto; }
+        .tm-profile__similar-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    @media (min-width: 1024px) {
+        .tm-profile__layout { grid-template-columns: minmax(0, 1fr) 320px; }
+        .tm-profile__aside { position: sticky; top: 64px; }
+    }
+}

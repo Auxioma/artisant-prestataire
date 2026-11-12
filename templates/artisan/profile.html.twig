@@ -1,0 +1,213 @@
+{#- P10 (Figma 98:763) — fiche artisan publique : en-tête, navigation par ancres, présentation, assurances et certifications, zone, avis, informations légales, professionnels similaires. Colonne « Contact » collante au-delà de 1024 px. -#}
+{% extends 'base.html.twig' %}
+{% set p = profile %}
+{% set canonical = tm_artisan_url(p.profileId, p.name, p.communeName, true) %}
+{% set place = p.communeName ? p.communeName ~ (p.departmentCode ? ' (' ~ p.departmentCode ~ ')') : null %}
+{% set job_names = [] %}{% for j in jobs %}{% set job_names = job_names|merge([j.name]) %}{% endfor %}
+{% set department_areas = [] %}{% for name in departments %}{% set department_areas = department_areas|merge([{'@type': 'AdministrativeArea', name: name}]) %}{% endfor %}
+{% set logo = p.hasLogo ? path('public_artisan_logo', {id: p.profileId}) : null %}
+{% set revealed = app.flashes('artisan_phone')|first %}
+{% set summary = p.description ?? (p.name ~ ', professionnel vérifié' ~ (main_job ? ' — ' ~ main_job.name) ~ (place ? ' à ' ~ place) ~ '.') %}
+{% block title %}{{ p.name }}{{ main_job ? ' — ' ~ main_job.name }}{{ p.communeName ? ' à ' ~ p.communeName }} | TrouveMoi{% endblock %}
+{% block meta %}
+    <meta name="description" content="{{ summary|length > 155 ? summary|slice(0, 154) ~ '…' : summary }}">
+    <link rel="canonical" href="{{ canonical }}">
+    <meta property="og:type" content="profile">
+    <meta property="og:title" content="{{ p.name }}{{ main_job ? ' — ' ~ main_job.name }}">
+    <meta property="og:url" content="{{ canonical }}">
+    {% if logo %}<meta property="og:image" content="{{ app.request.schemeAndHttpHost ~ logo }}">{% endif %}
+{% endblock %}
+{% block body %}
+<div class="tm-profile" data-controller="analytics" data-analytics-auto-event-value="pro_profile_view" data-analytics-auto-type-value="{{ main_job ? main_job.slug }}">
+    <div class="tm-profile__top">
+        <div class="tm-container">
+            <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}]
+                |merge(main_job ? [{label: main_job.categoryName, href: tm_path('public_category', {slug: main_job.categorySlug})}] : [])
+                |merge(main_job and p.communeInsee ? [{label: main_job.name ~ (p.communeName ? ' à ' ~ p.communeName), href: path('public_search', {metier: main_job.slug, lieu: p.communeInsee})}] : [])
+                |merge([{label: p.name}])" />
+
+            <header class="tm-profile__header">
+                <div class="tm-profile__logo">
+                    {% if logo %}<img src="{{ logo }}" alt="Logo de {{ p.name }}" width="112" height="112" decoding="async">
+                    {% else %}<span class="tm-profile__initials" aria-hidden="true">{{ p.name|slice(0, 1)|upper }}</span>{% endif %}
+                </div>
+                <div class="tm-profile__identity">
+                    <h1 class="tm-profile__name">{{ p.name }}</h1>
+                    <div class="tm-profile__badges">
+                        <details class="tm-profile__verified">
+                            <summary><twig:Badge variant="verified">Vérifié</twig:Badge><span class="tm-visually-hidden"> — voir ce qui a été contrôlé</span></summary>
+                            <div class="tm-profile__verified-panel">
+                                <p>Dossier contrôlé par l’équipe TrouveMoi le {{ p.verifiedAt|date('d/m/Y', 'Europe/Paris') }} :</p>
+                                <ul>{% for check in p.verifiedChecks %}<li><twig:Icon name="check" size="xs" />{{ check }}</li>{% endfor %}</ul>
+                                <p class="tm-profile__fine">Le badge ne garantit pas la qualité des travaux ; il atteste de l’existence de l’entreprise et de ses justificatifs à la date du contrôle.</p>
+                            </div>
+                        </details>
+                        <twig:Badge variant="new">Nouveau</twig:Badge>
+                        <span class="tm-profile__no-review">Aucun avis pour le moment</span>
+                    </div>
+                    {% if job_names is not empty %}<p class="tm-profile__trades">{{ job_names|join(' · ') }}</p>{% endif %}
+                    <ul class="tm-profile__facts">
+                        {% if place %}<li><twig:Icon name="pin" size="xs" />{{ place }}</li>{% endif %}
+                        {% if p.areaMode == 'radius' and p.areaRadiusKm %}<li><twig:Icon name="locate" size="xs" />Intervient jusqu’à {{ p.areaRadiusKm }} km</li>
+                        {% elseif p.areaMode == 'list' %}<li><twig:Icon name="locate" size="xs" />Intervient sur {{ (departments|length + p.areaCommunesCount) }} zone{{ (departments|length + p.areaCommunesCount) > 1 ? 's' }}</li>{% endif %}
+                        {% if p.companyCreatedOn %}<li><twig:Icon name="building" size="xs" />Entreprise créée en {{ p.companyCreatedOn|date('Y') }}</li>{% endif %}
+                        <li><twig:Icon name="calendar" size="xs" />Sur TrouveMoi depuis {{ p.memberSince|date('Y', 'Europe/Paris') }}</li>
+                    </ul>
+                </div>
+            </header>
+        </div>
+        <nav class="tm-profile__nav" aria-label="Sections de la fiche">
+            <ul class="tm-container">
+                <li><a href="#presentation">Présentation</a></li>
+                <li><a href="#garanties">Assurances et certifications</a></li>
+                <li><a href="#zone">Zone d’intervention</a></li>
+                <li><a href="#avis">Avis</a></li>
+                <li><a href="#informations">Informations légales</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="tm-container tm-profile__layout">
+        <div class="tm-profile__main">
+            <section class="tm-profile__section" id="presentation" aria-labelledby="presentation-title">
+                <h2 id="presentation-title">Présentation</h2>
+                {% if p.description %}<p class="tm-profile__description">{{ p.description }}</p>
+                {% else %}<p class="tm-profile__muted">Ce professionnel n’a pas encore rédigé sa présentation.</p>{% endif %}
+                {% if jobs is not empty %}
+                    <h3>Métiers</h3>
+                    <ul class="tm-profile__chips">{% for j in jobs %}<li>{{ j.name }}{% if main_job and j.id == main_job.id %} <span class="tm-profile__muted">(principal)</span>{% endif %}</li>{% endfor %}</ul>
+                {% endif %}
+            </section>
+
+            <section class="tm-profile__section" id="garanties" aria-labelledby="garanties-title">
+                <h2 id="garanties-title">Assurances et certifications</h2>
+                {% set credentials = p.insurances|merge(p.qualifications) %}
+                {% if credentials is empty %}
+                    <p class="tm-profile__muted">Aucune assurance ni certification déclarée.</p>
+                {% else %}
+                    <ul class="tm-profile__credentials">
+                        {% for c in credentials %}
+                            <li class="tm-profile__credential">
+                                <twig:Icon name="{{ c.verified ? 'shield' : 'file' }}" />
+                                <div>
+                                    <p class="tm-profile__credential-name">{{ c.label }}</p>
+                                    <p class="tm-profile__muted">{{ c.issuer ? c.issuer ~ ' · ' }}{{ c.validUntil ? 'valable jusqu’au ' ~ c.validUntil|date('d/m/Y') : 'sans date d’échéance' }}</p>
+                                </div>
+                                {% if c.verified %}<twig:Badge variant="verified">Justificatif vérifié</twig:Badge>
+                                {% else %}<twig:Badge variant="neutral">Déclaré</twig:Badge>{% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <p class="tm-profile__fine">« Justificatif vérifié » : attestation contrôlée par l’équipe TrouveMoi et en cours de validité. « Déclaré » : information fournie par le professionnel, non encore contrôlée.</p>
+                {% endif %}
+            </section>
+
+            <section class="tm-profile__section" id="zone" aria-labelledby="zone-title">
+                <h2 id="zone-title">Zone d’intervention</h2>
+                {% if p.areaMode == 'radius' and area_center %}
+                    <p>Dans un rayon de <strong>{{ p.areaRadiusKm }} km</strong> autour de <strong>{{ area_center.name }} ({{ area_center.departmentCode }})</strong>.</p>
+                {% elseif p.areaMode == 'list' %}
+                    {% if departments is not empty %}<p>Départements : {{ departments|map((name, code) => name ~ ' (' ~ code ~ ')')|join(', ') }}.</p>{% endif %}
+                    {% if p.areaCommunesCount > 0 %}<p>{{ p.areaCommunesCount }} commune{{ p.areaCommunesCount > 1 ? 's' }} choisie{{ p.areaCommunesCount > 1 ? 's' }} individuellement.</p>{% endif %}
+                {% else %}
+                    <p class="tm-profile__muted">Zone non renseignée.</p>
+                {% endif %}
+                {% if main_job and p.communeInsee %}<p><a href="{{ path('public_search', {metier: main_job.slug, lieu: p.communeInsee}) }}">Voir d’autres {{ main_job.name|lower }}s autour de {{ p.communeName }}</a></p>{% endif %}
+            </section>
+
+            <section class="tm-profile__section" id="avis" aria-labelledby="avis-title">
+                <h2 id="avis-title">Avis clients</h2>
+                <twig:EmptyState icon="star" title="Aucun avis pour le moment">
+                    Les avis apparaîtront ici après les premières prestations réalisées via TrouveMoi.
+                </twig:EmptyState>
+                <p class="tm-profile__fine" id="avis-controle">
+                    <twig:Icon name="info" size="xs" /> Avis contrôlés (art. L111-7-2 du Code de la consommation) : seul un client dont la demande a abouti
+                    à une prestation via TrouveMoi peut déposer un avis. Les avis sont modérés avant publication, sans contrepartie, et affichés
+                    du plus récent au plus ancien ; la note n’est affichée qu’à partir du premier avis publié.
+                    {% if tm_route_exists('identity_legal_document') %}<a href="{{ path('identity_legal_document', {slug: 'cgu'}) }}">Fonctionnement des avis (CGU)</a>{% endif %}
+                </p>
+            </section>
+
+            <section class="tm-profile__section" id="informations" aria-labelledby="informations-title">
+                <h2 id="informations-title">Informations légales</h2>
+                <dl class="tm-profile__legal">
+                    <div><dt>Raison sociale</dt><dd>{{ p.companyName }}</dd></div>
+                    {% if p.tradeName and p.tradeName != p.companyName %}<div><dt>Nom commercial</dt><dd>{{ p.tradeName }}</dd></div>{% endif %}
+                    <div><dt>SIRET</dt><dd>{{ p.siret|slice(0, 3) }} {{ p.siret|slice(3, 3) }} {{ p.siret|slice(6, 3) }} {{ p.siret|slice(9) }}</dd></div>
+                    {% if p.legalForm %}<div><dt>Forme juridique (code INSEE)</dt><dd>{{ p.legalForm }}</dd></div>{% endif %}
+                    {% if p.ape %}<div><dt>Code APE</dt><dd>{{ p.ape }}</dd></div>{% endif %}
+                    {% if p.vatNumber %}<div><dt>N° de TVA intracommunautaire</dt><dd>{{ p.vatNumber }}</dd></div>{% endif %}
+                    {% if p.postalCode %}<div><dt>Siège</dt><dd>{{ p.postalCode ? p.postalCode ~ ' ' }}{{ p.communeName }}</dd></div>{% endif %}
+                </dl>
+                <p class="tm-profile__fine">Données issues du répertoire Sirene (INSEE) et déclarées par le professionnel.</p>
+            </section>
+        </div>
+
+        <aside class="tm-profile__aside" id="contact" aria-labelledby="contact-title">
+            <div class="tm-profile__contact">
+                <h2 id="contact-title">Contacter {{ p.name }}</h2>
+                <p class="tm-profile__muted">La demande de devis en ligne arrive prochainement.</p>
+                {% if p.phoneAvailable %}
+                    <div class="tm-profile__phone" data-controller="phone-reveal">
+                        {% if revealed %}
+                            <twig:Button variant="secondary" href="tel:{{ revealed|replace({' ': ''}) }}" icon="phone" iconPosition="start">{{ revealed }}</twig:Button>
+                        {% else %}
+                            <form method="post" action="{{ path('public_artisan_phone', {id: p.profileId}) }}" data-phone-reveal-target="form" data-action="phone-reveal#reveal" data-turbo="false">
+                                <input type="hidden" name="_token" value="{{ csrf_token('phone_reveal') }}">
+                                <twig:Button type="submit" variant="secondary" icon="phone" iconPosition="start">Afficher le téléphone</twig:Button>
+                            </form>
+                            <p class="tm-profile__phone-number" data-phone-reveal-target="output" role="status" hidden></p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                <div class="tm-profile__share" data-controller="share" data-share-url-value="{{ canonical }}" data-share-title-value="{{ p.name }}">
+                    <twig:Button variant="tertiary" icon="share" iconPosition="start" data-action="share#share">Partager la fiche</twig:Button>
+                    <p class="tm-profile__muted" data-share-target="status" role="status"></p>
+                    <noscript><a href="mailto:?subject={{ p.name|url_encode }}&amp;body={{ canonical|url_encode }}">Partager par e-mail</a></noscript>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    {% if similar is not empty %}
+        <section class="tm-profile__similar" aria-labelledby="similar-title">
+            <div class="tm-container">
+                <h2 id="similar-title">Professionnels similaires{{ p.communeName ? ' près de ' ~ p.communeName }}</h2>
+                <ul class="tm-profile__similar-list">
+                    {% for hit in similar %}
+                        {% set a = hit.artisan %}
+                        <li>
+                            <twig:CardArtisan
+                                name="{{ a.name }}"
+                                href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}"
+                                trades="{{ a.jobIds|map(id => similar_jobs[id].name ?? null)|filter(n => n)|join(' · ') }}"
+                                location="{{ a.communeName ? a.communeName ~ (a.departmentCode ? ' (' ~ a.departmentCode ~ ')') : '' }}"
+                                :rating="a.reviewsCount > 0 ? a.ratingAverage : null"
+                                :reviewsCount="a.reviewsCount"
+                                photo="{{ a.hasLogo ? path('public_artisan_logo', {id: a.profileId}) : null }}"
+                                photoAlt="Logo de {{ a.name }}"
+                                :verified="true" />
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </section>
+    {% endif %}
+</div>
+{% set business = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    '@id': canonical ~ '#entreprise',
+    name: p.name,
+    legalName: p.companyName,
+    url: canonical,
+    identifier: {'@type': 'PropertyValue', propertyID: 'SIRET', value: p.siret},
+    address: {'@type': 'PostalAddress', addressLocality: p.communeName, addressCountry: 'FR'}|merge(p.postalCode ? {postalCode: p.postalCode} : {}),
+    knowsAbout: job_names,
+}|merge(p.description ? {description: p.description} : {})
+ |merge(logo ? {logo: app.request.schemeAndHttpHost ~ logo, image: app.request.schemeAndHttpHost ~ logo} : {})
+ |merge(p.vatNumber ? {vatID: p.vatNumber} : {})
+ |merge(area_center and p.areaRadiusKm ? {areaServed: {'@type': 'GeoCircle', geoMidpoint: {'@type': 'Place', name: area_center.name}, geoRadius: p.areaRadiusKm * 1000}} : (departments is not empty ? {areaServed: department_areas} : {})) %}
+{# Pas d'AggregateRating tant qu'aucun avis n'est publié. |raw justifié : json_encode avec JSON_HEX_TAG/JSON_HEX_AMP. #}
+<script type="application/ld+json" nonce="{{ csp_nonce('script') }}">{{ business|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP'))|raw }}</script>
+{% endblock %}

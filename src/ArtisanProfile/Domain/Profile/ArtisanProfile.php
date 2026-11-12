@@ -90,6 +90,7 @@ final class ArtisanProfile extends AggregateRoot
     private int $completionRate = 0;
     private ?\DateTimeImmutable $hiddenAt = null;
     private ?string $hiddenReason = null;
+    private bool $phonePublic = false;
     private \DateTimeImmutable $updatedAt;
     private int $version = 1;
 
@@ -359,6 +360,18 @@ final class ArtisanProfile extends AggregateRoot
         $this->hiddenReason = null;
         $this->updatedAt = $now;
         $this->recordEvent(new ArtisanUnhidden($this->id->value, $this->userId, $now));
+    }
+
+    /** RG-030 — option « Afficher mon téléphone » (affichage au clic, tracé) ; désactivée par défaut. */
+    public function showPhone(bool $public, \DateTimeImmutable $now): void
+    {
+        $this->phonePublic = $public;
+        $this->updatedAt = $now;
+    }
+
+    public function isPhonePublic(): bool
+    {
+        return $this->phonePublic;
     }
 
     public function isHidden(): bool
