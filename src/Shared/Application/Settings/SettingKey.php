@@ -100,6 +100,8 @@ enum SettingKey: string
     // Modération, messagerie, anti-fraude
     case ModerationOffersPrior = 'moderation.offers_prior';
     case ModerationRequestRiskThreshold = 'moderation.request_risk_threshold';
+    case ModerationForbiddenTerms = 'moderation.forbidden_terms';
+    case ModerationProfileSampleRate = 'moderation.profile_sample_rate';
     case MessagesMaskContactsBeforeAccept = 'messages.mask_contacts_before_accept';
     case MessagesRetentionYears = 'messages.retention_years';
     case MessagesPreQuestionEnabled = 'messages.pre_question_enabled';
@@ -251,6 +253,8 @@ enum SettingKey: string
 
             self::ModerationOffersPrior => $d(T::Boolean, true, 'Modération a priori des offres'),
             self::ModerationRequestRiskThreshold => $d(T::Integer, 70, 'Seuil de mise en modération d\'une demande (/100)', 0, 100),
+            self::ModerationForbiddenTerms => $d(T::StringList, [], 'Termes interdits dans les profils et contenus publics (RG-031)', proposed: true),
+            self::ModerationProfileSampleRate => $d(T::Integer, 10, 'Part des modifications de profil relues par un humain (%, RG-031)', 0, 100, proposed: true),
             self::MessagesMaskContactsBeforeAccept => $d(T::Boolean, true, 'Masquage des coordonnées avant acceptation'),
             self::MessagesRetentionYears => $d(T::Integer, 3, 'Conservation des messages (années)', 1, 10),
             self::MessagesPreQuestionEnabled => $d(T::Boolean, true, 'Question préalable hors demande (Q14)', proposed: true),

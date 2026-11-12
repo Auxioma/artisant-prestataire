@@ -9,6 +9,7 @@ use App\ArtisanProfile\Domain\Profile\ArtisanProfileId;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanInsurancesDeclared;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanLogoChanged;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanPublicProfileUpdated;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanServiceAreaDefined;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanSignupSubmitted;
 use App\Shared\Application\Bus\EventHandler;
@@ -20,7 +21,7 @@ final readonly class RefreshProfileCompletion implements EventHandler
     {
     }
 
-    public function __invoke(ArtisanServiceAreaDefined|ArtisanInsurancesDeclared|ArtisanSignupSubmitted|ArtisanLogoChanged $event): void
+    public function __invoke(ArtisanServiceAreaDefined|ArtisanInsurancesDeclared|ArtisanSignupSubmitted|ArtisanLogoChanged|ArtisanPublicProfileUpdated $event): void
     {
         $profile = $this->profiles->find(new ArtisanProfileId($event->profileId));
         if (null !== $profile) {

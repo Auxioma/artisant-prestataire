@@ -11,6 +11,7 @@ use App\ArtisanProfile\Domain\Profile\Event\ArtisanJobsChosen;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanLogoChanged;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanMoreInfoRequested;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanProfileStarted;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanPublicProfileUpdated;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanReinstated;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanRejected;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanServiceAreaDefined;
@@ -49,6 +50,7 @@ final class ArtisanProfile extends AggregateRoot
     /** Borne technique du nombre de labels déclarés. */
     public const int MAX_QUALIFICATIONS = 10;
     private const int STATUS_COMMENT_MAX = 500;
+    private const int TRADE_NAME_MAX = 120;
 
     private ArtisanStatus $status = ArtisanStatus::Incomplete;
     private int $completedStep = self::STEP_ACCOUNT;
@@ -91,6 +93,12 @@ final class ArtisanProfile extends AggregateRoot
     private ?\DateTimeImmutable $hiddenAt = null;
     private ?string $hiddenReason = null;
     private bool $phonePublic = false;
+    /** @var array<string, mixed> */
+    private array $presentation = [];
+    /** @var list<array{title: string, price: ?string}> */
+    private array $services = [];
+    /** @var array<string, mixed> */
+    private array $openingHours = [];
     private \DateTimeImmutable $updatedAt;
     private int $version = 1;
 
@@ -360,6 +368,62 @@ final class ArtisanProfile extends AggregateRoot
         $this->hiddenReason = null;
         $this->updatedAt = $now;
         $this->recordEvent(new ArtisanUnhidden($this->id->value, $this->userId, $now));
+    }
+
+    /** PR08.2 / PR08.3 — nom commercial (facultatif) et présentation publique. */
+    public function updatePresentation(?string $tradeName, PublicPresentation $presentation, \DateTimeImmutable $now): void
+    {
+        $tradeName = null === $tradeName ? null : trim($tradeName);
+        if (null !== $tradeName && mb_strlen($tradeName) > self::TRADE_NAME_MAX) {
+            throw new ArtisanRuleViolation(\sprintf('Nom commercial : %d caractères au maximum.', self::TRADE_NAME_MAX));
+        }
+        $this->tradeName = '' === $tradeName ? null : $tradeName;
+        $this->presentation = $presentation->toArray();
+        $this->publicProfileChanged($now);
+    }
+
+    /**
+     * PR08.5 — prestations et tarifs indicatifs.
+     *
+     * @param list<ServiceOffer> $services
+     */
+    public function updateServices(array $services, \DateTimeImmutable $now): void
+    {
+        if (\count($services) > ServiceOffer::MAX) {
+            throw new ArtisanRuleViolation(\sprintf('%d prestations au maximum.', ServiceOffer::MAX));
+        }
+        $this->services = array_map(static fn (ServiceOffer $s): array => ['title' => $s->title, 'price' => $s->price], array_values($services));
+        $this->publicProfileChanged($now);
+    }
+
+    /** PR08.8 — horaires, urgences et option d'affichage du téléphone (RG-030). */
+    public function updateAvailability(OpeningHours $hours, bool $phonePublic, \DateTimeImmutable $now): void
+    {
+        $this->openingHours = $hours->toArray();
+        $this->phonePublic = $phonePublic;
+        $this->publicProfileChanged($now);
+    }
+
+    public function presentation(): PublicPresentation
+    {
+        return PublicPresentation::fromArray($this->presentation);
+    }
+
+    /** @return list<ServiceOffer> */
+    public function services(): array
+    {
+        return array_map(static fn (array $s): ServiceOffer => new ServiceOffer($s['title'], $s['price']), $this->services);
+    }
+
+    public function openingHours(): OpeningHours
+    {
+        return OpeningHours::fromArray($this->openingHours);
+    }
+
+    private function publicProfileChanged(\DateTimeImmutable $now): void
+    {
+        $this->updatedAt = $now;
+        $this->recordEvent(new ArtisanPublicProfileUpdated($this->id->value, $this->userId, $now));
     }
 
     /** RG-030 — option « Afficher mon téléphone » (affichage au clic, tracé) ; désactivée par défaut. */

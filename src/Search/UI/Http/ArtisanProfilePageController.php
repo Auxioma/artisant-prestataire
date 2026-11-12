@@ -6,6 +6,8 @@ namespace App\Search\UI\Http;
 
 use App\ArtisanProfile\Application\PublicProfile\PublicArtisanProfile;
 use App\ArtisanProfile\Application\PublicProfile\PublicProfileView;
+use App\ArtisanProfile\Domain\Profile\OpeningHours;
+use App\ArtisanProfile\Domain\Profile\PublicPresentation;
 use App\Catalog\Application\Geo\Query\CommunesByInsee;
 use App\Catalog\Application\Geo\Query\CommuneSummary;
 use App\Catalog\Application\Geo\Query\Departments;
@@ -58,6 +60,9 @@ final class ArtisanProfilePageController extends AbstractController
             'departments' => $this->departments($profile->areaDepartments),
             'similar' => $similar,
             'similar_jobs' => $similarJobs,
+            'languages' => PublicPresentation::LANGUAGES,
+            'clients' => PublicPresentation::CLIENTS,
+            'hours_days' => OpeningHours::DAYS,
         ]);
     }
 

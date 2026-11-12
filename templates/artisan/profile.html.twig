@@ -1,6 +1,7 @@
 {#- P10 (Figma 98:763) — fiche artisan publique : en-tête, navigation par ancres, présentation, assurances et certifications, zone, avis, informations légales, professionnels similaires. Colonne « Contact » collante au-delà de 1024 px. -#}
 {% extends 'base.html.twig' %}
 {% set p = profile %}
+{% set pres = p.presentation %}
 {% set canonical = tm_artisan_url(p.profileId, p.name, p.communeName, true) %}
 {% set place = p.communeName ? p.communeName ~ (p.departmentCode ? ' (' ~ p.departmentCode ~ ')') : null %}
 {% set job_names = [] %}{% for j in jobs %}{% set job_names = job_names|merge([j.name]) %}{% endfor %}
@@ -30,6 +31,7 @@
                 </div>
                 <div class="tm-profile__identity">
                     <h1 class="tm-profile__name">{{ p.name }}</h1>
+                    {% if pres and pres.slogan %}<p class="tm-profile__slogan">{{ pres.slogan }}</p>{% endif %}
                     <div class="tm-profile__badges">
                         <details class="tm-profile__verified">
                             <summary><twig:Badge variant="verified">Vérifié</twig:Badge><span class="tm-visually-hidden"> — voir ce qui a été contrôlé</span></summary>
@@ -56,6 +58,7 @@
         <nav class="tm-profile__nav" aria-label="Sections de la fiche">
             <ul class="tm-container">
                 <li><a href="#presentation">Présentation</a></li>
+                {% if p.services is not empty %}<li><a href="#prestations">Prestations</a></li>{% endif %}
                 <li><a href="#garanties">Assurances et certifications</a></li>
                 <li><a href="#zone">Zone d’intervention</a></li>
                 <li><a href="#avis">Avis</a></li>
@@ -68,13 +71,33 @@
         <div class="tm-profile__main">
             <section class="tm-profile__section" id="presentation" aria-labelledby="presentation-title">
                 <h2 id="presentation-title">Présentation</h2>
-                {% if p.description %}<p class="tm-profile__description">{{ p.description }}</p>
+                {% if pres and pres.description %}<div class="tm-profile__description tm-profile__rich">{{ pres.description|tm_rich_text }}</div>
+                {% elseif p.description %}<p class="tm-profile__description">{{ p.description }}</p>
                 {% else %}<p class="tm-profile__muted">Ce professionnel n’a pas encore rédigé sa présentation.</p>{% endif %}
+                {% if pres and pres.strengths is not empty %}
+                    <h3>Points forts</h3>
+                    <ul class="tm-profile__strengths">{% for s in pres.strengths %}<li><twig:Icon name="checkC" size="sm" />{{ s }}</li>{% endfor %}</ul>
+                {% endif %}
+                {% if pres and (pres.yearsExperience is not null or pres.languages is not empty or pres.clients is not empty) %}
+                    <dl class="tm-profile__facts-list">
+                        {% if pres.yearsExperience is not null %}<div><dt>Expérience</dt><dd>{{ pres.yearsExperience }} an{{ pres.yearsExperience > 1 ? 's' }}</dd></div>{% endif %}
+                        {% if pres.languages is not empty %}<div><dt>Langues parlées</dt><dd>{{ pres.languages|map(l => languages[l] ?? l)|join(', ') }}</dd></div>{% endif %}
+                        {% if pres.clients is not empty %}<div><dt>Clients acceptés</dt><dd>{{ pres.clients|map(c => clients[c] ?? c)|join(', ') }}</dd></div>{% endif %}
+                    </dl>
+                {% endif %}
                 {% if jobs is not empty %}
                     <h3>Métiers</h3>
                     <ul class="tm-profile__chips">{% for j in jobs %}<li>{{ j.name }}{% if main_job and j.id == main_job.id %} <span class="tm-profile__muted">(principal)</span>{% endif %}</li>{% endfor %}</ul>
                 {% endif %}
             </section>
+
+            {% if p.services is not empty %}
+                <section class="tm-profile__section" id="prestations" aria-labelledby="prestations-title">
+                    <h2 id="prestations-title">Prestations et tarifs indicatifs</h2>
+                    <ul class="tm-profile__services">{% for s in p.services %}<li><span>{{ s.title }}</span>{% if s.price %}<strong>{{ s.price }}</strong>{% endif %}</li>{% endfor %}</ul>
+                    <p class="tm-profile__fine">Tarifs indicatifs communiqués par le professionnel : seul le devis fait foi.</p>
+                </section>
+            {% endif %}
 
             <section class="tm-profile__section" id="garanties" aria-labelledby="garanties-title">
                 <h2 id="garanties-title">Assurances et certifications</h2>
@@ -154,6 +177,15 @@
                                 <twig:Button type="submit" variant="secondary" icon="phone" iconPosition="start">Afficher le téléphone</twig:Button>
                             </form>
                             <p class="tm-profile__phone-number" data-phone-reveal-target="output" role="status" hidden></p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                {% if p.hours and (p.hours.isSet or p.hours.emergencies) %}
+                    <div class="tm-profile__hours">
+                        <h3>Horaires</h3>
+                        {% if p.hours.emergencies %}<p class="tm-profile__emergency"><twig:Icon name="zap" size="sm" />Intervient en urgence{{ p.hours.emergencyNote ? ' : ' ~ p.hours.emergencyNote }}</p>{% endif %}
+                        {% if p.hours.isSet %}
+                            <dl>{% for day in hours_days %}<div><dt>{{ day|capitalize }}</dt><dd>{{ (p.hours.days[day] ?? [])|map(r => r|replace({'-': ' – '}))|join(', ') ?: 'Fermé' }}</dd></div>{% endfor %}</dl>
                         {% endif %}
                     </div>
                 {% endif %}

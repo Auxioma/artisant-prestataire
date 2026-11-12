@@ -8,6 +8,9 @@ use App\ArtisanProfile\Application\PublicProfile\ArtisanPhone;
 use App\ArtisanProfile\Application\PublicProfile\PublicArtisanProfile;
 use App\ArtisanProfile\Application\PublicProfile\PublicCredential;
 use App\ArtisanProfile\Application\PublicProfile\PublicProfileView;
+use App\ArtisanProfile\Domain\Profile\OpeningHours;
+use App\ArtisanProfile\Domain\Profile\PublicPresentation;
+use App\ArtisanProfile\Domain\Profile\ServiceOffer;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Bus\QueryHandler;
 use App\Shared\Domain\Time\Clock;
@@ -127,7 +130,31 @@ final readonly class DbalPublicArtisanProfileHandler implements QueryHandler
             verifiedAt: new \DateTimeImmutable(DbalValue::string($row['verified_at'])),
             memberSince: new \DateTimeImmutable(DbalValue::string($row['created_at'])),
             phoneAvailable: null !== $this->queries->ask(new ArtisanPhone($profileId)),
+            presentation: PublicPresentation::fromArray(self::map($row['presentation'])),
+            services: $this->services($row['services']),
+            hours: OpeningHours::fromArray(self::map($row['opening_hours'])),
         );
+    }
+
+    /** @return array<array-key, mixed> */
+    private static function map(mixed $json): array
+    {
+        $data = DbalValue::json($json);
+
+        return \is_array($data) ? $data : [];
+    }
+
+    /** @return list<ServiceOffer> */
+    private function services(mixed $json): array
+    {
+        $services = [];
+        foreach (self::map($json) as $s) {
+            if (\is_array($s) && \is_string($s['title'] ?? null)) {
+                $services[] = new ServiceOffer($s['title'], \is_string($s['price'] ?? null) ? $s['price'] : null);
+            }
+        }
+
+        return $services;
     }
 
     private static function date(mixed $value): ?\DateTimeImmutable

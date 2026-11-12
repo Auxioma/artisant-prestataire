@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\ArtisanProfile\Application\PublicProfile;
 
+use App\ArtisanProfile\Domain\Profile\OpeningHours;
+use App\ArtisanProfile\Domain\Profile\PublicPresentation;
+use App\ArtisanProfile\Domain\Profile\ServiceOffer;
+
 /**
  * Données publiques d'une fiche artisan (P10). Jamais l'adresse du siège ni les coordonnées : la commune seulement
  * (RG-022) ; le téléphone n'est jamais dans la page, il s'obtient au clic (RG-030).
@@ -16,6 +20,7 @@ final readonly class PublicProfileView
      * @param list<PublicCredential> $insurances
      * @param list<PublicCredential> $qualifications
      * @param list<string>           $verifiedChecks  contrôles réalisés avant l'attribution du badge
+     * @param list<ServiceOffer>     $services        prestations et tarifs indicatifs (PR08.5)
      */
     public function __construct(
         public string $profileId,
@@ -46,6 +51,9 @@ final readonly class PublicProfileView
         public \DateTimeImmutable $verifiedAt,
         public \DateTimeImmutable $memberSince,
         public bool $phoneAvailable,
+        public ?PublicPresentation $presentation = null,
+        public array $services = [],
+        public ?OpeningHours $hours = null,
     ) {
     }
 }

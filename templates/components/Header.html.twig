@@ -101,10 +101,10 @@
                 {% else %}
                     {% if variant == 'artisan' and credits %}
                         <a class="tm-credit-pill tm-credit-pill--{{ credits.state }}" href="{{ tm_path('pro_subscription') }}">
-                            <twig:Icon name="file" size="xs" class="tm-icon--inherit" />{{ credits.remaining|number_format(0, ',', ' ') }} devis<span class="tm-visually-hidden"> restants — voir mon abonnement</span>
+                            <twig:Icon name="file" size="xs" class="tm-icon--inherit" />{{ credits.remaining|number_format(0, ',', ' ') }}<span class="tm-credit-pill__unit"> devis</span><span class="tm-visually-hidden"> restants — voir mon abonnement</span>
                         </a>
                     {% endif %}
-                    <a class="tm-icon-link" href="{{ tm_path(variant == 'artisan' ? 'pro_messages' : 'client_messages') }}">
+                    <a class="tm-icon-link tm-header__messages" href="{{ tm_path(variant == 'artisan' ? 'pro_messages' : 'client_messages') }}">
                         <twig:Icon name="msg" class="tm-icon--inherit" />
                         <span class="tm-visually-hidden">Messagerie{% if unreadMessages > 0 %}, {{ unreadMessages }} non lu{{ unreadMessages > 1 ? 's' }}{% endif %}</span>
                         {% if unreadMessages > 0 %}<span class="tm-icon-link__count" aria-hidden="true">{{ unreadMessages > 99 ? '99+' : unreadMessages }}</span>{% endif %}
@@ -179,6 +179,8 @@
                     {% for item in accountItems %}
                         <li><a class="tm-mobile-menu__link" href="{{ item.href }}">{{ item.label }}<twig:Icon name="chevR" size="sm" class="tm-icon--inherit" /></a></li>
                     {% endfor %}
+                    {# Messagerie : icône de l'en-tête masquée sur les petits écrans, accessible ici. #}
+                    <li class="tm-mobile-menu__narrow-only"><a class="tm-mobile-menu__link" href="{{ tm_path(variant == 'artisan' ? 'pro_messages' : 'client_messages') }}">Messagerie{% if unreadMessages > 0 %} ({{ unreadMessages }}){% endif %}<twig:Icon name="chevR" size="sm" class="tm-icon--inherit" /></a></li>
                 {% endif %}
             </ul>
         </nav>

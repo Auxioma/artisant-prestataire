@@ -24,12 +24,12 @@ final readonly class ProfileCompletionCalculator
         return ProfileCompletion::compute(
             $this->settings->weights(SettingKey::ProCompletionWeights),
             logo: null !== $profile->logoFileId(),
-            description: null !== $profile->shortDescription(),
+            description: null !== $profile->shortDescription() || null !== $profile->presentation()->description,
             photos: $this->content->portfolioPhotos($id),
             photosTarget: $this->settings->int(SettingKey::ProCompletionPhotosTarget),
-            hours: $this->content->hasOpeningHours($id),
+            hours: $profile->openingHours()->isSet(),
             zone: null !== $profile->serviceArea(),
-            services: $this->content->services($id),
+            services: \count($profile->services()),
             labels: [] !== $profile->qualifications(),
         );
     }

@@ -277,3 +277,22 @@
     .tm-mobile-menu__all { padding-block: var(--space-2); font: var(--type-button); color: var(--color-link); }
     .tm-mobile-menu__actions { display: grid; gap: var(--space-3); }
 }
+
+/* En-tête connecté sur petit écran (≤ 479 px) : logo réduit, jauge compacte (nombre seul, « devis » lu par les
+   lecteurs d'écran), messagerie déplacée dans le menu ; les cibles tactiles restent à 44 px. */
+@layer components {
+    .tm-mobile-menu__narrow-only { display: none; }
+
+    @media (max-width: 479px) {
+        .tm-header--artisan .tm-header__logo .tm-logo__img,
+        .tm-header--client .tm-header__logo .tm-logo__img { width: 120px; }
+        .tm-header--artisan .tm-header__actions,
+        .tm-header--client .tm-header__actions { gap: var(--space-1); }
+        .tm-header--artisan .tm-header__inner,
+        .tm-header--client .tm-header__inner { gap: var(--space-2); }
+        .tm-credit-pill { padding-inline: var(--space-2); }
+        .tm-credit-pill__unit { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+        .tm-header__messages { display: none; }
+        .tm-mobile-menu__narrow-only { display: list-item; }
+    }
+}

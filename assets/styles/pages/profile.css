@@ -105,3 +105,27 @@
         .tm-profile__aside { position: sticky; top: 64px; }
     }
 }
+
+/* PR08 sur la fiche (T-309a) : slogan, présentation enrichie, prestations, horaires */
+@layer components {
+    .tm-profile__slogan { margin: 0; color: var(--color-text); font: var(--type-body); font-style: italic; }
+    .tm-profile__rich { display: grid; gap: var(--space-2); }
+    .tm-profile__rich :is(p, ul) { margin: 0; }
+    .tm-profile__rich ul { padding-left: var(--space-5); }
+    .tm-profile__strengths { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .tm-profile__strengths li { display: flex; gap: var(--space-2); align-items: center; }
+    .tm-profile__strengths .tm-icon { flex: none; color: var(--color-success-text); }
+    .tm-profile__facts-list { display: grid; gap: var(--space-2); margin: 0; }
+    .tm-profile__facts-list div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: var(--space-2); }
+    .tm-profile__facts-list dt { color: var(--color-text-muted); font: var(--type-body-sm); }
+    .tm-profile__facts-list dd { margin: 0; }
+    .tm-profile__services { display: grid; margin: 0; padding: 0; list-style: none; }
+    .tm-profile__services li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); padding-block: var(--space-2); border-bottom: 1px solid var(--color-border); }
+    .tm-profile__services strong { color: var(--color-heading); }
+    .tm-profile__hours { display: grid; gap: var(--space-2); }
+    .tm-profile__hours h3 { margin: 0; font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-profile__hours dl { display: grid; gap: 2px; margin: 0; font: var(--type-body-sm); }
+    .tm-profile__hours dl div { display: grid; grid-template-columns: 90px minmax(0, 1fr); }
+    .tm-profile__hours dd { margin: 0; }
+    .tm-profile__emergency { display: flex; gap: var(--space-2); align-items: center; margin: 0; color: var(--color-success-text); font: var(--type-label); }
+}

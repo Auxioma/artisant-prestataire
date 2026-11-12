@@ -52,6 +52,9 @@
         <field name="hiddenAt" type="datetimetz_immutable" column="hidden_at" nullable="true"/>
         <field name="hiddenReason" type="string" length="200" column="hidden_reason" nullable="true"/>
         <field name="phonePublic" type="boolean" column="phone_public"/>
+        <field name="presentation" type="json" column="presentation"><options><option name="jsonb">true</option></options></field>
+        <field name="services" type="json" column="services"><options><option name="jsonb">true</option></options></field>
+        <field name="openingHours" type="json" column="opening_hours"><options><option name="jsonb">true</option></options></field>
         <field name="createdAt" type="datetimetz_immutable" column="created_at"/>
         <field name="updatedAt" type="datetimetz_immutable" column="updated_at"/>
         <field name="version" type="integer" version="true"/>

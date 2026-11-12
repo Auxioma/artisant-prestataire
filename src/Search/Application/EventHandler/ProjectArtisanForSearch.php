@@ -10,6 +10,7 @@ use App\ArtisanProfile\Domain\Profile\Event\ArtisanHidden;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanInsurancesDeclared;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanJobsChosen;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanLogoChanged;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanPublicProfileUpdated;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanReinstated;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanRejected;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanServiceAreaDefined;
@@ -28,7 +29,7 @@ final readonly class ProjectArtisanForSearch implements EventHandler
     {
     }
 
-    public function __invoke(ArtisanVerified|ArtisanSuspended|ArtisanReinstated|ArtisanRejected|ArtisanHidden|ArtisanUnhidden|ArtisanJobsChosen|ArtisanServiceAreaDefined|ArtisanInsurancesDeclared|ArtisanLogoChanged|ArtisanSignupSubmitted $event): void
+    public function __invoke(ArtisanVerified|ArtisanSuspended|ArtisanReinstated|ArtisanRejected|ArtisanHidden|ArtisanUnhidden|ArtisanJobsChosen|ArtisanServiceAreaDefined|ArtisanInsurancesDeclared|ArtisanLogoChanged|ArtisanSignupSubmitted|ArtisanPublicProfileUpdated $event): void
     {
         $artisan = $this->queries->ask(new SearchableArtisanOf($event->profileId));
         $artisan instanceof SearchableArtisan ? $this->index->save($artisan) : $this->index->remove($event->profileId);

@@ -129,6 +129,7 @@ services:
     App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository: '@App\ArtisanProfile\Infrastructure\Doctrine\Repository\DoctrineArtisanProfileRepository'
     App\ArtisanProfile\Domain\Document\ArtisanDocumentRepository: '@App\ArtisanProfile\Infrastructure\Doctrine\Repository\DoctrineArtisanDocumentRepository'
     App\ArtisanProfile\Application\Port\CoverageProjection: '@App\ArtisanProfile\Infrastructure\Projection\DbalCoverageProjection'
+    App\ArtisanProfile\Application\Port\ProfileReviews: '@App\ArtisanProfile\Infrastructure\Projection\DbalProfileReviews'
     App\ArtisanProfile\Application\Port\ProfileContent: '@App\ArtisanProfile\Infrastructure\Projection\InterimProfileContent'
     App\ArtisanProfile\Application\Port\VerificationDecisions: '@App\ArtisanProfile\Infrastructure\Projection\DbalVerificationDecisions'
     App\ArtisanProfile\Application\Port\MaintenanceCandidates: '@App\ArtisanProfile\Infrastructure\Projection\DbalMaintenanceCandidates'
