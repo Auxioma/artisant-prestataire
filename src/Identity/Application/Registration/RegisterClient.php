@@ -31,6 +31,7 @@ final readonly class RegisterClient implements Command
         public bool $newsletter,
         public ?string $ip = null,
         public ?string $ipHash = null,
+        public ?string $origin = null,
     ) {
     }
 }

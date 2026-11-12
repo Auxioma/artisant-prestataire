@@ -37,7 +37,7 @@ services:
             - '../src/Identity/Application/PasswordReset/{PasswordResetToken,ResetLinkUnusable}.php'
             - '../src/Notification/Application/{Notification,Template,RenderedEmail}.php'
             - '../src/ArtisanProfile/Application/Signup/{SignupRejected,CompanyLookupResult,SignupState,DocumentSlot}.php'
-            - '../src/Shared/Application/Identity/{UserContactDetails,AccountReviewDetails}.php'
+            - '../src/Shared/Application/Identity/{UserContactDetails,AccountReviewDetails,AccountCreationRejected}.php'
             - '../src/ArtisanProfile/Application/Verification/{QueueItem,DossierView}.php'
             - '../src/Catalog/Application/Query/JobRequirement.php'
             - '../src/Catalog/Application/Geo/Query/Coverage.php'

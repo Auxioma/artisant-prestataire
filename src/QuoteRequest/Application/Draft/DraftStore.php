@@ -16,6 +16,18 @@ interface DraftStore
     /** Retire la pièce si elle appartient au brouillon ; false sinon. */
     public function detach(string $draftId, string $fileId): bool;
 
+    /** P11.6 — compte créé dans le tunnel pour ce brouillon (identifiant réservé). */
+    public function markPendingAccount(string $draftId, string $userId): void;
+
+    /** P11.7 — envoi demandé avant l'activation du compte : il partira à la validation de l'e-mail (RG-040). */
+    public function requestSubmission(string $draftId, \DateTimeImmutable $now): void;
+
+    /**
+     * Brouillon dont l'envoi attend l'activation de ce compte (créé dans le tunnel ou déjà connecté) ; il est rattaché
+     * au compte. Renvoie son identifiant, ou null.
+     */
+    public function claimPendingSubmission(string $userId): ?string;
+
     /** Supprime le brouillon et ses rattachements (les fichiers eux-mêmes sont repris ou détruits par l'appelant). */
     public function delete(string $draftId): void;
 

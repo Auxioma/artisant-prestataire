@@ -123,8 +123,8 @@ final class RequestSubmissionTest extends WebTestCase
         $crawler = $this->walkToPlace();
         $this->client->request('POST', '/demande-de-devis/4', ['_token' => $this->token($crawler), 'action' => 'continue', 'address' => '3 place de l essai', 'timing' => 'flexible', 'occupant_status' => 'tenant']);
         $crawler = $this->client->followRedirect();
-        self::assertSelectorTextContains('.tm-request__account', 'J’ai déjà un compte');
-        self::assertSame('/connexion?redirect=/demande-de-devis/5', $crawler->selectLink('Me connecter')->attr('href'));
+        self::assertSelectorExists('#first_name', 'Figma 5:162 : formulaire de création de compte');
+        self::assertSame('/connexion?redirect=/demande-de-devis/5', $crawler->selectLink('Se connecter')->attr('href'));
 
         $this->client->request('POST', '/demande-de-devis/5', ['_token' => $this->token($crawler), 'action' => 'continue', 'contact_preference' => 'messaging_only']);
         self::assertResponseStatusCodeSame(422, 'un compte est nécessaire');
@@ -137,7 +137,7 @@ final class RequestSubmissionTest extends WebTestCase
         self::assertNull($this->client->getCookieJar()->get(RequestTunnelController::COOKIE, '/demande-de-devis'), 'jeton du visiteur oublié');
     }
 
-    public function testUnverifiedEmailCannotSubmit(): void
+    public function testUnverifiedEmailDefersSubmission(): void
     {
         $this->login();
         $crawler = $this->walkToPlace();
@@ -146,10 +146,12 @@ final class RequestSubmissionTest extends WebTestCase
         self::assertStringContainsString('Validez votre adresse e-mail', $crawler->filter('.tm-request__main')->text());
         $this->client->request('POST', '/demande-de-devis/5', ['_token' => $this->token($crawler), 'action' => 'continue', 'contact_preference' => 'messaging_only', 'phone' => '06 12 34 56 78']);
         $crawler = $this->client->followRedirect();
-        $crawler = $this->client->request('POST', '/demande-de-devis/6', ['_token' => $this->token($crawler), 'action' => 'send', 'confirm' => '1', 'cf-turnstile-response' => AcceptingHumanVerification::HUMAN]);
-        self::assertResponseStatusCodeSame(422);
-        self::assertStringContainsString('Validez d’abord votre adresse e-mail', $crawler->filter('.tm-form-alert')->text(), 'RG-040');
+        $this->client->request('POST', '/demande-de-devis/6', ['_token' => $this->token($crawler), 'action' => 'send', 'confirm' => '1', 'cf-turnstile-response' => AcceptingHumanVerification::HUMAN]);
+        self::assertResponseRedirects('/demande-de-devis/6', 303);
+        $crawler = $this->client->followRedirect();
+        self::assertStringContainsString('Plus qu’une étape : activez votre compte', $crawler->filter('.tm-request__main')->text(), 'RG-040 : envoi différé à la validation de l’e-mail');
         self::assertSame(0, DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM request.quote_request')));
+        self::assertNotNull($this->connection->fetchOne('SELECT submit_requested_at FROM request.request_draft'));
     }
 
     /** Étapes 1 à 3 (métier, détails, une photo) ; renvoie la page de l'étape 4. */

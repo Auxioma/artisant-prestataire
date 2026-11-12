@@ -38,6 +38,10 @@ final readonly class RequestDraftView
         public ?string $title = null,
         public ?string $summary = null,
         public ?string $workNature = null,
+        /** Compte créé dans le tunnel, en attente d'activation (P11.6) ; existence non garantie (anti-énumération). */
+        public ?string $pendingUserId = null,
+        /** « Envoyer ma demande » cliqué avant la validation de l'e-mail : envoi automatique à l'activation (RG-040). */
+        public ?\DateTimeImmutable $submitRequestedAt = null,
     ) {
     }
 
@@ -58,7 +62,7 @@ final readonly class RequestDraftView
      * @param array<string, mixed>      $payload
      * @param list<DraftAttachmentView> $attachments
      */
-    public static function fromPayload(string $id, int $step, array $payload, array $attachments, \DateTimeImmutable $updatedAt): self
+    public static function fromPayload(string $id, int $step, array $payload, array $attachments, \DateTimeImmutable $updatedAt, ?string $pendingUserId = null, ?\DateTimeImmutable $submitRequestedAt = null): self
     {
         $string = static fn (string $k): ?string => \is_string($payload[$k] ?? null) && '' !== $payload[$k] ? $payload[$k] : null;
         $answers = [];
@@ -92,13 +96,15 @@ final readonly class RequestDraftView
             $string('title'),
             $string('summary'),
             $string('work_nature'),
+            $pendingUserId,
+            $submitRequestedAt,
         );
     }
 
     /** @param array<string, mixed> $changes */
     public function with(array $changes, int $step, \DateTimeImmutable $now): self
     {
-        return self::fromPayload($this->id, $step, $changes + $this->payload(), $this->attachments, $now);
+        return self::fromPayload($this->id, $step, $changes + $this->payload(), $this->attachments, $now, $this->pendingUserId, $this->submitRequestedAt);
     }
 
     /** @return array{label: string, city_insee: string, postal_code: string, city: string, lat: ?float, lon: ?float}|null */

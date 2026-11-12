@@ -58,11 +58,11 @@ final class User extends AggregateRoot
         $this->updatedAt = $createdAt;
     }
 
-    public static function register(UserId $id, Email $email, UserKind $kind, string $passwordHash, PersonName $firstName, PersonName $lastName, \DateTimeImmutable $now): self
+    public static function register(UserId $id, Email $email, UserKind $kind, string $passwordHash, PersonName $firstName, PersonName $lastName, \DateTimeImmutable $now, ?string $origin = null): self
     {
         self::assertHash($passwordHash);
         $user = new self($id, $email, $kind, $passwordHash, $firstName, $lastName, $now);
-        $user->recordEvent(new UserRegistered($id->value, $kind->value, $now));
+        $user->recordEvent(new UserRegistered($id->value, $kind->value, $now, $origin));
 
         return $user;
     }

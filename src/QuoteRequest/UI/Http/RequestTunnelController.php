@@ -20,8 +20,10 @@ use App\QuoteRequest\Application\Draft\AdoptVisitorDraft;
 use App\QuoteRequest\Application\Draft\CurrentRequestDraft;
 use App\QuoteRequest\Application\Draft\DraftOwner;
 use App\QuoteRequest\Application\Draft\DraftRejected;
+use App\QuoteRequest\Application\Draft\MarkDraftAccount;
 use App\QuoteRequest\Application\Draft\RemoveDraftAttachment;
 use App\QuoteRequest\Application\Draft\RequestDraftEditor;
+use App\QuoteRequest\Application\Draft\RequestDraftSubmission;
 use App\QuoteRequest\Application\Draft\RequestDraftView;
 use App\QuoteRequest\Application\Draft\SaveDraftStep;
 use App\QuoteRequest\Application\Draft\StartRequestDraft;
@@ -38,7 +40,9 @@ use App\QuoteRequest\Domain\Request\RequestRuleViolation;
 use App\QuoteRequest\Domain\Request\Timing;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
+use App\Shared\Application\Identity\AccountCreationRejected;
 use App\Shared\Application\Identity\ChangeUserPhone;
+use App\Shared\Application\Identity\CreateClientAccount;
 use App\Shared\Application\Identity\UserContact;
 use App\Shared\Application\Identity\UserContactDetails;
 use App\Shared\Application\Identity\UserPhone;
@@ -96,6 +100,8 @@ final class RequestTunnelController extends AbstractController
         private readonly IpAnonymizer $ipAnonymizer,
         #[Autowire(service: 'limiter.request_submit')]
         private readonly RateLimiterFactory $submitLimiter,
+        #[Autowire(service: 'limiter.signup')]
+        private readonly RateLimiterFactory $signupLimiter,
     ) {
     }
 
@@ -162,7 +168,9 @@ final class RequestTunnelController extends AbstractController
                 return $this->toStep($request, max(1, $step - 1));
             }
             try {
-                if (RequestDraftEditor::STEP_CONTACT === $step) {
+                if (RequestDraftEditor::STEP_CONTACT === $step && null === $owner->userId && null === $draft?->pendingUserId) {
+                    $this->createAccount($request, $owner, $draft);
+                } elseif (RequestDraftEditor::STEP_CONTACT === $step) {
                     $this->savePhone($request, $owner);
                 }
                 $this->commands->dispatch(new SaveDraftStep($owner, $draft->id ?? $this->ids->next(), $step, $request->request->all(), true));
@@ -207,19 +215,27 @@ final class RequestTunnelController extends AbstractController
      */
     private function submit(Request $request, DraftOwner $owner): Response
     {
+        $draft = $this->draft($owner);
+        $awaitingActivation = (null === $owner->userId && null !== $draft?->pendingUserId) || (null !== $owner->userId && !$this->currentUser->isEmailVerified());
         $error = match (true) {
-            null === $owner->userId => 'Connectez-vous ou créez votre compte pour envoyer votre demande : votre brouillon est conservé.',
-            !$this->currentUser->isEmailVerified() => 'Validez d’abord votre adresse e-mail (lien reçu à l’inscription) : votre demande sera envoyée ensuite, votre brouillon est conservé.',
+            null === $owner->userId && !$awaitingActivation => 'Créez votre compte ou connectez-vous (étape « Coordonnées ») pour envoyer votre demande : votre brouillon est conservé.',
             !$request->request->getBoolean('confirm') => self::CONFIRM_MESSAGE,
             !$this->submitLimiter->create($request->getClientIp() ?? 'unknown')->consume()->isAccepted() => 'Vous avez déjà envoyé plusieurs demandes : merci de réessayer dans une heure.',
             default => $this->captchaError($request),
         };
-        if (null !== $error || null === $owner->userId) {
+        if (null !== $error) {
             return $this->page($request, $owner, RequestDraftEditor::STEP_RECAP, new DraftRejected($error, self::CONFIRM_MESSAGE === $error ? ['confirm' => 'Cochez cette case pour envoyer votre demande.'] : []), $request->request->all());
+        }
+        $broadcast = $request->request->has('broadcast') ? $request->request->getBoolean('broadcast') : null;
+        if ($awaitingActivation || null === $owner->userId) {
+            // RG-040 : la demande partira dès la validation de l'e-mail (SubmitDraftOnEmailVerified).
+            $this->commands->dispatch(new RequestDraftSubmission($owner, $broadcast));
+
+            return $this->redirectToRoute('request_step', ['step' => RequestDraftEditor::STEP_RECAP], Response::HTTP_SEE_OTHER);
         }
         $requestId = $this->ids->next();
         try {
-            $this->commands->dispatch(new SubmitRequestDraft($owner->userId, $requestId, $this->ipAnonymizer->hash($request->getClientIp()), $request->request->has('broadcast') ? $request->request->getBoolean('broadcast') : null));
+            $this->commands->dispatch(new SubmitRequestDraft($owner->userId, $requestId, $this->ipAnonymizer->hash($request->getClientIp()), $broadcast));
         } catch (DraftRejected|RequestRuleViolation $e) {
             return $this->page($request, $owner, RequestDraftEditor::STEP_RECAP, new DraftRejected($e->getMessage()), null);
         }
@@ -236,6 +252,43 @@ final class RequestTunnelController extends AbstractController
         } catch (ExternalServiceUnavailable) {
             return 'Le service de vérification anti-robot est momentanément indisponible. Merci de réessayer dans quelques minutes.';
         }
+    }
+
+    /**
+     * P11.6 (Figma 5:162) — compte créé dans le tunnel (A02 : CGU, mot de passe, téléphone ; captcha, limite). Même issue
+     * que l'adresse soit nouvelle ou déjà inscrite (anti-énumération) : l'identifiant réservé est noté sur le brouillon,
+     * la demande partira à l'activation (E-11).
+     */
+    private function createAccount(Request $request, DraftOwner $owner, ?RequestDraftView $draft): void
+    {
+        $r = $request->request;
+        $errors = [];
+        foreach (['first_name' => 'Indiquez votre prénom.', 'last_name' => 'Indiquez votre nom.', 'email' => 'Indiquez votre adresse e-mail.', 'phone' => 'Indiquez votre téléphone mobile.', 'password' => 'Choisissez un mot de passe.'] as $field => $message) {
+            if ('' === trim($r->getString($field))) {
+                $errors[$field] = $message;
+            }
+        }
+        if (!$r->getBoolean('terms')) {
+            $errors['terms'] = 'Acceptez les conditions d’utilisation pour créer votre compte.';
+        }
+        if ([] !== $errors) {
+            throw new DraftRejected('Certaines informations sont manquantes.', $errors);
+        }
+        if (!$this->signupLimiter->create($request->getClientIp() ?? 'unknown')->consume()->isAccepted()) {
+            throw new DraftRejected('Trop de tentatives d’inscription depuis votre connexion. Réessayez dans une heure.');
+        }
+        $captcha = $this->captchaError($request);
+        if (null !== $captcha) {
+            throw new DraftRejected($captcha);
+        }
+        $postalCode = $draft->address['postal_code'] ?? throw new DraftRejected('Indiquez d’abord le lieu de l’intervention.');
+        $userId = $this->ids->next();
+        try {
+            $this->commands->dispatch(new CreateClientAccount($userId, trim($r->getString('email')), $r->getString('password'), trim($r->getString('first_name')), trim($r->getString('last_name')), trim($r->getString('phone')), $postalCode, $r->getBoolean('newsletter'), $request->getClientIp(), $this->ipAnonymizer->hash($request->getClientIp())));
+        } catch (AccountCreationRejected $e) {
+            throw new DraftRejected($e->getMessage(), [\in_array($e->field, ['email', 'password', 'phone', 'terms'], true) ? $e->field : 'form' => $e->getMessage()]);
+        }
+        $this->commands->dispatch(new MarkDraftAccount($owner, $userId));
     }
 
     /** A02 : le téléphone, facultatif à l'inscription, est requis au premier dépôt ; il est porté par le compte. */
@@ -412,6 +465,7 @@ final class RequestTunnelController extends AbstractController
             'has_phone' => null !== $owner->userId && null !== $this->phone($owner->userId),
             'email_verified' => $this->currentUser->isEmailVerified(),
             'login_url' => $this->generateUrl('identity_login', ['redirect' => $request->getPathInfo()]),
+            'password_min' => $this->settings->int(SettingKey::AuthPasswordMinLength),
         ];
     }
 

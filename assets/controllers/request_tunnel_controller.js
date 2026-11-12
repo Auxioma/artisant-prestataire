@@ -150,6 +150,17 @@ export default class extends Controller {
         }
     }
 
+    /* Étape 5 (Figma 5:162) : « afficher / masquer » le mot de passe. */
+    togglePassword(event) {
+        const input = this.element.querySelector('#password');
+        if (!input) {
+            return;
+        }
+        const visible = input.type === 'password';
+        input.type = visible ? 'text' : 'password';
+        event.currentTarget.setAttribute('aria-pressed', String(visible));
+    }
+
     /* Étape 1 (Figma 5:2) : la carte de catégorie choisie restreint la liste « Type de prestation ». */
     filterJobs() {
         if (!this.hasJobSelectTarget) {

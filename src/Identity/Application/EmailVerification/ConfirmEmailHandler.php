@@ -12,6 +12,7 @@ use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Application\Bus\CommandHandler;
 use App\Shared\Application\Bus\EventBus;
 use App\Shared\Domain\Audit\AuditRecord;
+use App\Shared\Domain\Event\Integration\AccountEmailVerified;
 use App\Shared\Domain\Identifier\IdGenerator;
 use App\Shared\Domain\Time\Clock;
 use App\Shared\Domain\ValueObject\Email;
@@ -40,6 +41,7 @@ final readonly class ConfirmEmailHandler implements CommandHandler
             throw new InvalidEmailToken(null !== $token->usedAt ? EmailTokenState::AlreadyVerified : EmailTokenState::Expired);
         }
         $user = $this->users->get(new UserId($token->userId));
+        $verified = false;
 
         if (EmailTokenPurpose::EmailChange === $token->purpose && null !== $token->newEmail) {
             $newEmail = new Email($token->newEmail);
@@ -53,9 +55,13 @@ final readonly class ConfirmEmailHandler implements CommandHandler
             $this->mailer->sendEmailChangedAlert($oldEmail, $user->firstName(), $now);
         } else {
             $user->verifyEmail($now);
+            $verified = true;
         }
         $this->tokens->markUsed($token->id, $now);
         $this->events->publish(...$user->releaseEvents());
+        if ($verified) {
+            $this->events->publish(new AccountEmailVerified($user->id()->value, $now));
+        }
         $this->audit->record(new AuditRecord(
             id: $this->ids->next(),
             occurredAt: $now,

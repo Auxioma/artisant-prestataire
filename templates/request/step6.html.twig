@@ -27,10 +27,14 @@
         {% endfor %}
     </ul>
 
-    {% if signed_in and not email_verified %}
-        <p class="tm-form-note" role="status"><twig:Icon name="alert" size="sm" />Validez votre adresse e-mail grâce au lien reçu à l’inscription pour pouvoir envoyer votre demande.</p>
-    {% endif %}
-
+    {% if draft.submitRequestedAt %}
+        {#- RG-040 : envoi demandé avant l'activation du compte ; il partira automatiquement à la validation de l'e-mail. -#}
+        <div class="tm-request__sent-card" role="status">
+            <p class="tm-card-title">Plus qu’une étape : activez votre compte</p>
+            <p class="tm-caption">Cliquez sur le lien que nous venons de vous envoyer par e-mail. Votre demande partira automatiquement aux professionnels dès l’activation, et vous recevrez une confirmation.</p>
+        </div>
+        <p class="tm-caption">Rien reçu ? Vérifiez vos courriers indésirables. Le lien est valable 24 heures ; vous pouvez en demander un nouveau depuis la <a href="{{ path('identity_login') }}">page de connexion</a>.</p>
+    {% else %}
     <form method="post" novalidate data-turbo="false">
         <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
         <twig:Checkbox id="confirm" name="confirm" value="1" label="Je confirme l’exactitude des informations fournies." :checked="posted.confirm is defined" />
@@ -48,6 +52,7 @@
             <twig:Button type="submit" name="action" value="send">Envoyer ma demande</twig:Button>
         </div>
     </form>
+    {% endif %}
 {% endblock %}
 
 {% block step_why %}

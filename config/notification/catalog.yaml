@@ -58,6 +58,7 @@ notifications:
         label: "Compte créé lors du dépôt (activation)"
         recipient: "Client"
         channels: [email]
+        variables: [prenom, lien, validite_heures, changement_adresse]
     'E-12':
         label: "Nouveau devis reçu"
         recipient: "Client"

@@ -56,7 +56,7 @@ final readonly class RegisterClientHandler implements CommandHandler
         $user = $this->registrar->register($userId, $email, $command->password, UserKind::Client, $firstName, $lastName, $phone, $documents, $command->ip, $command->ipHash, [
             'client_type' => $type->value,
             'newsletter' => $command->newsletter,
-        ]);
+        ] + (null === $command->origin ? [] : ['origin' => $command->origin]), $command->origin);
         if (null === $user) {
             return; // compte existant : même issue, titulaire prévenu (anti-énumération)
         }

@@ -26,7 +26,7 @@ final readonly class EmailVerificationSender
     }
 
     /** @return bool faux si un lien vient d'être envoyé (délai de renvoi non écoulé) */
-    public function send(User $user, EmailTokenPurpose $purpose, ?Email $newEmail = null, bool $respectCooldown = true): bool
+    public function send(User $user, EmailTokenPurpose $purpose, ?Email $newEmail = null, bool $respectCooldown = true, bool $fromRequest = false): bool
     {
         $now = $this->clock->now();
         $last = $this->tokens->lastIssuedAt($user->id()->value, $purpose);
@@ -38,7 +38,7 @@ final readonly class EmailVerificationSender
         $ttl = $this->settings->int(SettingKey::AuthEmailVerificationTtlHours);
         $token = SecretToken::generate();
         $this->tokens->issue($this->ids->next(), $user->id()->value, $purpose, $newEmail?->value, $token->hash, $now, $now->modify(\sprintf('+%d hours', $ttl)));
-        $this->mailer->sendEmailVerification($newEmail ?? $user->email(), $user->firstName(), $token->plain, $ttl, EmailTokenPurpose::EmailChange === $purpose);
+        $this->mailer->sendEmailVerification($newEmail ?? $user->email(), $user->firstName(), $token->plain, $ttl, EmailTokenPurpose::EmailChange === $purpose, $fromRequest);
 
         return true;
     }

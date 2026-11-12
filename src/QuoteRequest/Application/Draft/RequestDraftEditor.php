@@ -63,8 +63,25 @@ final readonly class RequestDraftEditor implements CommandHandler
     ) {
     }
 
-    public function __invoke(StartRequestDraft|SaveDraftStep|AddDraftAttachment|RemoveDraftAttachment|AdoptVisitorDraft $command): void
+    public function __invoke(StartRequestDraft|SaveDraftStep|AddDraftAttachment|RemoveDraftAttachment|AdoptVisitorDraft|MarkDraftAccount|RequestDraftSubmission $command): void
     {
+        if ($command instanceof MarkDraftAccount || $command instanceof RequestDraftSubmission) {
+            $draft = $this->drafts->find($command->owner) ?? throw new DraftRejected('Votre brouillon a expiré : merci de recommencer votre demande.');
+            if ($command instanceof MarkDraftAccount) {
+                $this->drafts->markPendingAccount($draft->id, $command->userId);
+
+                return;
+            }
+            if ($draft->step < self::STEP_RECAP) {
+                throw new DraftRejected('Votre demande est incomplète : vérifiez chaque étape.');
+            }
+            if (null !== $draft->targetArtisanId && null !== $command->broadcastToOthers) {
+                $this->store($command->owner, $draft->with(['broadcast_to_others' => $command->broadcastToOthers], $draft->step, $this->clock->now()));
+            }
+            $this->drafts->requestSubmission($draft->id, $this->clock->now());
+
+            return;
+        }
         if ($command instanceof AdoptVisitorDraft) {
             foreach ($this->drafts->adopt($command->visitor, $command->userId) as $fileId) {
                 $this->shredder->shred($fileId, self::SHRED_REASON);
@@ -110,7 +127,7 @@ final readonly class RequestDraftEditor implements CommandHandler
             self::STEP_NEED => $this->need($draft, $input, $command->complete),
             self::STEP_DETAILS => $this->details($draft, $input, $command->complete),
             self::STEP_PLACE => $this->place($draft, $input, $command->complete),
-            self::STEP_CONTACT => $this->contact($command->owner, $input, $command->complete),
+            self::STEP_CONTACT => $this->contact($command->owner, $draft, $input, $command->complete),
             default => [],
         };
         $step = $command->complete ? max($draft->step, min($command->step + 1, self::STEP_RECAP)) : $draft->step;
@@ -259,10 +276,10 @@ final readonly class RequestDraftEditor implements CommandHandler
      *
      * @return array<string, mixed>
      */
-    private function contact(DraftOwner $owner, array $input, bool $complete): array
+    private function contact(DraftOwner $owner, RequestDraftView $draft, array $input, bool $complete): array
     {
         $preference = ContactPreference::tryFrom(self::text($input, 'contact_preference') ?? '');
-        if ($complete && null === $owner->userId) {
+        if ($complete && null === $owner->userId && null === $draft->pendingUserId) {
             throw new DraftRejected('Connectez-vous ou créez votre compte pour envoyer votre demande : votre brouillon est conservé.');
         }
         if ($complete && null === $preference) {

@@ -5,23 +5,65 @@
 {% block step_title %}Comment pouvons-nous vous contacter ?{% endblock %}
 {% block step_subtitle %}Vos coordonnées ne sont partagées qu’au moment prévu par les règles de mise en relation.{% endblock %}
 
+{% block javascripts %}
+    {{ parent() }}
+    {% if contact is null and not draft.pendingUserId %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="{{ csp_nonce('script') }}"></script>{% endif %}
+{% endblock %}
+
 {% block step_content %}
-    {% if contact is null %}
-        <div class="tm-request__account">
-            <div class="tm-card-panel tm-request__account-choice">
-                <h3 class="tm-card-title">J’ai déjà un compte</h3>
-                <p class="tm-body">Connectez-vous : votre brouillon est conservé et rattaché à votre compte.</p>
-                <twig:Button href="{{ login_url }}" icon="arrowR">Me connecter</twig:Button>
-            </div>
-            <div class="tm-card-panel tm-request__account-choice">
-                <h3 class="tm-card-title">Je n’ai pas encore de compte</h3>
-                <p class="tm-body">Créez votre compte client gratuit, validez votre adresse e-mail, puis revenez sur cette page pour envoyer votre demande.</p>
-                <twig:Button variant="secondary" href="{{ path('identity_register_client') }}">Créer mon compte</twig:Button>
-            </div>
-        </div>
-        <form method="post" novalidate data-turbo="false">
+    {% if contact is null and draft.pendingUserId %}
+        {#- Compte déjà créé pour ce brouillon : la demande partira à son activation (E-11). -#}
+        {% set preference = posted.contact_preference ?? draft.contactPreference ?? 'messaging_only' %}
+        <p class="tm-request__privacy" role="status"><strong>Votre compte est créé.</strong><span>Vérifiez votre boîte mail : un lien d’activation vous a été envoyé. Vous pouvez terminer votre demande dès maintenant, elle partira à l’activation.</span></p>
+        <form method="post" novalidate data-turbo="false" data-request-tunnel-target="form" data-action="change->request-tunnel#changed">
             <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
-            <div class="tm-request__actions"><button type="submit" class="tm-button tm-button--secondary" name="action" value="back" formnovalidate>← Étape précédente</button></div>
+            {{ include('request/_preferences.html.twig') }}
+            {{ include('request/_actions.html.twig') }}
+        </form>
+    {% elseif contact is null %}
+        {% set preference = posted.contact_preference ?? draft.contactPreference ?? 'messaging_only' %}
+        <form method="post" novalidate data-turbo="false" data-request-tunnel-target="form" data-action="change->request-tunnel#changed">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            {% if errors.form is defined %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ errors.form }}</p></div>{% endif %}
+            <div class="tm-request__split">
+                <div class="tm-field tm-field--inset{{ errors.first_name is defined ? ' tm-field--error' }}">
+                    <label class="tm-field__label" for="first_name">Prénom</label>
+                    <div class="tm-field__control"><input class="tm-field__input" id="first_name" name="first_name" type="text" autocomplete="given-name" maxlength="60" value="{{ posted.first_name ?? '' }}"></div>
+                    {{ include('request/_error.html.twig', {key: 'first_name'}) }}
+                </div>
+                <div class="tm-field tm-field--inset{{ errors.last_name is defined ? ' tm-field--error' }}">
+                    <label class="tm-field__label" for="last_name">Nom</label>
+                    <div class="tm-field__control"><input class="tm-field__input" id="last_name" name="last_name" type="text" autocomplete="family-name" maxlength="60" value="{{ posted.last_name ?? '' }}"></div>
+                    {{ include('request/_error.html.twig', {key: 'last_name'}) }}
+                </div>
+            </div>
+            <div class="tm-field tm-field--inset{{ errors.email is defined ? ' tm-field--error' }}">
+                <label class="tm-field__label" for="email">Adresse email</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="email" name="email" type="email" autocomplete="email" maxlength="180" value="{{ posted.email ?? '' }}"></div>
+                {{ include('request/_error.html.twig', {key: 'email'}) }}
+            </div>
+            <div class="tm-field tm-field--inset{{ errors.phone is defined ? ' tm-field--error' }}">
+                <label class="tm-field__label" for="phone">Téléphone</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" value="{{ posted.phone ?? '' }}"></div>
+                {{ include('request/_error.html.twig', {key: 'phone'}) }}
+            </div>
+            <div class="tm-field tm-field--inset{{ errors.password is defined ? ' tm-field--error' }}" data-controller="password">
+                <label class="tm-field__label" for="password">Mot de passe</label>
+                <div class="tm-field__control">
+                    <input class="tm-field__input" id="password" name="password" type="password" autocomplete="new-password" minlength="{{ password_min }}" maxlength="128" aria-describedby="password_help" data-password-target="input">
+                </div>
+                {{ include('request/_error.html.twig', {key: 'password'}) }}
+            </div>
+            <twig:Checkbox id="terms" name="terms" value="1" label="J’accepte les conditions d’utilisation et le traitement de mes données." :checked="posted.terms is defined" />
+            <p class="tm-caption"><a href="{{ path('identity_legal_document', {slug: 'cgu'}) }}" target="_blank" rel="noopener">Conditions d’utilisation</a> · <a href="{{ path('identity_legal_document', {slug: 'confidentialite'}) }}" target="_blank" rel="noopener">Politique de confidentialité</a></p>
+            {{ include('request/_error.html.twig', {key: 'terms'}) }}
+            <hr class="tm-request__divider">
+            <p class="tm-caption" id="password_help">{{ password_min }} caractères minimum, non présent dans les fuites connues · <button type="button" class="tm-link-button" aria-controls="password" aria-pressed="false" data-action="request-tunnel#togglePassword">afficher / masquer</button></p>
+            {{ include('request/_preferences.html.twig') }}
+            <twig:Checkbox id="newsletter" name="newsletter" value="1" label="Je souhaite recevoir la newsletter (facultatif)" :checked="posted.newsletter is defined" />
+            <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-action="request" data-size="flexible" data-language="fr" data-appearance="interaction-only"></div>
+            <p class="tm-caption">J’ai déjà un compte : <a href="{{ login_url }}">Se connecter</a></p>
+            {{ include('request/_actions.html.twig') }}
         </form>
     {% else %}
         {% set preference = posted.contact_preference ?? draft.contactPreference ?? 'messaging_only' %}
@@ -46,15 +88,7 @@
                     {{ include('request/_error.html.twig', {key: 'phone'}) }}
                 </div>
             {% endif %}
-            <fieldset aria-describedby="{{ errors.contact_preference is defined ? 'contact_preference_error' }}">
-                <legend>Préférences de contact</legend>
-                <div class="tm-request__radios">
-                    {% for p in preferences %}
-                        <twig:Checkbox type="radio" id="pref_{{ p.value }}" name="contact_preference" value="{{ p.value }}" label="{{ p.value == 'messaging_only' ? 'Messagerie uniquement' : 'Téléphone autorisé après acceptation du devis' }}" :checked="p.value == preference" />
-                    {% endfor %}
-                </div>
-                {{ include('request/_error.html.twig', {key: 'contact_preference'}) }}
-            </fieldset>
+            {{ include('request/_preferences.html.twig') }}
             {{ include('request/_actions.html.twig') }}
         </form>
     {% endif %}

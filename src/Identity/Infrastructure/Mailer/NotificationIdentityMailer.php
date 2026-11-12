@@ -22,9 +22,9 @@ final readonly class NotificationIdentityMailer implements IdentityMailer
     {
     }
 
-    public function sendEmailVerification(Email $to, string $firstName, string $token, int $ttlHours, bool $emailChange): void
+    public function sendEmailVerification(Email $to, string $firstName, string $token, int $ttlHours, bool $emailChange, bool $fromRequest = false): void
     {
-        $this->notify('E-01', $to, [
+        $this->notify($fromRequest && !$emailChange ? 'E-11' : 'E-01', $to, [
             'prenom' => $firstName,
             'lien' => $this->urls->generate('identity_verify_email', ['token' => $token], UrlGeneratorInterface::ABSOLUTE_URL),
             'validite_heures' => $ttlHours,

@@ -101,6 +101,7 @@ final readonly class AccountRegistrar
         ?string $ip,
         ?string $ipHash,
         array $auditContext = [],
+        ?string $origin = null,
     ): ?User {
         $now = $this->clock->now();
         $hash = $this->hasher->hash($password);
@@ -111,7 +112,7 @@ final readonly class AccountRegistrar
             return null;
         }
 
-        $user = User::register($userId, $email, $kind, $hash, $firstName, $lastName, $now);
+        $user = User::register($userId, $email, $kind, $hash, $firstName, $lastName, $now, $origin);
         $user->changePhone($phone, $now);
         $this->users->add($user);
         foreach ($documents as $document) {

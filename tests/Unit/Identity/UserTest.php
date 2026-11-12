@@ -46,7 +46,7 @@ final class UserTest extends TestCase
         self::assertFalse($user->isEmailVerified());
         self::assertCount(1, $events);
         self::assertInstanceOf(UserRegistered::class, $events[0]);
-        self::assertSame(['userId' => self::ID, 'kind' => 'artisan', 'at' => $this->now], get_object_vars($events[0]));
+        self::assertSame(['userId' => self::ID, 'kind' => 'artisan', 'at' => $this->now, 'origin' => null], get_object_vars($events[0]));
     }
 
     public function testPlainPasswordIsRefused(): void
