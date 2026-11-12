@@ -2,10 +2,10 @@
 {% extends 'base.html.twig' %}
 {% set active_nav = 'help' %}
 {% block title %}{{ term ? 'Recherche « ' ~ term ~ ' » — ' }}Aide et questions fréquentes — TrouveMoi{% endblock %}
+{% set canonical_url = url('content_faq') %}
+{% set meta_description %}Réponses aux questions des particuliers et des professionnels : devis, vérification, crédits, avis, compte et données personnelles.{% endset %}
 {% block meta %}
     {% if term %}<meta name="robots" content="noindex, follow">{% endif %}
-    <meta name="description" content="Réponses aux questions des particuliers et des professionnels : devis, vérification, crédits, avis, compte et données personnelles.">
-    <link rel="canonical" href="{{ url('content_faq') }}">
 {% endblock %}
 {% block body %}
 <div class="tm-help">

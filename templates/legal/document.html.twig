@@ -2,8 +2,10 @@
 {% extends 'base.html.twig' %}
 {% set slug = document.type.slug %}
 {% block title %}{{ document.title }}{{ archived ? ' — version ' ~ document.version }} — TrouveMoi{% endblock %}
+{% set canonical_url = url('identity_legal_document', {slug: slug}) %}
+{% set meta_description = document.title ~ ' de TrouveMoi.com : version ' ~ document.version ~ ' du ' ~ document.publishedAt|date('d/m/Y', 'Europe/Paris') ~ '.' %}
 {% block meta %}
-    {% if archived %}<meta name="robots" content="noindex, follow">{% else %}<link rel="canonical" href="{{ url('identity_legal_document', {slug: slug}) }}">{% endif %}
+    {% if archived %}<meta name="robots" content="noindex, follow">{% endif %}
 {% endblock %}
 {% block body %}
 <article class="tm-container tm-legal">

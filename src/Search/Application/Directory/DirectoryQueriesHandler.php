@@ -22,9 +22,23 @@ final readonly class DirectoryQueriesHandler implements QueryHandler
     {
     }
 
-    /** @return array<string, int>|int|list<ArtisanHit>|DirectoryResult */
-    public function __invoke(ArtisanCountsByJob|CountArtisans|FeaturedArtisans|DirectoryArtisans $query): array|int|DirectoryResult
+    /** @return array<string, int>|int|list<ArtisanHit>|DirectoryResult|list<array<string, mixed>> */
+    public function __invoke(ArtisanCountsByJob|CountArtisans|FeaturedArtisans|DirectoryArtisans|SitemapLocalPages|SitemapArtisans $query): array|int|DirectoryResult
     {
+        if ($query instanceof SitemapLocalPages) {
+            $min = $this->settings->int(SettingKey::SeoMinProsIndex);
+            $pages = $this->index->indexableLocalPages($this->settings->int(SettingKey::SearchDefaultRadiusKm), $min);
+            foreach ($this->index->countsByDepartment() as $code => $count) {
+                if ($count >= $min) {
+                    $pages[] = ['city' => null, 'job' => null, 'department' => (string) $code, 'count' => $count];
+                }
+            }
+
+            return $pages;
+        }
+        if ($query instanceof SitemapArtisans) {
+            return $this->index->publicArtisans();
+        }
         if ($query instanceof DirectoryArtisans) {
             $perPage = $this->settings->int(SettingKey::SearchPageSize);
             $page = max(1, $query->page);

@@ -1,9 +1,9 @@
 {#- P13 (Figma 159:1364) — tarifs professionnels : devis offerts, forfaits (BO08, T-601 : pas encore publiés), FAQ tarifs, CTA. -#}
 {% extends 'base.html.twig' %}
 {% block title %}Tarifs professionnels — TrouveMoi{% endblock %}
+{% set canonical_url = url('content_pricing') %}
+{% set meta_description %}{{ free_credits > 0 ? free_credits ~ ' devis offerts à la validation de votre dossier, sans carte bancaire. ' }}Seul l’envoi d’un devis consomme un crédit.{% endset %}
 {% block meta %}
-    <meta name="description" content="{{ free_credits > 0 ? free_credits ~ ' devis offerts à la validation de votre dossier, sans carte bancaire. ' }}Seul l’envoi d’un devis consomme un crédit.">
-    <link rel="canonical" href="{{ url('content_pricing') }}">
 {% endblock %}
 {% block body %}
 <div class="tm-pricing" data-controller="analytics" data-analytics-auto-event-value="pricing_view">

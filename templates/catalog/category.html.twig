@@ -5,10 +5,9 @@
     ? total|number_format(0, ',', ' ') ~ ' professionnel' ~ (total > 1 ? 's') ~ ' vérifié' ~ (total > 1 ? 's') ~ ' en ' ~ category.name|lower ~ ' : ' ~ jobs|slice(0, 4)|map(j => j.name|lower)|join(', ') ~ (jobs|length > 4 ? '…' : '.')
     : 'Trouvez un professionnel vérifié en ' ~ category.name|lower ~ ' : ' ~ jobs|slice(0, 4)|map(j => j.name|lower)|join(', ') ~ (jobs|length > 4 ? '…' : '.')) %}
 {% block title %}{{ category.name }} : trouvez un professionnel vérifié — TrouveMoi{% endblock %}
-{% block meta %}
-    <meta name="description" content="{{ chapo|length > 155 ? chapo|slice(0, 154) ~ '…' : chapo }}">
-    <link rel="canonical" href="{{ url('catalog_category', {slug: category.slug}) }}">
-{% endblock %}
+{% set meta_description = chapo|length > 155 ? chapo|slice(0, 154) ~ '…' : chapo %}
+{% set canonical_url = url('catalog_category', {slug: category.slug}) %}
+{% block meta %}{% endblock %}
 {% block body %}
 <div class="tm-catalog" data-controller="analytics" data-analytics-auto-event-value="category_view" data-analytics-auto-type-value="{{ category.slug }}">
     <header class="tm-catalog-hero">

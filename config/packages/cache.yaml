@@ -9,6 +9,9 @@ framework:
             # Référentiel affiché sur toutes les pages (méga-menu) : invalidé sur les événements Catalog.
             cache.catalog:
                 adapter: cache.app
+            # Sitemaps XML (BO12.3) : recalculés au plus toutes les heures.
+            cache.sitemap:
+                adapter: cache.app
 
 when@prod:
     framework:
@@ -23,5 +26,7 @@ when@test:
                 cache.settings:
                     adapter: cache.adapter.array
                 cache.catalog:
+                    adapter: cache.adapter.array
+                cache.sitemap:
                     adapter: cache.adapter.array
         # Limites de débit en test : voir services.yaml (when@test) — état propre à chaque noyau, conservé entre requêtes.

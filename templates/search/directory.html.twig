@@ -5,10 +5,10 @@
 {% macro page_url(n, filters) %}{{ filters is empty ? (n == 1 ? path('search_directory') : path('search_directory_page', {page: n})) : path('search_directory', filters|merge(n > 1 ? {page: n} : {})) }}{% endmacro %}
 {% import _self as m %}
 {% block title %}Nos professionnels vérifiés{{ page > 1 ? ' — page ' ~ page }} — TrouveMoi{% endblock %}
+{% set canonical_url = app.request.schemeAndHttpHost ~ m.page_url(filters is empty ? page : 1, {})|trim %}
+{% set meta_description %}Annuaire des artisans et prestataires vérifiés par TrouveMoi : SIRET, Kbis et assurances contrôlés. Parcourez-les par métier, département ou ordre alphabétique.{% endset %}
 {% block meta %}
     {% if filters is not empty %}<meta name="robots" content="noindex, follow">{% endif %}
-    <meta name="description" content="Annuaire des artisans et prestataires vérifiés par TrouveMoi : SIRET, Kbis et assurances contrôlés. Parcourez-les par métier, département ou ordre alphabétique.">
-    <link rel="canonical" href="{{ app.request.schemeAndHttpHost ~ m.page_url(filters is empty ? page : 1, {})|trim }}">
 {% endblock %}
 {% block body %}
 <div class="tm-catalog tm-directory" data-controller="analytics" data-analytics-auto-event-value="directory_view" data-analytics-auto-type-value="{{ page }}">

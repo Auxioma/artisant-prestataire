@@ -1,9 +1,9 @@
 {#- P16 (Figma 162:2178) — contact : formulaire (motif, coordonnées, n° de demande, message, pièce jointe, consentement, captcha invisible) et coordonnées du support. -#}
 {% extends 'base.html.twig' %}
 {% block title %}Contactez-nous — TrouveMoi{% endblock %}
+{% set canonical_url = url('content_contact') %}
+{% set meta_description %}Une question, un partenariat, un signalement ? Écrivez à l’équipe TrouveMoi : réponse sous {{ reply_hours }} h ouvrées.{% endset %}
 {% block meta %}
-    <meta name="description" content="Une question, un partenariat, un signalement ? Écrivez à l’équipe TrouveMoi : réponse sous {{ reply_hours }} h ouvrées.">
-    <link rel="canonical" href="{{ url('content_contact') }}">
 {% endblock %}
 {% block javascripts %}
     {{ parent() }}

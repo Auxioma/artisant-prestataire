@@ -68,4 +68,18 @@ interface ArtisanSearchIndex
      * @return list<string>
      */
     public function directoryLetters(): array;
+
+    /**
+     * Sitemap (RG-023) — pages ville activées indexables : par commune (et par métier) le nombre d'artisans couvrant la
+     * commune dans le rayon (mêmes règles que la recherche), seuls ceux atteignant le seuil.
+     *
+     * @return list<array{city: string, job: ?string, count: int}> job null = page ville tous métiers
+     */
+    public function indexableLocalPages(int $radiusKm, int $minPros): array;
+
+    /** @return array<string, int> code du département => nombre d'artisans publics */
+    public function countsByDepartment(): array;
+
+    /** @return list<array{id: string, name: string, commune: ?string, updated_at: string}> artisans publics (fiches P10) */
+    public function publicArtisans(): array;
 }

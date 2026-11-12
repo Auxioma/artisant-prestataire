@@ -3,10 +3,9 @@
 {% set active_nav = 'help' %}
 {% set contact = path('content_contact', {message: 'À propos de « ' ~ q.question ~ ' » : '}) %}
 {% block title %}{{ q.question }} — Aide — TrouveMoi{% endblock %}
-{% block meta %}
-    <meta name="description" content="{{ q.answerHtml|striptags|trim|slice(0, 155) }}">
-    <link rel="canonical" href="{{ url('content_faq_question', {topic: q.topicSlug, question: q.slug}) }}">
-{% endblock %}
+{% set meta_description = q.answerHtml|striptags|trim|slice(0, 155) %}
+{% set canonical_url = url('content_faq_question', {topic: q.topicSlug, question: q.slug}) %}
+{% block meta %}{% endblock %}
 {% block body %}
 <div class="tm-help">
     <div class="tm-container tm-help__body tm-help__body--narrow">

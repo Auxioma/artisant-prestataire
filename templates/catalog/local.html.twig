@@ -20,10 +20,10 @@
     : (kind == 'job_city' ? url('catalog_job_city', {job: job.slug, city: c.slug})
     : (kind == 'city' ? url('catalog_city', {city: c.slug}) : url('catalog_department', {code: department.code}))) %}
 {% block title %}{{ h1 }} — TrouveMoi{% endblock %}
+{% set meta_description = chapo|length > 155 ? chapo|slice(0, 154) ~ '…' : chapo %}
+{% set canonical_url = canonical %}
 {% block meta %}
     {% if not indexable %}<meta name="robots" content="noindex, follow">{% endif %}
-    <meta name="description" content="{{ chapo|length > 155 ? chapo|slice(0, 154) ~ '…' : chapo }}">
-    <link rel="canonical" href="{{ canonical }}">
 {% endblock %}
 {% block body %}
 <div class="tm-catalog" data-controller="analytics" data-analytics-auto-event-value="seo_page_view"
@@ -110,7 +110,7 @@
                 </section>
                 {% set faq_ld = {'@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq|map(i => {'@type': 'Question', name: i.q, acceptedAnswer: {'@type': 'Answer', text: i.a}})} %}
                 {# |raw justifié : json_encode avec JSON_HEX_TAG/JSON_HEX_AMP. #}
-                <script type="application/ld+json" nonce="{{ csp_nonce('script') }}">{{ faq_ld|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP'))|raw }}</script>
+                {% if tm_schema('faq') %}<script type="application/ld+json" nonce="{{ csp_nonce('script') }}">{{ faq_ld|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP'))|raw }}</script>{% endif %}
             {% endif %}
         </div>
 

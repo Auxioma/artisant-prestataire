@@ -7,6 +7,7 @@
         <meta name="csp-nonce" content="{{ csp_nonce('style') }}">
         <title>{% block title %}TrouveMoi.com — Artisans & Prestataires{% endblock %}</title>
         {% block meta %}{% endblock %}
+        {% block seo %}{{ include('_seo_head.html.twig', {title: block('title')}) }}{% endblock %}
         {{ include('_head_assets.html.twig') }}
         {% block stylesheets %}{% endblock %}
         {% block javascripts %}

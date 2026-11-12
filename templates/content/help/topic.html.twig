@@ -2,10 +2,9 @@
 {% extends 'base.html.twig' %}
 {% set active_nav = 'help' %}
 {% block title %}{{ topic.title }} — Aide — TrouveMoi{% endblock %}
-{% block meta %}
-    <meta name="description" content="{{ topic.description }}">
-    <link rel="canonical" href="{{ url('content_faq_topic', {topic: topic.slug}) }}">
-{% endblock %}
+{% set meta_description = topic.description %}
+{% set canonical_url = url('content_faq_topic', {topic: topic.slug}) %}
+{% block meta %}{% endblock %}
 {% block body %}
 <div class="tm-help">
     <div class="tm-container tm-help__body">

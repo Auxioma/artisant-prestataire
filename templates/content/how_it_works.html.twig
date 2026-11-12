@@ -3,9 +3,9 @@
 {% set active_nav = 'how' %}
 {% set request_href = tm_route_exists('request_new') ? path('request_new') : path('public_search') %}
 {% block title %}Comment ça marche ? — TrouveMoi{% endblock %}
+{% set canonical_url = url('content_how_it_works') %}
+{% set meta_description %}Trouvez un professionnel vérifié et comparez jusqu’à {{ max_quotes }} devis gratuits, ou développez votre activité d’artisan avec {{ free_credits }} devis offerts.{% endset %}
 {% block meta %}
-    <meta name="description" content="Trouvez un professionnel vérifié et comparez jusqu’à {{ max_quotes }} devis gratuits, ou développez votre activité d’artisan avec {{ free_credits }} devis offerts.">
-    <link rel="canonical" href="{{ url('content_how_it_works') }}">
 {% endblock %}
 {% macro steps(items) %}
     <ol class="tm-how__steps">

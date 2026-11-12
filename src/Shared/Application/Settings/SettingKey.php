@@ -144,6 +144,12 @@ enum SettingKey: string
     case ContactReasons = 'contact.reasons';
     case ContactMaxFileMb = 'contact.max_file_mb';
     case ContactReplyHours = 'contact.reply_hours';
+    case SeoSchemaOrganization = 'seo.schema_organization';
+    case SeoSchemaLocalBusiness = 'seo.schema_local_business';
+    case SeoSchemaFaq = 'seo.schema_faq';
+    case SeoSchemaBreadcrumb = 'seo.schema_breadcrumb';
+    case SeoSchemaArticle = 'seo.schema_article';
+    case SeoRobotsExtra = 'seo.robots_extra';
     case SiteMaintenance = 'site.maintenance';
     case SiteMaintenanceRetryMinutes = 'site.maintenance_retry_minutes';
 
@@ -289,6 +295,12 @@ enum SettingKey: string
             self::ContactReasons => $d(T::StringList, ['Question sur une demande ou un devis', 'Mon compte', 'Abonnement et facturation (professionnels)', 'Signalement d’un contenu ou d’un professionnel', 'Partenariat', 'Presse', 'Autre'], 'Motifs du formulaire de contact (P16)', proposed: true),
             self::ContactMaxFileMb => $d(T::Integer, 5, 'Contact : poids maximum de la pièce jointe (Mo)', 1, 20),
             self::ContactReplyHours => $d(T::Integer, 48, 'Contact : délai de réponse annoncé (heures ouvrées)', 1, 240),
+            self::SeoSchemaOrganization => $d(T::Boolean, true, 'Données structurées Organization / WebSite (accueil, BO12.4)'),
+            self::SeoSchemaLocalBusiness => $d(T::Boolean, true, 'Données structurées LocalBusiness (fiches artisans, BO12.4)'),
+            self::SeoSchemaFaq => $d(T::Boolean, true, 'Données structurées FAQPage (aide, pages métier, BO12.4)'),
+            self::SeoSchemaBreadcrumb => $d(T::Boolean, true, 'Données structurées BreadcrumbList (fil d’Ariane, BO12.4)'),
+            self::SeoSchemaArticle => $d(T::Boolean, true, 'Données structurées Article (blog, V2, BO12.4)'),
+            self::SeoRobotsExtra => $d(T::StringList, [], 'Lignes ajoutées au robots.txt (BO12.3)', proposed: true),
             self::SiteMaintenance => $d(T::Boolean, false, 'Mode maintenance du site public (P18 : 503, back-office accessible)', proposed: true),
             self::SiteMaintenanceRetryMinutes => $d(T::Integer, 30, 'Maintenance : délai annoncé avant nouvel essai (Retry-After, min)', 1, 1440, proposed: true),
 

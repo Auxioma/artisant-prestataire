@@ -152,6 +152,54 @@ final readonly class DbalArtisanSearchIndex implements ArtisanSearchIndex
         return ['total' => $total, 'candidates' => array_map(static fn (array $r): SearchCandidate => self::candidate($r, $jobIds), $rows)];
     }
 
+    public function indexableLocalPages(int $radiusKm, int $minPros): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            <<<'SQL'
+                WITH coverage AS (
+                    SELECT c.slug AS city, v.artisan_id, v.job_ids
+                    FROM catalog.commune c
+                    JOIN artisan.service_area_commune z ON z.insee = c.insee
+                    JOIN search.artisan_search_view v ON v.artisan_id = z.artisan_id AND v.location IS NOT NULL AND ST_DWithin(v.location, c.centroid, :meters)
+                    WHERE c.active AND c.seo_page_enabled
+                )
+                SELECT city, NULL AS job, count(DISTINCT artisan_id) AS n FROM coverage GROUP BY city HAVING count(DISTINCT artisan_id) >= :min
+                UNION ALL
+                SELECT cv.city, j.slug AS job, count(DISTINCT cv.artisan_id) AS n
+                FROM coverage cv
+                JOIN catalog.job j ON j.id = ANY (cv.job_ids) AND j.active
+                JOIN catalog.category cat ON cat.id = j.category_id AND cat.active
+                LEFT JOIN catalog.category root ON root.id = cat.parent_id
+                WHERE root.id IS NULL OR root.active
+                GROUP BY cv.city, j.slug HAVING count(DISTINCT cv.artisan_id) >= :min
+                ORDER BY 1, 2 NULLS FIRST
+                SQL,
+            ['meters' => 1000 * max(1, min($radiusKm, self::MAX_RADIUS_KM)), 'min' => max(0, $minPros)],
+        );
+
+        return array_map(static fn (array $r): array => ['city' => DbalValue::string($r['city']), 'job' => DbalValue::nullableString($r['job']), 'count' => DbalValue::int($r['n'])], $rows);
+    }
+
+    public function countsByDepartment(): array
+    {
+        $counts = [];
+        foreach ($this->connection->fetchAllAssociative('SELECT department_code, count(*) AS n FROM search.artisan_search_view WHERE department_code IS NOT NULL GROUP BY department_code') as $r) {
+            $counts[DbalValue::string($r['department_code'])] = DbalValue::int($r['n']);
+        }
+
+        return $counts;
+    }
+
+    public function publicArtisans(): array
+    {
+        return array_map(static fn (array $r): array => [
+            'id' => DbalValue::string($r['artisan_id']),
+            'name' => DbalValue::string($r['name']),
+            'commune' => DbalValue::nullableString($r['commune_name']),
+            'updated_at' => DbalValue::string($r['updated_at']),
+        ], $this->connection->fetchAllAssociative('SELECT artisan_id, name, commune_name, updated_at FROM search.artisan_search_view ORDER BY artisan_id'));
+    }
+
     public function directoryLetters(): array
     {
         return array_map(DbalValue::string(...), $this->connection->fetchFirstColumn(

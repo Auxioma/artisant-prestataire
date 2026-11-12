@@ -2,9 +2,9 @@
 {% extends 'base.html.twig' %}
 {% set active_nav = 'categories' %}
 {% block title %}Toutes les catégories de services — TrouveMoi{% endblock %}
+{% set canonical_url = url('catalog_categories') %}
+{% set meta_description %}Plomberie, électricité, rénovation, jardin… Parcourez toutes les catégories de services et trouvez un professionnel vérifié près de chez vous.{% endset %}
 {% block meta %}
-    <meta name="description" content="Plomberie, électricité, rénovation, jardin… Parcourez toutes les catégories de services et trouvez un professionnel vérifié près de chez vous.">
-    <link rel="canonical" href="{{ url('catalog_categories') }}">
 {% endblock %}
 {% block body %}
 <div class="tm-catalog" data-controller="analytics catalog-filter" data-analytics-auto-event-value="category_list_view">

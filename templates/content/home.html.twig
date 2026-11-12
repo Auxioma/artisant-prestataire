@@ -2,10 +2,10 @@
 {% extends 'base.html.twig' %}
 {% set active_nav = 'home' %}
 {% block title %}TrouveMoi.com — Artisans & prestataires vérifiés près de chez vous{% endblock %}
+{% set canonical_url = url('public_home') %}
+{% set meta_description %}Trouvez un artisan ou un prestataire vérifié près de chez vous : SIRET, Kbis et assurances contrôlés, devis gratuits et sans engagement.{% endset %}
 {% block meta %}
     {% if preview %}<meta name="robots" content="noindex, nofollow">{% endif %}
-    <meta name="description" content="Trouvez un artisan ou un prestataire vérifié près de chez vous : SIRET, Kbis et assurances contrôlés, devis gratuits et sans engagement.">
-    {% if not preview %}<link rel="canonical" href="{{ url('public_home') }}">{% endif %}
     {% set hero = blocks|filter(b => b.type == 'hero')|first %}
     {% if hero %}<link rel="preload" as="image" href="{{ asset('images/auth/a02-banner@1x.webp') }}" fetchpriority="high">{% endif %}
 {% endblock %}
@@ -16,7 +16,13 @@
         {% include 'content/home/_' ~ block.type ~ '.html.twig' with {s: block.settings, d: block.data} %}
     {% endfor %}
 </div>
-{% set website = {'@context': 'https://schema.org', '@type': 'WebSite', name: 'TrouveMoi.com', url: url('public_home'), potentialAction: {'@type': 'SearchAction', target: url('public_search') ~ '?lieu_libelle={search_term_string}', 'query-input': 'required name=search_term_string'}} %}
-{# |raw justifié : json_encode avec JSON_HEX_TAG/JSON_HEX_AMP. #}
-<script type="application/ld+json" nonce="{{ csp_nonce('script') }}">{{ website|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP'))|raw }}</script>
+{% if tm_schema('organization') %}
+    {% set organization = {'@type': 'Organization', '@id': url('public_home') ~ '#organisation', name: 'TrouveMoi.com', url: url('public_home'), logo: absolute_url(asset('images/brand/logo-fonce@2x.webp'))}
+        |merge(tm_social_links() is empty ? {} : {sameAs: tm_social_links()|map(l => l.url)}) %}
+    {% set website = {'@type': 'WebSite', '@id': url('public_home') ~ '#site', name: 'TrouveMoi.com', url: url('public_home'), publisher: {'@id': url('public_home') ~ '#organisation'},
+        potentialAction: {'@type': 'SearchAction', target: url('public_search') ~ '?lieu_libelle={search_term_string}', 'query-input': 'required name=search_term_string'}} %}
+    {% set graph = {'@context': 'https://schema.org', '@graph': [organization, website]} %}
+    {# |raw justifié : json_encode avec JSON_HEX_TAG/JSON_HEX_AMP. #}
+    <script type="application/ld+json" nonce="{{ csp_nonce('script') }}">{{ graph|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP'))|raw }}</script>
+{% endif %}
 {% endblock %}

@@ -9,14 +9,10 @@
 {% set revealed = app.flashes('artisan_phone')|first %}
 {% set summary = p.description ?? (p.name ~ ', professionnel vérifié' ~ (main_job ? ' — ' ~ main_job.name) ~ (place ? ' ' ~ place|a_lieu) ~ '.') %}
 {% block title %}{{ p.name }}{{ main_job ? ' — ' ~ main_job.name }}{{ p.communeName ? ' ' ~ p.communeName|a_lieu }} | TrouveMoi{% endblock %}
-{% block meta %}
-    <meta name="description" content="{{ summary|length > 155 ? summary|slice(0, 154) ~ '…' : summary }}">
-    <link rel="canonical" href="{{ canonical }}">
-    <meta property="og:type" content="profile">
-    <meta property="og:title" content="{{ p.name }}{{ main_job ? ' — ' ~ main_job.name }}">
-    <meta property="og:url" content="{{ canonical }}">
-    {% if logo %}<meta property="og:image" content="{{ app.request.schemeAndHttpHost ~ logo }}">{% endif %}
-{% endblock %}
+{% set meta_description = summary|length > 155 ? summary|slice(0, 154) ~ '…' : summary %}
+{% set canonical_url = canonical %}
+{% set og_type = 'profile' %}
+{% set og_image = logo ? app.request.schemeAndHttpHost ~ logo : null %}
 {% block body %}
 <div class="tm-profile" data-controller="analytics" data-analytics-auto-event-value="pro_profile_view" data-analytics-auto-type-value="{{ main_job ? main_job.slug }}">
     <div class="tm-profile__top">
@@ -209,5 +205,5 @@
  |merge(p.vatNumber ? {vatID: p.vatNumber} : {})
  |merge(area_center and p.areaRadiusKm ? {areaServed: {'@type': 'GeoCircle', geoMidpoint: {'@type': 'Place', name: area_center.name}, geoRadius: p.areaRadiusKm * 1000}} : (departments is not empty ? {areaServed: department_areas} : {})) %}
 {# Pas d'AggregateRating tant qu'aucun avis n'est publié. |raw justifié : json_encode avec JSON_HEX_TAG/JSON_HEX_AMP. #}
-<script type="application/ld+json" nonce="{{ csp_nonce('script') }}">{{ business|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP'))|raw }}</script>
+{% if tm_schema('local_business') %}<script type="application/ld+json" nonce="{{ csp_nonce('script') }}">{{ business|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP'))|raw }}</script>{% endif %}
 {% endblock %}
