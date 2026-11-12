@@ -28,6 +28,9 @@ interface DraftStore
      */
     public function claimPendingSubmission(string $userId): ?string;
 
+    /** Envoi automatique refusé (anti-doublon, plafond…) : la demande d'envoi est levée et le motif conservé pour le client. */
+    public function failSubmission(string $draftId, string $reason): void;
+
     /** Supprime le brouillon et ses rattachements (les fichiers eux-mêmes sont repris ou détruits par l'appelant). */
     public function delete(string $draftId): void;
 

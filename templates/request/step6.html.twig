@@ -20,6 +20,7 @@
         {label: 'Période', value: timing ? (timing.value == 'date' and draft.desiredDate ? 'Le ' ~ draft.desiredDate|date('d/m/Y') : timing.label) : null, step: 4},
         {label: 'Photos', value: count == 0 ? 'Aucune' : count ~ ' fichier' ~ (count > 1 ? 's') ~ ' joint' ~ (count > 1 ? 's'), step: 3},
     ] %}
+    {% if draft.submitError and not error %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>Votre demande n’a pas pu être envoyée à l’activation de votre compte : {{ draft.submitError }}</p></div>{% endif %}
     <h3 class="tm-card-title">Votre demande est presque prête</h3>
     <ul class="tm-recap-rows">
         {% for row in rows|filter(r => r.value is not empty) %}

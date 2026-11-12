@@ -111,6 +111,14 @@ final readonly class DbalDraftStore implements DraftStore
         return $id;
     }
 
+    public function failSubmission(string $draftId, string $reason): void
+    {
+        $this->connection->executeStatement(
+            "UPDATE request.request_draft SET submit_requested_at = NULL, payload = jsonb_set(payload, '{submit_error}', to_jsonb(CAST(:reason AS text))) WHERE id = :id",
+            ['reason' => mb_substr($reason, 0, 300), 'id' => $draftId],
+        );
+    }
+
     public function delete(string $draftId): void
     {
         $this->connection->executeStatement('DELETE FROM request.draft_attachment WHERE draft_id = :id', ['id' => $draftId]);

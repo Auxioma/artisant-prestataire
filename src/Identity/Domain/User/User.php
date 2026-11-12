@@ -36,6 +36,8 @@ final class User extends AggregateRoot
     private ?\DateTimeImmutable $emailVerifiedAt = null;
     private ?\DateTimeImmutable $lastLoginAt = null;
     private \DateTimeImmutable $passwordChangedAt;
+    /** P11.6 « Créer mon compte plus tard » : aucun mot de passe choisi ; le lien d'activation connecte (lien magique). */
+    private bool $passwordless = false;
     private ?\DateTimeImmutable $deletionRequestedAt = null;
     private ?\DateTimeImmutable $anonymizedAt = null;
     private \DateTimeImmutable $updatedAt;
@@ -108,6 +110,7 @@ final class User extends AggregateRoot
         self::assertHash($newHash);
         $this->passwordHash = $newHash;
         $this->passwordChangedAt = $now;
+        $this->passwordless = false;
         $this->touch($now);
         $this->recordEvent(new UserPasswordChanged($this->id->value, $now));
     }
@@ -231,6 +234,17 @@ final class User extends AggregateRoot
     public function status(): UserStatus
     {
         return $this->status;
+    }
+
+    /** Compte créé sans mot de passe choisi (son empreinte est celle d'un secret aléatoire jamais communiqué). */
+    public function markPasswordless(): void
+    {
+        $this->passwordless = true;
+    }
+
+    public function isPasswordless(): bool
+    {
+        return $this->passwordless;
     }
 
     public function passwordHash(): string

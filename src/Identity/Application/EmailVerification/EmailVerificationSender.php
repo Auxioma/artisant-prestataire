@@ -38,7 +38,7 @@ final readonly class EmailVerificationSender
         $ttl = $this->settings->int(SettingKey::AuthEmailVerificationTtlHours);
         $token = SecretToken::generate();
         $this->tokens->issue($this->ids->next(), $user->id()->value, $purpose, $newEmail?->value, $token->hash, $now, $now->modify(\sprintf('+%d hours', $ttl)));
-        $this->mailer->sendEmailVerification($newEmail ?? $user->email(), $user->firstName(), $token->plain, $ttl, EmailTokenPurpose::EmailChange === $purpose, $fromRequest);
+        $this->mailer->sendEmailVerification($newEmail ?? $user->email(), $user->firstName(), $token->plain, $ttl, EmailTokenPurpose::EmailChange === $purpose, $fromRequest, $user->isPasswordless());
 
         return true;
     }

@@ -42,6 +42,8 @@ final readonly class RequestDraftView
         public ?string $pendingUserId = null,
         /** « Envoyer ma demande » cliqué avant la validation de l'e-mail : envoi automatique à l'activation (RG-040). */
         public ?\DateTimeImmutable $submitRequestedAt = null,
+        /** Motif d'un envoi automatique refusé à l'activation du compte (affiché au récapitulatif). */
+        public ?string $submitError = null,
     ) {
     }
 
@@ -54,7 +56,7 @@ final readonly class RequestDraftView
             'answers' => $this->answers, 'description' => $this->description, 'budget_range' => $this->budgetRange,
             'address' => $this->address, 'timing' => $this->timing, 'desired_date' => $this->desiredDate,
             'preferred_slots' => $this->preferredSlots, 'occupant_status' => $this->occupantStatus, 'contact_preference' => $this->contactPreference,
-            'title' => $this->title, 'summary' => $this->summary, 'work_nature' => $this->workNature,
+            'title' => $this->title, 'summary' => $this->summary, 'work_nature' => $this->workNature, 'submit_error' => $this->submitError,
         ];
     }
 
@@ -98,6 +100,7 @@ final readonly class RequestDraftView
             $string('work_nature'),
             $pendingUserId,
             $submitRequestedAt,
+            $string('submit_error'),
         );
     }
 

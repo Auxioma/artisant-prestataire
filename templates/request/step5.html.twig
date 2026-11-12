@@ -62,7 +62,7 @@
             {{ include('request/_preferences.html.twig') }}
             <twig:Checkbox id="newsletter" name="newsletter" value="1" label="Je souhaite recevoir la newsletter (facultatif)" :checked="posted.newsletter is defined" />
             <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-action="request" data-size="flexible" data-language="fr" data-appearance="interaction-only"></div>
-            <p class="tm-caption">J’ai déjà un compte : <a href="{{ login_url }}">Se connecter</a></p>
+            <p class="tm-caption">J’ai déjà un compte : <a href="{{ login_url }}">Se connecter</a> · ou <button type="submit" class="tm-link-button" name="action" value="magic">Créer mon compte plus tard (lien magique)</button></p>
             {{ include('request/_actions.html.twig') }}
         </form>
     {% else %}

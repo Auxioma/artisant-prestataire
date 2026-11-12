@@ -15,7 +15,7 @@ interface IdentityMailer
 {
     /** E-01 (inscription) ou confirmation de la nouvelle adresse (changement d'e-mail). */
     /** E-01, ou E-11 quand le compte a été créé dans le tunnel de demande (P11.6). */
-    public function sendEmailVerification(Email $to, string $firstName, string $token, int $ttlHours, bool $emailChange, bool $fromRequest = false): void;
+    public function sendEmailVerification(Email $to, string $firstName, string $token, int $ttlHours, bool $emailChange, bool $fromRequest = false, bool $passwordless = false): void;
 
     /** E-06 : alerte envoyée à l'ancienne adresse après un changement. */
     public function sendEmailChangedAlert(Email $oldAddress, string $firstName, \DateTimeImmutable $at): void;

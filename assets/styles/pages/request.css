@@ -160,3 +160,8 @@
         .tm-request__split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 }
+
+/* T-402e — liens d'action dans une légende (Figma 5:162 : « afficher / masquer », « Créer mon compte plus tard »). */
+@layer components {
+    .tm-request .tm-caption .tm-link-button { min-height: 0; padding: 0; color: var(--color-link); font: inherit; text-decoration: underline; }
+}

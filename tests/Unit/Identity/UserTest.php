@@ -81,6 +81,16 @@ final class UserTest extends TestCase
         self::assertEquals($this->now->modify('+1 day'), $user->passwordChangedAt());
     }
 
+    public function testChosenPasswordEndsThePasswordlessState(): void
+    {
+        $user = $this->user();
+        self::assertFalse($user->isPasswordless());
+        $user->markPasswordless();
+        self::assertTrue($user->isPasswordless(), 'P11.6 « Créer mon compte plus tard »');
+        $user->changePassword(self::HASH, $this->now);
+        self::assertFalse($user->isPasswordless(), 'le lien magique ne connecte plus une fois un mot de passe choisi');
+    }
+
     public function testSuspensionBlocksLoginAndReinstatementRestoresPreviousState(): void
     {
         $user = $this->user();

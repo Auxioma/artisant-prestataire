@@ -17,6 +17,7 @@
         <field name="emailVerifiedAt" type="datetimetz_immutable" column="email_verified_at" nullable="true"/>
         <field name="lastLoginAt" type="datetimetz_immutable" column="last_login_at" nullable="true"/>
         <field name="passwordChangedAt" type="datetimetz_immutable" column="password_changed_at"/>
+        <field name="passwordless" type="boolean"/>
         <field name="deletionRequestedAt" type="datetimetz_immutable" column="deletion_requested_at" nullable="true"/>
         <field name="anonymizedAt" type="datetimetz_immutable" column="anonymized_at" nullable="true"/>
         <field name="createdAt" type="datetimetz_immutable" column="created_at"/>

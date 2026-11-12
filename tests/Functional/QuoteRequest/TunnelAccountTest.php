@@ -8,6 +8,7 @@ use App\Identity\Application\Command\RegisterUser;
 use App\Identity\Application\EventHandler\SendEmailVerificationOnRegistration;
 use App\Identity\Domain\User\Event\UserRegistered;
 use App\QuoteRequest\Application\EventHandler\SubmitDraftOnEmailVerified;
+use App\QuoteRequest\Application\Submission\SubmitQuoteRequest;
 use App\Shared\Domain\Event\Integration\AccountEmailVerified;
 use App\Shared\Infrastructure\Persistence\DbalValue;
 use App\Tests\Support\ArtisanDossier;
@@ -100,6 +101,63 @@ final class TunnelAccountTest extends WebTestCase
         self::assertResponseRedirects('/demande-de-devis/6', 303, 'anti-énumération (A02) : même issue qu’une adresse nouvelle');
         self::assertSame(1, DbalValue::int($this->connection->fetchOne("SELECT count(*) FROM identity.user_account WHERE email = 'deja.inscrit@exemple.test'")), 'aucun compte créé');
         self::assertSame(1, DbalValue::int($this->connection->fetchOne("SELECT count(*) FROM shared.outbox_message WHERE message_type LIKE '%RegistrationAttemptedOnExistingAccount'")), 'titulaire prévenu (I-01)');
+    }
+
+    public function testCreateAccountLaterLogsInThroughTheMagicLink(): void
+    {
+        $crawler = $this->walkToContact();
+        $this->client->request('POST', '/demande-de-devis/5', ['_token' => $this->token($crawler), 'action' => 'magic', 'contact_preference' => 'messaging_only', 'first_name' => 'Dominique', 'last_name' => 'Plus-Tard',
+            'email' => 'plus.tard@exemple.test', 'phone' => '06 11 22 33 44', 'terms' => '1', 'cf-turnstile-response' => AcceptingHumanVerification::HUMAN]);
+        self::assertResponseRedirects('/demande-de-devis/6', 303, 'aucun mot de passe exigé (Figma 5:162 « Créer mon compte plus tard »)');
+        $userId = DbalValue::string($this->connection->fetchOne("SELECT id FROM identity.user_account WHERE email = 'plus.tard@exemple.test'"));
+        self::assertTrue((bool) $this->connection->fetchOne('SELECT passwordless FROM identity.user_account WHERE id = :id', ['id' => $userId]));
+
+        $crawler = $this->client->followRedirect();
+        $this->client->request('POST', '/demande-de-devis/6', ['_token' => $this->token($crawler), 'action' => 'send', 'confirm' => '1', 'cf-turnstile-response' => AcceptingHumanVerification::HUMAN]);
+        $sender = self::getContainer()->get(SendEmailVerificationOnRegistration::class);
+        \assert($sender instanceof SendEmailVerificationOnRegistration);
+        $sender(new UserRegistered($userId, 'client', new \DateTimeImmutable(), SendEmailVerificationOnRegistration::REQUEST));
+        $mail = self::getMailerMessages()[0] ?? null;
+        \assert($mail instanceof Email);
+        self::assertStringContainsString('ce lien vous connecte directement', (string) $mail->getTextBody());
+        self::assertSame(1, preg_match('~/verification-email/([A-Za-z0-9_-]+)~', (string) $mail->getTextBody(), $m));
+
+        $this->client->getCookieJar()->clear();
+        $this->client->request('GET', '/verification-email/'.$m[1]);
+        self::assertResponseRedirects('/', 303);
+        $crawler = $this->client->followRedirect();
+        self::assertStringContainsString('vous êtes connecté', $crawler->filter('.tm-toasts')->text());
+        self::assertCount(1, $crawler->filter('.tm-dropdown__title'), 'connecté par le lien magique');
+
+        $this->client->getCookieJar()->clear();
+        $this->client->request('GET', '/verification-email/'.$m[1]);
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $this->client->getCrawler()->filter('.tm-dropdown__title'), 'lien à usage unique : pas de seconde connexion');
+    }
+
+    public function testRefusedAutomaticSubmissionKeepsTheReasonOnTheDraft(): void
+    {
+        $other = '0190f5e4-0000-7000-8000-0000000f2101';
+        $this->dossierDispatch(new RegisterUser($other, 'voisin.doublon@exemple.test', self::PASSWORD, 'client', 'Voisin', 'Doublon'));
+        $this->dossierDispatch(new SubmitQuoteRequest('0190f5e4-0000-7000-8000-0000000f2102', $other, $this->jobId, '76351', '76600', '12 Rue Fictive 76600 Le Havre', 'repair', 'Fuite d’eau déjà signalée par le voisin (demande fictive).', [], null, 'week', null));
+
+        $crawler = $this->walkToContact();
+        $this->client->request('POST', '/demande-de-devis/5', ['_token' => $this->token($crawler), 'action' => 'magic', 'contact_preference' => 'messaging_only', 'first_name' => 'Alix', 'last_name' => 'Doublon',
+            'email' => 'alix.doublon@exemple.test', 'phone' => '06 11 22 33 55', 'terms' => '1', 'cf-turnstile-response' => AcceptingHumanVerification::HUMAN]);
+        $crawler = $this->client->followRedirect();
+        $this->client->request('POST', '/demande-de-devis/6', ['_token' => $this->token($crawler), 'action' => 'send', 'confirm' => '1', 'cf-turnstile-response' => AcceptingHumanVerification::HUMAN]);
+        $userId = DbalValue::string($this->connection->fetchOne("SELECT id FROM identity.user_account WHERE email = 'alix.doublon@exemple.test'"));
+        $this->connection->executeStatement("UPDATE identity.user_account SET status = 'active', email_verified_at = date_trunc('second', now()) WHERE id = :id", ['id' => $userId]);
+
+        $submit = self::getContainer()->get(SubmitDraftOnEmailVerified::class);
+        \assert($submit instanceof SubmitDraftOnEmailVerified);
+        $submit(new AccountEmailVerified($userId, new \DateTimeImmutable()));
+        self::assertSame(1, DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM request.quote_request')), 'RG-065 : doublon refusé');
+        $row = $this->connection->fetchAssociative("SELECT owner_user_id, submit_requested_at, payload->>'submit_error' AS error FROM request.request_draft");
+        \assert(false !== $row);
+        self::assertSame($userId, $row['owner_user_id'], 'brouillon rattaché au compte');
+        self::assertNull($row['submit_requested_at'], 'plus d’envoi en attente');
+        self::assertStringContainsString('déjà envoyé une demande pour ce métier à cette adresse', DbalValue::string($row['error']));
     }
 
     /** Étapes 1 à 4 en visiteur ; renvoie la page de l'étape 5. */

@@ -17,8 +17,9 @@ final readonly class CreateClientAccount implements Command
     public function __construct(
         public string $userId,
         public string $email,
+        /** null : « Créer mon compte plus tard » (lien magique, aucun mot de passe choisi) */
         #[\SensitiveParameter]
-        public string $password,
+        public ?string $password,
         public string $firstName,
         public string $lastName,
         public string $phone,

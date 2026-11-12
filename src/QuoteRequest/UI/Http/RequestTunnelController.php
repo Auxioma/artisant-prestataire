@@ -169,7 +169,7 @@ final class RequestTunnelController extends AbstractController
             }
             try {
                 if (RequestDraftEditor::STEP_CONTACT === $step && null === $owner->userId && null === $draft?->pendingUserId) {
-                    $this->createAccount($request, $owner, $draft);
+                    $this->createAccount($request, $owner, $draft, 'magic' === $request->request->getString('action'));
                 } elseif (RequestDraftEditor::STEP_CONTACT === $step) {
                     $this->savePhone($request, $owner);
                 }
@@ -255,15 +255,20 @@ final class RequestTunnelController extends AbstractController
     }
 
     /**
-     * P11.6 (Figma 5:162) — compte créé dans le tunnel (A02 : CGU, mot de passe, téléphone ; captcha, limite). Même issue
+     * P11.6 (Figma 5:162) — compte créé dans le tunnel (A02 : CGU, mot de passe — ou aucun avec « Créer mon compte plus
+     * tard », lien magique —, téléphone ; captcha, limite). Même issue
      * que l'adresse soit nouvelle ou déjà inscrite (anti-énumération) : l'identifiant réservé est noté sur le brouillon,
      * la demande partira à l'activation (E-11).
      */
-    private function createAccount(Request $request, DraftOwner $owner, ?RequestDraftView $draft): void
+    private function createAccount(Request $request, DraftOwner $owner, ?RequestDraftView $draft, bool $magic): void
     {
         $r = $request->request;
         $errors = [];
-        foreach (['first_name' => 'Indiquez votre prénom.', 'last_name' => 'Indiquez votre nom.', 'email' => 'Indiquez votre adresse e-mail.', 'phone' => 'Indiquez votre téléphone mobile.', 'password' => 'Choisissez un mot de passe.'] as $field => $message) {
+        $required = ['first_name' => 'Indiquez votre prénom.', 'last_name' => 'Indiquez votre nom.', 'email' => 'Indiquez votre adresse e-mail.', 'phone' => 'Indiquez votre téléphone mobile.'];
+        if (!$magic) {
+            $required['password'] = 'Choisissez un mot de passe, ou créez votre compte plus tard (lien magique).';
+        }
+        foreach ($required as $field => $message) {
             if ('' === trim($r->getString($field))) {
                 $errors[$field] = $message;
             }
@@ -284,7 +289,7 @@ final class RequestTunnelController extends AbstractController
         $postalCode = $draft->address['postal_code'] ?? throw new DraftRejected('Indiquez d’abord le lieu de l’intervention.');
         $userId = $this->ids->next();
         try {
-            $this->commands->dispatch(new CreateClientAccount($userId, trim($r->getString('email')), $r->getString('password'), trim($r->getString('first_name')), trim($r->getString('last_name')), trim($r->getString('phone')), $postalCode, $r->getBoolean('newsletter'), $request->getClientIp(), $this->ipAnonymizer->hash($request->getClientIp())));
+            $this->commands->dispatch(new CreateClientAccount($userId, trim($r->getString('email')), $magic ? null : $r->getString('password'), trim($r->getString('first_name')), trim($r->getString('last_name')), trim($r->getString('phone')), $postalCode, $r->getBoolean('newsletter'), $request->getClientIp(), $this->ipAnonymizer->hash($request->getClientIp())));
         } catch (AccountCreationRejected $e) {
             throw new DraftRejected($e->getMessage(), [\in_array($e->field, ['email', 'password', 'phone', 'terms'], true) ? $e->field : 'form' => $e->getMessage()]);
         }

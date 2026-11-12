@@ -5,5 +5,8 @@ Votre compte TrouveMoi a été créé lors de votre demande de devis. Activez-le
 {{ lien }}
 
 Ce lien est valable {{ validite_heures }} heures. Dès l’activation, votre demande est envoyée automatiquement et vous recevez un e-mail de confirmation.
+{% if sans_mot_de_passe|default(false) %}
+Vous avez choisi de créer votre compte plus tard : ce lien vous connecte directement. Pour vous reconnecter ensuite, choisissez un mot de passe depuis « Mot de passe oublié » sur la page de connexion.
+{% endif %}
 
 Vous n’êtes pas à l’origine de cette demande ? Ignorez simplement ce message : aucun compte ne sera activé.

@@ -26,13 +26,15 @@ final readonly class SubmitDraftOnEmailVerified implements EventHandler
 
     public function __invoke(AccountEmailVerified $event): void
     {
-        if (null === $this->drafts->claimPendingSubmission($event->userId)) {
+        $draftId = $this->drafts->claimPendingSubmission($event->userId);
+        if (null === $draftId) {
             return;
         }
         try {
             $this->commands->dispatch(new SubmitRequestDraft($event->userId, $this->ids->next()));
-        } catch (DraftRejected|RequestRuleViolation) {
+        } catch (DraftRejected|RequestRuleViolation $e) {
             // Brouillon conservé : le client retrouve le récapitulatif et le motif en revenant dans le tunnel.
+            $this->drafts->failSubmission($draftId, $e->getMessage());
         }
     }
 }
