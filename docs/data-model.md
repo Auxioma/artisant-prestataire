@@ -98,6 +98,12 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 | `offer` | id, artisan_id, title, type, value, reference_price_cents, jobs uuid[], starts_at, ends_at, status, stats (jsonb) | **CK** type <> 'discount' OR reference_price_cents IS NOT NULL (RG-026) |
 | `blocklist` | id, kind (`siret`/`phone`/`iban`/`device`/`email_domain`), value_hash, reason, admin_id | **UQ** (kind, value_hash) |
 
+### 2.3 bis `search` (projections)
+
+| Table | Colonnes | Contraintes / index |
+|---|---|---|
+| `artisan_search_view` (T-301) | artisan_id (PK), user_id, name, short_description, logo_file_id, main_job_id, job_ids uuid[], commune_insee, commune_name, department_code, location `geography(Point)` (centroïde de commune, RG-022), labels text[], completion, rating_avg, reviews_count, response_rate, available_soon, verified_at, updated_at | une ligne par artisan public · **GIST** location · **GIN** job_ids · zone (RG-021) par jointure sur `artisan.service_area_commune` |
+
 ### 2.4 `request` (QuoteRequest)
 
 | Table | Colonnes | Contraintes / index |

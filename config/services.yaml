@@ -43,6 +43,8 @@ services:
             - '../src/Catalog/Application/Geo/Query/Coverage.php'
             - '../src/Billing/Application/Credit/CreditBalance.php'
             - '../src/ArtisanProfile/Application/Admin/ArtisanListPage.php'
+            - '../src/ArtisanProfile/Application/Search/SearchableArtisan.php'
+            - '../src/Search/Application/Artisan/{SearchCandidate,ArtisanSearchResult,ArtisanHit}.php'
             - '../src/Identity/Application/Admin/ClientListPage.php'
             - '../src/ArtisanProfile/Domain/'
             - '../src/Administration/Application/Team/{TeamRejected,InvitationToken,AdminMemberView}.php'
@@ -110,6 +112,9 @@ services:
     App\Notification\Application\Port\EmailSender: '@App\Notification\Infrastructure\Mailer\SymfonyMailerEmailSender'
     App\Notification\Application\Port\DeliveryLog: '@App\Notification\Infrastructure\Persistence\DbalDeliveryLog'
     App\Notification\Application\Port\InAppNotifications: '@App\Notification\Infrastructure\Persistence\DbalInAppNotifications'
+
+    # Ports du module Search (artisans)
+    App\Search\Application\Artisan\ArtisanSearchIndex: '@App\Search\Infrastructure\Artisan\DbalArtisanSearchIndex'
 
     # Ports du module Billing
     App\Billing\Application\Credit\CreditLedger: '@App\Billing\Infrastructure\Credit\DbalCreditLedger'
