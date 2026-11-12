@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\ArtisanProfile\Application\Signup;
 
+use App\ArtisanProfile\Application\Port\CoverageProjection;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository;
 use App\ArtisanProfile\Domain\Profile\ArtisanRuleViolation;
 use App\Catalog\Application\Query\JobIndexEntries;
@@ -20,6 +21,7 @@ final readonly class ChooseJobsHandler implements CommandHandler
 {
     public function __construct(
         private ArtisanProfileRepository $profiles,
+        private CoverageProjection $coverage,
         private QueryBus $queries,
         private SettingsProvider $settings,
         private EventBus $events,
@@ -40,6 +42,7 @@ final readonly class ChooseJobsHandler implements CommandHandler
         }
 
         $profile->chooseJobs(array_map(static fn (string $id): JobId => new JobId($id), $ids), new JobId($command->mainJobId), $this->settings->int(SettingKey::ProMaxJobs), $this->clock->now());
+        $this->coverage->replaceJobs($profile->id()->value, $profile->jobAssignments());
         $this->events->publish(...$profile->releaseEvents());
     }
 }

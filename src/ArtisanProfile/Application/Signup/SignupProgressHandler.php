@@ -46,6 +46,8 @@ final readonly class SignupProgressHandler implements QueryHandler
             $profile->shortDescription(),
             $profile->logoFileId(),
             null !== $profile->submittedAt(),
+            $profile->statusReason(),
+            $profile->statusComment(),
         );
     }
 }

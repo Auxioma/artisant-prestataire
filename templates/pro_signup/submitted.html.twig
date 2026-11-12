@@ -1,36 +1,90 @@
-{#- A03.7 — écran final (Figma 230:12384) : « En cours de vérification », délai annoncé, crédits offerts à la validation (RG-044), check-list du dossier. -#}
+{#- A03.7 — écran de suivi du dossier (Figma 230:12384), selon le statut RG-043 : en attente (délai annoncé, crédits offerts RG-044), complément demandé, vérifié, refusé (motif), suspendu. Jauge de complétude PR08.1. -#}
 {% extends 'base.html.twig' %}
 {% set header_variant = 'tunnel' %}
 
-{% block title %}Dossier envoyé — Inscription professionnelle — TrouveMoi{% endblock %}
+{% block title %}Votre dossier — Inscription professionnelle — TrouveMoi{% endblock %}
 
 {% block body %}
+{% set status = state.status %}
+{% set more_info = status == 'pending_verification' and state.statusReason == 'more_info' %}
+{% set heading = {
+    pending_verification: more_info ? 'Un complément est demandé pour votre dossier' : 'Votre dossier est en cours de vérification',
+    verified: 'Votre compte professionnel est vérifié',
+    rejected: 'Votre dossier n’a pas été retenu',
+    suspended: 'Votre compte professionnel est suspendu',
+}[status] ?? 'Votre dossier' %}
+{% set tone = {verified: 'success', rejected: 'danger', suspended: 'danger'}[status] ?? (more_info ? 'info' : 'success') %}
+{% set item_labels = {
+    logo: 'Logo ou photo', description: 'Description', photos: photos_target ~ ' photos de réalisations', hours: 'Horaires d’ouverture',
+    zone: 'Zone d’intervention', services: 'Prestations', labels: 'Labels et qualifications',
+} %}
+{% set item_links = state.status in ['incomplete', 'pending_verification'] ? {logo: path('artisan_signup_profile'), description: path('artisan_signup_profile'), zone: path('artisan_signup_area'), labels: path('artisan_signup_insurance')} : {zone: path('artisan_signup_area')} %}
 <div class="tm-auth-page tm-pro-signup">
     <div class="tm-container tm-submitted__page">
     {% if track_completed %}<div hidden data-controller="analytics" data-analytics-auto-event-value="pro_signup_completed"></div>{% endif %}
     <section class="tm-card-panel tm-state-card tm-submitted" aria-labelledby="dossier-titre">
-        <span class="tm-state-card__icon tm-state-card__icon--success"><twig:Icon name="check" /></span>
-        <h1 id="dossier-titre" class="tm-state-card__title">Votre dossier est en cours de vérification</h1>
-        <p><twig:Badge variant="pending">Délai annoncé : {{ delay_hours }} h ouvrées</twig:Badge></p>
-        <p class="tm-submitted__credits"><twig:Icon name="tag" size="sm" class="tm-icon--inherit" />{{ free_credits }} devis offerts dès la validation de votre compte</p>
+        <span class="tm-state-card__icon tm-state-card__icon--{{ tone }}"><twig:Icon name="{{ tone == 'danger' ? 'alert' : (tone == 'info' ? 'info' : 'check') }}" /></span>
+        <h1 id="dossier-titre" class="tm-state-card__title">{{ heading }}</h1>
 
+        {% if status == 'pending_verification' %}
+            {% if more_info %}
+                <div class="tm-submitted__notice" role="status"><twig:Icon name="info" size="sm" class="tm-icon--inherit" /><p><strong>Message de notre équipe :</strong> {{ state.statusComment }}</p></div>
+            {% else %}
+                <p><twig:Badge variant="pending">Délai annoncé : {{ delay_hours }} h ouvrées</twig:Badge></p>
+            {% endif %}
+            <p class="tm-submitted__credits"><twig:Icon name="tag" size="sm" class="tm-icon--inherit" />{{ free_credits }} devis offerts dès la validation de votre compte</p>
+        {% elseif status == 'verified' %}
+            <p>Votre profil est visible des clients et vous recevez les demandes de votre zone.</p>
+        {% elseif status == 'rejected' %}
+            <div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p><strong>Motif :</strong> {{ rejection_label ?? 'non précisé' }}{% if state.statusComment %} — {{ state.statusComment }}{% endif %}</p></div>
+            <p>Vous pensez qu’il s’agit d’une erreur ? <a href="{{ tm_path('content_contact') }}">Contactez-nous</a> pour faire réexaminer votre dossier.</p>
+        {% elseif status == 'suspended' %}
+            <div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p><strong>Motif :</strong> {{ state.statusComment }}</p></div>
+            <p>Votre profil n’est plus visible et vous ne recevez plus de demandes. <a href="{{ tm_path('content_contact') }}">Contactez-nous</a> pour en savoir plus.</p>
+        {% endif %}
+
+        {% if status in ['pending_verification', 'verified'] %}
         <div class="tm-submitted__checklist">
             <h2 class="tm-card-title">Votre dossier</h2>
             <ul class="tm-check-list">
                 <li><twig:Icon name="check" size="xs" />Entreprise, métiers et zone d’intervention</li>
                 <li><twig:Icon name="check" size="xs" />Assurances et qualifications déclarées</li>
-                {% if has_logo %}<li><twig:Icon name="check" size="xs" />Logo et description</li>
-                {% else %}<li><twig:Icon name="check" size="xs" />Description</li>
-                <li class="tm-check-list__todo"><twig:Icon name="plus" size="xs" /><a href="{{ path('artisan_signup_profile') }}">Ajouter un logo ou une photo</a></li>{% endif %}
                 {% for slot in missing %}
                     <li class="tm-check-list__todo"><twig:Icon name="plus" size="xs" /><a href="{{ path('artisan_signup_documents', {piece: slot.slotKey}) }}">{{ slot.label }}</a></li>
+                {% else %}
+                    <li><twig:Icon name="check" size="xs" />Justificatifs déposés</li>
                 {% endfor %}
             </ul>
-            {% if missing is not empty %}<p class="tm-caption">La vérification commencera dès réception des pièces manquantes.</p>{% endif %}
+            {% if missing is not empty and status == 'pending_verification' %}<p class="tm-caption">La vérification commencera dès réception des pièces manquantes.</p>{% endif %}
         </div>
 
-        <p class="tm-submitted__info"><twig:Icon name="info" size="sm" class="tm-icon--inherit" />Vous recevrez un e-mail dès la décision. Votre espace pro ouvre avec une prochaine version de la plateforme.</p>
-        <twig:Button href="{{ path('artisan_signup_documents') }}" variant="secondary">Gérer mes justificatifs</twig:Button>
+        {% if completion %}
+        <div class="tm-submitted__checklist">
+            <h2 class="tm-card-title" id="completude-titre">Complétez votre profil ({{ completion.percent }} %)</h2>
+            <progress class="tm-completion" max="100" value="{{ completion.percent }}" aria-labelledby="completude-titre">{{ completion.percent }} %</progress>
+            <ul class="tm-check-list">
+                {% for item, label in item_labels %}
+                    {% if completion.isDone(item) %}
+                        <li><twig:Icon name="check" size="xs" />{{ label }}</li>
+                    {% elseif item_links[item] is defined %}
+                        <li class="tm-check-list__todo"><twig:Icon name="plus" size="xs" /><a href="{{ item_links[item] }}">{{ label }}</a></li>
+                    {% else %}
+                        <li class="tm-check-list__todo"><twig:Icon name="plus" size="xs" />{{ label }} <span class="tm-caption">(dans votre espace pro, bientôt disponible)</span></li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+            <p class="tm-caption">Un profil complet à {{ tm_setting_int('pro.min_completion_featured') }} % ou plus peut être mis en avant sur la plateforme.</p>
+        </div>
+        {% endif %}
+        {% endif %}
+
+        <p class="tm-submitted__info"><twig:Icon name="info" size="sm" class="tm-icon--inherit" />{{ status == 'pending_verification' ? 'Vous recevrez un e-mail dès la décision. ' }}Votre espace pro ouvre avec une prochaine version de la plateforme.</p>
+        {% if status in ['pending_verification', 'verified'] %}
+            <div class="tm-pro-signup__actions-end">
+                <twig:Button href="{{ path('artisan_signup_documents') }}" variant="secondary">Gérer mes justificatifs</twig:Button>
+                <twig:Button href="{{ path('artisan_signup_area') }}" variant="secondary">Modifier ma zone</twig:Button>
+            </div>
+        {% endif %}
     </section>
     </div>
 </div>

@@ -10,6 +10,8 @@ interface ArtisanProfileRepository
 {
     public function findByUserId(string $userId): ?ArtisanProfile;
 
+    public function find(ArtisanProfileId $id): ?ArtisanProfile;
+
     /** RG-041 : un SIRET = un compte professionnel. */
     public function isSiretTaken(Siret $siret, ?ArtisanProfileId $except = null): bool;
 

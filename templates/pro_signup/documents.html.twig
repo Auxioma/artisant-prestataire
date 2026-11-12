@@ -62,11 +62,15 @@
 
         <form method="post" class="tm-pro-signup__actions" data-turbo="false">
             <input type="hidden" name="_token" value="{{ csrf_token('artisan_documents') }}">
+            {% if open %}
             <twig:Button variant="secondary" href="{{ path('artisan_signup_insurance') }}">← Étape précédente</twig:Button>
             <span class="tm-pro-signup__actions-end">
                 <button type="submit" class="tm-link-button" name="action" value="later">Terminer plus tard</button>
                 <twig:Button type="submit" name="action" value="continue" icon="arrowR">Continuer</twig:Button>
             </span>
+            {% else %}
+            <twig:Button href="{{ path('artisan_signup_submitted') }}">Retour à mon dossier</twig:Button>
+            {% endif %}
         </form>
     </div>
 {% endblock %}

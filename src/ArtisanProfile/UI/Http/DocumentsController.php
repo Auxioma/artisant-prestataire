@@ -56,6 +56,9 @@ final class DocumentsController extends AbstractSignupController
 
                     return $this->redirectToRoute('artisan_signup_documents', status: Response::HTTP_SEE_OTHER);
                 }
+                if (\in_array($action, ['continue', 'later'], true) && !$state->isOpen()) {
+                    return $this->redirectToRoute('artisan_signup_submitted', status: Response::HTTP_SEE_OTHER);
+                }
                 if (\in_array($action, ['continue', 'later'], true)) {
                     $this->commands->dispatch(new CompleteDocumentsStep($this->userId(), 'later' === $action));
 
@@ -77,6 +80,7 @@ final class DocumentsController extends AbstractSignupController
             'steps' => self::STEPS,
             'slots' => $slots,
             'selected_slot' => $slot,
+            'open' => $state->isOpen(),
             'max_mb' => $this->settings->int(SettingKey::RequestsMaxFileMb),
             'error' => $error,
         ], new Response(status: null === $error ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));

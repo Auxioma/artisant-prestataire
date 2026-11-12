@@ -29,6 +29,9 @@ abstract class AbstractSignupController extends AbstractController
         7 => 'artisan_signup_profile',
     ];
 
+    /** Étapes accessibles à un compte vérifié : zone (RG-042) et justificatifs (renouvellement, RG-130). */
+    protected const array EDITABLE_AFTER_VERIFICATION = [4, 6];
+
     public function __construct(
         protected readonly CommandBus $commands,
         protected readonly QueryBus $queries,
@@ -53,6 +56,10 @@ abstract class AbstractSignupController extends AbstractController
     /** Étape non encore accessible : retour à la première étape à compléter. */
     protected function guardStep(SignupState $state, int $step): ?RedirectResponse
     {
+        // Après décision (RG-043) : zone (RG-042) et justificatifs d'un compte vérifié restent modifiables, le reste non.
+        if (!$state->isOpen() && !('verified' === $state->status && \in_array($step, self::EDITABLE_AFTER_VERIFICATION, true))) {
+            return $this->redirectToRoute('artisan_signup_submitted');
+        }
         if ($state->completedStep >= $step - 1) {
             return null;
         }

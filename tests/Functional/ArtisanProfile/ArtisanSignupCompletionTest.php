@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\ArtisanProfile;
 
+use App\ArtisanProfile\Application\EventHandler\RefreshProfileCompletion;
 use App\ArtisanProfile\Application\EventHandler\SendSignupReceived;
 use App\ArtisanProfile\Application\EventHandler\TrackDocumentScan;
+use App\ArtisanProfile\Application\Verification\ApproveArtisan;
+use App\ArtisanProfile\Application\Verification\ReinstateArtisan;
+use App\ArtisanProfile\Application\Verification\RejectArtisan;
+use App\ArtisanProfile\Application\Verification\RequestArtisanInfo;
+use App\ArtisanProfile\Application\Verification\SuspendArtisan;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanServiceAreaDefined;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanSignupSubmitted;
 use App\Catalog\Application\Command\CreateCategory;
 use App\Catalog\Application\Command\CreateJob;
@@ -218,7 +225,7 @@ final class ArtisanSignupCompletionTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Votre dossier est en cours de vérification');
         self::assertStringContainsString('48 h ouvrées', $crawler->filter('.tm-submitted')->text());
         self::assertStringContainsString('100 devis offerts dès la validation', $crawler->filter('.tm-submitted')->text());
-        self::assertCount(3, $crawler->filter('.tm-check-list__todo'), 'pièces manquantes à compléter');
+        self::assertCount(3, $crawler->filter('.tm-submitted__checklist')->eq(0)->filter('.tm-check-list__todo'), 'pièces manquantes à compléter');
         self::assertCount(1, $crawler->filter('[data-analytics-auto-event-value="pro_signup_completed"]'));
         $crawler = $this->client->request('GET', '/inscription/pro/dossier-envoye');
         self::assertCount(0, $crawler->filter('[data-analytics-auto-event-value="pro_signup_completed"]'), 'événement émis une seule fois');
@@ -322,5 +329,106 @@ final class ArtisanSignupCompletionTest extends WebTestCase
         self::assertResponseRedirects('/inscription/pro/reprendre');
         $this->client->request('GET', '/inscription/pro/logo');
         self::assertResponseStatusCodeSame(404);
+    }
+
+    private const string ADMIN = '0190f5e4-0000-7000-8000-00000000ad01';
+
+    private function dispatch(object $command): void
+    {
+        $bus = self::getContainer()->get(CommandBus::class);
+        \assert($bus instanceof CommandBus && $command instanceof \App\Shared\Application\Bus\Command);
+        $bus->dispatch($command);
+    }
+
+    /** Tunnel complet jusqu'à l'envoi du dossier (pièces laissées pour plus tard). */
+    private function submitDossier(): string
+    {
+        $this->reachStepFour();
+        $this->area(['mode' => 'radius', 'center' => 'Harfleur', 'radius' => '30']);
+        $this->insurances();
+        $this->client->request('POST', '/inscription/pro/justificatifs', ['_token' => $this->token('/inscription/pro/justificatifs'), 'action' => 'later']);
+        $this->client->request('POST', '/inscription/pro/profil', ['_token' => $this->token('/inscription/pro/profil'), 'description' => 'Plombier au Havre (compte fictif de test).', 'action' => 'submit']);
+        self::assertResponseRedirects('/inscription/pro/dossier-envoye', 303);
+
+        return $this->value('SELECT id FROM artisan.artisan_profile');
+    }
+
+    public function testCoverageProjectionsFollowJobsAndZone(): void
+    {
+        $this->reachStepFour();
+        self::assertSame('2|1', $this->value("SELECT count(*) || '|' || count(*) FILTER (WHERE is_main) FROM artisan.artisan_job"));
+
+        $this->area(['mode' => 'radius', 'center' => 'Harfleur', 'radius' => '150']);
+        $expected = $this->value("SELECT count(*) FROM catalog.commune o JOIN catalog.commune c ON c.active AND ST_DWithin(c.centroid, o.centroid, 150000) WHERE o.insee = '76341'");
+        self::assertSame($expected, $this->value('SELECT count(*) FROM artisan.service_area_commune'), 'RG-042 : communes couvertes enregistrées avec la zone');
+
+        $this->area(['mode' => 'list', 'departments' => ['14'], 'communes' => [self::HARFLEUR], '_token' => $this->token('/inscription/pro/zone')]);
+        self::assertSame(
+            $this->value("SELECT count(*) FROM catalog.commune WHERE active AND (department_code = '14' OR insee = '76341')"),
+            $this->value('SELECT count(*) FROM artisan.service_area_commune'),
+            'zone remplacée, pas cumulée',
+        );
+
+        // Complétude recalculée à chaque changement (zone seule : poids « zone » = 15 %).
+        $handler = self::getContainer()->get(RefreshProfileCompletion::class);
+        \assert($handler instanceof RefreshProfileCompletion);
+        $handler(new ArtisanServiceAreaDefined($this->value('SELECT id FROM artisan.artisan_profile'), new \DateTimeImmutable()));
+        $em = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($em instanceof EntityManagerInterface);
+        $em->flush();
+        self::assertSame('15', $this->value('SELECT completion_rate FROM artisan.artisan_profile'));
+    }
+
+    public function testStatusLifecycleIsShownAndAudited(): void
+    {
+        $id = $this->submitDossier();
+        $crawler = $this->client->request('GET', '/inscription/pro/dossier-envoye');
+        self::assertStringContainsString('Complétez votre profil (40 %)', $crawler->filter('.tm-submitted')->text(), 'description 15 + zone 15 + label 10 (poids par défaut)');
+        self::assertSame('40', $crawler->filter('progress.tm-completion')->attr('value'));
+
+        $this->dispatch(new RequestArtisanInfo($id, self::ADMIN, 'Merci de déposer votre attestation RC Pro.'));
+        $crawler = $this->client->request('GET', '/inscription/pro/dossier-envoye');
+        self::assertSelectorTextContains('h1', 'Un complément est demandé');
+        self::assertStringContainsString('Merci de déposer votre attestation RC Pro.', $crawler->filter('.tm-submitted__notice')->text());
+
+        $this->dispatch(new ApproveArtisan($id, self::ADMIN));
+        $this->client->request('GET', '/inscription/pro/dossier-envoye');
+        self::assertSelectorTextContains('h1', 'Votre compte professionnel est vérifié');
+        $this->client->request('GET', '/inscription/pro/profil');
+        self::assertResponseRedirects('/inscription/pro/dossier-envoye', null, 'tunnel fermé après validation');
+        $this->client->request('GET', '/inscription/pro/zone');
+        self::assertResponseIsSuccessful('RG-042 : zone modifiable à tout moment');
+        $this->area(['mode' => 'radius', 'center' => 'Harfleur', 'radius' => '10']);
+        self::assertResponseRedirects('/inscription/pro/dossier-envoye', 303);
+        self::assertSame('10', $this->value('SELECT area_radius_km FROM artisan.artisan_profile'));
+
+        $this->dispatch(new SuspendArtisan($id, self::ADMIN, 'Signalements à examiner'));
+        $crawler = $this->client->request('GET', '/inscription/pro/dossier-envoye');
+        self::assertSelectorTextContains('h1', 'suspendu');
+        self::assertStringContainsString('Signalements à examiner', $crawler->filter('.tm-form-alert')->text());
+        $this->client->request('GET', '/inscription/pro/zone');
+        self::assertResponseRedirects('/inscription/pro/dossier-envoye');
+
+        $this->dispatch(new ReinstateArtisan($id, null));
+        self::assertSame('verified', $this->value('SELECT status FROM artisan.artisan_profile'));
+        self::assertSame(
+            'artisan.more_info_requested,artisan.verified,artisan.suspended,artisan.reinstated',
+            $this->value("SELECT string_agg(action, ',' ORDER BY seq) FROM admin.audit_log WHERE subject_type = 'artisan_profile' AND action <> 'artisan.signup_submitted'"),
+        );
+        self::assertSame('admin|system', $this->value("SELECT string_agg(actor_type, '|' ORDER BY seq) FROM admin.audit_log WHERE action IN ('artisan.verified', 'artisan.reinstated')"));
+    }
+
+    public function testRejectionShowsTheNormalizedReason(): void
+    {
+        $id = $this->submitDossier();
+
+        $this->dispatch(new RejectArtisan($id, self::ADMIN, 'invalid_documents', 'Kbis de plus de 3 mois'));
+
+        $crawler = $this->client->request('GET', '/inscription/pro/dossier-envoye');
+        self::assertSelectorTextContains('h1', 'n’a pas été retenu');
+        self::assertStringContainsString('Justificatifs illisibles, incomplets ou non valides — Kbis de plus de 3 mois', $crawler->filter('.tm-form-alert')->text());
+        self::assertCount(0, $crawler->filter('.tm-completion'), 'pas de jauge sur un dossier refusé');
+        $this->client->request('GET', '/inscription/pro/justificatifs');
+        self::assertResponseRedirects('/inscription/pro/dossier-envoye');
     }
 }

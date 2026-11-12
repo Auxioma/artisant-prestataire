@@ -43,6 +43,12 @@
         <field name="shortDescription" type="string" length="300" column="short_description" nullable="true"/>
         <field name="logoFileId" type="guid" column="logo_file_id" nullable="true"/>
         <field name="submittedAt" type="datetimetz_immutable" column="submitted_at" nullable="true"/>
+        <field name="verifiedAt" type="datetimetz_immutable" column="verified_at" nullable="true"/>
+        <field name="statusReason" type="string" length="40" column="status_reason" nullable="true"/>
+        <field name="statusComment" type="string" length="500" column="status_comment" nullable="true"/>
+        <field name="statusChangedAt" type="datetimetz_immutable" column="status_changed_at" nullable="true"/>
+        <field name="statusChangedBy" type="guid" column="status_changed_by" nullable="true"/>
+        <field name="completionRate" type="smallint" column="completion_rate"/>
         <field name="createdAt" type="datetimetz_immutable" column="created_at"/>
         <field name="updatedAt" type="datetimetz_immutable" column="updated_at"/>
         <field name="version" type="integer" version="true"/>

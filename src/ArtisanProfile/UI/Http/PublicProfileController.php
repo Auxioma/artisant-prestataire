@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\ArtisanProfile\UI\Http;
 
+use App\ArtisanProfile\Application\Completion\ProfileCompletionOf;
 use App\ArtisanProfile\Application\Signup\DocumentChecklist;
 use App\ArtisanProfile\Application\Signup\DocumentSlot;
 use App\ArtisanProfile\Application\Signup\SignupRejected;
@@ -12,6 +13,8 @@ use App\ArtisanProfile\Application\Signup\SubmitSignup;
 use App\ArtisanProfile\Application\Signup\UploadLogo;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfile;
 use App\ArtisanProfile\Domain\Profile\ArtisanRuleViolation;
+use App\ArtisanProfile\Domain\Profile\ProfileCompletion;
+use App\ArtisanProfile\Domain\Profile\RejectionReason;
 use App\Catalog\Application\Geo\Query\CommunesByInsee;
 use App\Catalog\Application\Geo\Query\CommuneSummary;
 use App\Catalog\Application\Query\JobIndexEntries;
@@ -131,8 +134,14 @@ final class PublicProfileController extends AbstractSignupController
         }
         $missing = array_values(array_filter($this->slots(), static fn (DocumentSlot $s): bool => $s->required && !$s->provided()));
 
+        $completion = $this->queries->ask(new ProfileCompletionOf($this->userId()));
+        $reason = null === $state->statusReason ? null : RejectionReason::tryFrom($state->statusReason);
+
         return $this->render('pro_signup/submitted.html.twig', [
             'state' => $state,
+            'completion' => $completion instanceof ProfileCompletion ? $completion : null,
+            'photos_target' => $this->settings->int(SettingKey::ProCompletionPhotosTarget),
+            'rejection_label' => $reason?->label(),
             'delay_hours' => $this->settings->int(SettingKey::ProVerificationDelayHours),
             'free_credits' => $this->settings->int(SettingKey::CreditsFreeOnSignup),
             'missing' => $missing,

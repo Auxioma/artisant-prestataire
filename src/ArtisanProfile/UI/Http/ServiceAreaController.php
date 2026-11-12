@@ -89,6 +89,12 @@ final class ServiceAreaController extends AbstractSignupController
                         $radius = 'radius' === $values['mode'];
                         $this->commands->dispatch(new DefineServiceArea($this->userId(), $values['mode'], $radius ? $values['center_insee'] : null, $radius ? $values['radius'] : null, $radius ? [] : $values['departments'], $radius ? [] : $values['communes']));
 
+                        if (!$state->isOpen()) {
+                            $this->addFlash('success', 'Zone d’intervention mise à jour : elle s’applique dès maintenant aux nouvelles demandes.');
+
+                            return $this->redirectToRoute('artisan_signup_submitted', status: Response::HTTP_SEE_OTHER);
+                        }
+
                         return $this->redirectToRoute('artisan_signup_insurance', status: Response::HTTP_SEE_OTHER);
                     } catch (SignupRejected|ArtisanRuleViolation $e) {
                         $error = $e->getMessage();

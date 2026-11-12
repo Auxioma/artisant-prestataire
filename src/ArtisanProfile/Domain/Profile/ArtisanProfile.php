@@ -7,9 +7,15 @@ namespace App\ArtisanProfile\Domain\Profile;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanCompanyDeclared;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanInsurancesDeclared;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanJobsChosen;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanLogoChanged;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanMoreInfoRequested;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanProfileStarted;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanReinstated;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanRejected;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanServiceAreaDefined;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanSignupSubmitted;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanSuspended;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanVerified;
 use App\Catalog\Domain\Job\JobId;
 use App\Shared\Domain\AggregateRoot;
 use App\Shared\Domain\ValueObject\Siret;
@@ -18,6 +24,12 @@ use App\Shared\Domain\ValueObject\Siret;
  * Profil professionnel (A03, RG-041 à RG-043). Créé « incomplet » après la création du compte ; rempli étape par étape
  * (« Terminer plus tard » : la progression est conservée). Le compte utilisateur appartient au module Identity : seul
  * son identifiant est référencé ici.
+ *
+ * Machine à états RG-043 (ADR-0005) :
+ *   incomplet ─submit→ en attente ─approve→ vérifié ─suspend→ suspendu ─reinstate→ vérifié
+ *                      en attente ─reject→ refusé (motif)        en attente ─suspend→ suspendu ─reinstate→ en attente
+ *                      en attente ─requestMoreInfo→ en attente (complément demandé)
+ * Seul « vérifié » est public et peut envoyer des devis.
  */
 final class ArtisanProfile extends AggregateRoot
 {
@@ -33,6 +45,7 @@ final class ArtisanProfile extends AggregateRoot
     public const int SHORT_DESCRIPTION_MAX = 300;
     /** Borne technique du nombre de labels déclarés. */
     public const int MAX_QUALIFICATIONS = 10;
+    private const int STATUS_COMMENT_MAX = 500;
 
     private ArtisanStatus $status = ArtisanStatus::Incomplete;
     private int $completedStep = self::STEP_ACCOUNT;
@@ -66,6 +79,12 @@ final class ArtisanProfile extends AggregateRoot
     private ?string $shortDescription = null;
     private ?string $logoFileId = null;
     private ?\DateTimeImmutable $submittedAt = null;
+    private ?\DateTimeImmutable $verifiedAt = null;
+    private ?string $statusReason = null;
+    private ?string $statusComment = null;
+    private ?\DateTimeImmutable $statusChangedAt = null;
+    private ?string $statusChangedBy = null;
+    private int $completionRate = 0;
     private \DateTimeImmutable $updatedAt;
     private int $version = 1;
 
@@ -146,7 +165,9 @@ final class ArtisanProfile extends AggregateRoot
     /** A03.4 — zone d'intervention ; modifiable à tout moment, effet immédiat pour les nouvelles demandes (RG-042). */
     public function defineServiceArea(ServiceArea $area, \DateTimeImmutable $now): void
     {
-        $this->assertEditable();
+        if (ArtisanStatus::Rejected === $this->status) {
+            throw new ArtisanRuleViolation('Votre dossier a été refusé : contactez-nous pour le réexaminer.');
+        }
         $this->assertStepDone(self::STEP_JOBS, 'Choisissez d’abord vos métiers.');
         $this->areaMode = $area->mode;
         $this->areaCenterInsee = $area->centerInsee;
@@ -224,6 +245,7 @@ final class ArtisanProfile extends AggregateRoot
         $this->assertStepDone(self::STEP_DOCUMENTS, 'Déposez d’abord vos justificatifs.');
         $this->logoFileId = $fileId;
         $this->updatedAt = $now;
+        $this->recordEvent(new ArtisanLogoChanged($this->id->value, $this->userId, $now));
     }
 
     /** A03.7 — description courte, puis envoi du dossier : « en attente de vérification » (RG-043). */
@@ -243,6 +265,97 @@ final class ArtisanProfile extends AggregateRoot
             $this->submittedAt = $now;
             $this->recordEvent(new ArtisanSignupSubmitted($this->id->value, $this->userId, $now));
         }
+    }
+
+    /** BO03 — validation : badge « Vérifié », profil public, envoi de devis (crédit gratuit : RG-044). */
+    public function approve(string $adminId, \DateTimeImmutable $now): void
+    {
+        $this->assertStatus(ArtisanStatus::PendingVerification, 'Seul un dossier en attente de vérification peut être validé.');
+        $this->status = ArtisanStatus::Verified;
+        $this->verifiedAt = $now;
+        $this->changed($adminId, null, null, $now);
+        $this->recordEvent(new ArtisanVerified($this->id->value, $this->userId, $adminId, $now));
+    }
+
+    /** BO03 — refus motivé (motif normalisé ; commentaire obligatoire pour « autre »). */
+    public function reject(string $adminId, RejectionReason $reason, ?string $comment, \DateTimeImmutable $now): void
+    {
+        $this->assertStatus(ArtisanStatus::PendingVerification, 'Seul un dossier en attente de vérification peut être refusé.');
+        $comment = Text::line($comment, 1, self::STATUS_COMMENT_MAX);
+        if (RejectionReason::Other === $reason && null === $comment) {
+            throw new ArtisanRuleViolation('Précisez le motif du refus.');
+        }
+        $this->status = ArtisanStatus::Rejected;
+        $this->changed($adminId, $reason->value, $comment, $now);
+        $this->recordEvent(new ArtisanRejected($this->id->value, $this->userId, $adminId, $reason->value, $comment, $now));
+    }
+
+    /** BO03 — demande de complément : le dossier reste en attente, l'artisan est prévenu. */
+    public function requestMoreInfo(string $adminId, string $message, \DateTimeImmutable $now): void
+    {
+        $this->assertStatus(ArtisanStatus::PendingVerification, 'Seul un dossier en attente de vérification peut faire l’objet d’une demande de complément.');
+        $message = Text::line($message, 1, self::STATUS_COMMENT_MAX) ?? throw new ArtisanRuleViolation('Précisez la pièce ou l’information attendue.');
+        $this->changed($adminId, 'more_info', $message, $now);
+        $this->recordEvent(new ArtisanMoreInfoRequested($this->id->value, $this->userId, $adminId, $message, $now));
+    }
+
+    /** Suspension (fraude, impayé, modération…) d'un compte vérifié ou en attente ; `adminId` null = automatique. */
+    public function suspend(?string $adminId, string $reason, \DateTimeImmutable $now): void
+    {
+        if (!\in_array($this->status, [ArtisanStatus::Verified, ArtisanStatus::PendingVerification], true)) {
+            throw new ArtisanRuleViolation('Seul un compte vérifié ou en attente de vérification peut être suspendu.');
+        }
+        $reason = Text::line($reason, 1, self::STATUS_COMMENT_MAX) ?? throw new ArtisanRuleViolation('Précisez le motif de la suspension.');
+        $this->status = ArtisanStatus::Suspended;
+        $this->changed($adminId, 'suspended', $reason, $now);
+        $this->recordEvent(new ArtisanSuspended($this->id->value, $this->userId, $adminId, $reason, $now));
+    }
+
+    /** Levée de la suspension : retour à « vérifié » si le dossier l'avait été, sinon à « en attente ». */
+    public function reinstate(?string $adminId, \DateTimeImmutable $now): void
+    {
+        $this->assertStatus(ArtisanStatus::Suspended, 'Ce compte n’est pas suspendu.');
+        $this->status = null === $this->verifiedAt ? ArtisanStatus::PendingVerification : ArtisanStatus::Verified;
+        $this->changed($adminId, null, null, $now);
+        $this->recordEvent(new ArtisanReinstated($this->id->value, $this->userId, $adminId, $this->status->value, $now));
+    }
+
+    /** PR08.1 — taux de complétude recalculé par le cas d'usage (poids paramétrés, contenus d'autres écrans). */
+    public function recordCompletion(ProfileCompletion $completion): void
+    {
+        $this->completionRate = $completion->percent;
+    }
+
+    /** RG-043 : seul un compte vérifié apparaît publiquement (P10) et reçoit les demandes (RG-062). */
+    public function isPublic(): bool
+    {
+        return ArtisanStatus::Verified === $this->status;
+    }
+
+    /** RG-043 : seul un compte vérifié peut envoyer des devis. */
+    public function canSendQuotes(): bool
+    {
+        return ArtisanStatus::Verified === $this->status;
+    }
+
+    public function verifiedAt(): ?\DateTimeImmutable
+    {
+        return $this->verifiedAt;
+    }
+
+    public function statusReason(): ?string
+    {
+        return $this->statusReason;
+    }
+
+    public function statusComment(): ?string
+    {
+        return $this->statusComment;
+    }
+
+    public function completionRate(): int
+    {
+        return $this->completionRate;
     }
 
     public function id(): ArtisanProfileId
@@ -311,6 +424,12 @@ final class ArtisanProfile extends AggregateRoot
         return array_map(static fn (array $j): JobId => new JobId($j['job']), $this->jobs);
     }
 
+    /** @return list<array{job: string, main: bool}> */
+    public function jobAssignments(): array
+    {
+        return $this->jobs;
+    }
+
     public function mainJobId(): ?JobId
     {
         foreach ($this->jobs as $job) {
@@ -352,6 +471,22 @@ final class ArtisanProfile extends AggregateRoot
     public function submittedAt(): ?\DateTimeImmutable
     {
         return $this->submittedAt;
+    }
+
+    private function assertStatus(ArtisanStatus $expected, string $message): void
+    {
+        if ($expected !== $this->status) {
+            throw new ArtisanRuleViolation($message);
+        }
+    }
+
+    private function changed(?string $by, ?string $reason, ?string $comment, \DateTimeImmutable $now): void
+    {
+        $this->statusReason = $reason;
+        $this->statusComment = $comment;
+        $this->statusChangedAt = $now;
+        $this->statusChangedBy = $by;
+        $this->updatedAt = $now;
     }
 
     private function assertStepDone(int $step, string $message): void

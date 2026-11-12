@@ -36,7 +36,15 @@ final readonly class SignupState
         public ?string $shortDescription = null,
         public ?string $logoFileId = null,
         public bool $submitted = false,
+        public ?string $statusReason = null,
+        public ?string $statusComment = null,
     ) {
+    }
+
+    /** Le tunnel reste modifiable (incomplet ou en attente) ; après décision, seuls zone (RG-042) et justificatifs le sont. */
+    public function isOpen(): bool
+    {
+        return \in_array($this->status, ['incomplete', 'pending_verification'], true);
     }
 
     /** Nom affiché sur la carte artisan : nom commercial, sinon raison sociale. */

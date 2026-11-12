@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\ArtisanProfile\Application\Signup;
 
+use App\ArtisanProfile\Application\Port\CoverageProjection;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository;
 use App\ArtisanProfile\Domain\Profile\ArtisanRuleViolation;
 use App\ArtisanProfile\Domain\Profile\ServiceArea;
@@ -22,6 +23,7 @@ final readonly class DefineServiceAreaHandler implements CommandHandler
 {
     public function __construct(
         private ArtisanProfileRepository $profiles,
+        private CoverageProjection $coverage,
         private QueryBus $queries,
         private SettingsProvider $settings,
         private EventBus $events,
@@ -53,6 +55,7 @@ final readonly class DefineServiceAreaHandler implements CommandHandler
         }
 
         $profile->defineServiceArea($area, $this->clock->now());
+        $this->coverage->replaceArea($profile->id()->value, $area); // RG-042 : effet immédiat
         $this->events->publish(...$profile->releaseEvents());
     }
 

@@ -25,6 +25,11 @@ final readonly class DoctrineArtisanProfileRepository implements ArtisanProfileR
         return $this->em->getRepository(ArtisanProfile::class)->findOneBy(['userId' => $userId]);
     }
 
+    public function find(ArtisanProfileId $id): ?ArtisanProfile
+    {
+        return $this->em->find(ArtisanProfile::class, $id);
+    }
+
     public function isSiretTaken(Siret $siret, ?ArtisanProfileId $except = null): bool
     {
         $qb = $this->em->createQueryBuilder()->select('count(p.id)')->from(ArtisanProfile::class, 'p')->where('p.siret = :siret')->setParameter('siret', $siret->value);

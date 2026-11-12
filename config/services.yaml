@@ -98,6 +98,8 @@ services:
     # Ports du module ArtisanProfile
     App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository: '@App\ArtisanProfile\Infrastructure\Doctrine\Repository\DoctrineArtisanProfileRepository'
     App\ArtisanProfile\Domain\Document\ArtisanDocumentRepository: '@App\ArtisanProfile\Infrastructure\Doctrine\Repository\DoctrineArtisanDocumentRepository'
+    App\ArtisanProfile\Application\Port\CoverageProjection: '@App\ArtisanProfile\Infrastructure\Projection\DbalCoverageProjection'
+    App\ArtisanProfile\Application\Port\ProfileContent: '@App\ArtisanProfile\Infrastructure\Projection\InterimProfileContent'
     App\ArtisanProfile\Application\Port\SignupMailer: '@App\ArtisanProfile\Infrastructure\Mailer\NotificationSignupMailer'
 
     # Ports du module Search

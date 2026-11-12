@@ -20,6 +20,7 @@ Les ports se changent via les variables `TM_HTTP_PORT`, `TM_DB_PORT`, `TM_REDIS_
 
 ```bash
 docker compose exec php php -d memory_limit=512M bin/console app:geo:import    # API officielle (~13 s, idempotent)
+docker compose exec php bin/console app:artisan:rebuild-coverage    # après un import géo : communes couvertes des artisans
 docker compose exec php bin/console app:geo:seo-pages --min-population=5000  # pages villes SEO (BO07.1)
 ```
 
