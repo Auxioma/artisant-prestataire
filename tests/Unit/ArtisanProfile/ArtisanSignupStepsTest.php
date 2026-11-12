@@ -210,4 +210,28 @@ final class ArtisanSignupStepsTest extends TestCase
         $this->expectException(ArtisanRuleViolation::class);
         ArtisanDocument::upload('0190f5e4-0000-7000-8000-000000000d01', '0190f5e4-0000-7000-8000-000000000c02', '../kbis', null, '0190f5e4-0000-7000-8000-000000000f01', null, null, $this->now);
     }
+
+    public function testDocumentReviewIsAttributedAndReasoned(): void
+    {
+        $document = ArtisanDocument::upload('0190f5e4-0000-7000-8000-000000000d01', '0190f5e4-0000-7000-8000-000000000c02', 'kbis', null, '0190f5e4-0000-7000-8000-000000000f01', 'kbis.pdf', null, $this->now);
+        try {
+            $document->approve('0190f5e4-0000-7000-8000-00000000ad01', $this->now);
+            self::fail('Pièce validée avant l’analyse antivirus');
+        } catch (ArtisanRuleViolation) {
+        }
+        $document->markScanned($this->now);
+        try {
+            $document->reject('0190f5e4-0000-7000-8000-00000000ad01', '   ', $this->now);
+            self::fail('Refus sans motif');
+        } catch (ArtisanRuleViolation) {
+        }
+
+        $document->reject('0190f5e4-0000-7000-8000-00000000ad01', 'Kbis de plus de 3 mois', $this->now);
+
+        self::assertSame([DocumentStatus::Rejected, 'Kbis de plus de 3 mois'], [$document->status(), $document->reason()]);
+        self::assertEquals($this->now, $document->reviewedAt());
+        $events = $document->releaseEvents();
+        self::assertCount(1, $events);
+        self::assertInstanceOf(\App\ArtisanProfile\Domain\Document\Event\ArtisanDocumentReviewed::class, $events[0]);
+    }
 }

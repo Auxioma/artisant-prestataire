@@ -391,6 +391,11 @@ final class ArtisanSignupCompletionTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Un complément est demandé');
         self::assertStringContainsString('Merci de déposer votre attestation RC Pro.', $crawler->filter('.tm-submitted__notice')->text());
 
+        // BO03 : validation possible seulement avec toutes les pièces obligatoires déposées et analysées.
+        foreach (['identity', 'kbis', 'insurance_decennial', 'insurance_rc', 'rge', 'qualification:RGE QualiPAC'] as $slot) {
+            $this->upload($slot, StorageSamples::file(StorageSamples::pdf()), 'piece.pdf');
+            $this->scan($this->value("SELECT file_id FROM artisan.document WHERE status = 'quarantined'"));
+        }
         $this->dispatch(new ApproveArtisan($id, self::ADMIN));
         $this->client->request('GET', '/inscription/pro/dossier-envoye');
         self::assertSelectorTextContains('h1', 'Votre compte professionnel est vérifié');

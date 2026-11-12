@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace App\ArtisanProfile\Application\Verification;
 
+use App\ArtisanProfile\Application\Port\VerificationDecisions;
+use App\ArtisanProfile\Application\Signup\DocumentSlot;
+use App\ArtisanProfile\Application\Signup\SignupRequirements;
+use App\ArtisanProfile\Domain\Document\ArtisanDocumentRepository;
+use App\ArtisanProfile\Domain\Document\DocumentStatus;
+use App\ArtisanProfile\Domain\Profile\ArtisanProfile;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfileId;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository;
 use App\ArtisanProfile\Domain\Profile\ArtisanRuleViolation;
@@ -23,6 +29,9 @@ final readonly class ChangeArtisanStatusHandler implements CommandHandler
 {
     public function __construct(
         private ArtisanProfileRepository $profiles,
+        private ArtisanDocumentRepository $documents,
+        private SignupRequirements $requirements,
+        private VerificationDecisions $decisions,
         private EventBus $events,
         private AuditTrail $audit,
         private IdGenerator $ids,
@@ -41,15 +50,19 @@ final readonly class ChangeArtisanStatusHandler implements CommandHandler
         $context = [];
 
         if ($command instanceof ApproveArtisan) {
+            $this->approveDocuments($profile, $command->adminId, $now);
             $profile->approve($command->adminId, $now);
+            $this->decisions->record($this->ids->next(), $profile->id()->value, $command->adminId, 'approved', null, null, $now);
             $action = 'artisan.verified';
         } elseif ($command instanceof RejectArtisan) {
             $reason = RejectionReason::tryFrom($command->reason) ?? throw new ArtisanRuleViolation('Motif de refus inconnu.');
             $profile->reject($command->adminId, $reason, $command->comment, $now);
+            $this->decisions->record($this->ids->next(), $profile->id()->value, $command->adminId, 'rejected', $reason->value, $profile->statusComment(), $now);
             $action = 'artisan.rejected';
             $context = ['reason' => $reason->value];
         } elseif ($command instanceof RequestArtisanInfo) {
             $profile->requestMoreInfo($command->adminId, $command->message, $now);
+            $this->decisions->record($this->ids->next(), $profile->id()->value, $command->adminId, 'more_info', null, $profile->statusComment(), $now);
             $action = 'artisan.more_info_requested';
         } elseif ($command instanceof SuspendArtisan) {
             $profile->suspend($command->adminId, $command->reason, $now);
@@ -70,5 +83,26 @@ final readonly class ChangeArtisanStatusHandler implements CommandHandler
             subjectId: $profile->id()->value,
             context: ['from' => $from, 'to' => $profile->status()->value] + $context,
         ));
+    }
+
+    /**
+     * Validation du dossier : toutes les pièces obligatoires doivent être déposées, analysées et non refusées ; les
+     * pièces en attente de contrôle sont validées avec le dossier (une seule notification : E-21).
+     */
+    private function approveDocuments(ArtisanProfile $profile, string $adminId, \DateTimeImmutable $now): void
+    {
+        $current = $this->documents->currentOf($profile->id()->value);
+        $blocking = array_filter($this->requirements->checklist($profile, $current), static fn (DocumentSlot $s): bool => $s->required && !\in_array($s->status, [DocumentStatus::PendingReview->value, DocumentStatus::Approved->value], true));
+        if ([] !== $blocking) {
+            throw new ArtisanRuleViolation('Dossier incomplet : '.implode(', ', array_map(static fn (DocumentSlot $s): string => $s->label.' ('.match ($s->status) {
+                null => 'absente', DocumentStatus::Quarantined->value => 'analyse en cours', default => 'refusée',
+            }.')', $blocking)).'. Demandez un complément.');
+        }
+        foreach ($current as $document) {
+            if (DocumentStatus::PendingReview === $document->status()) {
+                $document->approve($adminId, $now);
+                $document->releaseEvents(); // pas d'E-24 pièce par pièce : la validation du dossier est notifiée (E-21)
+            }
+        }
     }
 }

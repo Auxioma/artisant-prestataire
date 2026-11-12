@@ -7,6 +7,7 @@ namespace App\ArtisanProfile\Infrastructure\Doctrine\Repository;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfile;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfileId;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository;
+use App\ArtisanProfile\Domain\Profile\ArtisanStatus;
 use App\Shared\Domain\ValueObject\Siret;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -38,6 +39,17 @@ final readonly class DoctrineArtisanProfileRepository implements ArtisanProfileR
         }
 
         return (int) $qb->getQuery()->getSingleScalarResult() > 0;
+    }
+
+    public function pendingVerification(int $limit): array
+    {
+        /** @var list<ArtisanProfile> $profiles */
+        $profiles = $this->em->createQueryBuilder()->select('p')->from(ArtisanProfile::class, 'p')
+            ->where('p.status = :status')->setParameter('status', ArtisanStatus::PendingVerification)
+            ->orderBy('p.submittedAt', 'ASC')->setMaxResults(max(1, $limit))
+            ->getQuery()->getResult();
+
+        return $profiles;
     }
 
     public function add(ArtisanProfile $profile): void

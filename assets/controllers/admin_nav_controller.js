@@ -2,16 +2,22 @@ import { Controller } from '@hotwired/stimulus';
 
 /*
  * Navigation du back-office : ouverte par défaut (sans JavaScript, tout reste accessible) ; repliée au chargement sur
- * petit écran, dépliée par le bouton « Menu » (aria-expanded). Toujours visible à partir de 1024 px.
+ * petit écran, dépliée par le bouton « Menu » (aria-expanded). Toujours visible à partir de 1024 px, y compris quand
+ * la fenêtre s'élargit après le chargement.
  */
 export default class extends Controller {
     static targets = ['button', 'panel'];
 
     connect() {
         this.button.hidden = false;
-        if (!window.matchMedia('(min-width: 1024px)').matches) {
-            this.set(false);
-        }
+        this.desktop = window.matchMedia('(min-width: 1024px)');
+        this.onChange = () => this.set(this.desktop.matches);
+        this.desktop.addEventListener('change', this.onChange);
+        this.set(this.desktop.matches);
+    }
+
+    disconnect() {
+        this.desktop.removeEventListener('change', this.onChange);
     }
 
     get button() {

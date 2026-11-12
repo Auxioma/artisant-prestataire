@@ -37,7 +37,8 @@ services:
             - '../src/Identity/Application/PasswordReset/{PasswordResetToken,ResetLinkUnusable}.php'
             - '../src/Notification/Application/{Notification,Template,RenderedEmail}.php'
             - '../src/ArtisanProfile/Application/Signup/{SignupRejected,CompanyLookupResult,SignupState,DocumentSlot}.php'
-            - '../src/Shared/Application/Identity/UserContactDetails.php'
+            - '../src/Shared/Application/Identity/{UserContactDetails,AccountReviewDetails}.php'
+            - '../src/ArtisanProfile/Application/Verification/{QueueItem,DossierView}.php'
             - '../src/Catalog/Application/Query/JobRequirement.php'
             - '../src/Catalog/Application/Geo/Query/Coverage.php'
             - '../src/ArtisanProfile/Domain/'
@@ -59,6 +60,7 @@ services:
     App\Shared\Application\Security\IpAnonymizer: '@App\Shared\Infrastructure\Security\HmacIpAnonymizer'
     App\Shared\Application\Settings\SettingsProvider: '@App\Administration\Infrastructure\Settings\DbalSettingsProvider'
     App\Shared\Application\Security\CurrentUser: '@App\Identity\Infrastructure\Security\SecurityCurrentUser'
+    App\Shared\Application\Security\CurrentAdministrator: '@App\Administration\Infrastructure\Security\SecurityCurrentAdministrator'
     # Stockage de fichiers (ADR-0008)
     App\Shared\Application\Storage\Port\ObjectStorage: '@App\Shared\Infrastructure\Storage\FlysystemObjectStorage'
     App\Shared\Application\Storage\Port\FileSanitizer: '@App\Shared\Infrastructure\Storage\NativeFileSanitizer'
@@ -111,6 +113,7 @@ services:
     App\ArtisanProfile\Domain\Document\ArtisanDocumentRepository: '@App\ArtisanProfile\Infrastructure\Doctrine\Repository\DoctrineArtisanDocumentRepository'
     App\ArtisanProfile\Application\Port\CoverageProjection: '@App\ArtisanProfile\Infrastructure\Projection\DbalCoverageProjection'
     App\ArtisanProfile\Application\Port\ProfileContent: '@App\ArtisanProfile\Infrastructure\Projection\InterimProfileContent'
+    App\ArtisanProfile\Application\Port\VerificationDecisions: '@App\ArtisanProfile\Infrastructure\Projection\DbalVerificationDecisions'
     App\ArtisanProfile\Application\Port\SignupMailer: '@App\ArtisanProfile\Infrastructure\Mailer\NotificationSignupMailer'
 
     # Ports du module Search

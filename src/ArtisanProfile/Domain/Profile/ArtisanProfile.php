@@ -393,6 +393,21 @@ final class ArtisanProfile extends AggregateRoot
         return $this->tradeName;
     }
 
+    public function ape(): ?string
+    {
+        return $this->ape;
+    }
+
+    public function legalForm(): ?string
+    {
+        return $this->legalForm;
+    }
+
+    public function companyCreatedOn(): ?\DateTimeImmutable
+    {
+        return $this->companyCreatedOn;
+    }
+
     public function hqPostalCode(): ?string
     {
         return $this->hqPostalCode;

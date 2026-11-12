@@ -8,6 +8,8 @@ interface ArtisanDocumentRepository
 {
     public function add(ArtisanDocument $document): void;
 
+    public function find(string $id): ?ArtisanDocument;
+
     public function findByFileId(string $fileId): ?ArtisanDocument;
 
     /**

@@ -11,7 +11,9 @@
         <field name="fileId" type="guid" column="file_id" unique="true"/>
         <field name="originalName" type="string" length="120" column="original_name" nullable="true"/>
         <field name="status" type="string" length="20" enum-type="App\ArtisanProfile\Domain\Document\DocumentStatus"/>
-        <field name="reason" type="string" length="40" nullable="true"/>
+        <field name="reason" type="string" length="200" nullable="true"/>
+        <field name="reviewedBy" type="guid" column="reviewed_by" nullable="true"/>
+        <field name="reviewedAt" type="datetimetz_immutable" column="reviewed_at" nullable="true"/>
         <field name="expiresOn" type="date_immutable" column="expires_on" nullable="true"/>
         <field name="uploadedAt" type="datetimetz_immutable" column="uploaded_at"/>
         <field name="updatedAt" type="datetimetz_immutable" column="updated_at"/>

@@ -16,4 +16,11 @@ interface ArtisanProfileRepository
     public function isSiretTaken(Siret $siret, ?ArtisanProfileId $except = null): bool;
 
     public function add(ArtisanProfile $profile): void;
+
+    /**
+     * BO03 — dossiers en attente de vérification, plus anciens d’abord.
+     *
+     * @return list<ArtisanProfile>
+     */
+    public function pendingVerification(int $limit): array;
 }

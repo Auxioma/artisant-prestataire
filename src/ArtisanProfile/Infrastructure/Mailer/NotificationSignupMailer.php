@@ -26,4 +26,26 @@ final readonly class NotificationSignupMailer implements SignupMailer
             'lien' => $this->urls->generate('artisan_signup_submitted', [], UrlGeneratorInterface::ABSOLUTE_URL),
         ]));
     }
+
+    public function sendVerified(string $email, string $firstName, string $companyName, int $freeCredits, string $userId): void
+    {
+        $this->notify('E-21', $email, $userId, ['prenom' => $firstName, 'entreprise' => $companyName, 'devis_offerts' => $freeCredits]);
+    }
+
+    public function sendRejectedOrMoreInfo(string $email, string $firstName, string $companyName, bool $refused, ?string $reasonLabel, ?string $message, string $userId): void
+    {
+        $this->notify('E-22', $email, $userId, ['prenom' => $firstName, 'entreprise' => $companyName, 'refus' => $refused, 'motif' => $reasonLabel, 'message' => $message]);
+    }
+
+    public function sendDocumentReviewed(string $email, string $firstName, string $documentLabel, bool $approved, ?string $reason, string $userId): void
+    {
+        $this->notify('E-24', $email, $userId, ['prenom' => $firstName, 'piece' => $documentLabel, 'valide' => $approved, 'motif' => $reason]);
+    }
+
+    /** @param array<string, scalar|null> $variables */
+    private function notify(string $code, string $email, string $userId, array $variables): void
+    {
+        $link = $this->urls->generate('artisan_signup_submitted', [], UrlGeneratorInterface::ABSOLUTE_URL);
+        $this->notifier->notify(new Notification($code, $email, $userId, $variables + ['lien' => $link], $link));
+    }
 }

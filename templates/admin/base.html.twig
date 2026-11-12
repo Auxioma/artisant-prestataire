@@ -27,7 +27,7 @@
                             {% for item in items %}
                                 <li>
                                     {% if item.href %}
-                                        <a class="tm-admin__link{{ active_module|default('') == item.module ? ' is-active' }}" href="{{ item.href }}"{{ active_module|default('') == item.module ? ' aria-current="page"' }}><twig:Icon name="{{ item.icon }}" size="sm" class="tm-icon--inherit" />{{ item.label }}</a>
+                                        <a class="tm-admin__link{{ active_module|default('') == item.module ? ' is-active' }}" href="{{ item.href }}"{{ active_module|default('') == item.module ? ' aria-current="page"' }}><twig:Icon name="{{ item.icon }}" size="sm" class="tm-icon--inherit" />{{ item.label }}{% if item.count > 0 %}<span class="tm-admin__badge">{{ item.count }}<span class="tm-visually-hidden"> en attente</span></span>{% endif %}</a>
                                     {% else %}
                                         <span class="tm-admin__link is-disabled"><twig:Icon name="{{ item.icon }}" size="sm" class="tm-icon--inherit" />{{ item.label }}<span class="tm-admin__soon">Bientôt</span></span>
                                     {% endif %}

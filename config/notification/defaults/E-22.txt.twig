@@ -1,0 +1,13 @@
+Bonjour {{ prenom }},
+
+{% if refus %}Après examen, le dossier de {{ entreprise }} n’a pas été retenu.
+Motif : {{ motif }}
+{% if message %}{{ message }}
+{% endif %}
+Vous pensez qu’il s’agit d’une erreur ? Répondez-nous depuis la page de votre dossier : nous le réexaminerons.
+{% else %}Notre équipe a besoin d’un complément pour valider le dossier de {{ entreprise }} :
+{{ message }}
+
+Déposez la pièce demandée depuis votre dossier : la vérification reprendra dès sa réception.
+{% endif %}
+{{ lien }}

@@ -110,10 +110,12 @@ notifications:
         label: "Compte vérifié + crédits offerts"
         recipient: "Artisan"
         channels: [email, in_app]
+        variables: [prenom, entreprise, devis_offerts, lien]
     'E-22':
         label: "Compte refusé / pièce complémentaire demandée"
         recipient: "Artisan"
         channels: [email, in_app]
+        variables: [prenom, entreprise, refus, motif, message, lien]
     'E-23':
         label: "Relance dossier incomplet (J+2, J+7)"
         recipient: "Artisan"
@@ -122,6 +124,7 @@ notifications:
         label: "Justificatif validé / refusé"
         recipient: "Artisan"
         channels: [email, in_app]
+        variables: [prenom, piece, valide, motif, lien]
     'E-25':
         label: "Justificatif bientôt expiré (J-30, J-7) / expiré"
         recipient: "Artisan"

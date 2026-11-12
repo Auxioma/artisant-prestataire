@@ -4,20 +4,25 @@ declare(strict_types=1);
 
 namespace App\ArtisanProfile\Domain\Document;
 
+use App\ArtisanProfile\Domain\Document\Event\ArtisanDocumentReviewed;
 use App\ArtisanProfile\Domain\Profile\ArtisanRuleViolation;
+use App\Shared\Domain\AggregateRoot;
 
 /**
  * Justificatif d'un artisan (A03.6) : référence un fichier chiffré de `shared.stored_file` (ADR-0008) — jamais son
  * contenu. Type = code du référentiel (identity, kbis, insurance_decennial, insurance_rc, rge…) ; `subject` distingue
  * plusieurs pièces du même type (nom du label pour une qualification).
  */
-final class ArtisanDocument
+final class ArtisanDocument extends AggregateRoot
 {
     private const string TYPE = '/^[a-z][a-z_]{1,39}$/';
     private const int SUBJECT_MAX = 80;
+    private const int REASON_MAX = 200;
 
     private DocumentStatus $status = DocumentStatus::Quarantined;
     private ?string $reason = null;
+    private ?string $reviewedBy = null;
+    private ?\DateTimeImmutable $reviewedAt = null;
     private \DateTimeImmutable $updatedAt;
 
     private function __construct(
@@ -61,6 +66,48 @@ final class ArtisanDocument
             $this->reason = 'antivirus';
             $this->updatedAt = $now;
         }
+    }
+
+    /** BO03 — pièce contrôlée et acceptée par un administrateur habilité (RG-032 : « vérifié » après contrôle). */
+    public function approve(string $adminId, \DateTimeImmutable $now): void
+    {
+        if (DocumentStatus::PendingReview !== $this->status) {
+            throw new ArtisanRuleViolation('Seule une pièce analysée et en attente de contrôle peut être validée.');
+        }
+        $this->review(DocumentStatus::Approved, $adminId, null, $now);
+    }
+
+    /** BO03 — pièce refusée avec motif (illisible, expirée, non conforme…) : l'artisan est invité à la redéposer. */
+    public function reject(string $adminId, string $reason, \DateTimeImmutable $now): void
+    {
+        if (!\in_array($this->status, [DocumentStatus::PendingReview, DocumentStatus::Approved], true)) {
+            throw new ArtisanRuleViolation('Cette pièce ne peut pas être refusée dans son état actuel.');
+        }
+        $reason = trim((string) preg_replace('/\s+/u', ' ', $reason));
+        if ('' === $reason || mb_strlen($reason) > self::REASON_MAX) {
+            throw new ArtisanRuleViolation(\sprintf('Motif du refus obligatoire (%d caractères au maximum).', self::REASON_MAX));
+        }
+        $this->review(DocumentStatus::Rejected, $adminId, $reason, $now);
+    }
+
+    private function review(DocumentStatus $status, string $adminId, ?string $reason, \DateTimeImmutable $now): void
+    {
+        $this->status = $status;
+        $this->reason = $reason;
+        $this->reviewedBy = $adminId;
+        $this->reviewedAt = $now;
+        $this->updatedAt = $now;
+        $this->recordEvent(new ArtisanDocumentReviewed($this->id, $this->artisanId, $this->type, $this->subject, $status->value, $reason, $adminId, $now));
+    }
+
+    public function reason(): ?string
+    {
+        return $this->reason;
+    }
+
+    public function reviewedAt(): ?\DateTimeImmutable
+    {
+        return $this->reviewedAt;
     }
 
     /** Remplacé par une nouvelle pièce du même type : le fichier est détruit (crypto-shredding) par le cas d'usage. */
