@@ -81,6 +81,7 @@
                             {% if slot.status == 'approved' %}<twig:Badge variant="available">Validée</twig:Badge>
                             {% elseif slot.status == 'pending_review' %}<twig:Badge variant="pending">À vérifier</twig:Badge>
                             {% elseif slot.status == 'quarantined' %}<twig:Badge variant="neutral">Analyse antivirus</twig:Badge>
+                            {% elseif slot.status == 'expired' %}<twig:Badge variant="refused">Expirée</twig:Badge>
                             {% elseif slot.status == 'rejected' %}<twig:Badge variant="refused">Refusée</twig:Badge>{% if doc.reason %}<span class="tm-caption">{{ doc.reason }}</span>{% endif %}
                             {% elseif slot.required %}<twig:Badge variant="refused">Manquante</twig:Badge>
                             {% else %}<twig:Badge variant="neutral">Facultative</twig:Badge>{% endif %}

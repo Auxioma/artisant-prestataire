@@ -38,6 +38,7 @@ final readonly class SignupState
         public bool $submitted = false,
         public ?string $statusReason = null,
         public ?string $statusComment = null,
+        public ?string $hiddenReason = null,
     ) {
     }
 

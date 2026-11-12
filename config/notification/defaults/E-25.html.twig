@@ -1,0 +1,9 @@
+<p>Bonjour {{ prenom }},</p>
+{% if expire %}
+<p>Votre justificatif <strong>{{ piece }}</strong> a expiré le {{ date_expiration|date('d/m/Y') }}. Il n’apparaît plus comme « vérifié » sur votre profil.</p>
+<p>S’il s’agit d’une assurance obligatoire pour vos métiers, votre profil sera masqué si aucune attestation à jour n’est validée dans les jours qui viennent.</p>
+{% else %}
+<p>Votre justificatif <strong>{{ piece }}</strong> expire le {{ date_expiration|date('d/m/Y') }}, dans {{ jours }} jour(s).</p>
+<p>Pensez à déposer dès maintenant la nouvelle version : notre équipe la contrôlera avant l’échéance.</p>
+{% endif %}
+{{ bouton(lien, 'Mettre à jour mes justificatifs') }}

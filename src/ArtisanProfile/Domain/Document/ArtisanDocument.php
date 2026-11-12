@@ -110,6 +110,18 @@ final class ArtisanDocument extends AggregateRoot
         return $this->reviewedAt;
     }
 
+    /** RG-032 : à échéance, une pièce validée (ou en attente de contrôle) passe « expirée » ; l'artisan est alerté (E-25). */
+    public function expire(\DateTimeImmutable $now): bool
+    {
+        if (null === $this->expiresOn || $this->expiresOn->format('Y-m-d') >= $now->format('Y-m-d') || !\in_array($this->status, [DocumentStatus::Approved, DocumentStatus::PendingReview], true)) {
+            return false;
+        }
+        $this->status = DocumentStatus::Expired;
+        $this->updatedAt = $now;
+
+        return true;
+    }
+
     /** Remplacé par une nouvelle pièce du même type : le fichier est détruit (crypto-shredding) par le cas d'usage. */
     public function supersede(\DateTimeImmutable $now): void
     {

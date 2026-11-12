@@ -84,6 +84,9 @@ final class InsuranceController extends AbstractSignupController
                 if ([] === $errors) {
                     try {
                         $this->commands->dispatch(new DeclareInsurances($this->userId(), $declared, $qualifications));
+                        if (!$state->isOpen()) {
+                            $this->addFlash('info', ['title' => 'Assurances mises à jour', 'message' => 'Déposez maintenant les nouvelles attestations : elles seront contrôlées par notre équipe.']);
+                        }
 
                         return $this->redirectToRoute('artisan_signup_documents', status: Response::HTTP_SEE_OTHER);
                     } catch (SignupRejected|ArtisanRuleViolation $e) {

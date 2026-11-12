@@ -29,8 +29,8 @@ abstract class AbstractSignupController extends AbstractController
         7 => 'artisan_signup_profile',
     ];
 
-    /** Étapes accessibles à un compte vérifié : zone (RG-042) et justificatifs (renouvellement, RG-130). */
-    protected const array EDITABLE_AFTER_VERIFICATION = [4, 6];
+    /** Étapes accessibles à un compte vérifié : zone (RG-042), assurances et justificatifs (renouvellement, RG-032, RG-130). */
+    protected const array EDITABLE_AFTER_VERIFICATION = [4, 5, 6];
 
     public function __construct(
         protected readonly CommandBus $commands,

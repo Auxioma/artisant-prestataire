@@ -160,4 +160,32 @@ final class ArtisanStatusTest extends TestCase
         $p->recordCompletion(ProfileCompletion::compute(self::WEIGHTS, false, true, 0, 5, false, true, 0, false));
         self::assertSame(30, $p->completionRate());
     }
+
+    public function testHidingRemovesVisibilityWithoutSuspending(): void
+    {
+        $p = $this->profile();
+        $p->hide('Assurance expirée', $this->now);
+        self::assertFalse($p->isHidden(), 'seul un compte vérifié peut être masqué');
+
+        $p->approve(self::ADMIN, $this->now);
+        $p->releaseEvents();
+        $p->hide('Assurance obligatoire expirée depuis le 01/10/2026', $this->now);
+        self::assertTrue($p->isHidden());
+        self::assertFalse($p->isPublic() || $p->canSendQuotes());
+        self::assertSame(ArtisanStatus::Verified, $p->status());
+        $p->hide('bis', $this->now);
+        self::assertCount(1, $p->releaseEvents(), 'masquage idempotent');
+
+        $p->unhide($this->now);
+        self::assertTrue($p->isPublic());
+    }
+
+    public function testPieceExpiresAfterItsEndDateOnly(): void
+    {
+        $document = \App\ArtisanProfile\Domain\Document\ArtisanDocument::upload('0190f5e4-0000-7000-8000-000000000d01', '0190f5e4-0000-7000-8000-000000000c02', 'insurance_rc', null, '0190f5e4-0000-7000-8000-000000000f01', null, new \DateTimeImmutable('2026-11-13'), $this->now);
+        $document->markScanned($this->now);
+        self::assertFalse($document->expire($this->now), 'valable le jour de l’échéance');
+        self::assertTrue($document->expire($this->now->modify('+1 day')));
+        self::assertSame(\App\ArtisanProfile\Domain\Document\DocumentStatus::Expired, $document->status());
+    }
 }

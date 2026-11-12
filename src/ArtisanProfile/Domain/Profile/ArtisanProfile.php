@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\ArtisanProfile\Domain\Profile;
 
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanCompanyDeclared;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanHidden;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanInsurancesDeclared;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanJobsChosen;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanLogoChanged;
@@ -15,6 +16,7 @@ use App\ArtisanProfile\Domain\Profile\Event\ArtisanRejected;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanServiceAreaDefined;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanSignupSubmitted;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanSuspended;
+use App\ArtisanProfile\Domain\Profile\Event\ArtisanUnhidden;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanVerified;
 use App\Catalog\Domain\Job\JobId;
 use App\Shared\Domain\AggregateRoot;
@@ -86,6 +88,8 @@ final class ArtisanProfile extends AggregateRoot
     private ?\DateTimeImmutable $statusChangedAt = null;
     private ?string $statusChangedBy = null;
     private int $completionRate = 0;
+    private ?\DateTimeImmutable $hiddenAt = null;
+    private ?string $hiddenReason = null;
     private \DateTimeImmutable $updatedAt;
     private int $version = 1;
 
@@ -189,7 +193,9 @@ final class ArtisanProfile extends AggregateRoot
      */
     public function declareInsurances(array $insurances, array $qualifications, InsuranceRequirements $required, \DateTimeImmutable $now): void
     {
-        $this->assertEditable();
+        if (ArtisanStatus::Verified !== $this->status) {
+            $this->assertEditable(); // compte vérifié : renouvellement des attestations (RG-032, RG-130)
+        }
         $this->assertStepDone(self::STEP_AREA, 'Définissez d’abord votre zone d’intervention.');
         $byKind = [];
         foreach ($insurances as $insurance) {
@@ -328,16 +334,53 @@ final class ArtisanProfile extends AggregateRoot
         $this->completionRate = $completion->percent;
     }
 
-    /** RG-043 : seul un compte vérifié apparaît publiquement (P10) et reçoit les demandes (RG-062). */
-    public function isPublic(): bool
+    /**
+     * RG-130 : compte vérifié dont une assurance obligatoire est expirée depuis plus de `documents.hide_after_expiry_days`
+     * jours — masqué automatiquement (ni public, ni destinataire de demandes, ni envoi de devis) sans être suspendu.
+     */
+    public function hide(string $reason, \DateTimeImmutable $now): void
     {
-        return ArtisanStatus::Verified === $this->status;
+        if (ArtisanStatus::Verified !== $this->status || null !== $this->hiddenAt) {
+            return;
+        }
+        $this->hiddenAt = $now;
+        $this->hiddenReason = $reason;
+        $this->updatedAt = $now;
+        $this->recordEvent(new ArtisanHidden($this->id->value, $this->userId, $reason, $now));
     }
 
-    /** RG-043 : seul un compte vérifié peut envoyer des devis. */
+    /** Couverture rétablie (nouvelle attestation validée) : le profil réapparaît. */
+    public function unhide(\DateTimeImmutable $now): void
+    {
+        if (null === $this->hiddenAt) {
+            return;
+        }
+        $this->hiddenAt = null;
+        $this->hiddenReason = null;
+        $this->updatedAt = $now;
+        $this->recordEvent(new ArtisanUnhidden($this->id->value, $this->userId, $now));
+    }
+
+    public function isHidden(): bool
+    {
+        return null !== $this->hiddenAt;
+    }
+
+    public function hiddenReason(): ?string
+    {
+        return $this->hiddenReason;
+    }
+
+    /** RG-043 / RG-130 : seul un compte vérifié et non masqué apparaît publiquement (P10) et reçoit les demandes (RG-062). */
+    public function isPublic(): bool
+    {
+        return ArtisanStatus::Verified === $this->status && null === $this->hiddenAt;
+    }
+
+    /** RG-043 / RG-130 : seul un compte vérifié et non masqué peut envoyer des devis. */
     public function canSendQuotes(): bool
     {
-        return ArtisanStatus::Verified === $this->status;
+        return $this->isPublic();
     }
 
     public function verifiedAt(): ?\DateTimeImmutable
@@ -483,6 +526,11 @@ final class ArtisanProfile extends AggregateRoot
     public function logoFileId(): ?string
     {
         return $this->logoFileId;
+    }
+
+    public function createdAt(): \DateTimeImmutable
+    {
+        return $this->createdAt;
     }
 
     public function submittedAt(): ?\DateTimeImmutable

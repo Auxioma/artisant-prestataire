@@ -9,11 +9,11 @@
 {% set more_info = status == 'pending_verification' and state.statusReason == 'more_info' %}
 {% set heading = {
     pending_verification: more_info ? 'Un complément est demandé pour votre dossier' : 'Votre dossier est en cours de vérification',
-    verified: 'Votre compte professionnel est vérifié',
+    verified: state.hiddenReason ? 'Votre profil est masqué' : 'Votre compte professionnel est vérifié',
     rejected: 'Votre dossier n’a pas été retenu',
     suspended: 'Votre compte professionnel est suspendu',
 }[status] ?? 'Votre dossier' %}
-{% set tone = {verified: 'success', rejected: 'danger', suspended: 'danger'}[status] ?? (more_info ? 'info' : 'success') %}
+{% set tone = state.hiddenReason ? 'danger' : ({verified: 'success', rejected: 'danger', suspended: 'danger'}[status] ?? (more_info ? 'info' : 'success')) %}
 {% set item_labels = {
     logo: 'Logo ou photo', description: 'Description', photos: photos_target ~ ' photos de réalisations', hours: 'Horaires d’ouverture',
     zone: 'Zone d’intervention', services: 'Prestations', labels: 'Labels et qualifications',
@@ -33,6 +33,9 @@
                 <p><twig:Badge variant="pending">Délai annoncé : {{ delay_hours }} h ouvrées</twig:Badge></p>
             {% endif %}
             <p class="tm-submitted__credits"><twig:Icon name="tag" size="sm" class="tm-icon--inherit" />{{ free_credits }} devis offerts dès la validation de votre compte</p>
+        {% elseif status == 'verified' and state.hiddenReason %}
+            <div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p><strong>Profil masqué :</strong> {{ state.hiddenReason }}. Il n’est plus visible des clients et ne reçoit plus de demandes.</p></div>
+            <p>Mettez à jour vos <a href="{{ path('artisan_signup_insurance') }}">assurances</a> et déposez les nouvelles attestations : votre profil réapparaîtra dès leur validation.</p>
         {% elseif status == 'verified' %}
             <p>Votre profil est visible des clients et vous recevez les demandes de votre zone.</p>
             {% set credits = tm_artisan_credits() %}
@@ -85,6 +88,7 @@
             <div class="tm-pro-signup__actions-end">
                 <twig:Button href="{{ path('artisan_signup_documents') }}" variant="secondary">Gérer mes justificatifs</twig:Button>
                 <twig:Button href="{{ path('artisan_signup_area') }}" variant="secondary">Modifier ma zone</twig:Button>
+                {% if status == 'verified' %}<twig:Button href="{{ path('artisan_signup_insurance') }}" variant="secondary">Mettre à jour mes assurances</twig:Button>{% endif %}
             </div>
         {% endif %}
     </section>

@@ -48,6 +48,7 @@ final readonly class SignupProgressHandler implements QueryHandler
             null !== $profile->submittedAt(),
             $profile->statusReason(),
             $profile->statusComment(),
+            $profile->hiddenReason(),
         );
     }
 }

@@ -42,6 +42,18 @@ final readonly class NotificationSignupMailer implements SignupMailer
         $this->notify('E-24', $email, $userId, ['prenom' => $firstName, 'piece' => $documentLabel, 'valide' => $approved, 'motif' => $reason]);
     }
 
+    public function sendIncompleteReminder(string $email, string $firstName, bool $incomplete, array $missing, string $userId): void
+    {
+        $link = $this->urls->generate($incomplete ? 'artisan_signup_resume' : 'artisan_signup_documents', [], UrlGeneratorInterface::ABSOLUTE_URL);
+        $this->notifier->notify(new Notification('E-23', $email, $userId, ['prenom' => $firstName, 'inacheve' => $incomplete, 'pieces' => implode(', ', $missing), 'lien' => $link]));
+    }
+
+    public function sendDocumentExpiry(string $email, string $firstName, string $documentLabel, \DateTimeImmutable $expiresOn, int $daysLeft, bool $expired, string $userId): void
+    {
+        $link = $this->urls->generate('artisan_signup_documents', [], UrlGeneratorInterface::ABSOLUTE_URL);
+        $this->notifier->notify(new Notification('E-25', $email, $userId, ['prenom' => $firstName, 'piece' => $documentLabel, 'date_expiration' => $expiresOn, 'jours' => $daysLeft, 'expire' => $expired, 'lien' => $link], $link));
+    }
+
     /** @param array<string, scalar|null> $variables */
     private function notify(string $code, string $email, string $userId, array $variables): void
     {

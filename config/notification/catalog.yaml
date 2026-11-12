@@ -120,6 +120,7 @@ notifications:
         label: "Relance dossier incomplet (J+2, J+7)"
         recipient: "Artisan"
         channels: [email]
+        variables: [prenom, inacheve, pieces, lien]
     'E-24':
         label: "Justificatif validé / refusé"
         recipient: "Artisan"
@@ -129,6 +130,7 @@ notifications:
         label: "Justificatif bientôt expiré (J-30, J-7) / expiré"
         recipient: "Artisan"
         channels: [email, in_app]
+        variables: [prenom, piece, date_expiration, jours, expire, lien]
     'E-26':
         label: "Compte suspendu / réactivé"
         recipient: "Artisan / client"

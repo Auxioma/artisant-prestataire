@@ -17,4 +17,14 @@ interface SignupMailer
 
     /** E-24 — justificatif validé ou refusé. */
     public function sendDocumentReviewed(string $email, string $firstName, string $documentLabel, bool $approved, ?string $reason, string $userId): void;
+
+    /**
+     * E-23 — relance d’un dossier inachevé (`$incomplete`) ou envoyé avec des pièces obligatoires manquantes.
+     *
+     * @param list<string> $missing
+     */
+    public function sendIncompleteReminder(string $email, string $firstName, bool $incomplete, array $missing, string $userId): void;
+
+    /** E-25 — justificatif bientôt expiré (J-30, J-7) ou expiré. */
+    public function sendDocumentExpiry(string $email, string $firstName, string $documentLabel, \DateTimeImmutable $expiresOn, int $daysLeft, bool $expired, string $userId): void;
 }

@@ -54,6 +54,7 @@
                     {% elseif slot.status == 'pending_review' %}<twig:Badge variant="available">Ajouté</twig:Badge>
                     {% elseif slot.status == 'approved' %}<twig:Badge variant="verified">Validé</twig:Badge>
                     {% elseif slot.status == 'rejected' %}<twig:Badge variant="refused">Refusé — à redéposer</twig:Badge>
+                    {% elseif slot.status == 'expired' %}<twig:Badge variant="refused">Expiré — à renouveler</twig:Badge>
                     {% elseif slot.required %}<twig:Badge variant="pending">À ajouter</twig:Badge>
                     {% else %}<twig:Badge variant="neutral">Facultatif</twig:Badge>{% endif %}
                 </li>

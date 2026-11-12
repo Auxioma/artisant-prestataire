@@ -128,6 +128,8 @@ enum SettingKey: string
     case DocumentsRetentionAfterRelationYears = 'documents.retention_after_relation_years';
     case DocumentsSignedUrlTtlSec = 'documents.signed_url_ttl_sec';
     case DocumentsExpiryAlertDays = 'documents.expiry_alert_days';
+    case DocumentsHideAfterExpiryDays = 'documents.hide_after_expiry_days';
+    case ProSignupReminderDays = 'pro.signup_reminder_days';
     case AuditRetentionMonths = 'audit.retention_months';
 
     // RGPD, notifications, cookies, fournisseurs
@@ -265,6 +267,8 @@ enum SettingKey: string
             self::DocumentsDeleteIdAfterVerification => $d(T::Boolean, true, 'Supprimer la pièce d\'identité après vérification (Q16)', proposed: true),
             self::DocumentsRetentionAfterRelationYears => $d(T::Integer, 1, 'Conservation des justificatifs après la relation (années)', 0, 10, proposed: true),
             // Cadrage §5.5 : URLs signées ≤ 5 min.
+            self::DocumentsHideAfterExpiryDays => $d(T::Integer, 15, 'Masquage d\'un pro dont l\'assurance obligatoire est expirée depuis (jours) — RG-130', 0, 365),
+            self::ProSignupReminderDays => $d(T::IntegerList, [2, 7], 'Relances d\'un dossier pro incomplet (jours après inscription ou envoi) — E-23', 1, 90),
             self::DocumentsExpiryAlertDays => $d(T::IntegerList, [30, 7, 0], 'Alertes avant expiration d\'un justificatif (jours) — RG-032', 0, 365),
             self::DocumentsSignedUrlTtlSec => $d(T::Integer, 300, 'Durée des URLs signées (s)', 30, 300, proposed: true),
             self::AuditRetentionMonths => $d(T::Integer, 12, 'Conservation des journaux (mois)', 12, 120, proposed: true),

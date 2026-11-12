@@ -118,6 +118,8 @@ services:
     App\ArtisanProfile\Application\Port\CoverageProjection: '@App\ArtisanProfile\Infrastructure\Projection\DbalCoverageProjection'
     App\ArtisanProfile\Application\Port\ProfileContent: '@App\ArtisanProfile\Infrastructure\Projection\InterimProfileContent'
     App\ArtisanProfile\Application\Port\VerificationDecisions: '@App\ArtisanProfile\Infrastructure\Projection\DbalVerificationDecisions'
+    App\ArtisanProfile\Application\Port\MaintenanceCandidates: '@App\ArtisanProfile\Infrastructure\Projection\DbalMaintenanceCandidates'
+    App\ArtisanProfile\Application\Port\ReminderLog: '@App\ArtisanProfile\Infrastructure\Projection\DbalReminderLog'
     App\ArtisanProfile\Application\Port\SignupMailer: '@App\ArtisanProfile\Infrastructure\Mailer\NotificationSignupMailer'
 
     # Ports du module Search
