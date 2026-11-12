@@ -1,0 +1,14 @@
+{% extends 'admin/security/_card.html.twig' %}
+{% block title %}Confirmer votre identité{% endblock %}
+{% block card %}
+    <h1 id="titre" class="tm-card-title">Confirmez votre identité</h1>
+    <p>Cette action est sensible : saisissez de nouveau votre mot de passe et un code de votre application.</p>
+    {% if error %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ error }}</p></div>{% endif %}
+    <form method="post" action="{{ path('admin_reauth', {cible: target}) }}" class="tm-signup__fields" data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token('admin_reauth') }}">
+        <twig:Field id="reauth_password" name="password" type="password" label="Mot de passe" required autocomplete="current-password" maxlength="128" />
+        <twig:Field id="reauth_code" name="code" label="Code à 6 chiffres" required autocomplete="one-time-code" inputmode="numeric" maxlength="6" />
+        <twig:Button type="submit" block>Confirmer</twig:Button>
+    </form>
+    <p><a href="{{ path('admin_dashboard') }}">Annuler</a></p>
+{% endblock %}

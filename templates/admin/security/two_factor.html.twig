@@ -1,0 +1,14 @@
+{#- Formulaire du code TOTP (scheb/2fa) : code à 6 chiffres ou code de secours ; aucun appareil de confiance. -#}
+{% extends 'admin/security/_card.html.twig' %}
+{% block title %}Double authentification{% endblock %}
+{% block card %}
+    <h1 id="titre" class="tm-card-title">Double authentification</h1>
+    <p>Saisissez le code à 6 chiffres affiché par votre application d’authentification, ou l’un de vos codes de secours.</p>
+    {% if authenticationError %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>Code incorrect ou expiré.</p></div>{% endif %}
+    <form method="post" action="{{ checkPathUrl ? checkPathUrl : path(checkPathRoute) }}" class="tm-signup__fields" data-turbo="false">
+        <twig:Field id="_auth_code" name="{{ authCodeParameterName }}" label="Code" required autocomplete="one-time-code" maxlength="11" inputmode="text" />
+        {% if isCsrfProtectionEnabled %}<input type="hidden" name="{{ csrfParameterName }}" value="{{ csrf_token(csrfTokenId) }}">{% endif %}
+        <twig:Button type="submit" block>Valider</twig:Button>
+    </form>
+    <p><a href="{{ logoutPath }}">Annuler et revenir à la connexion</a></p>
+{% endblock %}

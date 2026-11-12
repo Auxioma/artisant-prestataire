@@ -65,6 +65,14 @@ docker compose exec php bin/console app:storage:setup   # crée les buckets priv
 
 Tout fichier passe par `FileUploader` (contrôle, ré-encodage, quarantaine), puis par l'analyse ClamAV dans le worker, avant d'être disponible. Les justificatifs sont chiffrés avec la clé maîtresse `STORAGE_KEKS`. La valeur de `.env` est une clé nulle de développement, refusée en production. Pour générer une vraie clé : `php -r 'echo "k1:".base64_encode(random_bytes(32));'`, puis `bin/console secrets:set STORAGE_KEKS` et `STORAGE_KEK_CURRENT=k1`. Pour une rotation, ajouter `;k2:…` et passer `STORAGE_KEK_CURRENT` à `k2` : les anciens fichiers restent lisibles.
 
+## Back-office
+
+```bash
+docker compose exec php bin/console app:admin:invite moi@exemple.test "Prénom Nom"   # premier super-admin : lien d'activation affiché (et envoyé par e-mail)
+```
+
+Ouvrir le lien, choisir un mot de passe, scanner le QR code avec une application d'authentification et conserver les 10 codes de secours ; se connecter ensuite sur `/admin/connexion` (mot de passe puis code). Les autres administrateurs sont invités depuis **Équipe et rôles** (`/admin/equipe`). En production, `ADMIN_HOST` (ex. `admin.trouvemoi.com`) réserve le back-office à cet hôte ; `admin.ip_allowlist` peut le restreindre à des plages d'adresses.
+
 ## Qualité (identique à la CI)
 
 ```bash

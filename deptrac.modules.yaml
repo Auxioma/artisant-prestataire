@@ -32,4 +32,4 @@ deptrac:
     Moderation: [Shared]
     Content: [Shared, Catalog]
     Notification: [Shared]
-    Administration: [Shared]
+    Administration: [Shared, Notification] # Notification : invitation de l'équipe (I-02)

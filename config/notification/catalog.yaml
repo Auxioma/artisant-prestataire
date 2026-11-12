@@ -219,3 +219,8 @@ notifications:
         recipient: "Titulaire du compte"
         channels: [email]
         variables: [prenom, lien_connexion, lien_reinitialisation]
+    'I-02':
+        label: "Invitation à rejoindre l'équipe d'administration (BO14.1)"
+        recipient: "Administrateur invité"
+        channels: [email]
+        variables: [nom, role, lien, validite_heures]

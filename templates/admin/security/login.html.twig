@@ -1,0 +1,14 @@
+{% extends 'admin/security/_card.html.twig' %}
+{% block title %}Connexion{% endblock %}
+{% block card %}
+    <h1 id="titre" class="tm-card-title">Connexion au back-office</h1>
+    {% if expired %}<div class="tm-submitted__notice" role="status"><twig:Icon name="clock" size="sm" class="tm-icon--inherit" /><p>Session fermée après une période d’inactivité. Reconnectez-vous.</p></div>{% endif %}
+    {% if error %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ error }}</p></div>{% endif %}
+    <form method="post" action="{{ path('admin_login') }}" class="tm-signup__fields" data-turbo="false">
+        <twig:Field id="admin_email" name="_username" type="email" label="Adresse e-mail" value="{{ last_username }}" required autocomplete="username" maxlength="254" />
+        <twig:Field id="admin_password" name="_password" type="password" label="Mot de passe" required autocomplete="current-password" maxlength="128" />
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('admin_authenticate') }}">
+        <twig:Button type="submit" block>Continuer</twig:Button>
+    </form>
+    <p class="tm-caption">Mot de passe oublié ou appareil perdu ? Demandez une nouvelle invitation à un super-admin.</p>
+{% endblock %}

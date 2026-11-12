@@ -1,0 +1,11 @@
+{#- Pages d'accès au back-office (connexion, code, ré-authentification, invitation) : carte centrée, sans navigation. -#}
+{% extends 'admin/base.html.twig' %}
+{% block layout %}
+<main id="contenu" tabindex="-1" class="tm-admin-auth">
+    <div class="tm-admin-auth__brand"><twig:Logo width="170" /><span>Back-office</span></div>
+    <section class="tm-card-panel tm-admin-auth__card" aria-labelledby="titre">
+        {% block card %}{% endblock %}
+    </section>
+    <p class="tm-caption tm-admin-auth__note">Accès réservé à l’équipe TrouveMoi · double authentification obligatoire · connexions journalisées.</p>
+</main>
+{% endblock %}

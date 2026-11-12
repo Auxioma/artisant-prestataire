@@ -1,0 +1,9 @@
+{% extends 'admin/security/_card.html.twig' %}
+{% block title %}Codes de secours{% endblock %}
+{% block card %}
+    <span class="tm-state-card__icon tm-state-card__icon--success"><twig:Icon name="check" /></span>
+    <h1 id="titre" class="tm-card-title">Votre compte est activé, {{ name }}</h1>
+    <div class="tm-submitted__notice" role="status"><twig:Icon name="info" size="sm" class="tm-icon--inherit" /><p><strong>Conservez ces codes de secours maintenant</strong> (gestionnaire de mots de passe). Chacun remplace une seule fois le code de votre application si vous perdez votre téléphone. Ils ne seront plus jamais affichés.</p></div>
+    <ul class="tm-admin-codes">{% for code in codes %}<li><code>{{ code }}</code></li>{% endfor %}</ul>
+    <twig:Button href="{{ path('admin_login') }}" block>J’ai conservé mes codes, me connecter</twig:Button>
+{% endblock %}

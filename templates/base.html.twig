@@ -7,31 +7,7 @@
         <meta name="csp-nonce" content="{{ csp_nonce('style') }}">
         <title>{% block title %}TrouveMoi.com — Artisans & Prestataires{% endblock %}</title>
         {% block meta %}{% endblock %}
-        {# CDC §2.2 : préchargement des graisses 400 et 600 #}
-        <link rel="preload" href="{{ asset('fonts/poppins/poppins-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-        <link rel="preload" href="{{ asset('fonts/poppins/poppins-latin-600-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
-        {# Feuille de styles unique découpée en couches (@layer) : l'ordre des liens fixe l'ordre des couches. #}
-        <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/tokens.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/fonts.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/base.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/components/button.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/components/form.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/components/badge.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/components/toast.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/components/modal.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/components/stepper.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/components/feedback.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/components/credit-gauge.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/components/card-artisan.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/components/switch.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/components/cookie-consent.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/layout/header.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/layout/breadcrumb.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/layout/footer.css') }}">
-        <link rel="stylesheet" href="{{ asset('styles/pages/auth.css') }}">
-        {# Styles Live Component chargés ici (et non auto-importés en JS) : même raison CSP que ci-dessus. #}
-        <link rel="stylesheet" href="{{ asset('@symfony/ux-live-component/live.min.css') }}">
+        {{ include('_head_assets.html.twig') }}
         {% block stylesheets %}{% endblock %}
         {% block javascripts %}
             {# Importmap inline : nonce CSP obligatoire (pas d'unsafe-inline, cadrage §5.4) #}

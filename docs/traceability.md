@@ -66,3 +66,4 @@
 | A04 Connexion | | | — | | ☐ 390 ☐ 768 ☐ 1440 | T-204 | ⬜ |
 | PR04 Éditeur de devis | | | `QuoteVoter` | | ☐ 390 ☐ 768 ☐ 1440 | T-502 | ⬜ |
 | … | | | | | | | |
+| Back-office : accès, 2FA, rôles | ADR-0013, BO01 (socle), BO14, P-06, P-48, ASVS 2.8 / 3.7.1 / 4.3.1, I-02 | `AdminUser`, `AdminRole`, `AdminModule`, `TeamHandler`, `TeamQueriesHandler`, `AdminSecurityUser`, `AdminUserProvider`, `AdminPermissionVoter`, `AdminRecentAuthVoter`, `AdminReauthentication`, `AdminAccessSubscriber`, `AdminBackupCodeManager`, `OtphpTotp`, `SecretBox` (`SodiumEnvelopeEncryption`), `AdminSecurityController`, `AdminInvitationController`, `AdminDashboardController`, `AdminTeamController`, `AdminNavigationExtension`, `app:admin:invite`, `templates/admin/*`, `admin_nav_controller.js` | `AdminTeamTest` (13), `BackOfficeAccessTest` (6), parcours navigateur (invitation, QR, codes de secours, connexion 2FA) | T-209 | ✅ (écrans BO02–BO16 : tickets suivants) |

@@ -1,6 +1,7 @@
 # Cadrage §5.1 / ASVS V2 : Argon2id explicite (jamais « auto »).
 # Comptes clients et artisans : Identity (T-201). Formulaire de connexion, limitation et « se souvenir de moi » : T-204.
-# Pare-feu d'administration isolé (admin.trouvemoi.com, 2FA TOTP, fournisseur distinct) : T-209.
+# Pare-feu d'administration isolé (ADR-0013, T-209) : fournisseur distinct, 2FA TOTP obligatoire, hôte dédié optionnel
+# (ADMIN_HOST, contrôlé par AdminAccessSubscriber), inactivité et ré-authentification paramétrées.
 security:
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
@@ -11,11 +12,47 @@ security:
     providers:
         app_users:
             id: App\Identity\Infrastructure\Security\UserProvider
+        admin_users:
+            id: App\Administration\Infrastructure\Security\AdminUserProvider
 
     firewalls:
         dev:
             pattern: ^/(_profiler(/|$)|(_wdt|assets|build)/)
             security: false
+        # Back-office : contexte de sécurité distinct (une session client ou artisan n'y donne jamais accès).
+        admin:
+            pattern: ^/admin(/|$)
+            lazy: true
+            provider: admin_users
+            entry_point: form_login
+            form_login:
+                login_path: admin_login
+                check_path: admin_login
+                username_parameter: _username
+                password_parameter: _password
+                enable_csrf: true
+                csrf_token_id: admin_authenticate
+                default_target_path: admin_dashboard
+                always_use_default_target_path: false
+            # Cadrage §5.1 : limitation des tentatives (par identifiant et par IP) avant même la vérification du mot de passe.
+            login_throttling:
+                max_attempts: 5
+                interval: '15 minutes'
+            two_factor:
+                auth_form_path: admin_2fa_login
+                check_path: admin_2fa_check
+                default_target_path: admin_dashboard
+                prepare_on_login: true
+                prepare_on_access_denied: true
+                enable_csrf: true
+                csrf_token_id: admin_two_factor
+                auth_code_parameter_name: _auth_code
+            logout:
+                path: admin_logout
+                target: admin_login
+                enable_csrf: true
+                csrf_token_id: admin_logout
+                invalidate_session: true
         main:
             lazy: true
             provider: app_users
@@ -47,6 +84,11 @@ security:
                 invalidate_session: true
 
     access_control:
+        # Back-office : connexion et acceptation d'invitation publiques, code 2FA en cours, tout le reste réservé aux admins.
+        - { path: '^/admin/connexion$', roles: PUBLIC_ACCESS }
+        - { path: '^/admin/invitation/', roles: PUBLIC_ACCESS }
+        - { path: '^/admin/2fa', roles: IS_AUTHENTICATED_2FA_IN_PROGRESS }
+        - { path: '^/admin(/|$)', roles: ROLE_ADMIN }
         # A03 : étapes 2 à 7 du tunnel professionnel réservées au compte artisan connecté (l'étape 1 est publique)
         - { path: '^/inscription/pro/', roles: ROLE_ARTISAN }
 

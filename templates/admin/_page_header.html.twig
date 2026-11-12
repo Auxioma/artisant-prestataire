@@ -1,0 +1,14 @@
+{#- En-tête de page du back-office : fil d'Ariane, titre, sous-titre, actions (Figma 186:358). -#}
+<nav class="tm-admin-crumbs" aria-label="Fil d’Ariane">
+    <ol>
+        <li><a href="{{ path('admin_dashboard') }}">Back-office</a></li>
+        {% for crumb in crumbs|default([]) %}<li>{{ crumb }}</li>{% endfor %}
+        <li aria-current="page">{{ title }}</li>
+    </ol>
+</nav>
+<div class="tm-admin-head">
+    <div>
+        <h1>{{ title }}</h1>
+        {% if subtitle|default(null) %}<p class="tm-admin-head__sub">{{ subtitle }}</p>{% endif %}
+    </div>
+</div>

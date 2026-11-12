@@ -17,7 +17,7 @@ deptrac:
     - name: Framework
       collectors:
         - type: classLike
-          value: '^(Symfony|Doctrine|Psr|Monolog|Stripe|League|Meilisearch|Twig|Brevo|Nelmio|Scheb|PhpParser|PHPStan)\\.*'
+          value: '^(Symfony|Doctrine|Psr|Monolog|Stripe|League|Meilisearch|Twig|Brevo|Nelmio|Scheb|OTPHP|chillerlan|AsyncAws|PhpParser|PHPStan)\\.*'
   ruleset:
     Domain: ~
     Application: [Domain]

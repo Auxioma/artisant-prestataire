@@ -120,6 +120,8 @@ enum SettingKey: string
     case AuthPro2faEnabled = 'auth.pro_2fa_enabled';
     case AdminIdleTimeoutMin = 'admin.idle_timeout_min';
     case AdminReauthMaxAgeMin = 'admin.reauth_max_age_min';
+    case AdminInvitationTtlHours = 'admin.invitation_ttl_hours';
+    case AdminIpAllowlist = 'admin.ip_allowlist';
     case AdminSupportMaxManualCredits = 'admin.support_max_manual_credits';
     case AdminSupportMonthlyManualCredits = 'admin.support_monthly_manual_credits';
     case DocumentsDeleteIdAfterVerification = 'documents.delete_id_after_verification';
@@ -254,6 +256,8 @@ enum SettingKey: string
             self::AuthEmailVerificationTtlHours => $d(T::Integer, 24, 'Validité du lien de vérification d’e-mail (h) — CDC A02', 1, 72, proposed: true),
             self::AuthPro2faEnabled => $d(T::Boolean, false, '2FA pour les artisans (V2)', proposed: true),
             self::AdminIdleTimeoutMin => $d(T::Integer, 15, 'Déconnexion admin après inactivité (min)', 5, 60, proposed: true),
+            self::AdminInvitationTtlHours => $d(T::Integer, 72, 'Validité d’une invitation administrateur (h)', 1, 168, proposed: true),
+            self::AdminIpAllowlist => $d(T::StringList, [], 'Adresses IP / plages CIDR autorisées au back-office (vide = toutes)', proposed: true),
             self::AdminReauthMaxAgeMin => $d(T::Integer, 5, 'Ancienneté maximale de ré-authentification (min)', 1, 15, proposed: true),
             self::AdminSupportMaxManualCredits => $d(T::Integer, 20, 'Plafond de crédits par geste (Support)', 0, 1000, proposed: true),
             self::AdminSupportMonthlyManualCredits => $d(T::Integer, 100, 'Plafond mensuel de crédits (Support)', 0, 10_000, proposed: true),

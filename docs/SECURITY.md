@@ -106,7 +106,7 @@ S = usurpation · T = altération · R = répudiation · I = divulgation · D = 
 ### Administration (BO01–BO16)
 | | Menace | Contrôles |
 |---|---|---|
-| S | Vol de compte admin | firewall et hôte séparés, 2FA TOTP obligatoire, liste blanche IP optionnelle, `SameSite=Strict`, timeout court, ré-authentification pour les actions sensibles |
+| S | Vol de compte admin | pare-feu et contexte de sécurité séparés, hôte dédié (`ADMIN_HOST`), 2FA TOTP obligatoire (aucun compte actif sans 2FA, secret chiffré, anti-rejeu, codes de secours HMAC à usage unique), activation par invitation à lien unique haché, limitation des tentatives, liste blanche IP optionnelle, timeout d'inactivité, ré-authentification pour les actions sensibles, journalisation des connexions et échecs (T-209) |
 | E | Escalade de rôle | permissions fines vérifiées par Voters, gestion des rôles réservée au super-admin, plafonds de gestes |
 | E | Abus d'impersonation | super-admin uniquement, bandeau, AuditLog, actions financières bloquées |
 | I | Exfiltration via exports | exports PII limités aux rôles de l'annexe E, journalisés, fichiers expirant (24 h), URL signée |

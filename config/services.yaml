@@ -41,6 +41,8 @@ services:
             - '../src/Catalog/Application/Query/JobRequirement.php'
             - '../src/Catalog/Application/Geo/Query/Coverage.php'
             - '../src/ArtisanProfile/Domain/'
+            - '../src/Administration/Application/Team/{TeamRejected,InvitationToken,AdminMemberView}.php'
+            - '../src/Administration/Infrastructure/Security/AdminSecurityUser.php'
             - '../src/Identity/Infrastructure/Security/SecurityUser.php'
             - '../src/Shared/Infrastructure/DependencyInjection/'
             - '../src/Catalog/Application/Geo/Port/GeocodedAddress.php'
@@ -62,10 +64,19 @@ services:
     App\Shared\Application\Storage\Port\FileSanitizer: '@App\Shared\Infrastructure\Storage\NativeFileSanitizer'
     App\Shared\Application\Storage\Port\AntivirusScanner: '@App\Shared\Infrastructure\Storage\ClamAvScanner'
     App\Shared\Application\Storage\Port\EnvelopeEncryption: '@App\Shared\Infrastructure\Storage\SodiumEnvelopeEncryption'
+    App\Shared\Application\Security\SecretBox: '@App\Shared\Infrastructure\Storage\SodiumEnvelopeEncryption'
     App\Shared\Application\Storage\Port\StoredFileRepository: '@App\Shared\Infrastructure\Storage\DbalStoredFileRepository'
 
     # Ports du module Administration
     App\Administration\Application\Port\SettingStore: '@App\Administration\Infrastructure\Settings\DbalSettingStore'
+    App\Administration\Domain\Admin\AdminUserRepository: '@App\Administration\Infrastructure\Doctrine\Repository\DoctrineAdminUserRepository'
+    App\Administration\Application\Port\CurrentAdmin: '@App\Administration\Infrastructure\Security\SecurityCurrentAdmin'
+    App\Administration\Application\Port\Reauthentication: '@App\Administration\Infrastructure\Security\AdminReauthentication'
+    App\Administration\Application\Port\Totp: '@App\Administration\Infrastructure\Security\OtphpTotp'
+    App\Administration\Application\Port\AdminPasswordHasher: '@App\Administration\Infrastructure\Security\SymfonyAdminPasswordHasher'
+    App\Administration\Application\Port\AdminMailer: '@App\Administration\Infrastructure\Mailer\NotificationAdminMailer'
+    App\Administration\Application\Team\BackupCodes:
+        arguments: { $pepper: '%kernel.secret%' }
     App\Shared\Application\Audit\AuditTrail: '@App\Administration\Infrastructure\Audit\DbalAuditTrail'
 
     # Ports du module Catalog

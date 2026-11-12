@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Shared\Infrastructure\Storage;
 
+use App\Shared\Application\Security\SecretBox;
 use App\Shared\Application\Storage\Port\EnvelopeEncryption;
 use App\Shared\Application\Storage\WrappedKey;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -14,7 +15,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
  * KEK versionnées hors base (`STORAGE_KEKS` = « id:base64;id:base64 », via secrets:set) : la rotation ajoute une
  * nouvelle KEK courante, les anciennes restent pour la lecture (re-enveloppement possible sans rechiffrer les fichiers).
  */
-final class SodiumEnvelopeEncryption implements EnvelopeEncryption
+final class SodiumEnvelopeEncryption implements EnvelopeEncryption, SecretBox
 {
     private const int CHUNK = 65_536;
     private const int MIN_DISTINCT_BYTES = 16;
@@ -40,12 +41,32 @@ final class SodiumEnvelopeEncryption implements EnvelopeEncryption
         }
     }
 
+    public function seal(#[\SensitiveParameter] string $secret): string
+    {
+        $nonce = random_bytes(\SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);
+
+        return $this->currentKekId.':'.sodium_bin2base64($nonce.sodium_crypto_secretbox($secret, $nonce, $this->currentKek()), \SODIUM_BASE64_VARIANT_ORIGINAL);
+    }
+
+    public function open(string $sealed): string
+    {
+        [$kekId, $encoded] = array_pad(explode(':', $sealed, 2), 2, '');
+        try {
+            $raw = sodium_base642bin($encoded, \SODIUM_BASE64_VARIANT_ORIGINAL);
+        } catch (\SodiumException) {
+            throw new \RuntimeException('Secret illisible.');
+        }
+        $plain = sodium_crypto_secretbox_open(substr($raw, \SODIUM_CRYPTO_SECRETBOX_NONCEBYTES), substr($raw, 0, \SODIUM_CRYPTO_SECRETBOX_NONCEBYTES), $this->kek($kekId));
+        if (false === $plain) {
+            throw new \RuntimeException('Secret illisible.');
+        }
+
+        return $plain;
+    }
+
     public function encrypt($plain, $cipher): WrappedKey
     {
-        $kek = $this->kek($this->currentKekId);
-        if ('prod' === $this->environment && \count(array_unique(str_split($kek))) < self::MIN_DISTINCT_BYTES) {
-            throw new \RuntimeException('KEK de développement refusée en production.');
-        }
+        $kek = $this->currentKek();
 
         $dek = sodium_crypto_secretstream_xchacha20poly1305_keygen();
         [$state, $header] = sodium_crypto_secretstream_xchacha20poly1305_init_push($dek);
@@ -126,5 +147,15 @@ final class SodiumEnvelopeEncryption implements EnvelopeEncryption
         if (false === fwrite($stream, $data)) {
             throw new \RuntimeException('Écriture du flux impossible.');
         }
+    }
+
+    private function currentKek(): string
+    {
+        $kek = $this->kek($this->currentKekId);
+        if ('prod' === $this->environment && \count(array_unique(str_split($kek))) < self::MIN_DISTINCT_BYTES) {
+            throw new \RuntimeException('KEK de développement refusée en production.');
+        }
+
+        return $kek;
     }
 }
