@@ -35,6 +35,8 @@ final class QuoteRequest extends AggregateRoot
     private ?string $budgetRange;
     private Timing $timing;
     private ?\DateTimeImmutable $desiredDate;
+    /** Version du questionnaire du métier avec laquelle les réponses ont été données (libellés stables, PR03). */
+    private ?int $questionnaireVersion = null;
     private int $activeQuotesCount = 0;
     private int $receivedQuotesCount = 0;
     private int $riskScore;

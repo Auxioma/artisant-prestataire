@@ -1,0 +1,6 @@
+{#- Boutons d'étape : « Étape précédente » enregistre la saisie sans la valider ; « Continuer » la valide. -#}
+<div class="tm-request__actions">
+    {% if step > 1 %}<button type="submit" class="tm-button tm-button--secondary" name="action" value="back" formnovalidate>← Étape précédente</button>{% endif %}
+    <twig:Button type="submit" name="action" value="continue" icon="arrowR">Continuer</twig:Button>
+    <p class="tm-request__saved" aria-live="polite" data-request-tunnel-target="status">Votre saisie est enregistrée automatiquement.</p>
+</div>

@@ -1,0 +1,67 @@
+/*
+ * P11 (T-402a) — tunnel de dépôt de demande (Figma 194:8981) : intro alignée à gauche, étapes, carte principale et
+ * colonne « À quoi sert cette étape ? », options en pastilles (type de projet, réponses), cartes métier, pièces jointes.
+ * Mobile d'abord ; deux colonnes à partir de 1024 px.
+ */
+@layer components {
+    .tm-request { background: var(--color-surface-alt); padding-bottom: var(--space-12); }
+    .tm-request__intro { padding-block: var(--space-6); background: var(--color-surface); }
+    .tm-request__intro > .tm-container { display: grid; gap: var(--space-3); }
+    .tm-request__intro h1 { margin: 0; }
+    .tm-request__intro .tm-body { margin: 0; color: var(--color-text-muted); }
+    .tm-request__grid { display: grid; gap: var(--space-4); align-items: start; padding-top: var(--space-6); }
+    .tm-request__grid > * { min-width: 0; }
+    .tm-request__main { display: grid; gap: var(--space-5); padding: var(--space-5); }
+    .tm-request__main form { display: grid; gap: var(--space-5); min-width: 0; }
+    .tm-request__why { display: grid; gap: var(--space-4); padding: var(--space-5); }
+    .tm-request__promise { display: grid; gap: var(--space-2); margin: 0; padding: var(--space-4); border-radius: var(--radius-card); background: var(--color-info-bg); color: var(--color-info-text); font: var(--type-caption); list-style: none; }
+    .tm-request__promise li { display: flex; align-items: center; gap: var(--space-2); }
+    .tm-request__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+    .tm-request__saved { margin: 0; color: var(--color-text-muted); font: var(--type-caption); }
+    .tm-request__divider { margin: 0; border: 0; border-top: 1px solid var(--color-border); }
+    .tm-request__target { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-4); border-radius: var(--radius-card); background: var(--color-info-bg); }
+    .tm-request__target p { margin: 0; }
+
+    /* Options en pastilles (radio ou case à cocher natives, visibles au clavier). */
+    .tm-request fieldset { display: grid; gap: var(--space-2); min-width: 0; margin: 0; padding: 0; border: 0; }
+    .tm-request legend { padding: 0; margin-bottom: var(--space-2); color: var(--color-heading); font: var(--type-label); }
+    .tm-pills { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+    .tm-pill { position: relative; display: inline-flex; }
+    .tm-pill input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+    .tm-pill span {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-1);
+        min-height: var(--control-height);
+        padding: 0 var(--space-4);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-pill);
+        background: var(--color-surface);
+        color: var(--color-heading);
+        font: var(--type-label);
+    }
+    .tm-pill input:checked + span { border-color: var(--color-link); background: var(--color-info-bg); color: var(--color-link); }
+    .tm-pill input:focus-visible + span { box-shadow: var(--focus-ring); }
+    .tm-pill input:checked + span::after { content: '✓'; }
+
+    /* Métiers par catégorie (étape 1). */
+    .tm-request-jobs { display: grid; gap: var(--space-2); }
+    .tm-request-jobs details { border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
+    .tm-request-jobs summary { padding: var(--space-3) var(--space-4); color: var(--color-heading); font: var(--type-label); cursor: pointer; }
+    .tm-request-jobs .tm-pills { padding: 0 var(--space-4) var(--space-4); }
+    .tm-request-jobs [hidden] { display: none; }
+
+    /* Pièces jointes (étape 3). */
+    .tm-request-files { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+    .tm-request-file { display: grid; gap: var(--space-1); min-width: 0; }
+    .tm-request-file__preview { display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--radius-card); background: var(--color-surface-section); color: var(--color-icon-ui); }
+    .tm-request-file__preview img { width: 100%; height: 100%; object-fit: cover; }
+    .tm-request-file__name { overflow: hidden; color: var(--color-text-muted); font: var(--type-caption); text-overflow: ellipsis; white-space: nowrap; }
+    .tm-request-file form { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+    .tm-request .tm-dropzone input[type='file'] { width: 100%; min-width: 0; }
+
+    @media (min-width: 1024px) {
+        .tm-request__grid { grid-template-columns: minmax(0, 1fr) 360px; gap: var(--space-6); }
+        .tm-request__main { padding: var(--space-6); }
+    }
+}

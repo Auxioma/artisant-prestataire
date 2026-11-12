@@ -1,0 +1,39 @@
+{#- P11 — tunnel de dépôt de demande (Figma 194:8981) : en-tête tunnel, « Demande de devis · Étape n/6 », étapes, carte + aide. -#}
+{% extends 'base.html.twig' %}
+{% set header_variant = 'tunnel' %}
+{% set noindex = true %}{# tunnel personnel : jamais indexé #}
+
+{% block body %}
+<div class="tm-request" data-controller="request-tunnel" data-request-tunnel-url-value="{{ path('request_autosave') }}" data-request-tunnel-step-value="{{ step }}">
+    <header class="tm-request__intro">
+        <div class="tm-container">
+            <p class="tm-overline">Demande de devis · Étape {{ step }}/{{ steps|length }}</p>
+            <h1>{% block step_title %}{% endblock %}</h1>
+            <p class="tm-body">{% block step_subtitle %}{% endblock %}</p>
+            <twig:Stepper :steps="steps" :current="step" label="Étapes de la demande de devis" />
+        </div>
+    </header>
+    <div class="tm-container tm-request__grid">
+        <section class="tm-card-panel tm-request__main" aria-labelledby="etape-titre">
+            <h2 id="etape-titre" class="tm-visually-hidden">{{ block('step_title') }}</h2>
+            {% if error %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ error }}</p></div>{% endif %}
+            {% if target %}
+                <div class="tm-request__target">
+                    <twig:Icon name="user" size="sm" />
+                    <p>Demande directe à <strong>{{ target.name }}</strong>.</p>
+                </div>
+            {% endif %}
+            {% block step_content %}{% endblock %}
+        </section>
+        <aside class="tm-card-panel tm-request__why" aria-labelledby="pourquoi-titre">
+            <h2 id="pourquoi-titre" class="tm-card-title">À quoi sert cette étape ?</h2>
+            <ul class="tm-check-list">{% block step_why %}{% endblock %}</ul>
+            <ul class="tm-request__promise">
+                <li><twig:Icon name="check" size="xs" />Devis gratuits et sans engagement</li>
+                <li><twig:Icon name="check" size="xs" />Artisans vérifiés</li>
+                <li><twig:Icon name="check" size="xs" />Données sécurisées</li>
+            </ul>
+        </aside>
+    </div>
+</div>
+{% endblock %}

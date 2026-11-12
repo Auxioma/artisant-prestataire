@@ -1,0 +1,90 @@
+{#- P11.3 — Étape 2 « Détails » (Figma 5:57) : questions du métier (conditionnelles), description 30–3 000, budget (tranches, optionnel). -#}
+{% extends 'request/_layout.html.twig' %}
+
+{% block title %}Détails — Demande de devis — TrouveMoi{% endblock %}
+{% block step_title %}Décrivez votre projet en détail{% endblock %}
+{% block step_subtitle %}Les artisans pourront vous proposer un devis adapté à votre besoin.{% endblock %}
+
+{% macro field_error(errors, key, id) %}
+    {% if errors[key] is defined %}<p class="tm-field__error" id="{{ id }}"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" />{{ errors[key] }}</p>{% endif %}
+{% endmacro %}
+
+{% block step_content %}
+    {% set answers = posted.answers ?? draft.answers %}
+    {% set description = posted.description ?? draft.description %}
+    {% set budget = posted.budget_range ?? draft.budgetRange %}
+    <form method="post" novalidate data-turbo="false" data-request-tunnel-target="form" data-action="change->request-tunnel#changed input->request-tunnel#changed">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+
+        {% if questionnaire %}
+            <h3 class="tm-card-title">Questions spécifiques{{ job ? ' · ' ~ job.name }}</h3>
+            {% for field in questionnaire.schema.fields %}
+                {% set id = 'q_' ~ field.key %}
+                {% set value = answers[field.key] ?? null %}
+                {% set error_key = 'answers_' ~ field.key %}
+                <div data-request-tunnel-target="question" data-key="{{ field.key }}"{% if field.showIfField %} data-show-if-field="{{ field.showIfField }}" data-show-if-values="{{ field.showIfValues|join(' ') }}"{% endif %}{{ questionnaire.schema.isVisible(field, answers) ? '' : ' hidden' }}>
+                    {% if field.type.value in ['choice', 'multi', 'yesno'] %}
+                        {% set options = field.type.value == 'yesno' ? {oui: 'Oui', non: 'Non'} : field.options %}
+                        {% if field.type.value == 'choice' and options|length > 6 %}
+                            <div class="tm-field{{ errors[error_key] is defined ? ' tm-field--error' }}">
+                                <label class="tm-field__label" for="{{ id }}">{{ field.label }}{% if field.required %}<abbr class="tm-field__required" title="obligatoire">*</abbr>{% endif %}</label>
+                                <div class="tm-select">
+                                    <select class="tm-select__input" id="{{ id }}" name="answers[{{ field.key }}]"{{ errors[error_key] is defined ? ' aria-invalid="true" aria-describedby="' ~ id ~ '_error"' }}>
+                                        <option value="">Choisir…</option>
+                                        {% for v, l in options %}<option value="{{ v }}"{{ v == value ? ' selected' }}>{{ l }}</option>{% endfor %}
+                                    </select>
+                                    <twig:Icon name="chevD" size="xs" class="tm-select__chevron" />
+                                </div>
+                                {{ _self.field_error(errors, error_key, id ~ '_error') }}
+                            </div>
+                        {% else %}
+                            <fieldset{{ errors[error_key] is defined ? ' aria-describedby="' ~ id ~ '_error"' }}>
+                                <legend>{{ field.label }}{% if field.required %}<abbr class="tm-field__required" title="obligatoire">*</abbr>{% endif %}</legend>
+                                {% if field.help %}<p class="tm-caption">{{ field.help }}</p>{% endif %}
+                                <div class="tm-pills">
+                                    {% for v, l in options %}
+                                        {% if field.type.value == 'multi' %}
+                                            <label class="tm-pill"><input type="checkbox" name="answers[{{ field.key }}][]" value="{{ v }}"{{ value is iterable and v in value ? ' checked' }}><span>{{ l }}</span></label>
+                                        {% else %}
+                                            <label class="tm-pill"><input type="radio" name="answers[{{ field.key }}]" value="{{ v }}"{{ v == value ? ' checked' }}><span>{{ l }}</span></label>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {{ _self.field_error(errors, error_key, id ~ '_error') }}
+                            </fieldset>
+                        {% endif %}
+                    {% else %}
+                        <twig:Field id="{{ id }}" name="answers[{{ field.key }}]" label="{{ field.label }}" :value="value is iterable ? null : value" :required="field.required" :help="field.help"
+                            :inputmode="field.type.value == 'number' ? 'numeric' : null" :maxlength="field.type.value == 'text' ? (field.max ?? 200) : null" :error="errors[error_key] ?? null" />
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <hr class="tm-request__divider">
+        {% endif %}
+
+        <div class="tm-field{{ errors.description is defined ? ' tm-field--error' }}" data-controller="char-count" data-char-count-max-value="{{ description_max }}">
+            <label class="tm-field__label" for="description">Décrivez votre projet<abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+            <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="description" name="description" rows="6" maxlength="{{ description_max }}" aria-describedby="description_help{{ errors.description is defined ? ' description_error' }}"{{ errors.description is defined ? ' aria-invalid="true"' }} data-char-count-target="input" data-action="input->char-count#update">{{ description }}</textarea></div>
+            <p class="tm-field__help" id="description_help"><span data-char-count-target="count">{{ description|length }} / {{ description_max }}</span> caractères ({{ description_min }} minimum) · n’indiquez pas vos coordonnées, elles seront transmises au professionnel choisi.</p>
+            {{ _self.field_error(errors, 'description', 'description_error') }}
+        </div>
+
+        <div class="tm-field">
+            <label class="tm-field__label" for="budget_range">Budget estimé (facultatif)</label>
+            <div class="tm-select">
+                <select class="tm-select__input" id="budget_range" name="budget_range">
+                    <option value="">Non précisé</option>
+                    {% for range in budget_ranges %}<option value="{{ range.value }}"{{ range.value == budget ? ' selected' }}>{{ range.label }}</option>{% endfor %}
+                </select>
+                <twig:Icon name="chevD" size="xs" class="tm-select__chevron" />
+            </div>
+        </div>
+
+        {{ include('request/_actions.html.twig') }}
+    </form>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Une description précise facilite les propositions.</li>
+    <li><twig:Icon name="check" size="xs" />Les réponses aux questions du métier évitent des allers-retours avec les artisans.</li>
+{% endblock %}

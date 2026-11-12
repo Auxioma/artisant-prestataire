@@ -5,7 +5,7 @@ doctrine:
         profiling_collect_backtrace: '%kernel.debug%'
         # Seuls les schémas gérés par l'ORM sont comparés au mapping (les tables DBAL — paramètres, audit, outbox,
         # consentements… — sont décrites par les migrations écrites à la main). Étendre la liste à chaque module ORM.
-        schema_filter: '~^(catalog\.|identity\.(user_account|client_profile)$|artisan\.(artisan_profile|document|artisan_job|service_area_commune)$|request\.quote_request$|admin\.admin_user$|doctrine_migration_versions$)~'
+        schema_filter: '~^(catalog\.(?!questionnaire_form$)|identity\.(user_account|client_profile)$|artisan\.(artisan_profile|document|artisan_job|service_area_commune)$|request\.quote_request$|admin\.admin_user$|doctrine_migration_versions$)~'
         types:
             slug: App\Shared\Infrastructure\Doctrine\Type\SlugType
             catalog_category_id: App\Catalog\Infrastructure\Doctrine\Type\CategoryIdType

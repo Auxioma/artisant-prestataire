@@ -7,7 +7,7 @@
 {% set _canonical = canonical_url ?? (app.request.schemeAndHttpHost ~ app.request.baseUrl ~ app.request.pathInfo) %}
 {% set _description = (seo_override.description ?? meta_description ?? '')|trim %}
 {% set _image = og_image ?? absolute_url(asset('images/auth/a02-banner@1x.webp')) %}
-{% if seo_override and seo_override.noindex %}<meta name="robots" content="noindex, follow">{% endif %}
+{% if (seo_override and seo_override.noindex) or noindex|default(false) %}<meta name="robots" content="noindex, follow">{% endif %}
 {% if _description %}<meta name="description" content="{{ _description }}">{% endif %}
 <link rel="canonical" href="{{ _canonical }}">
 <meta property="og:site_name" content="TrouveMoi.com">

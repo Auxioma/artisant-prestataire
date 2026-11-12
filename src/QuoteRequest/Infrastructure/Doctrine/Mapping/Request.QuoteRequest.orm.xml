@@ -20,6 +20,7 @@
         <field name="budgetRange" type="string" length="30" column="budget_range" nullable="true"/>
         <field name="timing" type="string" length="10" enum-type="App\QuoteRequest\Domain\Request\Timing"/>
         <field name="desiredDate" type="date_immutable" column="desired_date" nullable="true"/>
+        <field name="questionnaireVersion" type="integer" column="questionnaire_version" nullable="true"/>
         <field name="maxQuotes" type="smallint" column="max_quotes"/>
         <field name="activeQuotesCount" type="smallint" column="active_quotes_count"/>
         <field name="receivedQuotesCount" type="smallint" column="received_quotes_count"/>

@@ -55,6 +55,8 @@ services:
             - '../src/Billing/Application/Port/VatNumberCheck.php'
             - '../src/Search/Application/Query/{Autocomplete,Suggestions}.php'
             - '../src/QuoteRequest/Application/Port/{RequestRiskInput,RequestRisk}.php'
+            - '../src/QuoteRequest/Application/Draft/{DraftOwner,DraftAttachmentView,RequestDraftView,DraftRejected}.php'
+            - '../src/Catalog/Application/Questionnaire/JobQuestionnaireView.php'
 
     # Ports du noyau partagé
     App\Shared\Domain\Time\Clock: '@App\Shared\Infrastructure\Time\SystemClock'
@@ -128,7 +130,10 @@ services:
 
     # Ports du module QuoteRequest
     App\QuoteRequest\Domain\Request\QuoteRequestRepository: '@App\QuoteRequest\Infrastructure\Doctrine\Repository\DoctrineQuoteRequestRepository'
+    App\QuoteRequest\Application\Draft\DraftStore: '@App\QuoteRequest\Infrastructure\Draft\DbalDraftStore'
     App\QuoteRequest\Application\Port\RequestRiskAssessor: '@App\QuoteRequest\Infrastructure\Risk\InterimRequestRiskAssessor'
+
+    App\Catalog\Application\Questionnaire\QuestionnaireStore: '@App\Catalog\Infrastructure\Questionnaire\DbalQuestionnaireStore'
 
     # Ports du module ArtisanProfile
     App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository: '@App\ArtisanProfile\Infrastructure\Doctrine\Repository\DoctrineArtisanProfileRepository'

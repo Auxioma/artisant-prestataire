@@ -26,7 +26,8 @@ enum FilePurpose: string
     {
         return match ($this) {
             self::ArtisanDocument, self::MessageAttachment, self::ContactAttachment => [FileType::Pdf, FileType::Jpeg, FileType::Png, FileType::Webp],
-            self::ArtisanLogo, self::RequestPhoto, self::ReviewPhoto, self::PortfolioPhoto => [FileType::Jpeg, FileType::Png, FileType::Webp],
+            self::RequestPhoto => [FileType::Jpeg, FileType::Png, FileType::Webp, FileType::Pdf], // RG-061 : photos et PDF
+            self::ArtisanLogo, self::ReviewPhoto, self::PortfolioPhoto => [FileType::Jpeg, FileType::Png, FileType::Webp],
             self::QuotePdf => [FileType::Pdf],
         };
     }

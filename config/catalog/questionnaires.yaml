@@ -1,0 +1,115 @@
+# P11.3 — questionnaires de demande par métier (importés par `bin/console app:catalog:questionnaires`).
+# CONTENU PROVISOIRE rédigé par l'équipe dev d'après les exemples du CDC (P11.3) : à relire et compléter par le porteur
+# (décision P-62). Il sera remplacé par le constructeur du back-office (BO06, onglet Questionnaire).
+#
+# Format d'une question : key, label, type (choice | multi | yesno | text | number), required, options (valeur: libellé),
+# help, show_if: {field: clé d'une question précédente, in: [valeurs]}, min, max.
+# `common` est posé en tête de tous les questionnaires ; `jobs` remplace `categories` pour le métier concerné.
+
+common:
+  - key: logement
+    label: Type de lieu
+    type: choice
+    required: true
+    options: {maison: Maison, appartement: Appartement, local_pro: Local professionnel, exterieur: Extérieur / jardin}
+  - key: etage
+    label: Étage
+    type: number
+    required: false
+    min: 0
+    max: 60
+    show_if: {field: logement, in: [appartement]}
+  - key: acces
+    label: Accès
+    type: choice
+    required: false
+    options: {facile: Facile, ascenseur: Avec ascenseur, sans_ascenseur: Sans ascenseur, difficile: "Difficile (stationnement, passage étroit…)"}
+
+categories:
+  plomberie:
+    - key: probleme
+      label: Nature de l'intervention
+      type: choice
+      required: true
+      options: {fuite: Fuite, bouchon: Canalisation bouchée, chauffe_eau: Chauffe-eau, sanitaire: Installation sanitaire, autre: Autre}
+    - key: eau_coupee
+      label: L'eau est-elle coupée ?
+      type: yesno
+      required: false
+      show_if: {field: probleme, in: [fuite]}
+  electricite:
+    - key: probleme
+      label: Nature de l'intervention
+      type: choice
+      required: true
+      options: {panne: Panne / coupure, tableau: Tableau électrique, prises: Prises et éclairage, mise_aux_normes: Mise aux normes, borne: Borne de recharge, autre: Autre}
+    - key: compteur_saute
+      label: Le disjoncteur saute-t-il ?
+      type: yesno
+      required: false
+      show_if: {field: probleme, in: [panne]}
+  chauffage-et-climatisation:
+    - key: equipement
+      label: Équipement concerné
+      type: choice
+      required: true
+      options: {chaudiere_gaz: Chaudière gaz, chaudiere_fioul: Chaudière fioul, pac: Pompe à chaleur, clim: Climatisation, radiateurs: Radiateurs, autre: Autre}
+    - key: besoin
+      label: Votre besoin
+      type: choice
+      required: true
+      options: {panne: Panne, entretien: Entretien annuel, installation: Installation / remplacement}
+  peinture-et-decoration:
+    - key: surfaces
+      label: Surfaces à traiter
+      type: multi
+      required: true
+      options: {murs: Murs, plafonds: Plafonds, boiseries: Boiseries, facade: Façade}
+    - key: surface_m2
+      label: Surface approximative (m²)
+      type: number
+      required: false
+      min: 1
+      max: 5000
+  renovation-et-construction:
+    - key: pieces
+      label: Pièces concernées
+      type: multi
+      required: true
+      options: {cuisine: Cuisine, salle_de_bains: Salle de bains, sejour: Séjour, chambres: Chambres, toute_la_maison: Tout le logement, exterieur: Extérieur}
+    - key: surface_m2
+      label: Surface approximative (m²)
+      type: number
+      required: false
+      min: 1
+      max: 5000
+  jardin-et-exterieur:
+    - key: travaux
+      label: Travaux souhaités
+      type: multi
+      required: true
+      options: {tonte: Tonte / entretien, taille: Taille de haies, elagage: Élagage / abattage, amenagement: Aménagement, cloture: Clôture, terrasse: Terrasse}
+    - key: surface_m2
+      label: Surface du terrain (m²)
+      type: number
+      required: false
+      min: 1
+      max: 100000
+
+jobs:
+  chauffe-eau:
+    - key: type_ballon
+      label: Type de chauffe-eau
+      type: choice
+      required: true
+      options: {electrique: Électrique, gaz: Gaz, thermodynamique: Thermodynamique, ne_sait_pas: Je ne sais pas}
+    - key: capacite
+      label: Capacité (litres)
+      type: number
+      required: false
+      min: 10
+      max: 1000
+    - key: plus_eau_chaude
+      label: Vous n'avez plus d'eau chaude ?
+      type: yesno
+      required: false

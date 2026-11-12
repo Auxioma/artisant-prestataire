@@ -65,7 +65,7 @@ final readonly class FileReader
      *
      * @throws StoredFileNotFound
      */
-    public function openForActor(string $id, string $actorType, string $actorId, ?string $ip)
+    public function openForActor(string $id, string $actorType, ?string $actorId, ?string $ip)
     {
         $file = $this->available($id);
         $this->audit->record(new AuditRecord(

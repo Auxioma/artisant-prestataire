@@ -7,6 +7,7 @@ framework:
         email_verification_resend: { policy: fixed_window, limit: 5, interval: '1 hour' } # par IP, en plus du délai par compte
         password_reset_account: { policy: fixed_window, limit: 3, interval: '1 hour' }
         password_reset_ip:      { policy: fixed_window, limit: 10, interval: '1 hour' }
+        request_upload:  { policy: sliding_window, limit: 30, interval: '1 hour' } # P11.4 : fichiers déposés par IP (visiteurs compris)
         request_submit:  { policy: fixed_window,   limit: 5,  interval: '1 hour' }
         message_user:    { policy: sliding_window, limit: 30, interval: '1 hour' }
         message_thread:  { policy: sliding_window, limit: 10, interval: '1 minute' }

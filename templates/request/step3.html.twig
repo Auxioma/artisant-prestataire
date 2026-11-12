@@ -1,0 +1,64 @@
+{#- P11.4 — Étape 3 « Photos » (Figma 99:2230) : facultative ; dépôt multiple ou photo directe, état de chaque fichier (RG-061). -#}
+{% extends 'request/_layout.html.twig' %}
+
+{% block title %}Photos — Demande de devis — TrouveMoi{% endblock %}
+{% block step_title %}Ajoutez des photos de votre projet{% endblock %}
+{% block step_subtitle %}Facultatif, mais les artisans répondent plus précisément avec des photos.{% endblock %}
+
+{% block step_content %}
+    {% set remaining = max_files - draft.attachments|length %}
+    {% if remaining > 0 %}
+        <form method="post" action="{{ path('request_upload') }}" enctype="multipart/form-data" class="tm-dropzone" data-turbo="false" data-controller="dropzone" data-action="dragover->dropzone#over dragleave->dropzone#leave drop->dropzone#drop">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            <twig:Icon name="upload" class="tm-dropzone__icon" />
+            <p class="tm-dropzone__title" data-dropzone-target="hint">Glissez vos photos ici</p>
+            <div class="tm-dropzone__buttons">
+                <label class="tm-button tm-button--secondary tm-dropzone__pick">
+                    <twig:Icon name="file" size="sm" class="tm-icon--inherit" />Ajouter des photos
+                    <input class="tm-visually-hidden" type="file" name="files[]" multiple accept="image/jpeg,image/png,image/webp,application/pdf" data-dropzone-target="input" data-action="change->dropzone#chosen">
+                </label>
+                <label class="tm-button tm-button--tertiary tm-dropzone__pick">
+                    <twig:Icon name="camera" size="sm" class="tm-icon--inherit" />Prendre une photo
+                    <input class="tm-visually-hidden" type="file" name="files[]" accept="image/jpeg,image/png,image/webp" capture="environment" data-action="change->dropzone#chosen">
+                </label>
+            </div>
+            <p class="tm-caption">{{ max_files }} fichiers max · {{ max_mb }} Mo par fichier · JPG, PNG, WEBP, PDF · données de localisation (EXIF/GPS) supprimées · encore {{ remaining }} possible{{ remaining > 1 ? 's' }}</p>
+            <twig:Button type="submit" icon="upload" data-dropzone-target="submit">Envoyer</twig:Button>
+        </form>
+    {% else %}
+        <p class="tm-form-note">Vous avez atteint le maximum de {{ max_files }} fichiers : retirez-en un pour en ajouter un autre.</p>
+    {% endif %}
+
+    {% if draft.attachments is not empty %}
+        <ul class="tm-request-files" aria-label="Fichiers ajoutés">
+            {% for file in draft.attachments %}
+                <li class="tm-request-file">
+                    <div class="tm-request-file__preview">
+                        {% if file.status == 'available' and file.image %}<img src="{{ path('request_upload_view', {id: file.fileId}) }}" alt="Photo ajoutée : {{ file.name }}" loading="lazy">
+                        {% else %}<twig:Icon name="{{ file.image ? 'camera' : 'file' }}" />{% endif %}
+                    </div>
+                    <span class="tm-request-file__name" title="{{ file.name }}">{{ file.name }}</span>
+                    <form method="post" action="{{ path('request_upload_delete', {id: file.fileId}) }}" data-turbo="false">
+                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                        {% if file.status == 'available' %}<twig:Badge variant="verified">Ajoutée</twig:Badge>
+                        {% elseif file.status == 'quarantined' %}<twig:Badge variant="pending">Analyse en cours</twig:Badge>
+                        {% else %}<twig:Badge variant="refused">Refusée</twig:Badge>{% endif %}
+                        <button type="submit" class="tm-link-button" aria-label="Retirer {{ file.name }}">Retirer</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <p class="tm-caption">Astuce : prenez une vue d’ensemble et un gros plan. Les données de localisation (EXIF/GPS) sont supprimées automatiquement.</p>
+
+    <form method="post" novalidate data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+        {{ include('request/_actions.html.twig') }}
+    </form>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Les photos aident à évaluer la prestation à distance.</li>
+    <li><twig:Icon name="check" size="xs" />Elles ne sont montrées qu’aux professionnels qui étudient votre demande.</li>
+{% endblock %}

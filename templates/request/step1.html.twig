@@ -1,0 +1,60 @@
+{#- P11.2 — Étape 1 « Votre besoin » (Figma 5:2) : métier (recherche ou catégories) et type de projet. Sans JavaScript, la liste complète reste utilisable. -#}
+{% extends 'request/_layout.html.twig' %}
+
+{% block title %}Votre besoin — Demande de devis — TrouveMoi{% endblock %}
+{% block step_title %}Quel type de travaux souhaitez-vous réaliser ?{% endblock %}
+{% block step_subtitle %}Sélectionnez la prestation qui correspond le mieux à votre projet.{% endblock %}
+
+{% block step_content %}
+    {% set job_id = posted.job_id ?? draft.jobId %}
+    {% set project_type = posted.project_type ?? draft.projectType %}
+    <form method="post" novalidate data-turbo="false" data-request-tunnel-target="form" data-action="change->request-tunnel#changed input->request-tunnel#changed">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+        <fieldset aria-describedby="{{ errors.job_id is defined ? 'job_error' }}">
+            <legend>Choisissez le métier<abbr class="tm-field__required" title="obligatoire">*</abbr></legend>
+            <twig:Field id="job_search" name="job_search" type="search" label="Rechercher un métier" icon="search" placeholder="Ex. plombier, peintre, électricien" autocomplete="off" data-action="input->request-tunnel#filterJobs" />
+            {% if errors.job_id is defined %}<p class="tm-field__error" id="job_error"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" />{{ errors.job_id }}</p>{% endif %}
+            <div class="tm-request-jobs">
+                {% for category, jobs in categories %}
+                    <details data-request-tunnel-target="category"{% if jobs|filter(j => j.id == job_id)|length > 0 or (job_id is null and loop.first) %} open{% endif %}>
+                        <summary>{{ category }}</summary>
+                        <div class="tm-pills">
+                            {% for job in jobs %}
+                                <label class="tm-pill" data-request-tunnel-target="job" data-search="{{ (job.name ~ ' ' ~ job.synonyms|join(' '))|lower }}">
+                                    <input type="radio" name="job_id" value="{{ job.id }}"{{ job.id == job_id ? ' checked' }}{{ target and job.id not in target.jobIds ? ' disabled' }}>
+                                    <span>{{ job.name }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </details>
+                {% else %}
+                    <twig:EmptyState title="Aucun métier disponible" text="Le référentiel des métiers n’est pas encore chargé. Réessayez plus tard." />
+                {% endfor %}
+            </div>
+        </fieldset>
+
+        <hr class="tm-request__divider">
+
+        <fieldset aria-describedby="{{ errors.project_type is defined ? 'type_error' }}">
+            <legend>Type de projet<abbr class="tm-field__required" title="obligatoire">*</abbr></legend>
+            <div class="tm-pills">
+                {% for type in project_types %}
+                    <label class="tm-pill"><input type="radio" name="project_type" value="{{ type.value }}"{{ type.value == project_type ? ' checked' }}><span>{{ type.label }}</span></label>
+                {% endfor %}
+            </div>
+            {% if errors.project_type is defined %}<p class="tm-field__error" id="type_error"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" />{{ errors.project_type }}</p>{% endif %}
+        </fieldset>
+
+        {% if target %}
+            <input type="hidden" name="broadcast" value="0">
+            <twig:Checkbox id="broadcast" name="broadcast" value="1" label="Recevoir aussi d’autres devis d’artisans vérifiés" :checked="draft.broadcastToOthers" />
+        {% endif %}
+
+        {{ include('request/_actions.html.twig') }}
+    </form>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Choisissez le métier correspondant à la prestation principale.</li>
+    <li><twig:Icon name="check" size="xs" />Vous pourrez détailler les autres besoins ensuite.</li>
+{% endblock %}

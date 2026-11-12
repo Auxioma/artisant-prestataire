@@ -1,0 +1,12 @@
+{#- P11 réservé aux visiteurs et aux clients : un compte professionnel ne dépose pas de demande. -#}
+{% extends 'base.html.twig' %}
+{% set noindex = true %}
+
+{% block title %}Demande de devis — TrouveMoi{% endblock %}
+
+{% block body %}
+<div class="tm-container tm-request__intro">
+    <twig:EmptyState title="Demande de devis réservée aux clients" text="Vous êtes connecté avec un compte professionnel. Pour demander un devis, déconnectez-vous puis déposez votre demande avec un compte client." />
+    <twig:Button href="{{ path('pro_profile') }}" variant="secondary">Retour à mon espace</twig:Button>
+</div>
+{% endblock %}
