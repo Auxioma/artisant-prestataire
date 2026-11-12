@@ -19,8 +19,11 @@
 {% set canonical = kind == 'job' ? url('catalog_job', {slug: job.slug})
     : (kind == 'job_city' ? url('catalog_job_city', {job: job.slug, city: c.slug})
     : (kind == 'city' ? url('catalog_city', {city: c.slug}) : url('catalog_department', {code: department.code}))) %}
-{% block title %}{{ h1 }} — TrouveMoi{% endblock %}
-{% set meta_description = chapo|length > 155 ? chapo|slice(0, 154) ~ '…' : chapo %}
+{% set seo = tm_seo_meta(kind, {
+    metier: job ? job.name : null, categorie: job ? job.categoryName : null, ville: c ? c.name : null, a_ville: c ? c.name|a_lieu : null, cp: cp,
+    departement: c ? c.departmentName : (department ? department.name : null), code: department ? department.code : null, nb_pros: total}) %}
+{% block title %}{{ seo.title ?? (h1 ~ ' — TrouveMoi') }}{% endblock %}
+{% set meta_description = seo.description ?? (chapo|length > 155 ? chapo|slice(0, 154) ~ '…' : chapo) %}
 {% set canonical_url = canonical %}
 {% block meta %}
     {% if not indexable %}<meta name="robots" content="noindex, follow">{% endif %}

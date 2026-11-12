@@ -14,9 +14,9 @@ final readonly class DbalRedirectStore implements RedirectStore
     {
     }
 
-    public function redirect(string $source, string $target, bool $prefix, string $origin): void
+    public function redirect(string $source, string $target, bool $prefix, string $origin, int $status = 301): void
     {
-        $this->connection->transactional(static function (Connection $c) use ($source, $target, $prefix, $origin): void {
+        $this->connection->transactional(static function (Connection $c) use ($source, $target, $prefix, $origin, $status): void {
             // Boucle : revenir à un ancien slug annule la redirection qui partait de la cible.
             $c->executeStatement('DELETE FROM content.redirect WHERE source_path = :target', ['target' => $target]);
             // Chaînes : tout ce qui pointait vers l'ancienne adresse pointe désormais vers la nouvelle.
@@ -25,12 +25,39 @@ final readonly class DbalRedirectStore implements RedirectStore
                 ['source' => $source, 'target' => $target],
             );
             $c->executeStatement(
-                'INSERT INTO content.redirect (source_path, target_path, status_code, match_prefix, origin) VALUES (:source, :target, 301, :prefix, :origin)
-                 ON CONFLICT (source_path) DO UPDATE SET target_path = EXCLUDED.target_path, match_prefix = EXCLUDED.match_prefix, origin = EXCLUDED.origin, updated_at = now()',
-                ['source' => $source, 'target' => $target, 'prefix' => $prefix, 'origin' => $origin],
+                'INSERT INTO content.redirect (source_path, target_path, status_code, match_prefix, origin) VALUES (:source, :target, :status, :prefix, :origin)
+                 ON CONFLICT (source_path) DO UPDATE SET target_path = EXCLUDED.target_path, status_code = EXCLUDED.status_code, match_prefix = EXCLUDED.match_prefix, origin = EXCLUDED.origin, updated_at = now()',
+                ['source' => $source, 'target' => $target, 'status' => $status, 'prefix' => $prefix, 'origin' => $origin],
                 ['prefix' => \Doctrine\DBAL\ParameterType::BOOLEAN],
             );
         });
+    }
+
+    public function list(string $search, int $offset, int $limit): array
+    {
+        $where = "(CAST(:q AS text) = '' OR source_path ILIKE :like OR target_path ILIKE :like)";
+        $params = ['q' => $search, 'like' => '%'.addcslashes($search, '%_\\').'%'];
+        $total = DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM content.redirect WHERE '.$where, $params));
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT * FROM content.redirect WHERE '.$where.' ORDER BY updated_at DESC, id DESC OFFSET :offset LIMIT :limit',
+            $params + ['offset' => max(0, $offset), 'limit' => max(1, $limit)],
+        );
+
+        return ['total' => $total, 'items' => array_map(static fn (array $r): array => [
+            'id' => DbalValue::int($r['id']),
+            'source' => DbalValue::string($r['source_path']),
+            'target' => DbalValue::string($r['target_path']),
+            'status' => DbalValue::int($r['status_code']),
+            'prefix' => true === $r['match_prefix'],
+            'origin' => DbalValue::string($r['origin']),
+            'hits' => DbalValue::int($r['hits']),
+            'updated_at' => DbalValue::string($r['updated_at']),
+        ], $rows)];
+    }
+
+    public function delete(int $id): void
+    {
+        $this->connection->executeStatement('DELETE FROM content.redirect WHERE id = :id', ['id' => $id]);
     }
 
     public function resolve(string $path): ?array

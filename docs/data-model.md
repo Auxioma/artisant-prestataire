@@ -228,3 +228,6 @@ Les IP sont stockées **hachées** (HMAC avec un sel tournant) sauf dans l'Audit
 | `faq_topic` (T-307c, schéma `content`) | id, slug (**UQ**), title, description, icon, position, active | — |
 | `faq_question` | id, topic_id → `faq_topic` (cascade), slug, question, answer_html (assaini), audience (`all`/`client`/`artisan`), position, published, helpful_yes, helpful_no, updated_at | **UQ** (topic_id, slug) · **IX** (topic_id, position) WHERE published |
 | `faq_vote` | question_id → `faq_question` (cascade), visitor_hash (HMAC de l'IP), helpful, voted_at | **PK** (question_id, visitor_hash) : un vote par visiteur |
+| `seo_template` (T-308b, schéma `content`) | page_type (**PK**), title, description, updated_at, updated_by | — |
+| `seo_override` | path (**PK**, chemin interne), title, description, noindex, updated_at, updated_by | **CK** chemin commençant par « / » |
+| `not_found` | path (**PK**), hits, last_referer (domaine + chemin, sans paramètres), first_seen_at, last_seen_at | **IX** (hits DESC, last_seen_at DESC) |

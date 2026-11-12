@@ -8,8 +8,9 @@
 {% set logo = p.hasLogo ? path('public_artisan_logo', {id: p.profileId}) : null %}
 {% set revealed = app.flashes('artisan_phone')|first %}
 {% set summary = p.description ?? (p.name ~ ', professionnel vérifié' ~ (main_job ? ' — ' ~ main_job.name) ~ (place ? ' ' ~ place|a_lieu) ~ '.') %}
-{% block title %}{{ p.name }}{{ main_job ? ' — ' ~ main_job.name }}{{ p.communeName ? ' ' ~ p.communeName|a_lieu }} | TrouveMoi{% endblock %}
-{% set meta_description = summary|length > 155 ? summary|slice(0, 154) ~ '…' : summary %}
+{% set seo = tm_seo_meta('artisan', {nom: p.name, metier: main_job ? main_job.name : null, ville: p.communeName, a_ville: p.communeName ? p.communeName|a_lieu : null}) %}
+{% block title %}{{ seo.title ?? (p.name ~ (main_job ? ' — ' ~ main_job.name) ~ (p.communeName ? ' ' ~ p.communeName|a_lieu) ~ ' | TrouveMoi') }}{% endblock %}
+{% set meta_description = seo.description ?? (summary|length > 155 ? summary|slice(0, 154) ~ '…' : summary) %}
 {% set canonical_url = canonical %}
 {% set og_type = 'profile' %}
 {% set og_image = logo ? app.request.schemeAndHttpHost ~ logo : null %}

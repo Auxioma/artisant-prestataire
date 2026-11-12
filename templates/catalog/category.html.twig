@@ -4,8 +4,9 @@
 {% set chapo = category.description ?? (total > 0
     ? total|number_format(0, ',', ' ') ~ ' professionnel' ~ (total > 1 ? 's') ~ ' vérifié' ~ (total > 1 ? 's') ~ ' en ' ~ category.name|lower ~ ' : ' ~ jobs|slice(0, 4)|map(j => j.name|lower)|join(', ') ~ (jobs|length > 4 ? '…' : '.')
     : 'Trouvez un professionnel vérifié en ' ~ category.name|lower ~ ' : ' ~ jobs|slice(0, 4)|map(j => j.name|lower)|join(', ') ~ (jobs|length > 4 ? '…' : '.')) %}
-{% block title %}{{ category.name }} : trouvez un professionnel vérifié — TrouveMoi{% endblock %}
-{% set meta_description = chapo|length > 155 ? chapo|slice(0, 154) ~ '…' : chapo %}
+{% set seo = tm_seo_meta('category', {categorie: category.name, nb_pros: total}) %}
+{% block title %}{{ seo.title ?? (category.name ~ ' : trouvez un professionnel vérifié — TrouveMoi') }}{% endblock %}
+{% set meta_description = seo.description ?? (chapo|length > 155 ? chapo|slice(0, 154) ~ '…' : chapo) %}
 {% set canonical_url = url('catalog_category', {slug: category.slug}) %}
 {% block meta %}{% endblock %}
 {% block body %}

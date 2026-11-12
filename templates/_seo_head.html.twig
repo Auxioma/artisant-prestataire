@@ -2,16 +2,18 @@
     §7 / BO12.1 — balises SEO communes : description, canonical systématique (adresse sans paramètres par défaut),
     Open Graph et carte Twitter. Les pages fournissent `meta_description`, `canonical_url`, `og_type`, `og_image`.
 -#}
-{% set _title = title|trim %}
+{# `title` est déjà échappé (voir base.html.twig) : affiché avec |raw. #}
+{% set _title = title %}
 {% set _canonical = canonical_url ?? (app.request.schemeAndHttpHost ~ app.request.baseUrl ~ app.request.pathInfo) %}
-{% set _description = (meta_description ?? '')|trim %}
+{% set _description = (seo_override.description ?? meta_description ?? '')|trim %}
 {% set _image = og_image ?? absolute_url(asset('images/auth/a02-banner@1x.webp')) %}
+{% if seo_override and seo_override.noindex %}<meta name="robots" content="noindex, follow">{% endif %}
 {% if _description %}<meta name="description" content="{{ _description }}">{% endif %}
 <link rel="canonical" href="{{ _canonical }}">
 <meta property="og:site_name" content="TrouveMoi.com">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:type" content="{{ og_type ?? 'website' }}">
-<meta property="og:title" content="{{ _title }}">
+<meta property="og:title" content="{{ _title|raw }}">
 {% if _description %}<meta property="og:description" content="{{ _description }}">{% endif %}
 <meta property="og:url" content="{{ _canonical }}">
 <meta property="og:image" content="{{ _image }}">

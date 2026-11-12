@@ -102,6 +102,26 @@ final readonly class SitemapController
         return self::xml($xml);
     }
 
+    /**
+     * BO12.2 — chemins indexables connus (suggestions de redirection du rapport des 404).
+     *
+     * @return list<string>
+     */
+    public function knownPaths(): array
+    {
+        $paths = [];
+        foreach (self::SEGMENTS as $segment) {
+            foreach ($this->entries($segment) as [$loc]) {
+                $path = parse_url($loc, \PHP_URL_PATH);
+                if (\is_string($path)) {
+                    $paths[] = $path;
+                }
+            }
+        }
+
+        return $paths;
+    }
+
     /** @return list<array{0: string, 1: ?string}> adresse absolue, date de dernière modification (Y-m-d) */
     private function entries(string $segment): array
     {

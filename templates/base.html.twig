@@ -5,9 +5,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         {# Nonce lu par Turbo pour la <style> de sa barre de progression (CSP sans unsafe-inline) #}
         <meta name="csp-nonce" content="{{ csp_nonce('style') }}">
-        <title>{% block title %}TrouveMoi.com — Artisans & Prestataires{% endblock %}</title>
+        {% set seo_override = tm_seo_override() %}
+        {# Titre déjà échappé : rendu du bloc `title` (échappé par Twig) ou surcharge BO12.1 échappée ici. |raw sans risque. #}
+        {% set page_title = seo_override and seo_override.title ? seo_override.title|e : (block('title') is defined ? block('title')|trim : 'TrouveMoi.com — Artisans &amp; Prestataires') %}
+        <title>{{ page_title|raw }}</title>
         {% block meta %}{% endblock %}
-        {% block seo %}{{ include('_seo_head.html.twig', {title: block('title')}) }}{% endblock %}
+        {% block seo %}{{ include('_seo_head.html.twig', {title: page_title}) }}{% endblock %}
         {{ include('_head_assets.html.twig') }}
         {% block stylesheets %}{% endblock %}
         {% block javascripts %}

@@ -30,6 +30,6 @@ deptrac:
     Messaging: [Shared, QuoteRequest, Quote]
     Review: [Shared, Quote, Moderation]
     Moderation: [Shared]
-    Content: [Shared, Catalog, Search, Notification] # Search : cartes de l'accueil (P01) ; Notification : E-90, I-03 (P16)
+    Content: [Shared, Catalog, Search, Notification, Administration] # Search : cartes de l'accueil (P01) ; Notification : E-90, I-03 (P16) ; Administration : réglages SEO modifiés depuis BO12 (ChangeSetting)
     Notification: [Shared]
     Administration: [Shared, Notification] # Notification : invitation de l'équipe (I-02)

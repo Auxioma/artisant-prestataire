@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Content\UI\Http;
 
+use App\Content\Application\Port\NotFoundLog;
 use App\Content\Application\Port\RedirectStore;
+use App\Shared\Domain\Time\Clock;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
@@ -17,7 +19,10 @@ use Symfony\Component\HttpKernel\KernelEvents;
  */
 final readonly class RedirectOnNotFoundSubscriber implements EventSubscriberInterface
 {
-    public function __construct(private RedirectStore $redirects)
+    /** Hors rapport des 404 : ressources techniques et zones privées. */
+    private const array IGNORED = ['/admin', '/api/', '/assets/', '/_', '/media/', '/sitemaps/', '/favicon', '/apple-touch-icon', '/.well-known/'];
+
+    public function __construct(private RedirectStore $redirects, private NotFoundLog $notFound, private Clock $clock)
     {
     }
 
@@ -34,9 +39,27 @@ final readonly class RedirectOnNotFoundSubscriber implements EventSubscriberInte
         }
         $redirect = $this->redirects->resolve($request->getPathInfo());
         if (null === $redirect || !str_starts_with($redirect['target'], '/') || str_starts_with($redirect['target'], '//')) {
+            $this->log($request->getPathInfo(), $request->headers->get('Referer'));
+
             return;
         }
         $query = $request->getQueryString();
         $event->setResponse(new RedirectResponse($request->getBaseUrl().$redirect['target'].(null !== $query ? '?'.$query : ''), $redirect['status']));
+    }
+
+    /** BO12.2 — rapport des 404 : chemin et page d'origine réduite à son domaine et son chemin (jamais de paramètres). */
+    private function log(string $path, ?string $referer): void
+    {
+        foreach (self::IGNORED as $prefix) {
+            if (str_starts_with($path, $prefix)) {
+                return;
+            }
+        }
+        $origin = null;
+        if (null !== $referer) {
+            $parts = parse_url($referer);
+            $origin = \is_array($parts) && isset($parts['host']) ? $parts['host'].($parts['path'] ?? '') : null;
+        }
+        $this->notFound->record($path, $origin, $this->clock->now());
     }
 }
