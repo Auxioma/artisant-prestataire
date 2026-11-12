@@ -89,6 +89,13 @@ final readonly class DbalPortfolioStore implements PortfolioStore, ProfileConten
         return false === $file ? null : DbalValue::string($file);
     }
 
+    public function photoOfFile(string $fileId): ?string
+    {
+        $id = $this->connection->fetchOne('SELECT id FROM artisan.portfolio_photo WHERE file_id = :f', ['f' => $fileId]);
+
+        return false === $id ? null : DbalValue::string($id);
+    }
+
     public function availablePhotos(string $profileId): int
     {
         return DbalValue::int($this->connection->fetchOne(

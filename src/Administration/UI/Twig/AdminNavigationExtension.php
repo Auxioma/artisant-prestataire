@@ -9,6 +9,7 @@ use App\Administration\Domain\Admin\AdminModule;
 use App\Shared\Application\Admin\PendingArtisanVerifications;
 use App\Shared\Application\Admin\PendingRequestModerations;
 use App\Shared\Application\Bus\QueryBus;
+use App\Shared\Application\Moderation\PendingProfileReviews;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authorization\AuthorizationCheckerInterface;
@@ -27,6 +28,7 @@ final class AdminNavigationExtension extends AbstractExtension
         'clients' => 'admin_clients',
         'artisans' => 'admin_artisans',
         'requests' => 'admin_requests',
+        'moderation' => 'admin_moderation',
         'catalog' => 'admin_catalog',
         'seo' => 'admin_seo',
         'cms' => 'admin_cms',
@@ -70,12 +72,14 @@ final class AdminNavigationExtension extends AbstractExtension
         $query = match ($module) {
             AdminModule::Artisans => new PendingArtisanVerifications(),
             AdminModule::Requests => new PendingRequestModerations(),
+            AdminModule::Moderation => new PendingProfileReviews(),
             default => null,
         };
         if (null === $query) {
             return 0;
         }
         $pending = $this->queries->ask($query);
+        $pending = \is_array($pending) ? \count($pending) : $pending;
 
         return \is_int($pending) ? $pending : 0;
     }

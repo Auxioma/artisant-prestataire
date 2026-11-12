@@ -28,6 +28,9 @@ interface PortfolioStore
     /** Photos analysées et publiables (jauge PR08.1). */
     public function availablePhotos(string $profileId): int;
 
+    /** Photo du portfolio portée par ce fichier (relecture BO05). */
+    public function photoOfFile(string $fileId): ?string;
+
     /** @return array{profile_id: string, user_id: string}|null artisan propriétaire d'une photo (fichier) du portfolio */
     public function ownerOfFile(string $fileId): ?array;
 

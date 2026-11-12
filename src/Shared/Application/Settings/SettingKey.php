@@ -107,6 +107,8 @@ enum SettingKey: string
     case ModerationRequestPointsVelocity = 'moderation.request_points_velocity';
     case ModerationRequestVelocityPerDay = 'moderation.request_velocity_per_day';
     case ModerationRequestSimilarityDays = 'moderation.request_similarity_days';
+    case ModerationReviewRiskThreshold = 'moderation.review_risk_threshold';
+    case ModerationMessageRiskThreshold = 'moderation.message_risk_threshold';
     case ModerationForbiddenTerms = 'moderation.forbidden_terms';
     case ModerationProfileSampleRate = 'moderation.profile_sample_rate';
     case MessagesMaskContactsBeforeAccept = 'messages.mask_contacts_before_accept';
@@ -268,6 +270,9 @@ enum SettingKey: string
             self::ModerationRequestPointsVelocity => $d(T::Integer, 40, 'Score de risque : rafale de demandes (points)', 0, 100, proposed: true),
             self::ModerationRequestVelocityPerDay => $d(T::Integer, 3, 'Rafale : demandes en 24 h (même compte ou même IP) au-delà desquelles le signal est levé', 1, 50, proposed: true),
             self::ModerationRequestSimilarityDays => $d(T::Integer, 30, 'Texte identique : période de comparaison (jours)', 1, 365, proposed: true),
+            // BO05.3 (Figma 186:2497 « Demande ≥ 70 · Avis ≥ 60 · Message ≥ 50 ») : seuils utilisés par les lots Avis et Messagerie.
+            self::ModerationReviewRiskThreshold => $d(T::Integer, 60, 'Seuil de mise en modération d\'un avis (/100)', 0, 100, proposed: true),
+            self::ModerationMessageRiskThreshold => $d(T::Integer, 50, 'Seuil de mise en modération d\'un message (/100)', 0, 100, proposed: true),
             self::ModerationForbiddenTerms => $d(T::StringList, [], 'Termes interdits dans les profils et contenus publics (RG-031)', proposed: true),
             self::ModerationProfileSampleRate => $d(T::Integer, 10, 'Part des modifications de profil relues par un humain (%, RG-031)', 0, 100, proposed: true),
             self::MessagesMaskContactsBeforeAccept => $d(T::Boolean, true, 'Masquage des coordonnées avant acceptation'),

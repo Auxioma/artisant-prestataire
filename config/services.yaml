@@ -57,6 +57,7 @@ services:
             - '../src/QuoteRequest/Application/Port/{RequestRiskInput,RequestRisk}.php'
             - '../src/QuoteRequest/Application/Admin/{AdminRequestRow,AdminRequestPage,AdminRequestView}.php'
             - '../src/QuoteRequest/Application/Moderation/ModerationRejected.php'
+            - '../src/Shared/Application/Moderation/{ProfileReviewItem,ModerationDecisionRejected}.php'
             - '../src/QuoteRequest/Application/Draft/{DraftOwner,DraftAttachmentView,RequestDraftView,DraftRejected}.php'
             - '../src/Catalog/Application/Questionnaire/JobQuestionnaireView.php'
 
