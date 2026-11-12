@@ -35,6 +35,10 @@ final class QuoteRequest extends AggregateRoot
     private ?string $budgetRange;
     private Timing $timing;
     private ?\DateTimeImmutable $desiredDate;
+    /** @var list<string> */
+    private array $preferredSlots = [];
+    private ?OccupantStatus $occupantStatus = null;
+    private ContactPreference $contactPreference = ContactPreference::MessagingOnly;
     /** Version du questionnaire du métier avec laquelle les réponses ont été données (libellés stables, PR03). */
     private ?int $questionnaireVersion = null;
     private int $activeQuotesCount = 0;
@@ -85,6 +89,8 @@ final class QuoteRequest extends AggregateRoot
         RequestDetails $details,
         SubmissionTerms $terms,
         \DateTimeImmutable $now,
+        ContactPreference $contactPreference = ContactPreference::MessagingOnly,
+        ?int $questionnaireVersion = null,
     ): self {
         foreach ([$clientId, $jobId, $targetArtisanId ?? $clientId] as $uuid) {
             if (1 !== preg_match(self::UUID, $uuid)) {
@@ -96,6 +102,8 @@ final class QuoteRequest extends AggregateRoot
         }
         $request = new self($id, $number, $clientId, $jobId, $targetArtisanId, null === $targetArtisanId || $broadcastToOthers, $cityInsee, $postalCode, $duplicateKey->value, $terms->maxQuotes, $now);
         $request->apply($details);
+        $request->contactPreference = $contactPreference;
+        $request->questionnaireVersion = $questionnaireVersion;
         $request->riskScore = $terms->riskScore;
         $request->riskSignals = $terms->riskSignals;
         if ($terms->needsModeration()) {
@@ -293,7 +301,26 @@ final class QuoteRequest extends AggregateRoot
 
     public function details(): RequestDetails
     {
-        return new RequestDetails($this->projectType, $this->description, $this->answers, $this->budgetRange, $this->timing, $this->desiredDate);
+        return new RequestDetails(
+            $this->projectType,
+            $this->description,
+            $this->answers,
+            $this->budgetRange,
+            $this->timing,
+            $this->desiredDate,
+            array_values(array_filter(array_map(PreferredSlot::tryFrom(...), $this->preferredSlots))),
+            $this->occupantStatus,
+        );
+    }
+
+    public function contactPreference(): ContactPreference
+    {
+        return $this->contactPreference;
+    }
+
+    public function questionnaireVersion(): ?int
+    {
+        return $this->questionnaireVersion;
     }
 
     public function maxQuotes(): int
@@ -361,6 +388,8 @@ final class QuoteRequest extends AggregateRoot
         $this->budgetRange = $details->budgetRange;
         $this->timing = $details->timing;
         $this->desiredDate = $details->desiredDate;
+        $this->preferredSlots = array_values(array_unique(array_map(static fn (PreferredSlot $s): string => $s->value, $details->preferredSlots)));
+        $this->occupantStatus = $details->occupantStatus;
     }
 
     private function publish(int $expiryDays, \DateTimeImmutable $now): void

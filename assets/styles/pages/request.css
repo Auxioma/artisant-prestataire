@@ -65,3 +65,34 @@
         .tm-request__main { padding: var(--space-6); }
     }
 }
+
+/* T-402b — étapes 4 à 6, confirmation. */
+@layer components {
+    .tm-address { position: relative; }
+    .tm-address__list { position: absolute; z-index: 10; inset-inline: 0; top: 100%; margin: var(--space-1) 0 0; padding: var(--space-1) 0; border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); box-shadow: var(--shadow-card); list-style: none; }
+    .tm-address__list li { padding: var(--space-2) var(--space-4); cursor: pointer; }
+    .tm-address__list li[aria-selected='true'], .tm-address__list li:hover { background: var(--color-info-bg); color: var(--color-link); }
+    .tm-request__note, .tm-request__promise-line { display: flex; gap: var(--space-2); align-items: flex-start; margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-card); background: var(--color-info-bg); color: var(--color-info-text); font: var(--type-caption); }
+    .tm-request__promise-line { background: var(--color-success-bg); color: var(--color-success-text); font: var(--type-label); }
+    .tm-request__summary { display: grid; gap: var(--space-2); margin: 0; }
+    .tm-request__summary > div { display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-radius: var(--radius-card); background: var(--color-surface-section); }
+    .tm-request__summary dt { color: var(--color-text-muted); font: var(--type-caption); }
+    .tm-request__summary dd { margin: 0; overflow-wrap: anywhere; color: var(--color-heading); }
+    .tm-recap { display: grid; gap: var(--space-2); min-width: 0; }
+    .tm-recap__head { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: baseline; justify-content: space-between; }
+    .tm-recap__head h3 { margin: 0; }
+    .tm-request__account { display: grid; gap: var(--space-3); }
+    .tm-request__account-choice { display: grid; gap: var(--space-3); justify-items: start; padding: var(--space-4); }
+    .tm-request__account-choice p { margin: 0; }
+    .tm-request__sent { padding-top: var(--space-8); }
+    .tm-request__sent h1 { margin: 0; }
+    .tm-request__sent-icon { color: var(--color-success-text); }
+    .tm-request__sent-icon .tm-icon { width: 40px; height: 40px; }
+    .tm-request__sent-card { display: grid; gap: var(--space-1); padding: var(--space-4); border-radius: var(--radius-card); background: var(--color-info-bg); }
+    .tm-request__sent-card p { margin: 0; }
+
+    @media (min-width: 768px) {
+        .tm-request__account { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .tm-request__summary > div { grid-template-columns: 200px minmax(0, 1fr); align-items: baseline; }
+    }
+}

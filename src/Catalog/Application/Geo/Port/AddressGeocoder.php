@@ -21,4 +21,13 @@ interface AddressGeocoder
      * @throws ExternalServiceUnavailable
      */
     public function geocode(string $address, ?string $inseeCode = null, ?string $postalCode = null): ?GeocodedAddress;
+
+    /**
+     * Suggestions d'adresses pour l'autocomplétion (P11.5), meilleures correspondances d'abord.
+     *
+     * @return list<GeocodedAddress>
+     *
+     * @throws ExternalServiceUnavailable
+     */
+    public function suggest(string $query, int $limit): array;
 }

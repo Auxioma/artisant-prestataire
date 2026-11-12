@@ -49,6 +49,7 @@ notifications:
         label: "Demande de devis envoyée (récapitulatif)"
         recipient: "Client"
         channels: [email, in_app]
+        variables: [prenom, numero, metier, ville, max_devis, lien]
     'E-10b':
         label: "Demande mise en modération / refusée"
         recipient: "Client"

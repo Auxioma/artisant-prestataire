@@ -24,6 +24,7 @@ final readonly class BanAddressGeocoder implements AddressGeocoder
     private const string SERVICE = 'geocodage';
     private const int MIN_LENGTH = 3;
     private const int MAX_LENGTH = 200; // limite de l'API
+    private const int SUGGESTIONS_MAX = 10;
 
     public function __construct(
         #[Target('geocoding.client')]
@@ -34,17 +35,34 @@ final readonly class BanAddressGeocoder implements AddressGeocoder
 
     public function geocode(string $address, ?string $inseeCode = null, ?string $postalCode = null): ?GeocodedAddress
     {
-        $query = trim((string) preg_replace('/\s+/u', ' ', $address));
-        if (mb_strlen($query) < self::MIN_LENGTH) {
-            return null;
-        }
-        $parameters = ['q' => mb_substr($query, 0, self::MAX_LENGTH), 'limit' => 1, 'index' => 'address'];
+        $parameters = [];
         if (null !== $inseeCode && 1 === preg_match('/^\d[\dAB]\d{3}$/', $inseeCode)) {
             $parameters['citycode'] = $inseeCode;
         }
         if (null !== $postalCode && 1 === preg_match('/^\d{5}$/', $postalCode)) {
             $parameters['postcode'] = $postalCode;
         }
+
+        return $this->search($address, 1, $parameters)[0] ?? null;
+    }
+
+    public function suggest(string $query, int $limit): array
+    {
+        return $this->search($query, max(1, min($limit, self::SUGGESTIONS_MAX)), ['autocomplete' => 1]);
+    }
+
+    /**
+     * @param array<string, int|string> $filters
+     *
+     * @return list<GeocodedAddress>
+     */
+    private function search(string $address, int $limit, array $filters): array
+    {
+        $query = trim((string) preg_replace('/\s+/u', ' ', $address));
+        if (mb_strlen($query) < self::MIN_LENGTH) {
+            return [];
+        }
+        $parameters = ['q' => mb_substr($query, 0, self::MAX_LENGTH), 'limit' => $limit, 'index' => 'address'] + $filters;
 
         try {
             $data = $this->client->request('GET', 'search', ['query' => $parameters])->toArray();
@@ -53,8 +71,20 @@ final readonly class BanAddressGeocoder implements AddressGeocoder
             throw new ExternalServiceUnavailable(self::SERVICE, $e->getMessage(), $e);
         }
 
-        $features = $data['features'] ?? null;
-        $feature = \is_array($features) && \is_array($features[0] ?? null) ? $features[0] : null;
+        $addresses = [];
+        foreach (\is_array($data['features'] ?? null) ? $data['features'] : [] as $feature) {
+            $address = \is_array($feature) ? self::address($feature) : null;
+            if (null !== $address) {
+                $addresses[] = $address;
+            }
+        }
+
+        return $addresses;
+    }
+
+    /** @param array<array-key, mixed> $feature */
+    private static function address(array $feature): ?GeocodedAddress
+    {
         $properties = \is_array($feature['properties'] ?? null) ? $feature['properties'] : null;
         $coordinates = \is_array($feature['geometry'] ?? null) && \is_array($feature['geometry']['coordinates'] ?? null) ? $feature['geometry']['coordinates'] : null;
         if (null === $properties || null === $coordinates || !is_numeric($coordinates[0] ?? null) || !is_numeric($coordinates[1] ?? null)) {

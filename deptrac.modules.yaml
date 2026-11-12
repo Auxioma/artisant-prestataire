@@ -24,7 +24,7 @@ deptrac:
     Catalog: [Shared]
     ArtisanProfile: [Shared, Catalog, Notification]
     Search: [Shared, Catalog, ArtisanProfile]
-    QuoteRequest: [Shared, Catalog, ArtisanProfile, Moderation]
+    QuoteRequest: [Shared, Catalog, ArtisanProfile, Moderation, Notification] # Notification : E-10 (P11.7)
     Quote: [Shared, QuoteRequest, Billing, ArtisanProfile]
     Billing: [Shared, Notification]
     Messaging: [Shared, QuoteRequest, Quote]

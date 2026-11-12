@@ -13,7 +13,10 @@ use App\Shared\Application\Bus\Command;
  */
 final readonly class SubmitQuoteRequest implements Command
 {
-    /** @param array<string, string|list<string>> $answers */
+    /**
+     * @param array<string, string|list<string>> $answers
+     * @param list<string>                       $preferredSlots
+     */
     public function __construct(
         public string $requestId,
         public string $clientId,
@@ -30,6 +33,10 @@ final readonly class SubmitQuoteRequest implements Command
         public ?string $targetArtisanId = null,
         public ?bool $broadcastToOthers = null,
         public ?string $ipHash = null,
+        public array $preferredSlots = [],
+        public ?string $occupantStatus = null,
+        public string $contactPreference = 'messaging_only',
+        public ?int $questionnaireVersion = null,
     ) {
     }
 }

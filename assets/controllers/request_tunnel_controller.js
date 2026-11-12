@@ -8,7 +8,7 @@ import { Controller } from '@hotwired/stimulus';
 const AUTOSAVE_MS = 10000;
 
 export default class extends Controller {
-    static targets = ['form', 'status', 'category', 'job', 'question'];
+    static targets = ['form', 'status', 'category', 'job', 'question', 'address', 'addressList', 'addressInsee', 'addressPostal', 'dateField'];
     static values = { url: String, step: Number };
 
     connect() {
@@ -24,6 +24,93 @@ export default class extends Controller {
     changed() {
         this.dirty = true;
         this.refreshQuestions();
+        this.refreshDate();
+    }
+
+    /* Étape 4 : le champ date n'est affiché que pour « Date précise ». */
+    refreshDate() {
+        if (!this.hasDateFieldTarget || !this.hasFormTarget) {
+            return;
+        }
+        const timing = this.formTarget.querySelector('input[name="timing"]:checked');
+        this.dateFieldTarget.hidden = !timing || timing.value !== 'date';
+    }
+
+    /* Étape 4 : suggestions d'adresses (BAN via /api/adresses), au clavier comme à la souris (combobox ARIA). */
+    suggestAddress(event) {
+        const input = event.target;
+        this.addressInseeTarget.value = '';
+        this.addressPostalTarget.value = '';
+        window.clearTimeout(this.addressTimer);
+        const query = input.value.trim();
+        if (query.length < 3) {
+            this.closeAddresses(input);
+            return;
+        }
+        this.addressTimer = window.setTimeout(async () => {
+            try {
+                const url = `${this.addressTarget.dataset.url}?q=${encodeURIComponent(query)}`;
+                const response = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+                const data = response.ok ? await response.json() : { items: [] };
+                this.renderAddresses(input, data.items || []);
+            } catch {
+                this.closeAddresses(input);
+            }
+        }, 250);
+    }
+
+    renderAddresses(input, items) {
+        const list = this.addressListTarget;
+        list.replaceChildren();
+        items.forEach((item, index) => {
+            const option = document.createElement('li');
+            option.id = `address_option_${index}`;
+            option.setAttribute('role', 'option');
+            option.setAttribute('aria-selected', 'false');
+            option.textContent = item.label;
+            option.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                this.chooseAddress(input, item);
+            });
+            option.dataset.item = JSON.stringify(item);
+            list.append(option);
+        });
+        list.hidden = items.length === 0;
+        input.setAttribute('aria-expanded', String(items.length > 0));
+        this.addressIndex = -1;
+    }
+
+    addressKey(event) {
+        const options = Array.from(this.addressListTarget.querySelectorAll('[role="option"]'));
+        if (this.addressListTarget.hidden || options.length === 0) {
+            return;
+        }
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault();
+            const step = event.key === 'ArrowDown' ? 1 : -1;
+            this.addressIndex = (this.addressIndex + step + options.length) % options.length;
+            options.forEach((o, i) => o.setAttribute('aria-selected', String(i === this.addressIndex)));
+            event.target.setAttribute('aria-activedescendant', options[this.addressIndex].id);
+        } else if (event.key === 'Enter' && this.addressIndex >= 0) {
+            event.preventDefault();
+            this.chooseAddress(event.target, JSON.parse(options[this.addressIndex].dataset.item));
+        } else if (event.key === 'Escape') {
+            this.closeAddresses(event.target);
+        }
+    }
+
+    chooseAddress(input, item) {
+        input.value = item.label;
+        this.addressInseeTarget.value = item.insee;
+        this.addressPostalTarget.value = item.postal_code;
+        this.closeAddresses(input);
+        this.dirty = true;
+    }
+
+    closeAddresses(input) {
+        this.addressListTarget.hidden = true;
+        input.setAttribute('aria-expanded', 'false');
+        input.removeAttribute('aria-activedescendant');
     }
 
     async save() {

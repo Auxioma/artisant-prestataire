@@ -1,0 +1,2 @@
+{#- Message d'erreur d'un champ du tunnel (id = {key}_error). -#}
+{% if errors[key] is defined %}<p class="tm-field__error" id="{{ key }}_error"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" />{{ errors[key] }}</p>{% endif %}

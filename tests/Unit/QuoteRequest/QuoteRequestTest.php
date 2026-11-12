@@ -157,7 +157,8 @@ final class QuoteRequestTest extends TestCase
         self::assertFalse($direct->broadcastToOthers());
         self::assertSame(self::ARTISAN, $direct->targetArtisanId());
 
-        $this->expectRule(fn () => $this->details('Trop court'), 'entre 30 et 3000');
+        $this->expectRule(fn () => $this->details('Trop court'), '30 caractères minimum');
+        $this->expectRule(fn () => $this->details('Appelez-moi au 06 12 34 56 78 pour la fuite de la cuisine.'), 'n’indiquez pas vos coordonnées');
         $this->expectRule(static fn () => new RequestDetails(ProjectType::Repair, str_repeat('a', 40), [], null, Timing::Date, null), 'date précise');
         $this->expectRule(static fn () => new SubmissionTerms(0, self::EXPIRY_DAYS, 0, [], self::THRESHOLD), 'Conditions de dépôt');
         self::assertSame(DuplicateKey::of(self::JOB, '12, Rue de l’Église')->value, DuplicateKey::of(strtoupper(self::JOB), '12 rue de l eglise ')->value, 'adresse normalisée');

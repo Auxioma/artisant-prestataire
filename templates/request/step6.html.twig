@@ -1,0 +1,67 @@
+{#- P11.7 — Étape 6 « Récapitulatif » (Figma 5:219) : récapitulatif modifiable par section, « jusqu'à {max_devis} devis gratuits », captcha invisible, envoi. -#}
+{% extends 'request/_layout.html.twig' %}
+
+{% block title %}Récapitulatif — Demande de devis — TrouveMoi{% endblock %}
+{% block step_title %}Vérifiez votre demande avant l’envoi{% endblock %}
+{% block step_subtitle %}Relisez les informations et confirmez l’envoi aux professionnels.{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="{{ csp_nonce('script') }}"></script>
+{% endblock %}
+
+{% macro section(title, step, rows) %}
+    <section class="tm-recap" aria-labelledby="recap_{{ step }}">
+        <header class="tm-recap__head">
+            <h3 class="tm-card-title" id="recap_{{ step }}">{{ title }}</h3>
+            <a class="tm-link" href="{{ path('request_step', {step: step}) }}">Modifier<span class="tm-visually-hidden"> : {{ title }}</span></a>
+        </header>
+        <dl class="tm-request__summary">
+            {% for label, value in rows %}{% if value is not empty %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endif %}{% endfor %}
+        </dl>
+    </section>
+{% endmacro %}
+
+{% block step_content %}
+    {% set need = {'Métier': job.name ?? null, 'Type de projet': project_type.label ?? null} %}
+    {% if target %}{% set need = need|merge({'Autres professionnels': draft.broadcastToOthers ? 'Demande aussi diffusée aux autres artisans vérifiés' : 'Demande réservée à ce professionnel'}) %}{% endif %}
+    {{ _self.section('Votre besoin', 1, need) }}
+
+    {% set details = {} %}
+    {% for line in answers %}{% set details = details|merge({(line.label): line.value}) %}{% endfor %}
+    {% set details = details|merge({'Description': draft.description, 'Budget estimé': budget.label ?? 'Non précisé'}) %}
+    {{ _self.section('Détails', 2, details) }}
+
+    {{ _self.section('Photos', 3, {'Fichiers joints': draft.attachments is empty ? 'Aucun' : draft.attachments|length ~ ' fichier' ~ (draft.attachments|length > 1 ? 's') ~ ' (' ~ draft.attachments|map(a => a.name)|join(', ') ~ ')'}) }}
+
+    {% set slot_labels = slots|map(s => s.label)|join(', ') %}
+    {{ _self.section('Lieu et délai', 4, {
+        'Adresse': draft.address.label ?? null,
+        'Délai': timing ? (timing.value == 'date' and draft.desiredDate ? 'Le ' ~ draft.desiredDate|date('d/m/Y') : timing.label) : null,
+        'Créneaux': slot_labels,
+        'Vous êtes': occupant.label ?? null,
+    }) }}
+
+    {{ _self.section('Coordonnées', 5, {'Contact': preference.label ?? null}) }}
+
+    <p class="tm-request__promise-line" role="note"><twig:Icon name="file" size="sm" />Vous recevrez jusqu’à {{ max_quotes }} devis gratuits et sans engagement.</p>
+
+    {% if signed_in and not email_verified %}
+        <p class="tm-form-note" role="status"><twig:Icon name="alert" size="sm" />Validez votre adresse e-mail grâce au lien reçu à l’inscription pour pouvoir envoyer votre demande.</p>
+    {% endif %}
+
+    <form method="post" novalidate data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+        <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-action="request" data-size="flexible" data-language="fr" data-appearance="interaction-only"></div>
+        <p class="tm-caption">Protection anti-robot invisible.</p>
+        <div class="tm-request__actions">
+            <button type="submit" class="tm-button tm-button--secondary" name="action" value="back" formnovalidate>← Étape précédente</button>
+            <twig:Button type="submit" name="action" value="send" icon="arrowR">Envoyer ma demande</twig:Button>
+        </div>
+    </form>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Jusqu’à {{ max_quotes }} professionnels pourront répondre.</li>
+    <li><twig:Icon name="check" size="xs" />Vous serez prévenu par e-mail à chaque nouveau devis.</li>
+{% endblock %}

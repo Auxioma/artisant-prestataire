@@ -12,6 +12,7 @@ use App\Catalog\Application\Query\JobIndexEntry;
 use App\Catalog\Application\Questionnaire\JobQuestionnaire;
 use App\Catalog\Application\Questionnaire\JobQuestionnaireView;
 use App\QuoteRequest\Application\Draft\AddDraftAttachment;
+use App\QuoteRequest\Application\Draft\AdoptVisitorDraft;
 use App\QuoteRequest\Application\Draft\CurrentRequestDraft;
 use App\QuoteRequest\Application\Draft\DraftOwner;
 use App\QuoteRequest\Application\Draft\DraftRejected;
@@ -20,16 +21,32 @@ use App\QuoteRequest\Application\Draft\RequestDraftEditor;
 use App\QuoteRequest\Application\Draft\RequestDraftView;
 use App\QuoteRequest\Application\Draft\SaveDraftStep;
 use App\QuoteRequest\Application\Draft\StartRequestDraft;
+use App\QuoteRequest\Application\Draft\SubmitRequestDraft;
 use App\QuoteRequest\Domain\Request\BudgetRange;
+use App\QuoteRequest\Domain\Request\ContactPreference;
+use App\QuoteRequest\Domain\Request\OccupantStatus;
+use App\QuoteRequest\Domain\Request\PreferredSlot;
 use App\QuoteRequest\Domain\Request\ProjectType;
+use App\QuoteRequest\Domain\Request\QuoteRequestId;
+use App\QuoteRequest\Domain\Request\QuoteRequestRepository;
 use App\QuoteRequest\Domain\Request\RequestDetails;
+use App\QuoteRequest\Domain\Request\RequestRuleViolation;
+use App\QuoteRequest\Domain\Request\Timing;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
+use App\Shared\Application\Identity\ChangeUserPhone;
+use App\Shared\Application\Identity\UserContact;
+use App\Shared\Application\Identity\UserContactDetails;
+use App\Shared\Application\Identity\UserPhone;
+use App\Shared\Application\Integration\ExternalServiceUnavailable;
 use App\Shared\Application\Security\CurrentUser;
+use App\Shared\Application\Security\HumanVerification;
+use App\Shared\Application\Security\IpAnonymizer;
 use App\Shared\Application\Settings\SettingKey;
 use App\Shared\Application\Settings\SettingsProvider;
 use App\Shared\Application\Storage\FileReader;
 use App\Shared\Application\Storage\StoredFileNotFound;
+use App\Shared\Domain\Exception\InvalidValue;
 use App\Shared\Domain\Identifier\IdGenerator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
@@ -57,6 +74,8 @@ final class RequestTunnelController extends AbstractController
     public const string COOKIE = 'tm_demande';
     private const string CSRF = 'request_tunnel';
     private const int TOKEN_BYTES = 32;
+    private const string TURNSTILE_FIELD = 'cf-turnstile-response';
+    private const string CAPTCHA_ACTION = 'request';
     private const string UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
     /** Attribut de requête portant le cookie à émettre (jamais une propriété : le contrôleur est un service partagé). */
@@ -68,14 +87,15 @@ final class RequestTunnelController extends AbstractController
         private readonly CurrentUser $currentUser,
         private readonly SettingsProvider $settings,
         private readonly IdGenerator $ids,
+        private readonly HumanVerification $humans,
+        private readonly IpAnonymizer $ipAnonymizer,
+        #[Autowire(service: 'limiter.request_submit')]
+        private readonly RateLimiterFactory $submitLimiter,
     ) {
     }
 
-    /**
-     * Entrée du tunnel ; `?pro={id}` prépare une demande directe (RG-062). Route nommée `request_start` tant que l'envoi
-     * (T-402b) n'est pas livré : les liens publics du site, conditionnés à `request_new`, restent masqués (P-62).
-     */
-    #[Route('', name: 'request_start', methods: ['GET'])]
+    /** Entrée du tunnel (liens « Déposer une demande » du site) ; `?pro={id}` prépare une demande directe (RG-062). */
+    #[Route('', name: 'request_new', methods: ['GET'])]
     public function start(Request $request): Response
     {
         if (null !== ($blocked = $this->artisanBlocked())) {
@@ -92,7 +112,7 @@ final class RequestTunnelController extends AbstractController
         }
         $draft = $this->draft($owner);
 
-        return $this->toStep($request, min($draft->step ?? 1, RequestDraftEditor::STEP_PHOTOS));
+        return $this->toStep($request, $draft->step ?? 1);
     }
 
     /** /demande-de-devis/{slug-metier} : métier pré-rempli (P11.2). */
@@ -128,12 +148,18 @@ final class RequestTunnelController extends AbstractController
         }
         if ($request->isMethod('POST')) {
             $this->assertCsrf($request);
+            if (RequestDraftEditor::STEP_RECAP === $step && 'back' !== $request->request->getString('action')) {
+                return $this->submit($request, $owner);
+            }
             if ('back' === $request->request->getString('action')) {
                 $this->save($owner, $draft, $step, $request->request->all(), false);
 
                 return $this->toStep($request, max(1, $step - 1));
             }
             try {
+                if (RequestDraftEditor::STEP_CONTACT === $step) {
+                    $this->savePhone($request, $owner);
+                }
                 $this->commands->dispatch(new SaveDraftStep($owner, $draft->id ?? $this->ids->next(), $step, $request->request->all(), true));
 
                 return $this->toStep($request, $step + 1);
@@ -143,6 +169,75 @@ final class RequestTunnelController extends AbstractController
         }
 
         return $this->page($request, $owner, $step, null, null);
+    }
+
+    /** Confirmation d'envoi (P11.7) : n° de demande, prochaines étapes ; réservée au client propriétaire. */
+    #[Route('/envoyee/{id}', name: 'request_sent', requirements: ['id' => self::UUID], methods: ['GET'], priority: 10)]
+    public function sent(string $id, QuoteRequestRepository $requests): Response
+    {
+        $request = $requests->find(new QuoteRequestId($id));
+        if (null === $request || $request->clientId() !== $this->currentUser->id()) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->render('request/sent.html.twig', [
+            'request' => $request,
+            'job' => $this->job($request->jobId()),
+            'target' => null === $request->targetArtisanId() ? null : $this->artisan($request->targetArtisanId()),
+        ]);
+    }
+
+    /**
+     * P11.7 — envoi : compte client à l'e-mail vérifié (RG-040), limite d'envoi, captcha invisible, puis demande créée
+     * depuis le brouillon. En cas d'échec, le brouillon est conservé et l'erreur affichée sur le récapitulatif.
+     */
+    private function submit(Request $request, DraftOwner $owner): Response
+    {
+        $error = match (true) {
+            null === $owner->userId => 'Connectez-vous ou créez votre compte pour envoyer votre demande : votre brouillon est conservé.',
+            !$this->currentUser->isEmailVerified() => 'Validez d’abord votre adresse e-mail (lien reçu à l’inscription) : votre demande sera envoyée ensuite, votre brouillon est conservé.',
+            !$this->submitLimiter->create($request->getClientIp() ?? 'unknown')->consume()->isAccepted() => 'Vous avez déjà envoyé plusieurs demandes : merci de réessayer dans une heure.',
+            default => $this->captchaError($request),
+        };
+        if (null !== $error || null === $owner->userId) {
+            return $this->page($request, $owner, RequestDraftEditor::STEP_RECAP, new DraftRejected($error), null);
+        }
+        $requestId = $this->ids->next();
+        try {
+            $this->commands->dispatch(new SubmitRequestDraft($owner->userId, $requestId, $this->ipAnonymizer->hash($request->getClientIp())));
+        } catch (DraftRejected|RequestRuleViolation $e) {
+            return $this->page($request, $owner, RequestDraftEditor::STEP_RECAP, new DraftRejected($e->getMessage()), null);
+        }
+
+        return $this->redirectToRoute('request_sent', ['id' => $requestId], Response::HTTP_SEE_OTHER);
+    }
+
+    private function captchaError(Request $request): ?string
+    {
+        try {
+            return $this->humans->verify($request->request->getString(self::TURNSTILE_FIELD), $request->getClientIp(), self::CAPTCHA_ACTION)
+                ? null
+                : 'La vérification anti-robot a échoué. Merci de réessayer.';
+        } catch (ExternalServiceUnavailable) {
+            return 'Le service de vérification anti-robot est momentanément indisponible. Merci de réessayer dans quelques minutes.';
+        }
+    }
+
+    /** A02 : le téléphone, facultatif à l'inscription, est requis au premier dépôt ; il est porté par le compte. */
+    private function savePhone(Request $request, DraftOwner $owner): void
+    {
+        if (null === $owner->userId || null !== $this->phone($owner->userId)) {
+            return;
+        }
+        $phone = trim($request->request->getString('phone'));
+        if ('' === $phone) {
+            throw new DraftRejected('Indiquez votre téléphone mobile.', ['phone' => 'Votre numéro de mobile est requis pour votre première demande ; il n’est communiqué qu’au professionnel dont vous acceptez le devis.']);
+        }
+        try {
+            $this->commands->dispatch(new ChangeUserPhone($owner->userId, $phone));
+        } catch (InvalidValue) {
+            throw new DraftRejected('Numéro de téléphone invalide.', ['phone' => 'Numéro de téléphone invalide (ex. 06 12 34 56 78).']);
+        }
     }
 
     /** Sauvegarde automatique (toutes les 10 s, P11.1) : valeurs valides conservées, rien n'est exigé. */
@@ -271,11 +366,57 @@ final class RequestTunnelController extends AbstractController
                 'description_max' => RequestDetails::DESCRIPTION_MAX,
             ],
             RequestDraftEditor::STEP_PHOTOS => ['max_files' => $this->settings->int(SettingKey::RequestsMaxPhotos), 'max_mb' => $this->settings->int(SettingKey::RequestsMaxFileMb)],
-            default => [],
+            RequestDraftEditor::STEP_PLACE => [
+                'timings' => Timing::cases(), 'slots' => PreferredSlot::cases(), 'occupants' => OccupantStatus::cases(),
+                'min_date' => new \DateTimeImmutable('today'), 'max_date' => new \DateTimeImmutable(\sprintf('today +%d months', RequestDraftEditor::DESIRED_DATE_MAX_MONTHS)),
+            ],
+            RequestDraftEditor::STEP_CONTACT => $this->contactData($owner, $request),
+            default => $this->recapData($owner, $draft),
         };
-        $template = $step <= RequestDraftEditor::STEP_PHOTOS ? 'request/step'.$step.'.html.twig' : 'request/next_steps.html.twig';
+        $template = 'request/step'.$step.'.html.twig';
 
         return $this->withCookie($this->render($template, $data, new Response(status: null === $error ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY)), $request);
+    }
+
+    /** @return array<string, mixed> */
+    private function contactData(DraftOwner $owner, Request $request): array
+    {
+        $contact = null === $owner->userId ? null : $this->queries->ask(new UserContact($owner->userId));
+
+        return [
+            'preferences' => ContactPreference::cases(),
+            'contact' => $contact instanceof UserContactDetails ? $contact : null,
+            'has_phone' => null !== $owner->userId && null !== $this->phone($owner->userId),
+            'email_verified' => $this->currentUser->isEmailVerified(),
+            'login_url' => $this->generateUrl('identity_login', ['redirect' => $request->getPathInfo()]),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function recapData(DraftOwner $owner, RequestDraftView $draft): array
+    {
+        $questionnaire = null === $draft->jobId ? null : $this->questionnaire($draft->jobId);
+
+        return [
+            'job' => $this->job($draft->jobId),
+            'answers' => null === $questionnaire ? [] : $questionnaire->schema->describe($draft->answers),
+            'project_type' => ProjectType::tryFrom($draft->projectType ?? ''),
+            'budget' => BudgetRange::tryFrom($draft->budgetRange ?? ''),
+            'timing' => Timing::tryFrom($draft->timing ?? ''),
+            'slots' => array_values(array_filter(array_map(PreferredSlot::tryFrom(...), $draft->preferredSlots))),
+            'occupant' => OccupantStatus::tryFrom($draft->occupantStatus ?? ''),
+            'preference' => ContactPreference::tryFrom($draft->contactPreference ?? ''),
+            'max_quotes' => $this->settings->int(SettingKey::QuotesMaxPerRequest),
+            'signed_in' => null !== $owner->userId,
+            'email_verified' => $this->currentUser->isEmailVerified(),
+        ];
+    }
+
+    private function phone(string $userId): ?string
+    {
+        $phone = $this->queries->ask(new UserPhone($userId));
+
+        return \is_string($phone) ? $phone : null;
     }
 
     /** @param array<array-key, mixed> $input */
@@ -298,6 +439,14 @@ final class RequestTunnelController extends AbstractController
     {
         $userId = $this->currentUser->id();
         if (null !== $userId) {
+            // P11.6 : le brouillon commencé avant la connexion est rattaché au compte, puis le jeton est oublié.
+            $token = $request->cookies->getString(self::COOKIE);
+            if (1 === preg_match('/^[A-Za-z0-9_-]{43}$/', $token)) {
+                $this->commands->dispatch(new AdoptVisitorDraft(DraftOwner::visitor($token), $userId));
+                $request->cookies->remove(self::COOKIE);
+                $request->attributes->set(self::NEW_COOKIE, Cookie::create(self::COOKIE, '')->withExpires(1)->withPath('/demande-de-devis'));
+            }
+
             return DraftOwner::user($userId);
         }
         $token = $request->cookies->getString(self::COOKIE);

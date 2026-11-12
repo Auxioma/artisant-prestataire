@@ -1,0 +1,78 @@
+{#- P11.5 — Étape 4 « Lieu & délai » (Figma 5:110) : adresse BAN (autocomplétion servie par la plateforme, re-géocodée à l'envoi), délai, créneaux, statut. RG-022bis : seules commune et code postal sont visibles des artisans avant acceptation. -#}
+{% extends 'request/_layout.html.twig' %}
+
+{% block title %}Lieu et délai — Demande de devis — TrouveMoi{% endblock %}
+{% block step_title %}Où et quand souhaitez-vous réaliser les travaux ?{% endblock %}
+{% block step_subtitle %}Ces informations permettent de sélectionner les professionnels de votre secteur.{% endblock %}
+
+{% block step_content %}
+    {% set address = posted.address ?? draft.address.label ?? '' %}
+    {% set timing = posted.timing ?? draft.timing %}
+    {% set desired_date = posted.desired_date ?? draft.desiredDate %}
+    {% set chosen_slots = posted.preferred_slots ?? draft.preferredSlots %}
+    {% set occupant = posted.occupant_status ?? draft.occupantStatus %}
+    <form method="post" novalidate data-turbo="false" data-request-tunnel-target="form" data-action="change->request-tunnel#changed input->request-tunnel#changed">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+
+        <div class="tm-field tm-address{{ errors.address is defined ? ' tm-field--error' }}" data-request-tunnel-target="address" data-url="{{ path('catalog_address_suggest') }}">
+            <label class="tm-field__label" for="address">Adresse de l’intervention<abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+            <div class="tm-field__control">
+                <twig:Icon name="pin" size="sm" class="tm-icon--inherit" />
+                <input class="tm-field__input" id="address" name="address" type="text" value="{{ address }}" autocomplete="off" maxlength="200" placeholder="Ex. 12 rue de la République, Le Havre"
+                    role="combobox" aria-expanded="false" aria-controls="address_list" aria-autocomplete="list" aria-describedby="address_help{{ errors.address is defined ? ' address_error' }}"{{ errors.address is defined ? ' aria-invalid="true"' }}
+                    data-action="input->request-tunnel#suggestAddress keydown->request-tunnel#addressKey">
+            </div>
+            <ul class="tm-address__list" id="address_list" role="listbox" hidden data-request-tunnel-target="addressList"></ul>
+            <input type="hidden" name="address_insee" value="{{ draft.address.city_insee ?? '' }}" data-request-tunnel-target="addressInsee">
+            <input type="hidden" name="address_postal" value="{{ draft.address.postal_code ?? '' }}" data-request-tunnel-target="addressPostal">
+            <p class="tm-field__help" id="address_help">Votre adresse complète n’est communiquée qu’au professionnel dont vous acceptez le devis.</p>
+            {{ include('request/_error.html.twig', {key: 'address'}) }}
+        </div>
+
+        <fieldset aria-describedby="{{ errors.timing is defined ? 'timing_error' }}">
+            <legend>Délai souhaité<abbr class="tm-field__required" title="obligatoire">*</abbr></legend>
+            <div class="tm-pills">
+                {% for t in timings %}
+                    <label class="tm-pill"><input type="radio" name="timing" value="{{ t.value }}"{{ t.value == timing ? ' checked' }}><span>{{ t.label }}</span></label>
+                {% endfor %}
+            </div>
+            {{ include('request/_error.html.twig', {key: 'timing'}) }}
+        </fieldset>
+
+        <div data-request-tunnel-target="dateField"{{ timing != 'date' ? ' hidden' }}>
+            <div class="tm-field{{ errors.desired_date is defined ? ' tm-field--error' }}">
+                <label class="tm-field__label" for="desired_date">Date souhaitée</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="desired_date" name="desired_date" type="date" value="{{ desired_date }}" min="{{ min_date|date('Y-m-d') }}" max="{{ max_date|date('Y-m-d') }}"{{ errors.desired_date is defined ? ' aria-invalid="true" aria-describedby="desired_date_error"' }}></div>
+                {{ include('request/_error.html.twig', {key: 'desired_date'}) }}
+            </div>
+        </div>
+
+        <fieldset>
+            <legend>Créneaux préférés (facultatif)</legend>
+            <div class="tm-pills">
+                {% for slot in slots %}
+                    <label class="tm-pill"><input type="checkbox" name="preferred_slots[]" value="{{ slot.value }}"{{ slot.value in chosen_slots ? ' checked' }}><span>{{ slot.label }}</span></label>
+                {% endfor %}
+            </div>
+        </fieldset>
+
+        <fieldset aria-describedby="{{ errors.occupant_status is defined ? 'occupant_status_error' }}">
+            <legend>Vous êtes<abbr class="tm-field__required" title="obligatoire">*</abbr></legend>
+            <div class="tm-pills">
+                {% for o in occupants %}
+                    <label class="tm-pill"><input type="radio" name="occupant_status" value="{{ o.value }}"{{ o.value == occupant ? ' checked' }}><span>{{ o.label }}</span></label>
+                {% endfor %}
+            </div>
+            {{ include('request/_error.html.twig', {key: 'occupant_status'}) }}
+        </fieldset>
+
+        <p class="tm-request__note"><twig:Icon name="shield" size="sm" />Seules la commune et le code postal sont visibles des artisans avant l’acceptation d’un devis.</p>
+
+        {{ include('request/_actions.html.twig') }}
+    </form>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Seuls les artisans couvrant votre commune seront sollicités.</li>
+    <li><twig:Icon name="check" size="xs" />Vous pouvez préciser une période plutôt qu’une date fixe.</li>
+{% endblock %}

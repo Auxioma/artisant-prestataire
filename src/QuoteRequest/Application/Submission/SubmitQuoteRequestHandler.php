@@ -10,7 +10,10 @@ use App\Catalog\Application\Query\JobIndexEntries;
 use App\Catalog\Application\Query\JobIndexEntry;
 use App\QuoteRequest\Application\Port\RequestRiskAssessor;
 use App\QuoteRequest\Application\Port\RequestRiskInput;
+use App\QuoteRequest\Domain\Request\ContactPreference;
 use App\QuoteRequest\Domain\Request\DuplicateKey;
+use App\QuoteRequest\Domain\Request\OccupantStatus;
+use App\QuoteRequest\Domain\Request\PreferredSlot;
 use App\QuoteRequest\Domain\Request\ProjectType;
 use App\QuoteRequest\Domain\Request\QuoteRequest;
 use App\QuoteRequest\Domain\Request\QuoteRequestId;
@@ -57,6 +60,8 @@ final readonly class SubmitQuoteRequestHandler implements CommandHandler
             $command->budgetRange,
             Timing::tryFrom($command->timing) ?? throw new RequestRuleViolation('Choisissez un délai souhaité.'),
             self::date($command->desiredDate, $now),
+            array_values(array_filter(array_map(PreferredSlot::tryFrom(...), $command->preferredSlots))),
+            null === $command->occupantStatus ? null : (OccupantStatus::tryFrom($command->occupantStatus) ?? throw new RequestRuleViolation('Statut invalide.')),
         );
         $this->assertJobAvailable($command->jobId);
         $this->assertCommune($command->cityInsee, $command->postalCode);
@@ -92,6 +97,8 @@ final readonly class SubmitQuoteRequestHandler implements CommandHandler
             $details,
             $terms,
             $now,
+            ContactPreference::tryFrom($command->contactPreference) ?? throw new RequestRuleViolation('Préférence de contact invalide.'),
+            $command->questionnaireVersion,
         );
         $this->requests->add($request);
         $this->events->publish(...$request->releaseEvents());

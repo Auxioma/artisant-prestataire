@@ -4,12 +4,17 @@ declare(strict_types=1);
 
 namespace App\QuoteRequest\Application\Draft;
 
-/** Brouillon P11 tel qu'affiché par le tunnel ; `step` est l'étape la plus avancée atteinte. */
+/**
+ * Brouillon P11 tel qu'affiché par le tunnel ; `step` est l'étape la plus avancée atteinte. L'adresse est en clair dans
+ * la vue et scellée au repos par le stockage (RG-022bis : jamais lisible en base).
+ */
 final readonly class RequestDraftView
 {
     /**
-     * @param array<string, string|list<string>> $answers
-     * @param list<DraftAttachmentView>          $attachments
+     * @param array<string, string|list<string>>                                                                         $answers
+     * @param list<DraftAttachmentView>                                                                                  $attachments
+     * @param array{label: string, city_insee: string, postal_code: string, city: string, lat: ?float, lon: ?float}|null $address
+     * @param list<string>                                                                                               $preferredSlots
      */
     public function __construct(
         public string $id,
@@ -24,16 +29,24 @@ final readonly class RequestDraftView
         public ?string $budgetRange,
         public array $attachments,
         public \DateTimeImmutable $updatedAt,
+        public ?array $address = null,
+        public ?string $timing = null,
+        public ?string $desiredDate = null,
+        public array $preferredSlots = [],
+        public ?string $occupantStatus = null,
+        public ?string $contactPreference = null,
     ) {
     }
 
-    /** @return array<string, mixed> forme stockée (payload jsonb) */
+    /** @return array<string, mixed> forme stockée (payload jsonb, adresse scellée par le stockage) */
     public function payload(): array
     {
         return [
             'job_id' => $this->jobId, 'project_type' => $this->projectType, 'target_artisan_id' => $this->targetArtisanId,
             'broadcast_to_others' => $this->broadcastToOthers, 'questionnaire_version' => $this->questionnaireVersion,
             'answers' => $this->answers, 'description' => $this->description, 'budget_range' => $this->budgetRange,
+            'address' => $this->address, 'timing' => $this->timing, 'desired_date' => $this->desiredDate,
+            'preferred_slots' => $this->preferredSlots, 'occupant_status' => $this->occupantStatus, 'contact_preference' => $this->contactPreference,
         ];
     }
 
@@ -66,6 +79,12 @@ final readonly class RequestDraftView
             $string('budget_range'),
             $attachments,
             $updatedAt,
+            self::address($payload['address'] ?? null),
+            $string('timing'),
+            $string('desired_date'),
+            array_values(array_filter(\is_array($payload['preferred_slots'] ?? null) ? $payload['preferred_slots'] : [], \is_string(...))),
+            $string('occupant_status'),
+            $string('contact_preference'),
         );
     }
 
@@ -73,5 +92,24 @@ final readonly class RequestDraftView
     public function with(array $changes, int $step, \DateTimeImmutable $now): self
     {
         return self::fromPayload($this->id, $step, $changes + $this->payload(), $this->attachments, $now);
+    }
+
+    /** @return array{label: string, city_insee: string, postal_code: string, city: string, lat: ?float, lon: ?float}|null */
+    private static function address(mixed $value): ?array
+    {
+        if (!\is_array($value)) {
+            return null;
+        }
+        $text = static fn (string $k): ?string => \is_string($value[$k] ?? null) && '' !== $value[$k] ? $value[$k] : null;
+        $label = $text('label');
+        $insee = $text('city_insee');
+        $postal = $text('postal_code');
+        $city = $text('city');
+        if (null === $label || null === $insee || null === $postal || null === $city) {
+            return null;
+        }
+        $number = static fn (string $k): ?float => \is_int($value[$k] ?? null) || \is_float($value[$k] ?? null) ? (float) $value[$k] : null;
+
+        return ['label' => $label, 'city_insee' => $insee, 'postal_code' => $postal, 'city' => $city, 'lat' => $number('lat'), 'lon' => $number('lon')];
     }
 }

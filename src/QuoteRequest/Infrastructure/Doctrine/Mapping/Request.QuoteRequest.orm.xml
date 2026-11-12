@@ -20,6 +20,9 @@
         <field name="budgetRange" type="string" length="30" column="budget_range" nullable="true"/>
         <field name="timing" type="string" length="10" enum-type="App\QuoteRequest\Domain\Request\Timing"/>
         <field name="desiredDate" type="date_immutable" column="desired_date" nullable="true"/>
+        <field name="preferredSlots" type="json" column="preferred_slots"><options><option name="jsonb">true</option></options></field>
+        <field name="occupantStatus" type="string" length="10" column="occupant_status" nullable="true" enum-type="App\QuoteRequest\Domain\Request\OccupantStatus"/>
+        <field name="contactPreference" type="string" length="30" column="contact_preference" enum-type="App\QuoteRequest\Domain\Request\ContactPreference"/>
         <field name="questionnaireVersion" type="integer" column="questionnaire_version" nullable="true"/>
         <field name="maxQuotes" type="smallint" column="max_quotes"/>
         <field name="activeQuotesCount" type="smallint" column="active_quotes_count"/>

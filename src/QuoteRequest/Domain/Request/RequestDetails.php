@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\QuoteRequest\Domain\Request;
 
+use App\Shared\Domain\Text\ContactDetector;
+
 /**
  * P11.2, P11.3 et P11.5 — contenu modifiable d'une demande tant qu'aucun devis n'a été reçu (RG-066). Les réponses au
  * questionnaire du métier sont validées contre son schéma par le cas d'usage (T-402) ; le domaine borne leur volume.
@@ -16,11 +18,17 @@ final readonly class RequestDetails
     public const int BUDGET_RANGE_MAX = 30;
     public const int ANSWERS_MAX = 40;
     public const int ANSWER_MAX = 500;
+    /** Messages d'erreur du CDC (P11, « Messages d'erreur et validations »). */
+    public const string DESCRIPTION_MESSAGE = 'Décrivez votre projet en quelques phrases (30 caractères minimum).';
+    public const string CONTACT_MESSAGE = 'Pour votre sécurité, n’indiquez pas vos coordonnées dans la description.';
 
     public string $description;
     public ?string $budgetRange;
 
-    /** @param array<string, string|list<string>> $answers */
+    /**
+     * @param array<string, string|list<string>> $answers
+     * @param list<PreferredSlot>                $preferredSlots
+     */
     public function __construct(
         public ProjectType $projectType,
         string $description,
@@ -28,11 +36,16 @@ final readonly class RequestDetails
         ?string $budgetRange,
         public Timing $timing,
         public ?\DateTimeImmutable $desiredDate,
+        public array $preferredSlots = [],
+        public ?OccupantStatus $occupantStatus = null,
     ) {
         $description = trim($description);
         $length = mb_strlen($description);
         if ($length < self::DESCRIPTION_MIN || $length > self::DESCRIPTION_MAX) {
-            throw new RequestRuleViolation(\sprintf('La description doit compter entre %d et %d caractères.', self::DESCRIPTION_MIN, self::DESCRIPTION_MAX));
+            throw new RequestRuleViolation(self::DESCRIPTION_MESSAGE);
+        }
+        if ([] !== ContactDetector::find($description)) {
+            throw new RequestRuleViolation(self::CONTACT_MESSAGE);
         }
         if (\count($answers) > self::ANSWERS_MAX) {
             throw new RequestRuleViolation('Trop de réponses au questionnaire.');

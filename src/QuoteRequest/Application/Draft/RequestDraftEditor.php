@@ -6,27 +6,36 @@ namespace App\QuoteRequest\Application\Draft;
 
 use App\ArtisanProfile\Application\PublicProfile\PublicArtisanProfile;
 use App\ArtisanProfile\Application\PublicProfile\PublicProfileView;
+use App\Catalog\Application\Geo\Port\GeocodedAddress;
+use App\Catalog\Application\Geo\Query\GeocodeAddress;
 use App\Catalog\Application\Query\JobIndexEntries;
 use App\Catalog\Application\Query\JobIndexEntry;
 use App\Catalog\Application\Questionnaire\JobQuestionnaire;
 use App\Catalog\Application\Questionnaire\JobQuestionnaireView;
 use App\Catalog\Domain\Questionnaire\InvalidAnswers;
 use App\QuoteRequest\Domain\Request\BudgetRange;
+use App\QuoteRequest\Domain\Request\ContactPreference;
+use App\QuoteRequest\Domain\Request\OccupantStatus;
+use App\QuoteRequest\Domain\Request\PreferredSlot;
 use App\QuoteRequest\Domain\Request\ProjectType;
 use App\QuoteRequest\Domain\Request\RequestDetails;
+use App\QuoteRequest\Domain\Request\Timing;
 use App\Shared\Application\Bus\CommandHandler;
 use App\Shared\Application\Bus\QueryBus;
+use App\Shared\Application\Integration\ExternalServiceUnavailable;
 use App\Shared\Application\Settings\SettingKey;
 use App\Shared\Application\Settings\SettingsProvider;
 use App\Shared\Application\Storage\FileShredder;
 use App\Shared\Application\Storage\FileUploader;
 use App\Shared\Application\Storage\RejectedUpload;
 use App\Shared\Domain\Storage\FilePurpose;
+use App\Shared\Domain\Text\ContactDetector;
 use App\Shared\Domain\Time\Clock;
 
 /**
- * P11 étapes 1 à 3 — brouillon autosauvegardé (RG-060) : besoin (métier, type de projet, demande directe), détails
- * (questionnaire du métier, description, budget), photos (RG-061). Chaque étape validée débloque la suivante.
+ * P11 étapes 1 à 5 — brouillon autosauvegardé (RG-060) : besoin (métier, type de projet, demande directe), détails
+ * (questionnaire du métier, description, budget), photos (RG-061), lieu et délai, coordonnées. Chaque étape validée
+ * débloque la suivante ; l'envoi (étape 6) est porté par SubmitRequestDraft.
  */
 final readonly class RequestDraftEditor implements CommandHandler
 {
@@ -34,7 +43,15 @@ final readonly class RequestDraftEditor implements CommandHandler
     public const int STEP_DETAILS = 2;
     public const int STEP_PHOTOS = 3;
     public const int STEP_PLACE = 4;
+    public const int STEP_CONTACT = 5;
+    public const int STEP_RECAP = 6;
+    /** P11 « Date précise » : à partir d'aujourd'hui, au plus 12 mois plus tard. */
+    public const int DESIRED_DATE_MAX_MONTHS = 12;
+    public const string JOB_MESSAGE = 'Indiquez le type de professionnel recherché.';
+    public const string ADDRESS_MESSAGE = 'Sélectionnez une adresse dans la liste.';
+    public const string DATE_MESSAGE = 'Choisissez une date à venir.';
     private const string SHRED_REASON = 'request_draft_photo_removed';
+    private const int ADDRESS_MAX = 200;
 
     public function __construct(
         private DraftStore $drafts,
@@ -46,8 +63,15 @@ final readonly class RequestDraftEditor implements CommandHandler
     ) {
     }
 
-    public function __invoke(StartRequestDraft|SaveDraftStep|AddDraftAttachment|RemoveDraftAttachment $command): void
+    public function __invoke(StartRequestDraft|SaveDraftStep|AddDraftAttachment|RemoveDraftAttachment|AdoptVisitorDraft $command): void
     {
+        if ($command instanceof AdoptVisitorDraft) {
+            foreach ($this->drafts->adopt($command->visitor, $command->userId) as $fileId) {
+                $this->shredder->shred($fileId, self::SHRED_REASON);
+            }
+
+            return;
+        }
         match (true) {
             $command instanceof StartRequestDraft => $this->start($command),
             $command instanceof SaveDraftStep => $this->saveStep($command),
@@ -85,9 +109,11 @@ final readonly class RequestDraftEditor implements CommandHandler
         $changes = match ($command->step) {
             self::STEP_NEED => $this->need($draft, $input, $command->complete),
             self::STEP_DETAILS => $this->details($draft, $input, $command->complete),
+            self::STEP_PLACE => $this->place($draft, $input, $command->complete),
+            self::STEP_CONTACT => $this->contact($command->owner, $input, $command->complete),
             default => [],
         };
-        $step = $command->complete ? max($draft->step, min($command->step + 1, self::STEP_PLACE)) : $draft->step;
+        $step = $command->complete ? max($draft->step, min($command->step + 1, self::STEP_RECAP)) : $draft->step;
         $this->store($command->owner, $draft->with($changes, $step, $this->clock->now()));
     }
 
@@ -104,7 +130,7 @@ final readonly class RequestDraftEditor implements CommandHandler
         if (null !== $jobId && $this->isJobAvailable($jobId, $draft->targetArtisanId)) {
             $changes += $this->jobChange($draft, $jobId);
         } elseif ($complete) {
-            $errors['job_id'] = null === $jobId ? 'Choisissez le métier correspondant à votre besoin.' : (null !== $draft->targetArtisanId ? 'Ce professionnel n’exerce pas ce métier.' : 'Ce métier n’est pas disponible.');
+            $errors['job_id'] = null === $jobId ? self::JOB_MESSAGE : (null !== $draft->targetArtisanId ? 'Ce professionnel n’exerce pas ce métier.' : 'Ce métier n’est pas disponible.');
         }
         $type = ProjectType::tryFrom(self::text($input, 'project_type') ?? '');
         if (null !== $type) {
@@ -148,7 +174,9 @@ final readonly class RequestDraftEditor implements CommandHandler
         }
         $description = mb_substr(trim(self::text($input, 'description') ?? ''), 0, RequestDetails::DESCRIPTION_MAX);
         if ($complete && mb_strlen($description) < RequestDetails::DESCRIPTION_MIN) {
-            $errors['description'] = \sprintf('Décrivez votre projet en %d caractères au moins.', RequestDetails::DESCRIPTION_MIN);
+            $errors['description'] = RequestDetails::DESCRIPTION_MESSAGE;
+        } elseif ($complete && [] !== ContactDetector::find($description)) {
+            $errors['description'] = RequestDetails::CONTACT_MESSAGE;
         }
         $budget = self::text($input, 'budget_range');
         if (null !== $budget && null === BudgetRange::tryFrom($budget)) {
@@ -159,6 +187,89 @@ final readonly class RequestDraftEditor implements CommandHandler
         }
 
         return ['answers' => $answers, 'questionnaire_version' => $questionnaire?->version, 'description' => $description, 'budget_range' => $budget];
+    }
+
+    /**
+     * P11.5 — adresse reconnue par la BAN (re-géocodée côté serveur : la saisie du navigateur n'est jamais crue), délai,
+     * créneaux, statut. La sauvegarde automatique ne géocode pas (aucun appel externe toutes les 10 s).
+     *
+     * @param array<array-key, mixed> $input
+     *
+     * @return array<string, mixed>
+     */
+    private function place(RequestDraftView $draft, array $input, bool $complete): array
+    {
+        $errors = [];
+        $changes = [];
+        $timing = Timing::tryFrom(self::text($input, 'timing') ?? '');
+        $changes['timing'] = null !== $timing ? $timing->value : ($complete ? null : $draft->timing);
+        $date = self::text($input, 'desired_date');
+        $changes['desired_date'] = Timing::Date === $timing ? $date : null;
+        $slots = array_values(array_unique(array_filter(\is_array($input['preferred_slots'] ?? null) ? $input['preferred_slots'] : [], static fn (mixed $v): bool => \is_string($v) && null !== PreferredSlot::tryFrom($v))));
+        $changes['preferred_slots'] = $slots;
+        $occupant = OccupantStatus::tryFrom(self::text($input, 'occupant_status') ?? '');
+        $changes['occupant_status'] = null !== $occupant ? $occupant->value : ($complete ? null : $draft->occupantStatus);
+        if (!$complete) {
+            return $changes;
+        }
+
+        $typed = self::text($input, 'address');
+        if (null === $typed || mb_strlen($typed) > self::ADDRESS_MAX) {
+            $errors['address'] = self::ADDRESS_MESSAGE;
+        } elseif (null === $draft->address || $typed !== $draft->address['label']) {
+            try {
+                $found = $this->queries->ask(new GeocodeAddress($typed, self::text($input, 'address_insee'), self::text($input, 'address_postal')));
+            } catch (ExternalServiceUnavailable) {
+                throw new DraftRejected('Le service de recherche d’adresses est momentanément indisponible : réessayez dans quelques minutes, votre brouillon est conservé.', ['address' => self::ADDRESS_MESSAGE]);
+            }
+            if ($found instanceof GeocodedAddress) {
+                $changes['address'] = ['label' => $found->label, 'city_insee' => $found->inseeCode, 'postal_code' => $found->postalCode, 'city' => $found->city, 'lat' => $found->point->latitude, 'lon' => $found->point->longitude];
+            } else {
+                $errors['address'] = self::ADDRESS_MESSAGE;
+            }
+        }
+        if (null === $timing) {
+            $errors['timing'] = 'Indiquez le délai souhaité.';
+        } elseif (Timing::Date === $timing && !$this->isAcceptableDate($date)) {
+            $errors['desired_date'] = self::DATE_MESSAGE;
+        }
+        if (null === $occupant) {
+            $errors['occupant_status'] = 'Indiquez votre statut.';
+        }
+        if ([] !== $errors) {
+            throw new DraftRejected('Certaines informations sont manquantes.', $errors);
+        }
+
+        return $changes;
+    }
+
+    /**
+     * P11.6 — coordonnées : le dépôt exige un compte (RG-040) ; préférence de contact. Le téléphone éventuel est porté
+     * par le compte (Identity), contrôlé par le contrôleur avant cette étape.
+     *
+     * @param array<array-key, mixed> $input
+     *
+     * @return array<string, mixed>
+     */
+    private function contact(DraftOwner $owner, array $input, bool $complete): array
+    {
+        $preference = ContactPreference::tryFrom(self::text($input, 'contact_preference') ?? '');
+        if ($complete && null === $owner->userId) {
+            throw new DraftRejected('Connectez-vous ou créez votre compte pour envoyer votre demande : votre brouillon est conservé.');
+        }
+        if ($complete && null === $preference) {
+            throw new DraftRejected('Indiquez comment les professionnels peuvent vous contacter.', ['contact_preference' => 'Choisissez une préférence de contact.']);
+        }
+
+        return null === $preference ? [] : ['contact_preference' => $preference->value];
+    }
+
+    private function isAcceptableDate(?string $value): bool
+    {
+        $today = $this->clock->now()->setTime(0, 0);
+        $date = null === $value ? false : \DateTimeImmutable::createFromFormat('!Y-m-d', $value, $today->getTimezone());
+
+        return false !== $date && $date->format('Y-m-d') === $value && $date >= $today && $date <= $today->modify(\sprintf('+%d months', self::DESIRED_DATE_MAX_MONTHS));
     }
 
     private function attach(AddDraftAttachment $command): void
@@ -175,7 +286,7 @@ final readonly class RequestDraftEditor implements CommandHandler
             $file = $this->uploader->upload($command->path, $command->clientName, FilePurpose::RequestPhoto);
         } catch (RejectedUpload $e) {
             throw new DraftRejected(match ($e->reason) {
-                RejectedUpload::TYPE_NOT_ALLOWED => 'Format non accepté : JPG, PNG, WEBP ou PDF.', RejectedUpload::TOO_LARGE => \sprintf('Fichier trop lourd : %d Mo au maximum.', $this->settings->int(SettingKey::RequestsMaxFileMb)), RejectedUpload::IMAGE_TOO_LARGE => 'Image trop grande : réduisez sa résolution.', default => 'Ce fichier n’a pas pu être accepté.',
+                RejectedUpload::TYPE_NOT_ALLOWED, RejectedUpload::TOO_LARGE => \sprintf('Ce fichier n’est pas accepté (formats : JPG, PNG, WEBP, PDF — %d Mo max).', $this->settings->int(SettingKey::RequestsMaxFileMb)), RejectedUpload::IMAGE_TOO_LARGE => 'Image trop grande : réduisez sa résolution.', default => 'Ce fichier n’a pas pu être accepté.',
             });
         }
         $now = $this->clock->now();

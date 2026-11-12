@@ -34,7 +34,7 @@ final class HomeCmsTest extends WebTestCase
         self::assertStringNotContainsString('{max_devis}', (string) $this->client->getResponse()->getContent());
         $quick = $crawler->filter('.tm-home-quick')->text();
         self::assertStringContainsString('Trouver un professionnel', $quick);
-        self::assertStringNotContainsString('Déposer ma demande de devis', $quick, 'page P11 pas encore livrée : bouton masqué');
+        self::assertStringContainsString('Déposer ma demande de devis', $quick, 'P11 livrée : accès rapide affiché');
         self::assertCount(0, $crawler->filter('#home-categories'), 'aucune catégorie « à la une » : bloc masqué (P01.5)');
         self::assertSame('/', parse_url((string) $crawler->filter('link[rel="canonical"]')->attr('href'), \PHP_URL_PATH));
     }

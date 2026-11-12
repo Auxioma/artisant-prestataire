@@ -1,0 +1,36 @@
+{#- P11.7 — confirmation d'envoi (Figma 25:3) : n° de demande, prochaines étapes, invitation à compléter (photos). Délai moyen de réponse non affiché tant qu'il n'est pas mesuré (P-63). -#}
+{% extends 'base.html.twig' %}
+{% set noindex = true %}
+
+{% block title %}Demande envoyée — TrouveMoi{% endblock %}
+
+{% block body %}
+<div class="tm-request">
+    <div class="tm-container tm-request__sent">
+        <section class="tm-card-panel tm-request__main" aria-labelledby="sent-title">
+            <span class="tm-request__sent-icon" aria-hidden="true"><twig:Icon name="checkC" class="tm-icon--inherit" /></span>
+            {% if request.status.value == 'pending_moderation' %}
+                <h1 id="sent-title">Votre demande est en cours de vérification</h1>
+                <p class="tm-body">Notre équipe la relit avant de la transmettre aux professionnels ; vous serez prévenu par e-mail.</p>
+            {% else %}
+                <h1 id="sent-title">Votre demande a bien été envoyée</h1>
+                <p class="tm-body">Un e-mail de confirmation vous a été adressé.</p>
+            {% endif %}
+            <div class="tm-request__sent-card">
+                <p class="tm-card-title">Demande n° {{ request.number }}{{ job ? ' · ' ~ job.name }}</p>
+                <p class="tm-caption">Code postal {{ request.postalCode }} · Jusqu’à {{ request.maxQuotes }} devis possibles{{ target ? ' · Demande directe à ' ~ target.name }}</p>
+            </div>
+            <h2 class="tm-card-title">Prochaines étapes</h2>
+            <ul class="tm-check-list">
+                <li><twig:Icon name="check" size="xs" />Votre demande est transmise aux artisans vérifiés qui interviennent dans votre commune.</li>
+                <li><twig:Icon name="check" size="xs" />Vous recevez jusqu’à {{ request.maxQuotes }} devis et êtes prévenu par e-mail à chacun.</li>
+                <li><twig:Icon name="check" size="xs" />Votre adresse complète n’est communiquée qu’au professionnel dont vous acceptez le devis.</li>
+            </ul>
+            <div class="tm-request__actions">
+                {% if tm_route_exists('client_requests') %}<twig:Button href="{{ path('client_requests') }}" icon="arrowR">Consulter mes demandes</twig:Button>{% endif %}
+                <twig:Button variant="secondary" href="{{ path('public_home') }}">Retour à l’accueil</twig:Button>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

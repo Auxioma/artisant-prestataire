@@ -130,6 +130,8 @@ services:
 
     # Ports du module QuoteRequest
     App\QuoteRequest\Domain\Request\QuoteRequestRepository: '@App\QuoteRequest\Infrastructure\Doctrine\Repository\DoctrineQuoteRequestRepository'
+    App\QuoteRequest\Application\Port\RequestContentStore: '@App\QuoteRequest\Infrastructure\Persistence\DbalRequestContentStore'
+    App\QuoteRequest\Application\Port\RequestMailer: '@App\QuoteRequest\Infrastructure\Mailer\NotificationRequestMailer'
     App\QuoteRequest\Application\Draft\DraftStore: '@App\QuoteRequest\Infrastructure\Draft\DbalDraftStore'
     App\QuoteRequest\Application\Port\RequestRiskAssessor: '@App\QuoteRequest\Infrastructure\Risk\InterimRequestRiskAssessor'
 
@@ -221,6 +223,8 @@ when@test:
             class: Symfony\Component\Cache\Adapter\ArrayAdapter
         App\Shared\Application\Integration\CompanyRegistry:
             class: App\Tests\Support\Fake\FakeCompanyRegistry
+        App\Catalog\Application\Geo\Port\AddressGeocoder:
+            class: App\Tests\Support\Fake\FakeAddressGeocoder
         # Antivirus de test (reconnaît la chaîne EICAR) ; ClamAvScanner réel couvert par ClamAvScannerTest.
         App\Shared\Application\Storage\Port\AntivirusScanner:
             class: App\Tests\Support\Fake\EicarAntivirusScanner

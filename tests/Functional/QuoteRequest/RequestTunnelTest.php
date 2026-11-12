@@ -60,7 +60,7 @@ final class RequestTunnelTest extends WebTestCase
 
         $crawler = $this->client->request('POST', '/demande-de-devis/1', ['_token' => $this->token($crawler), 'action' => 'continue']);
         self::assertResponseStatusCodeSame(422);
-        self::assertSame(['Choisissez le métier correspondant à votre besoin.', 'Choisissez le type de projet.'], $crawler->filter('.tm-field__error')->each(static fn (Crawler $n): string => trim($n->text())));
+        self::assertSame(['Indiquez le type de professionnel recherché.', 'Choisissez le type de projet.'], $crawler->filter('.tm-field__error')->each(static fn (Crawler $n): string => trim($n->text())));
 
         $this->client->request('POST', '/demande-de-devis/1', ['_token' => $this->token($crawler), 'action' => 'continue', 'job_id' => $this->jobId, 'project_type' => 'repair']);
         self::assertResponseRedirects('/demande-de-devis/2', 303);
@@ -72,7 +72,7 @@ final class RequestTunnelTest extends WebTestCase
         $crawler = $this->client->request('POST', '/demande-de-devis/2', $form);
         self::assertResponseStatusCodeSame(422);
         self::assertStringContainsString('Réponse obligatoire', $crawler->filter('[data-key="etage"]')->text(), 'question conditionnelle devenue obligatoire');
-        self::assertStringContainsString('30 caractères au moins', $crawler->filter('#description_error')->text());
+        self::assertStringContainsString('30 caractères minimum', $crawler->filter('#description_error')->text());
         self::assertSame('Trop court', $crawler->filter('#description')->text(), 'saisie réaffichée');
 
         $form['answers'] = ['logement' => 'maison', 'etage' => '3', 'probleme' => 'fuite'];
@@ -130,7 +130,7 @@ final class RequestTunnelTest extends WebTestCase
             new UploadedFile(StorageSamples::file('pas une image'), 'faux.png', 'image/png', null, true),
         ]]);
         $crawler = $this->client->followRedirect();
-        self::assertStringContainsString('« faux.png » : Format non accepté', $crawler->filter('.tm-toasts')->text());
+        self::assertStringContainsString('« faux.png » : Ce fichier n’est pas accepté', $crawler->filter('.tm-toasts')->text());
         self::assertSelectorTextContains('.tm-request-file', 'Analyse en cours');
 
         $fileId = DbalValue::string($this->connection->fetchOne('SELECT file_id FROM request.draft_attachment'));
