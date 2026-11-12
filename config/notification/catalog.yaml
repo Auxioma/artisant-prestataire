@@ -54,6 +54,7 @@ notifications:
         label: "Demande mise en modération / refusée"
         recipient: "Client"
         channels: [email, in_app]
+        variables: [prenom, numero, metier, refusee, motif, lien_aide]
     'E-11':
         label: "Compte créé lors du dépôt (activation)"
         recipient: "Client"

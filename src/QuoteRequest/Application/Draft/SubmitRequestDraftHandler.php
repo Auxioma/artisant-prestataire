@@ -60,6 +60,7 @@ final readonly class SubmitRequestDraftHandler implements CommandHandler
             $draft->title,
             $draft->summary,
             $draft->workNature,
+            $draft->source ?? 'other',
         ));
 
         $this->content->saveAddress($command->requestId, $address['label'], $address['lat'], $address['lon'], $this->clock->now());

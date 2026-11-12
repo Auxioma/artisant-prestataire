@@ -20,6 +20,7 @@ use App\QuoteRequest\Domain\Request\QuoteRequestId;
 use App\QuoteRequest\Domain\Request\QuoteRequestRepository;
 use App\QuoteRequest\Domain\Request\RequestDetails;
 use App\QuoteRequest\Domain\Request\RequestRuleViolation;
+use App\QuoteRequest\Domain\Request\RequestSource;
 use App\QuoteRequest\Domain\Request\SubmissionTerms;
 use App\QuoteRequest\Domain\Request\Timing;
 use App\Shared\Application\Audit\AuditTrail;
@@ -79,7 +80,7 @@ final readonly class SubmitQuoteRequestHandler implements CommandHandler
             throw new RequestRuleViolation('Vous avez déjà envoyé une demande pour ce métier à cette adresse : retrouvez-la dans « Mes demandes ».');
         }
 
-        $risk = $this->risk->assess(new RequestRiskInput($command->clientId, $command->jobId, $details->description, $details->answers, $command->ipHash, $now));
+        $risk = $this->risk->assess(new RequestRiskInput($command->clientId, $command->jobId, $details->description, $details->answers, $command->ipHash, $now, array_values(array_filter([$details->title, $details->summary, $details->workNature]))));
         $terms = new SubmissionTerms(
             $this->settings->int(SettingKey::QuotesMaxPerRequest),
             $this->settings->int(SettingKey::RequestsExpiryDays),
@@ -102,6 +103,8 @@ final readonly class SubmitQuoteRequestHandler implements CommandHandler
             $now,
             ContactPreference::tryFrom($command->contactPreference) ?? throw new RequestRuleViolation('Préférence de contact invalide.'),
             $command->questionnaireVersion,
+            RequestSource::tryFrom($command->source) ?? RequestSource::Other,
+            $command->ipHash,
         );
         $this->requests->add($request);
         $this->events->publish(...$request->releaseEvents());

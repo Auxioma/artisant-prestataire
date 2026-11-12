@@ -70,4 +70,10 @@ enum RequestStatus: string
             self::Rejected => 'Refusée',
         };
     }
+
+    /** Libellés du back-office (Figma BO04.1 186:1669 : « En modération »). */
+    public function adminLabel(): string
+    {
+        return self::PendingModeration === $this ? 'En modération' : $this->label();
+    }
 }

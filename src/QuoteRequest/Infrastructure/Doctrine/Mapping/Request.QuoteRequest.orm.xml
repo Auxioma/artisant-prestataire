@@ -15,6 +15,8 @@
         <field name="duplicateKey" type="string" length="64" column="duplicate_key"/>
         <field name="status" type="string" length="20" enum-type="App\QuoteRequest\Domain\Request\RequestStatus"/>
         <field name="projectType" type="string" length="20" column="project_type" enum-type="App\QuoteRequest\Domain\Request\ProjectType"/>
+        <field name="source" type="string" length="10" enum-type="App\QuoteRequest\Domain\Request\RequestSource"/>
+        <field name="ipHash" type="string" length="64" column="ip_hash" nullable="true"/>
         <field name="title" type="string" length="100" nullable="true"/>
         <field name="summary" type="string" length="300" nullable="true"/>
         <field name="workNature" type="string" length="120" column="work_nature" nullable="true"/>

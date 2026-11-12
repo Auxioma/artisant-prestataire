@@ -101,6 +101,10 @@ final readonly class RequestDraftEditor implements CommandHandler
     {
         $draft = $this->current($command->owner, $command->draftId);
         $changes = [];
+        // BO04.1 « Source » : premier point d'entrée retenu (une demande directe l'emporte).
+        if (null !== $command->source && (null === $draft->source || null !== $command->targetArtisanId)) {
+            $changes['source'] = $command->source;
+        }
         if (null !== $command->targetArtisanId) {
             $artisan = $this->artisan($command->targetArtisanId) ?? throw new DraftRejected('Ce professionnel n’est pas disponible pour une demande directe.');
             $changes['target_artisan_id'] = $artisan->profileId;

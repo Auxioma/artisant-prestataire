@@ -100,6 +100,13 @@ enum SettingKey: string
     // Modération, messagerie, anti-fraude
     case ModerationOffersPrior = 'moderation.offers_prior';
     case ModerationRequestRiskThreshold = 'moderation.request_risk_threshold';
+    case ModerationRequestPointsForbiddenTerm = 'moderation.request_points_forbidden_term';
+    case ModerationRequestPointsLink = 'moderation.request_points_link';
+    case ModerationRequestPointsContact = 'moderation.request_points_contact';
+    case ModerationRequestPointsDuplicateText = 'moderation.request_points_duplicate_text';
+    case ModerationRequestPointsVelocity = 'moderation.request_points_velocity';
+    case ModerationRequestVelocityPerDay = 'moderation.request_velocity_per_day';
+    case ModerationRequestSimilarityDays = 'moderation.request_similarity_days';
     case ModerationForbiddenTerms = 'moderation.forbidden_terms';
     case ModerationProfileSampleRate = 'moderation.profile_sample_rate';
     case MessagesMaskContactsBeforeAccept = 'messages.mask_contacts_before_accept';
@@ -253,6 +260,14 @@ enum SettingKey: string
 
             self::ModerationOffersPrior => $d(T::Boolean, true, 'Modération a priori des offres'),
             self::ModerationRequestRiskThreshold => $d(T::Integer, 70, 'Seuil de mise en modération d\'une demande (/100)', 0, 100),
+            // RG-063 — points de risque par signal (score plafonné à 100) ; valeurs proposées, à ajuster en BO05.3.
+            self::ModerationRequestPointsForbiddenTerm => $d(T::Integer, 70, 'Score de risque : terme interdit (points)', 0, 100, proposed: true),
+            self::ModerationRequestPointsLink => $d(T::Integer, 40, 'Score de risque : lien dans la demande (points)', 0, 100, proposed: true),
+            self::ModerationRequestPointsContact => $d(T::Integer, 40, 'Score de risque : coordonnées dans la demande (points)', 0, 100, proposed: true),
+            self::ModerationRequestPointsDuplicateText => $d(T::Integer, 40, 'Score de risque : texte identique à une autre demande (points)', 0, 100, proposed: true),
+            self::ModerationRequestPointsVelocity => $d(T::Integer, 40, 'Score de risque : rafale de demandes (points)', 0, 100, proposed: true),
+            self::ModerationRequestVelocityPerDay => $d(T::Integer, 3, 'Rafale : demandes en 24 h (même compte ou même IP) au-delà desquelles le signal est levé', 1, 50, proposed: true),
+            self::ModerationRequestSimilarityDays => $d(T::Integer, 30, 'Texte identique : période de comparaison (jours)', 1, 365, proposed: true),
             self::ModerationForbiddenTerms => $d(T::StringList, [], 'Termes interdits dans les profils et contenus publics (RG-031)', proposed: true),
             self::ModerationProfileSampleRate => $d(T::Integer, 10, 'Part des modifications de profil relues par un humain (%, RG-031)', 0, 100, proposed: true),
             self::MessagesMaskContactsBeforeAccept => $d(T::Boolean, true, 'Masquage des coordonnées avant acceptation'),

@@ -1,0 +1,137 @@
+{#- BO04.1 (Figma 186:1669) — demandes : indicateurs, filtres, sélection et décisions de modération, liste, fiche latérale. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'requests' %}
+{% block title %}Demandes et devis{% endblock %}
+
+{% set status_variants = {pending_moderation: 'pending', open: 'verified', full: 'neutral', awarded: 'available', completed: 'neutral', expired: 'neutral', cancelled: 'neutral', rejected: 'refused', draft: 'neutral'} %}
+{% macro status(value, statuses, variants) %}{% for s in statuses|filter(s => s.value == value) %}<twig:Badge variant="{{ variants[value] ?? 'neutral' }}">{{ s.adminLabel }}</twig:Badge>{% endfor %}{% endmacro %}
+{% macro risk(score, threshold) %}<span class="tm-risk{{ score >= threshold ? ' tm-risk--high' }}"><progress class="tm-risk__bar" max="100" value="{{ score }}" aria-hidden="true"></progress><strong>{{ score }}</strong><span class="tm-visually-hidden"> sur 100</span></span>{% endmacro %}
+
+{% block body %}
+    {% import _self as m %}
+    {{ include('admin/requests/_head.html.twig', {tab: 'requests', total: page.kpis.all, quotes: page.kpis.quotes}) }}
+
+    <ul class="tm-admin-kpis" aria-label="Indicateurs">
+        <li class="tm-admin-kpi"><a href="{{ path('admin_requests', {statut: 'pending_moderation'}) }}"><span>En modération</span><strong>{{ page.kpis.pending|number_format(0, ',', ' ') }}</strong></a></li>
+        <li class="tm-admin-kpi"><a href="{{ path('admin_requests', {statut: 'open'}) }}"><span>Ouvertes</span><strong>{{ page.kpis.open|number_format(0, ',', ' ') }}</strong></a></li>
+        <li class="tm-admin-kpi"><a href="{{ path('admin_requests', {statut: 'full'}) }}"><span>Complètes</span><strong>{{ page.kpis.full|number_format(0, ',', ' ') }}</strong></a></li>
+        <li class="tm-admin-kpi"><span>Sans devis &gt; 48 h</span><strong>{{ page.kpis.stale|number_format(0, ',', ' ') }}</strong>{% if page.kpis.stale > 0 %}<em>À traiter</em>{% endif %}</li>
+    </ul>
+
+    <div class="tm-users{{ record ? ' has-record' }}">
+        <section class="tm-admin-panel" aria-labelledby="liste-titre">
+            <h2 id="liste-titre" class="tm-visually-hidden">Liste des demandes</h2>
+            <form method="get" class="tm-admin-filters" role="search">
+                <div class="tm-field tm-admin-filters__search"><label class="tm-visually-hidden" for="q">Rechercher</label><div class="tm-field__control"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><input class="tm-field__input" id="q" name="q" type="search" value="{{ filters.q }}" placeholder="N° de demande, métier, ville"></div></div>
+                {% macro select(id, label, options, value) %}
+                    <div class="tm-select"><label class="tm-visually-hidden" for="{{ id }}">{{ label }}</label><select class="tm-select__input" id="{{ id }}" name="{{ id }}"><option value="">{{ label }}</option>{% for v, l in options %}<option value="{{ v }}"{{ value == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
+                {% endmacro %}
+                {{ _self.select('statut', 'Statut', statuses|filter(s => s.value != 'draft')|reduce((acc, s) => acc|merge({(s.value): s.adminLabel}), {}), filters.statut) }}
+                {{ _self.select('metier', 'Métier', jobs, filters.metier) }}
+                {{ _self.select('departement', 'Département', departments|map((n, c) => c ~ ' — ' ~ n), filters.departement) }}
+                {{ _self.select('source', 'Source', sources|reduce((acc, s) => acc|merge({(s.value): s.label}), {}), filters.source) }}
+                {{ _self.select('score', 'Score', {'1': 'Score ≥ ' ~ threshold}, filters.score) }}
+                <twig:Button type="submit" variant="secondary" icon="search" iconPosition="start">Filtrer</twig:Button>
+            </form>
+
+            <form method="post" action="{{ path('admin_requests_decision') }}" id="selection" data-controller="admin-selection" data-turbo="false">
+                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                <input type="hidden" name="back" value="{{ app.request.requestUri }}">
+                {% if is_granted('admin.requests.edit') %}
+                    <div class="tm-admin-bulk" role="group" aria-label="Actions sur la sélection">
+                        <strong data-admin-selection-target="count">Sélection</strong>
+                        <button type="submit" class="tm-link-button" name="decision" value="approve">Valider</button>
+                        <button type="submit" class="tm-link-button" name="decision" value="close">Clôturer</button>
+                        <span class="tm-admin-bulk__reject">
+                            <label class="tm-visually-hidden" for="bulk_reason">Motif de refus</label>
+                            <select id="bulk_reason" name="reason" class="tm-admin-bulk__select"><option value="">Motif de refus…</option>{% for r in reasons %}<option value="{{ r.value }}">{{ r.label }}</option>{% endfor %}</select>
+                            <button type="submit" class="tm-link-button tm-admin-danger" name="decision" value="reject">Refuser</button>
+                        </span>
+                    </div>
+                {% endif %}
+                <div class="tm-admin-table-wrap">
+                    <table class="tm-admin-table">
+                        <thead><tr>
+                            <th scope="col"><span class="tm-visually-hidden">Sélection</span>{% if is_granted('admin.requests.edit') %}<input type="checkbox" aria-label="Tout sélectionner" data-action="admin-selection#toggleAll">{% endif %}</th>
+                            <th scope="col">N°</th><th scope="col">Métier · Ville</th><th scope="col">Statut</th><th scope="col">Artisans notifiés</th><th scope="col">Devis</th><th scope="col">Score anti-spam</th><th scope="col">Source</th><th scope="col"><span class="tm-visually-hidden">Actions</span></th>
+                        </tr></thead>
+                        <tbody>
+                        {% for r in page.items %}
+                            <tr{{ record and record.row.id == r.id ? ' class="is-selected"' }}>
+                                <td>{% if is_granted('admin.requests.edit') %}<input type="checkbox" name="ids[]" value="{{ r.id }}" aria-label="Sélectionner {{ r.number }}" data-action="admin-selection#update" data-admin-selection-target="item">{% endif %}</td>
+                                <th scope="row" class="tm-nowrap">{{ r.number }}</th>
+                                <td>{{ r.jobName }} · {{ r.cityName }}</td>
+                                <td>{{ m.status(r.status, statuses, status_variants) }}</td>
+                                <td title="Diffusion : lot 4 (T-404)">—</td>
+                                <td>{{ r.activeQuotes }}/{{ r.maxQuotes }}</td>
+                                <td>{{ m.risk(r.riskScore, threshold) }}</td>
+                                <td>{{ (sources|filter(s => s.value == r.source)|first).label ?? r.source }}</td>
+                                <td><a class="tm-icon-link" href="{{ path('admin_requests', filters|merge({page: page.page, demande: r.id})) }}" aria-label="Voir la demande {{ r.number }}"><twig:Icon name="eye" size="sm" class="tm-icon--inherit" /></a></td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="9">Aucune demande ne correspond à ces critères.</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+            {% if page.pages <= 1 and page.total > 0 %}<p class="tm-caption">1–{{ page.total }} sur {{ page.total }}</p>{% endif %}
+            {{ include('admin/_pagination.html.twig', {page: page, route: 'admin_requests', params: filters}) }}
+        </section>
+
+        {% if record %}
+        <aside class="tm-admin-panel tm-users__record" aria-labelledby="fiche-titre">
+            <header class="tm-users__record-head">
+                <h2 id="fiche-titre" class="tm-card-title">Demande {{ record.row.number }}</h2>
+                <a class="tm-users__close" href="{{ path('admin_requests', filters|merge({page: page.page})) }}" aria-label="Fermer la fiche"><twig:Icon name="x" size="sm" class="tm-icon--inherit" /></a>
+                <p class="tm-caption">Envoyée le {{ record.row.submittedAt|date('d/m/Y à H:i', 'Europe/Paris') }}</p>
+                <p>{{ m.status(record.row.status, statuses, status_variants) }}</p>
+            </header>
+            <dl class="tm-facts">
+                <div><dt>Métier · ville</dt><dd>{{ record.row.jobName }} · {{ record.row.cityName }}</dd></div>
+                <div><dt>Client</dt><dd>{{ record.clientName ?? '—' }}</dd></div>
+                {% if record.targetArtisanName %}<div><dt>Demande directe</dt><dd>{{ record.targetArtisanName }}</dd></div>{% endif %}
+                <div><dt>Type · délai</dt><dd>{{ record.projectType }} · {{ record.timing }}</dd></div>
+                {% if record.title %}<div><dt>Titre</dt><dd>{{ record.title }}</dd></div>{% endif %}
+                {% if record.summary %}<div><dt>Besoin</dt><dd>{{ record.summary }}</dd></div>{% endif %}
+                <div><dt>Description</dt><dd class="tm-pre">{{ record.description }}</dd></div>
+                {% for a in record.answers %}<div><dt>{{ a.label }}</dt><dd>{{ a.value }}</dd></div>{% endfor %}
+                <div><dt>Photos</dt><dd>{{ record.attachments }}</dd></div>
+                {% if record.statusReason and record.row.status in ['rejected', 'cancelled'] %}<div><dt>Motif</dt><dd>{{ (reasons|filter(r => r.value == record.statusReason)|first).label ?? record.statusReason }}</dd></div>{% endif %}
+            </dl>
+            <h3 class="tm-card-title">Score de risque</h3>
+            <p>{{ m.risk(record.row.riskScore, threshold) }} <span class="tm-caption">seuil de modération : {{ threshold }}</span></p>
+            <ul class="tm-check-list">{% for s in record.signals %}<li><twig:Icon name="alert" size="xs" />{{ s }}</li>{% else %}<li><twig:Icon name="check" size="xs" />Aucun signal</li>{% endfor %}</ul>
+
+            {% if record.row.status == 'pending_moderation' and is_granted('admin.requests.edit') %}
+                <form method="post" action="{{ path('admin_requests_decision') }}" class="tm-admin-decision" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <input type="hidden" name="ids[]" value="{{ record.row.id }}">
+                    <input type="hidden" name="back" value="{{ path('admin_requests', filters|merge({page: page.page})) }}">
+                    <h3 class="tm-card-title">Décision</h3>
+                    <fieldset>
+                        <legend>Motif de refus (normalisé)</legend>
+                        <div class="tm-admin-chips">
+                            {% for r in reasons %}<label class="tm-admin-chip"><input type="radio" name="reason" value="{{ r.value }}"><span>{{ r.label }}</span></label>{% endfor %}
+                        </div>
+                    </fieldset>
+                    <div class="tm-field"><label class="tm-field__label" for="comment">Note interne (facultatif)</label><div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="comment" name="comment" rows="2" maxlength="500"></textarea></div></div>
+                    <div class="tm-admin-actions">
+                        <twig:Button type="submit" name="decision" value="approve">Valider et publier</twig:Button>
+                        <twig:Button type="submit" variant="danger" name="decision" value="reject">Refuser (e-mail au client)</twig:Button>
+                    </div>
+                </form>
+            {% elseif record.row.status in ['open', 'full'] and is_granted('admin.requests.edit') %}
+                <form method="post" action="{{ path('admin_requests_decision') }}" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <input type="hidden" name="ids[]" value="{{ record.row.id }}">
+                    <input type="hidden" name="back" value="{{ path('admin_requests', filters|merge({page: page.page})) }}">
+                    <twig:Button type="submit" variant="secondary" name="decision" value="close">Clôturer la demande</twig:Button>
+                </form>
+            {% endif %}
+        </aside>
+        {% endif %}
+    </div>
+
+    <p class="tm-admin-note" role="note"><twig:Icon name="info" size="sm" class="tm-icon--inherit" />Score anti-spam ≥ {{ threshold }}/100 (moderation.request_risk_threshold) : la demande passe en file de modération avant diffusion (RG-063).</p>
+{% endblock %}

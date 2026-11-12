@@ -28,4 +28,16 @@ final readonly class NotificationRequestMailer implements RequestMailer
             'lien' => $link,
         ], $link));
     }
+
+    public function sendModeration(string $email, string $firstName, string $userId, string $number, string $jobName, ?string $refusalReason): void
+    {
+        $this->notifier->notify(new Notification('E-10b', $email, $userId, [
+            'prenom' => $firstName,
+            'numero' => $number,
+            'metier' => $jobName,
+            'refusee' => null !== $refusalReason,
+            'motif' => $refusalReason,
+            'lien_aide' => $this->urls->generate('content_contact', [], UrlGeneratorInterface::ABSOLUTE_URL),
+        ]));
+    }
 }

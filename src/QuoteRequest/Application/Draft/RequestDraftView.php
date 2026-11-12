@@ -44,6 +44,7 @@ final readonly class RequestDraftView
         public ?\DateTimeImmutable $submitRequestedAt = null,
         /** Motif d'un envoi automatique refusé à l'activation du compte (affiché au récapitulatif). */
         public ?string $submitError = null,
+        public ?string $source = null,
     ) {
     }
 
@@ -56,7 +57,7 @@ final readonly class RequestDraftView
             'answers' => $this->answers, 'description' => $this->description, 'budget_range' => $this->budgetRange,
             'address' => $this->address, 'timing' => $this->timing, 'desired_date' => $this->desiredDate,
             'preferred_slots' => $this->preferredSlots, 'occupant_status' => $this->occupantStatus, 'contact_preference' => $this->contactPreference,
-            'title' => $this->title, 'summary' => $this->summary, 'work_nature' => $this->workNature, 'submit_error' => $this->submitError,
+            'title' => $this->title, 'summary' => $this->summary, 'work_nature' => $this->workNature, 'submit_error' => $this->submitError, 'source' => $this->source,
         ];
     }
 
@@ -101,6 +102,7 @@ final readonly class RequestDraftView
             $pendingUserId,
             $submitRequestedAt,
             $string('submit_error'),
+            $string('source'),
         );
     }
 

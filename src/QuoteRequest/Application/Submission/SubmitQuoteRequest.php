@@ -40,6 +40,7 @@ final readonly class SubmitQuoteRequest implements Command
         public ?string $title = null,
         public ?string $summary = null,
         public ?string $workNature = null,
+        public string $source = 'other',
     ) {
     }
 }

@@ -35,6 +35,9 @@ final class QuoteRequest extends AggregateRoot
     private ?string $budgetRange;
     private Timing $timing;
     private ?\DateTimeImmutable $desiredDate;
+    private RequestSource $source = RequestSource::Other;
+    /** Empreinte (HMAC) de l'IP d'envoi : signal « rafale » du score de risque (RG-063), jamais l'IP elle-même. */
+    private ?string $ipHash = null;
     private ?string $title = null;
     private ?string $summary = null;
     private ?string $workNature = null;
@@ -94,6 +97,8 @@ final class QuoteRequest extends AggregateRoot
         \DateTimeImmutable $now,
         ContactPreference $contactPreference = ContactPreference::MessagingOnly,
         ?int $questionnaireVersion = null,
+        RequestSource $source = RequestSource::Other,
+        ?string $ipHash = null,
     ): self {
         foreach ([$clientId, $jobId, $targetArtisanId ?? $clientId] as $uuid) {
             if (1 !== preg_match(self::UUID, $uuid)) {
@@ -107,6 +112,8 @@ final class QuoteRequest extends AggregateRoot
         $request->apply($details);
         $request->contactPreference = $contactPreference;
         $request->questionnaireVersion = $questionnaireVersion;
+        $request->source = $source;
+        $request->ipHash = $ipHash;
         $request->riskScore = $terms->riskScore;
         $request->riskSignals = $terms->riskSignals;
         if ($terms->needsModeration()) {
@@ -322,6 +329,11 @@ final class QuoteRequest extends AggregateRoot
     public function contactPreference(): ContactPreference
     {
         return $this->contactPreference;
+    }
+
+    public function source(): RequestSource
+    {
+        return $this->source;
     }
 
     public function questionnaireVersion(): ?int

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Administration\UI\Http;
 
 use App\Shared\Application\Admin\PendingArtisanVerifications;
+use App\Shared\Application\Admin\PendingRequestModerations;
 use App\Shared\Application\Bus\QueryBus;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,10 +23,13 @@ final class AdminDashboardController extends AbstractController
     public function __invoke(QueryBus $queries): Response
     {
         $pending = $queries->ask(new PendingArtisanVerifications());
+        $moderations = $queries->ask(new PendingRequestModerations());
 
         return $this->render('admin/dashboard.html.twig', [
             'queues' => [
                 ['label' => 'Dossiers pros à vérifier', 'count' => \is_int($pending) ? $pending : 0, 'icon' => 'shield', 'permission' => 'admin.artisans.view'],
+                // Figma BO01.2 « Demandes en modération » : clic → liste filtrée (BO04.1).
+                ['label' => 'Demandes en modération', 'count' => \is_int($moderations) ? $moderations : 0, 'icon' => 'alert', 'permission' => 'admin.requests.view', 'route' => 'admin_requests', 'params' => ['statut' => 'pending_moderation']],
             ],
         ]);
     }

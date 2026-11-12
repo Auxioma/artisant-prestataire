@@ -37,6 +37,7 @@ use App\QuoteRequest\Domain\Request\QuoteRequestId;
 use App\QuoteRequest\Domain\Request\QuoteRequestRepository;
 use App\QuoteRequest\Domain\Request\RequestDetails;
 use App\QuoteRequest\Domain\Request\RequestRuleViolation;
+use App\QuoteRequest\Domain\Request\RequestSource;
 use App\QuoteRequest\Domain\Request\Timing;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
@@ -116,12 +117,16 @@ final class RequestTunnelController extends AbstractController
         $pro = $request->query->getString('pro');
         if ('' !== $pro) {
             try {
-                $this->commands->dispatch(new StartRequestDraft($owner, $this->ids->next(), targetArtisanId: $pro));
+                $this->commands->dispatch(new StartRequestDraft($owner, $this->ids->next(), targetArtisanId: $pro, source: RequestSource::Direct->value));
             } catch (DraftRejected $e) {
                 $this->addFlash('error', $e->getMessage());
             }
         }
         $draft = $this->draft($owner);
+        if ('' === $pro && null === $draft?->source) {
+            $this->commands->dispatch(new StartRequestDraft($owner, $draft->id ?? $this->ids->next(), source: $this->source($request)->value));
+            $draft = $this->draft($owner);
+        }
 
         return $this->toStep($request, $draft->step ?? 1);
     }
@@ -138,7 +143,7 @@ final class RequestTunnelController extends AbstractController
             throw $this->createNotFoundException('Métier inconnu.');
         }
         try {
-            $this->commands->dispatch(new StartRequestDraft($this->owner($request), $this->ids->next(), jobId: $entry->id));
+            $this->commands->dispatch(new StartRequestDraft($this->owner($request), $this->ids->next(), jobId: $entry->id, source: $this->source($request)->value));
         } catch (DraftRejected $e) {
             $this->addFlash('error', $e->getMessage());
         }
@@ -457,6 +462,24 @@ final class RequestTunnelController extends AbstractController
         $template = 'request/step'.$step.'.html.twig';
 
         return $this->withCookie($this->render($template, $data, new Response(status: null === $error ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY)), $request);
+    }
+
+    /** BO04.1 « Source » : page d'où vient le visiteur (même site uniquement ; rien n'est conservé de l'URL). */
+    private function source(Request $request): RequestSource
+    {
+        $referer = (string) $request->headers->get('referer');
+        if ('' === $referer || parse_url($referer, \PHP_URL_HOST) !== $request->getHost()) {
+            return RequestSource::Other;
+        }
+        $path = (string) parse_url($referer, \PHP_URL_PATH);
+
+        return match (true) {
+            '/' === $path || str_starts_with($path, '/accueil') => RequestSource::Home,
+            str_starts_with($path, '/recherche') || str_starts_with($path, '/nos-professionnels') => RequestSource::Search,
+            str_starts_with($path, '/pro/') => RequestSource::Direct,
+            str_starts_with($path, '/demande-de-devis') => RequestSource::Other,
+            default => RequestSource::Seo, // pages catégorie, métier, ville (P03–P05)
+        };
     }
 
     /** @return array<string, mixed> */

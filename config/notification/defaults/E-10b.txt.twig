@@ -1,0 +1,11 @@
+Bonjour {{ prenom }},
+
+{% if refusee %}
+Votre demande de devis n° {{ numero }} ({{ metier }}) n’a pas été publiée après vérification.
+
+Motif : {{ motif }}.
+
+Vous pouvez déposer une nouvelle demande en tenant compte de ce motif. Une question ? Contactez-nous : {{ lien_aide }}
+{% else %}
+Votre demande de devis n° {{ numero }} ({{ metier }}) est bien reçue. Comme certaines demandes, elle est relue par notre équipe avant d’être transmise aux professionnels : vous serez prévenu dès sa publication.
+{% endif %}

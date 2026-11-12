@@ -1,0 +1,10 @@
+{#- BO04.2 — devis : liste livrée avec le lot Devis (T-501 et suivants). -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'requests' %}
+{% block title %}Devis — Demandes et devis{% endblock %}
+{% block body %}
+    {{ include('admin/requests/_head.html.twig', {tab: 'quotes', total: page.kpis.all, quotes: page.kpis.quotes, filters: {}}) }}
+    <section class="tm-admin-panel">
+        <twig:EmptyState title="Aucun devis à afficher" text="La liste des devis (montant, statut, artisan, demande, PDF et versions) arrive avec le lot Devis." />
+    </section>
+{% endblock %}

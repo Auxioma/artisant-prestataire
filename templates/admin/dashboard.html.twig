@@ -9,7 +9,7 @@
             <h2 id="files-titre" class="tm-card-title">Files d’attente</h2>
             <ul class="tm-admin-queues">
                 {% for queue in queues|filter(q => is_granted(q.permission)) %}
-                    <li><twig:Icon name="{{ queue.icon }}" size="sm" class="tm-icon--inherit" /><span>{{ queue.label }}</span><span class="tm-admin-count{{ queue.count > 0 ? ' tm-admin-count--todo' }}">{{ queue.count }}</span></li>
+                    <li><twig:Icon name="{{ queue.icon }}" size="sm" class="tm-icon--inherit" />{% if queue.route is defined %}<a href="{{ path(queue.route, queue.params ?? {}) }}">{{ queue.label }}</a>{% else %}<span>{{ queue.label }}</span>{% endif %}<span class="tm-admin-count{{ queue.count > 0 ? ' tm-admin-count--todo' }}">{{ queue.count }}</span></li>
                 {% else %}
                     <li>Aucune file d’attente pour votre rôle.</li>
                 {% endfor %}

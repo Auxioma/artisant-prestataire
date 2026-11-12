@@ -13,7 +13,7 @@
 | RG-044 | Crédit gratuit unique à la vérification | Billing | `GrantFreeCredit` (événement `ProfessionalAccountVerified`), `DbalCreditLedger`, index `credit_ledger_free_grant_uniq` | `FreeCreditTest` (4), `ArtisanSignupCompletionTest` | T-211 | ✅ |
 | RG-045 | Limitation des tentatives, nouvel appareil, non-énumération | Identity | | | T-204 | ⬜ |
 | RG-062 | Diffusion aux éligibles | QuoteRequest | | | T-404 | ⬜ |
-| RG-063 | Score de risque → modération | QuoteRequest / Moderation | | | T-403 | ⬜ |
+| RG-063 | Score de risque → modération | QuoteRequest | `RequestRiskScorer` (signaux `RequestRiskSignal`, points `moderation.request_points_*`), `DbalRequestRiskSignals`, `QuoteRequest::submit` (en modération au-delà du seuil), BO04.1 `RequestsAdminController`, `ModerateQuoteRequestsHandler` | `RequestRiskScorerTest`, `RequestModerationTest` | T-403a | ✅ (règles éditables BO05.3 : T-403b) |
 | RG-064 | Expiration sans devis accepté, relance unique | QuoteRequest | `QuoteRequest::{expire,isDue,relaunch}`, `RELAUNCH_MAX`, index `quote_request_expiry_idx` | `QuoteRequestTest::testExpiryRelaunchOnceAndCancellation` | T-401 (tâche planifiée : T-407) | 🟨 |
 | RG-065 | Plafond de demandes ouvertes, anti-doublon 72 h | QuoteRequest | `SubmitQuoteRequestHandler`, `DuplicateKey`, `RequestStatus::{ACTIVE,NOT_DUPLICABLE}`, `QuoteRequestRepository::{lockClient,countActiveOfClient,hasDuplicateSince}` | `SubmitQuoteRequestTest` | T-401 | ✅ |
 | RG-066 | Cycle de statuts de la demande | QuoteRequest | `RequestStatus` (table de transitions), méthodes de `QuoteRequest`, `QuoteRequestStatusChanged` ; modification bloquée après le premier devis (`edit`) | `QuoteRequestTest` | T-401 | ✅ |
@@ -25,6 +25,8 @@
 | RG-022bis | Adresse complète révélée après acceptation seulement | QuoteRequest | adresse scellée (`SecretBox`) dans `request_draft.payload` et `request.request_address` ; seuls commune et code postal en clair | `RequestSubmissionTest` | T-402b | 🟨 (révélation : T-507) |
 | E-10 | Demande envoyée (récapitulatif) | QuoteRequest / Notification | `SendRequestSubmitted` (QuoteRequestSubmitted, demande ouverte), `NotificationRequestMailer` | `RequestSubmissionTest` | T-402b | ✅ |
 | E-11 | Compte créé lors du dépôt (activation) | Identity / QuoteRequest | `CreateClientAccount` (origine « request », mot de passe facultatif) → `SendEmailVerificationOnRegistration` → `NotificationIdentityMailer` (E-11, variante lien magique) ; connexion au clic `PasswordlessLogin` | `TunnelAccountTest`, `UserTest` | T-402d, T-402e | ✅ |
+| E-10b | Demande mise en modération / refusée | QuoteRequest | `SendRequestSubmitted` (QuoteRequestSubmitted en modération, QuoteRequestStatusChanged refusée), `NotificationRequestMailer::sendModeration` | `RequestModerationTest` | T-403a | ✅ |
+| BO04.1 | Demandes : liste, filtres, modération, export | QuoteRequest | `RequestsAdminController`, `AdminRequestList`, `DbalAdminRequestRows`, `ModerateQuoteRequests` | `RequestModerationTest` | T-403a | 🟨 (re-diffuser, étendre la zone : T-404 ; supprimer avec restitution : lot 5) |
 | RG-070 | Max atteint → complète, réouverture unique | QuoteRequest | `QuoteRequest::{recordQuote,releaseQuote,reopen,remainingSlots}`, `max_quotes` figé, contrainte `quote_request_slots_ck` | `QuoteRequestTest`, `SubmitQuoteRequestTest` | T-401 (envoi de devis : T-504) | 🟨 |
 | RG-080 | Masquage des coordonnées | Messaging | | | T-701 | ⬜ |
 | RG-100 | Seul l'envoi v1 consomme 1 crédit | Quote / Billing | | | T-504 | ⬜ |

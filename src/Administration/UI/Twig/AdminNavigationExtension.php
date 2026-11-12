@@ -7,6 +7,7 @@ namespace App\Administration\UI\Twig;
 use App\Administration\Domain\Admin\AdminAction;
 use App\Administration\Domain\Admin\AdminModule;
 use App\Shared\Application\Admin\PendingArtisanVerifications;
+use App\Shared\Application\Admin\PendingRequestModerations;
 use App\Shared\Application\Bus\QueryBus;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -25,6 +26,7 @@ final class AdminNavigationExtension extends AbstractExtension
         'dashboard' => 'admin_dashboard',
         'clients' => 'admin_clients',
         'artisans' => 'admin_artisans',
+        'requests' => 'admin_requests',
         'catalog' => 'admin_catalog',
         'seo' => 'admin_seo',
         'cms' => 'admin_cms',
@@ -62,13 +64,18 @@ final class AdminNavigationExtension extends AbstractExtension
         return $groups;
     }
 
-    /** Pastille de travail en attente (Figma : « Artisans & vérification 12 »). */
+    /** Pastille de travail en attente (Figma : « Artisans & vérification 12 », demandes en modération). */
     private function count(AdminModule $module): int
     {
-        if (AdminModule::Artisans !== $module) {
+        $query = match ($module) {
+            AdminModule::Artisans => new PendingArtisanVerifications(),
+            AdminModule::Requests => new PendingRequestModerations(),
+            default => null,
+        };
+        if (null === $query) {
             return 0;
         }
-        $pending = $this->queries->ask(new PendingArtisanVerifications());
+        $pending = $this->queries->ask($query);
 
         return \is_int($pending) ? $pending : 0;
     }
