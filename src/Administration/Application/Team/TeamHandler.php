@@ -160,7 +160,7 @@ final readonly class TeamHandler implements CommandHandler
 
     private function admin(string $id): AdminUser
     {
-        return (1 === preg_match('/^[0-9a-f-]{36}$/', $id) ? $this->admins->find($id) : null) ?? throw new TeamRejected(TeamRejected::UNKNOWN, 'Administrateur introuvable.');
+        return (1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $id) ? $this->admins->find($id) : null) ?? throw new TeamRejected(TeamRejected::UNKNOWN, 'Administrateur introuvable.');
     }
 
     private function publish(AdminUser $admin): void

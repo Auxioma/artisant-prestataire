@@ -32,7 +32,7 @@ final readonly class ChooseJobsHandler implements CommandHandler
     public function __invoke(ChooseJobs $command): void
     {
         $profile = $this->profiles->findByUserId($command->userId) ?? throw new ArtisanRuleViolation('Déclarez d’abord votre entreprise.');
-        $ids = array_values(array_unique(array_filter($command->jobIds, static fn (string $id): bool => 1 === preg_match('/^[0-9a-f-]{36}$/', $id))));
+        $ids = array_values(array_unique(array_filter($command->jobIds, static fn (string $id): bool => 1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $id))));
 
         // Seuls des métiers du référentiel, actifs et proposés au public, peuvent être choisis.
         $entries = [] === $ids ? [] : $this->queries->ask(new JobIndexEntries($ids));

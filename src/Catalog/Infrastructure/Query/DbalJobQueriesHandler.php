@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Catalog\Infrastructure\Query;
 
 use App\Catalog\Application\Query\FindJobs;
+use App\Catalog\Application\Query\JobBySlug;
 use App\Catalog\Application\Query\JobIndexEntries;
 use App\Catalog\Application\Query\JobIndexEntry;
 use App\Shared\Application\Bus\QueryHandler;
@@ -27,10 +28,18 @@ final readonly class DbalJobQueriesHandler implements QueryHandler
     }
 
     /**
-     * @return list<JobIndexEntry>
+     * @return list<JobIndexEntry>|JobIndexEntry|null
      */
-    public function __invoke(JobIndexEntries|FindJobs $query): array
+    public function __invoke(JobIndexEntries|FindJobs|JobBySlug $query): array|JobIndexEntry|null
     {
+        if ($query instanceof JobBySlug) {
+            if (1 !== preg_match('/^[a-z0-9-]{1,100}$/', $query->slug)) {
+                return null;
+            }
+            $row = $this->connection->fetchAssociative(self::SELECT.' WHERE j.slug = :slug AND j.active AND c.active AND root.active', ['slug' => $query->slug]);
+
+            return false === $row ? null : $this->entry($row);
+        }
         if ($query instanceof JobIndexEntries) {
             $rows = null === $query->jobIds
                 ? $this->connection->fetchAllAssociative(self::SELECT.' ORDER BY root.position, j.position')

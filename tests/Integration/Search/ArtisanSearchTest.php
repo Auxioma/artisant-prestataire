@@ -89,11 +89,11 @@ final class ArtisanSearchTest extends KernelTestCase
         $this->artisan('2', 'Proche mais hors zone', self::LE_HAVRE, [self::LE_HAVRE], self::PLOMBIER, 80);
         $this->artisan('3', 'En zone mais trop loin', self::CAEN, [self::HARFLEUR], self::PLOMBIER, 80);
 
-        $result = $this->search(new SearchArtisans(self::HARFLEUR, 30, self::PLOMBIER));
+        $result = $this->search(new SearchArtisans(self::HARFLEUR, 30, [self::PLOMBIER]));
 
         self::assertSame(['Couvre Harfleur'], self::names($result), 'RG-021 : zone ET rayon');
         self::assertSame(30, $result->radiusKm);
-        self::assertSame(['En zone mais trop loin', 'Couvre Harfleur'], array_reverse(self::names($this->search(new SearchArtisans(self::HARFLEUR, 150, self::PLOMBIER)))), 'Caen (≈ 80 km) entre dans un rayon de 150 km');
+        self::assertSame(['En zone mais trop loin', 'Couvre Harfleur'], array_reverse(self::names($this->search(new SearchArtisans(self::HARFLEUR, 150, [self::PLOMBIER])))), 'Caen (≈ 80 km) entre dans un rayon de 150 km');
     }
 
     public function testRelevanceRatingAndReviewSorts(): void
@@ -107,9 +107,9 @@ final class ArtisanSearchTest extends KernelTestCase
         $this->artisan('2', 'Beaucoup d’avis', self::LE_HAVRE, [self::HARFLEUR], self::PLOMBIER, 60, 4.8, 120);
         $this->artisan('3', 'Maçon en complément', self::HARFLEUR, [self::HARFLEUR], self::MACON, 60);
 
-        self::assertSame(['Beaucoup d’avis', 'Un seul avis parfait', 'Maçon en complément'], self::names($this->search(new SearchArtisans(self::HARFLEUR, 30, self::PLOMBIER, SearchArtisans::SORT_RATING))), 'RG-012 : note bayésienne');
-        self::assertSame('Beaucoup d’avis', self::names($this->search(new SearchArtisans(self::HARFLEUR, 30, self::PLOMBIER, SearchArtisans::SORT_REVIEWS)))[0]);
-        $relevance = $this->search(new SearchArtisans(self::HARFLEUR, 30, self::PLOMBIER));
+        self::assertSame(['Beaucoup d’avis', 'Un seul avis parfait', 'Maçon en complément'], self::names($this->search(new SearchArtisans(self::HARFLEUR, 30, [self::PLOMBIER], SearchArtisans::SORT_RATING))), 'RG-012 : note bayésienne');
+        self::assertSame('Beaucoup d’avis', self::names($this->search(new SearchArtisans(self::HARFLEUR, 30, [self::PLOMBIER], SearchArtisans::SORT_REVIEWS)))[0]);
+        $relevance = $this->search(new SearchArtisans(self::HARFLEUR, 30, [self::PLOMBIER]));
         self::assertSame('Maçon en complément', self::names($relevance)[2], 'métier secondaire pénalisé (RG-020)');
         self::assertGreaterThan($relevance->hits[2]->score, $relevance->hits[0]->score);
     }
@@ -120,12 +120,13 @@ final class ArtisanSearchTest extends KernelTestCase
             $this->artisan((string) $i, \sprintf('Artisan %02d', $i), self::HARFLEUR, [self::HARFLEUR], self::PLOMBIER, $i, null, 0, 1 === $i ? ['RGE QualiPAC'] : []);
         }
 
-        $first = $this->search(new SearchArtisans(self::HARFLEUR, 30, self::PLOMBIER));
+        $first = $this->search(new SearchArtisans(self::HARFLEUR, 30, [self::PLOMBIER]));
         self::assertSame([22, 20, true], [$first->total, \count($first->hits), $first->hasMore()], 'search.page_size = 20');
         self::assertSame('Artisan 22', self::names($first)[0], 'à distance égale, profil le plus complet d’abord');
-        self::assertCount(2, $this->search(new SearchArtisans(self::HARFLEUR, 30, self::PLOMBIER, page: 2))->hits);
-        self::assertSame(['Artisan 01'], self::names($this->search(new SearchArtisans(self::HARFLEUR, 30, self::PLOMBIER, labels: ['RGE QualiPAC']))));
-        self::assertSame(0, $this->search(new SearchArtisans(self::HARFLEUR, 30, self::PLOMBIER, minRating: 4.0))->total, 'note minimale : sans avis, exclu');
+        self::assertCount(2, $this->search(new SearchArtisans(self::HARFLEUR, 30, [self::PLOMBIER], page: 2))->hits);
+        self::assertCount(22, $this->search(new SearchArtisans(self::HARFLEUR, 30, [self::PLOMBIER], page: 2, cumulative: true))->hits, '« Afficher plus » : pages 1 et 2');
+        self::assertSame(['Artisan 01'], self::names($this->search(new SearchArtisans(self::HARFLEUR, 30, [self::PLOMBIER], labels: ['RGE QualiPAC']))));
+        self::assertSame(0, $this->search(new SearchArtisans(self::HARFLEUR, 30, [self::PLOMBIER], minRating: 4.0))->total, 'note minimale : sans avis, exclu');
         self::assertSame(0, $this->search(new SearchArtisans('99999', 30))->total);
     }
 }

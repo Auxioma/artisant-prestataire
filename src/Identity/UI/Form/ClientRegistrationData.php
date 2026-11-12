@@ -83,6 +83,6 @@ final class ClientRegistrationData
     /** @return list<string> */
     public function legalVersionIds(): array
     {
-        return array_values(array_filter(array_map(trim(...), explode(',', $this->legalVersions)), static fn (string $id): bool => 1 === preg_match('/^[0-9a-f-]{36}$/', $id)));
+        return array_values(array_filter(array_map(trim(...), explode(',', $this->legalVersions)), static fn (string $id): bool => 1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $id)));
     }
 }

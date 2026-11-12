@@ -19,7 +19,7 @@ final readonly class UserContactHandler implements QueryHandler
 
     public function __invoke(UserContact $query): ?UserContactDetails
     {
-        if (1 !== preg_match('/^[0-9a-f-]{36}$/', $query->userId)) {
+        if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $query->userId)) {
             return null;
         }
         $user = $this->users->find(new UserId($query->userId));

@@ -71,7 +71,7 @@ final class AdminTeamController extends AbstractController
         }
     }
 
-    #[Route('/{id}', name: 'admin_team_update', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
+    #[Route('/{id}', name: 'admin_team_update', requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['POST'])]
     #[IsGranted('admin.team.edit')]
     public function update(Request $request, string $id): Response
     {

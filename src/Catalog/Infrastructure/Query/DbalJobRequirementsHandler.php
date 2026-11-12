@@ -20,7 +20,7 @@ final readonly class DbalJobRequirementsHandler implements QueryHandler
     /** @return list<JobRequirement> */
     public function __invoke(JobRequirements $query): array
     {
-        $ids = array_values(array_filter($query->jobIds, static fn (string $id): bool => 1 === preg_match('/^[0-9a-f-]{36}$/', $id)));
+        $ids = array_values(array_filter($query->jobIds, static fn (string $id): bool => 1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $id)));
         if ([] === $ids) {
             return [];
         }

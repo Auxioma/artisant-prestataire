@@ -6,8 +6,11 @@ namespace App\Search\Application\Artisan;
 
 final readonly class ArtisanSearchResult
 {
-    /** @param list<ArtisanHit> $hits */
-    public function __construct(public array $hits, public int $total, public int $page, public int $perPage, public int $radiusKm)
+    /**
+     * @param list<ArtisanHit> $hits
+     * @param list<string>     $labels labels déclarés par les artisans de la zone (filtre P02.3)
+     */
+    public function __construct(public array $hits, public int $total, public int $page, public int $perPage, public int $radiusKm, public array $labels = [])
     {
     }
 

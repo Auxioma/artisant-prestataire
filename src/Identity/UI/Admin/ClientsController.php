@@ -57,7 +57,7 @@ final class ClientsController extends AbstractController
         ], new Response(status: '' !== $selected && !\is_array($record) ? Response::HTTP_NOT_FOUND : Response::HTTP_OK));
     }
 
-    #[Route('/{id}/action', name: 'admin_clients_action', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
+    #[Route('/{id}/action', name: 'admin_clients_action', requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['POST'])]
     #[IsGranted('admin.clients.edit')]
     public function action(Request $request, string $id): Response
     {

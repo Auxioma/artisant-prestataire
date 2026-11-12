@@ -19,7 +19,7 @@ final readonly class DbalRemainingCreditsHandler implements QueryHandler
     /** @return array<string, int> */
     public function __invoke(RemainingCredits $query): array
     {
-        $ids = array_values(array_filter($query->userIds, static fn (string $id): bool => 1 === preg_match('/^[0-9a-f-]{36}$/', $id)));
+        $ids = array_values(array_filter($query->userIds, static fn (string $id): bool => 1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $id)));
         if ([] === $ids) {
             return [];
         }

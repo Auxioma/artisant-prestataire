@@ -32,15 +32,19 @@ final readonly class SearchArtisansHandler implements QueryHandler
         $mean = $this->settings->nullableDecimal(SettingKey::RankingBayesM) ?? $this->index->globalRatingMean() ?? self::NO_RATINGS_MEAN;
         $c = $this->settings->int(SettingKey::RankingBayesC);
 
+        $candidates = $this->index->candidates($query->communeInsee, $radius, $query->jobIds, $query->labels);
+        $facets = [] === $query->labels ? $candidates : $this->index->candidates($query->communeInsee, $radius, $query->jobIds, []);
+        $labels = array_values(array_unique(array_merge([], ...array_map(static fn (SearchCandidate $c): array => $c->labels, $facets))));
+        sort($labels);
         $hits = [];
-        foreach ($this->index->candidates($query->communeInsee, $radius, $query->jobId, $query->labels) as $candidate) {
+        foreach ($candidates as $candidate) {
             $bayes = BayesianRating::of($candidate->ratingAverage, $candidate->reviewsCount, $mean, $c);
             if (null !== $query->minRating && (null === $candidate->ratingAverage || $candidate->ratingAverage < $query->minRating)) {
                 continue;
             }
             $hits[] = new ArtisanHit(
                 $candidate,
-                RelevanceScore::of($weights, null === $query->jobId ? null : $candidate->mainJobMatches, $candidate->distanceKm, $radius, $bayes, $candidate->responseRate, $candidate->completion, $candidate->available),
+                RelevanceScore::of($weights, [] === $query->jobIds ? null : $candidate->mainJobMatches, $candidate->distanceKm, $radius, $bayes, $candidate->responseRate, $candidate->completion, $candidate->available),
                 round($bayes, 2),
             );
         }
@@ -52,6 +56,9 @@ final readonly class SearchArtisansHandler implements QueryHandler
         });
         $page = max(1, $query->page);
 
-        return new ArtisanSearchResult(\array_slice($hits, ($page - 1) * $perPage, $perPage), \count($hits), $page, $perPage, $radius);
+        $offset = $query->cumulative ? 0 : ($page - 1) * $perPage;
+        $length = $query->cumulative ? $page * $perPage : $perPage;
+
+        return new ArtisanSearchResult(\array_slice($hits, $offset, $length), \count($hits), $page, $perPage, $radius, $labels);
     }
 }

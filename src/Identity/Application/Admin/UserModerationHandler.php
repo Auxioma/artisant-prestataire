@@ -30,7 +30,7 @@ final readonly class UserModerationHandler implements CommandHandler
 
     public function __invoke(SuspendUser|ReinstateUser $command): void
     {
-        $user = (1 === preg_match('/^[0-9a-f-]{36}$/', $command->userId) ? $this->users->find(new UserId($command->userId)) : null) ?? throw new IdentityRuleViolation('Compte introuvable.');
+        $user = (1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $command->userId) ? $this->users->find(new UserId($command->userId)) : null) ?? throw new IdentityRuleViolation('Compte introuvable.');
         $now = $this->clock->now();
         $suspend = $command instanceof SuspendUser;
         if ($suspend) {

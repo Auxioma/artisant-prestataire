@@ -149,7 +149,7 @@ final readonly class MaintenanceHandler implements CommandHandler
 
     private function profile(string $profileId): ?ArtisanProfile
     {
-        return 1 === preg_match('/^[0-9a-f-]{36}$/', $profileId) ? $this->profiles->find(new ArtisanProfileId($profileId)) : null;
+        return 1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $profileId) ? $this->profiles->find(new ArtisanProfileId($profileId)) : null;
     }
 
     private function contact(ArtisanProfile $profile): ?UserContactDetails

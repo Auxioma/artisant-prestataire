@@ -41,7 +41,7 @@ final readonly class ChangeArtisanStatusHandler implements CommandHandler
 
     public function __invoke(ApproveArtisan|RejectArtisan|RequestArtisanInfo|SuspendArtisan|ReinstateArtisan $command): void
     {
-        if (1 !== preg_match('/^[0-9a-f-]{36}$/', $command->profileId)) {
+        if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $command->profileId)) {
             throw new ArtisanRuleViolation('Profil professionnel introuvable.');
         }
         $profile = $this->profiles->find(new ArtisanProfileId($command->profileId)) ?? throw new ArtisanRuleViolation('Profil professionnel introuvable.');

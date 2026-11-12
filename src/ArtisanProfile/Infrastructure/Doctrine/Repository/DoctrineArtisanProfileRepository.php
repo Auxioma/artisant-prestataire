@@ -19,7 +19,7 @@ final readonly class DoctrineArtisanProfileRepository implements ArtisanProfileR
 
     public function findByUserId(string $userId): ?ArtisanProfile
     {
-        if (1 !== preg_match('/^[0-9a-f-]{36}$/', $userId)) {
+        if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $userId)) {
             return null;
         }
 

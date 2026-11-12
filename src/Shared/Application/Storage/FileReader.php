@@ -97,4 +97,22 @@ final readonly class FileReader
 
         return $plain;
     }
+
+    /**
+     * Fichier à usage public (FilePurpose::isPublic) : jamais chiffré, lu sans journalisation. Le module propriétaire
+     * vérifie au préalable que l'élément est publiable (ex. artisan vérifié et visible).
+     *
+     * @return resource
+     *
+     * @throws StoredFileNotFound
+     */
+    public function openPublic(string $id)
+    {
+        $file = $this->available($id);
+        if (!$file->purpose->isPublic() || $file->encrypted()) {
+            throw StoredFileNotFound::withId($id);
+        }
+
+        return $this->storage->read(StorageZone::Documents, $file->id);
+    }
 }

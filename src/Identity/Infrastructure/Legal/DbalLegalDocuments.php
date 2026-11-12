@@ -33,7 +33,7 @@ final readonly class DbalLegalDocuments implements LegalDocuments
 
     public function get(string $id): ?LegalDocumentVersion
     {
-        if (1 !== preg_match('/^[0-9a-f-]{36}$/', $id)) {
+        if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $id)) {
             return null;
         }
         $row = $this->connection->fetchAssociative('SELECT * FROM identity.legal_document WHERE id = :id', ['id' => $id]);

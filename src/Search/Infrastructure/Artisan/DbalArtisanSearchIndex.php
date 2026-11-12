@@ -48,26 +48,27 @@ final readonly class DbalArtisanSearchIndex implements ArtisanSearchIndex
         $this->connection->executeStatement('DELETE FROM search.artisan_search_view WHERE artisan_id = :id', ['id' => $profileId]);
     }
 
-    public function candidates(string $communeInsee, int $radiusKm, ?string $jobId, array $labels): array
+    public function candidates(string $communeInsee, int $radiusKm, array $jobIds, array $labels): array
     {
-        if (1 !== preg_match('/^(\d{2}|2A|2B)\d{3}$/', $communeInsee) || (null !== $jobId && 1 !== preg_match('/^[0-9a-f-]{36}$/', $jobId))) {
+        $jobIds = array_values(array_filter($jobIds, static fn (string $id): bool => 1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $id)));
+        if (1 !== preg_match('/^(\d{2}|2A|2B)\d{3}$/', $communeInsee)) {
             return [];
         }
         $rows = $this->connection->fetchAllAssociative(
             <<<'SQL'
                 SELECT v.artisan_id, v.name, v.short_description, v.main_job_id, v.commune_name, v.department_code, v.labels, v.completion,
-                       v.rating_avg, v.reviews_count, v.response_rate, v.available_soon, v.logo_file_id IS NOT NULL AS has_logo,
+                       v.rating_avg, v.reviews_count, v.response_rate, v.available_soon, v.logo_file_id IS NOT NULL AS has_logo, v.job_ids,
                        ST_Distance(v.location, o.centroid) / 1000 AS distance_km
                 FROM catalog.commune o
                 JOIN search.artisan_search_view v ON v.location IS NOT NULL AND ST_DWithin(v.location, o.centroid, :meters)
                 JOIN artisan.service_area_commune z ON z.artisan_id = v.artisan_id AND z.insee = o.insee
                 WHERE o.insee = :insee
-                  AND (CAST(:job AS uuid) IS NULL OR CAST(:job AS uuid) = ANY (v.job_ids))
+                  AND (cardinality(CAST(:jobs AS uuid[])) = 0 OR v.job_ids && CAST(:jobs AS uuid[]))
                   AND (cardinality(CAST(:labels AS text[])) = 0 OR v.labels && CAST(:labels AS text[]))
                 LIMIT :max
                 SQL,
             [
-                'insee' => $communeInsee, 'meters' => 1000 * max(1, min($radiusKm, self::MAX_RADIUS_KM)), 'job' => $jobId,
+                'insee' => $communeInsee, 'meters' => 1000 * max(1, min($radiusKm, self::MAX_RADIUS_KM)), 'jobs' => self::pgArray($jobIds),
                 'labels' => self::pgArray($labels), 'max' => self::MAX_CANDIDATES,
             ],
         );
@@ -77,7 +78,7 @@ final readonly class DbalArtisanSearchIndex implements ArtisanSearchIndex
             DbalValue::string($r['name']),
             null === $r['short_description'] ? null : DbalValue::string($r['short_description']),
             null === $r['main_job_id'] ? null : DbalValue::string($r['main_job_id']),
-            null !== $jobId && $jobId === (null === $r['main_job_id'] ? null : DbalValue::string($r['main_job_id'])),
+            null !== $r['main_job_id'] && \in_array(DbalValue::string($r['main_job_id']), $jobIds, true),
             null === $r['commune_name'] ? null : DbalValue::string($r['commune_name']),
             null === $r['department_code'] ? null : DbalValue::string($r['department_code']),
             round(is_numeric($r['distance_km']) ? (float) $r['distance_km'] : 0.0, 1),
@@ -88,6 +89,7 @@ final readonly class DbalArtisanSearchIndex implements ArtisanSearchIndex
             true === $r['available_soon'],
             self::fromPgArray($r['labels']),
             true === $r['has_logo'],
+            self::fromPgArray($r['job_ids']),
         ), $rows);
     }
 

@@ -47,7 +47,7 @@ final class ArtisansController extends AbstractController
         return $this->render('admin/artisans/list.html.twig', ['page' => $page, 'filters' => $filters]);
     }
 
-    #[Route('/{id}', name: 'admin_artisans_show', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['GET'])]
+    #[Route('/{id}', name: 'admin_artisans_show', requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['GET'])]
     #[IsGranted('admin.artisans.view')]
     public function show(string $id): Response
     {
@@ -63,7 +63,7 @@ final class ArtisansController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/statut', name: 'admin_artisans_status', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
+    #[Route('/{id}/statut', name: 'admin_artisans_status', requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['POST'])]
     #[IsGranted('admin.artisans.edit')]
     public function status(Request $request, string $id): Response
     {

@@ -29,7 +29,7 @@ final readonly class DbalSearchableArtisanHandler implements QueryHandler
         if ($query instanceof PublicArtisanIds) {
             return array_map(DbalValue::string(...), $this->connection->fetchFirstColumn('SELECT p.id FROM artisan.artisan_profile p WHERE '.self::PUBLIC.' ORDER BY p.id'));
         }
-        if (1 !== preg_match('/^[0-9a-f-]{36}$/', $query->profileId)) {
+        if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $query->profileId)) {
             return null;
         }
         $row = $this->connection->fetchAssociative(

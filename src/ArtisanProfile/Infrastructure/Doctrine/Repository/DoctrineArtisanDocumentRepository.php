@@ -22,12 +22,12 @@ final readonly class DoctrineArtisanDocumentRepository implements ArtisanDocumen
 
     public function find(string $id): ?ArtisanDocument
     {
-        return 1 === preg_match('/^[0-9a-f-]{36}$/', $id) ? $this->em->find(ArtisanDocument::class, $id) : null;
+        return 1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $id) ? $this->em->find(ArtisanDocument::class, $id) : null;
     }
 
     public function findByFileId(string $fileId): ?ArtisanDocument
     {
-        if (1 !== preg_match('/^[0-9a-f-]{36}$/', $fileId)) {
+        if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $fileId)) {
             return null;
         }
 

@@ -57,7 +57,7 @@ final class VerificationController extends AbstractController
         $selected = $request->query->getString('dossier') ?: ($items[0]->profileId ?? '');
         $dossier = '' === $selected ? null : $this->queries->ask(new VerificationDossier($selected));
         $dossier = $dossier instanceof DossierView ? $dossier : null;
-        $viewed = \array_slice(array_values(array_filter($request->query->all('voir'), static fn (mixed $v): bool => \is_string($v) && 1 === preg_match('/^[0-9a-f-]{36}$/', $v))), 0, self::VIEWER_SLOTS);
+        $viewed = \array_slice(array_values(array_filter($request->query->all('voir'), static fn (mixed $v): bool => \is_string($v) && 1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $v))), 0, self::VIEWER_SLOTS);
 
         return $this->render('admin/artisans/queue.html.twig', [
             'items' => $items,
@@ -68,7 +68,7 @@ final class VerificationController extends AbstractController
         ], new Response(status: '' !== $selected && null === $dossier ? Response::HTTP_NOT_FOUND : Response::HTTP_OK));
     }
 
-    #[Route('/{id}/decision', name: 'admin_artisans_decide', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
+    #[Route('/{id}/decision', name: 'admin_artisans_decide', requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['POST'])]
     #[IsGranted('admin.artisans.edit')]
     public function decide(Request $request, string $id): Response
     {
@@ -96,7 +96,7 @@ final class VerificationController extends AbstractController
         }
     }
 
-    #[Route('/{id}/pieces/{document}/controle', name: 'admin_artisans_review', requirements: ['id' => '[0-9a-f-]{36}', 'document' => '[0-9a-f-]{36}'], methods: ['POST'])]
+    #[Route('/{id}/pieces/{document}/controle', name: 'admin_artisans_review', requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', 'document' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['POST'])]
     #[IsGranted('admin.artisans.edit')]
     public function review(Request $request, string $id, string $document): Response
     {
@@ -113,7 +113,7 @@ final class VerificationController extends AbstractController
     }
 
     /** Consultation d'un justificatif : déchiffré à la volée, jamais mis en cache, journalisée (qui, quoi, quand, IP). */
-    #[Route('/{id}/pieces/{document}', name: 'admin_artisans_document', requirements: ['id' => '[0-9a-f-]{36}', 'document' => '[0-9a-f-]{36}'], methods: ['GET'])]
+    #[Route('/{id}/pieces/{document}', name: 'admin_artisans_document', requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', 'document' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['GET'])]
     #[IsGranted('admin.artisans.view')]
     public function document(Request $request, string $id, string $document, FileReader $files): StreamedResponse
     {

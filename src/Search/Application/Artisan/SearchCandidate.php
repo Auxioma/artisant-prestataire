@@ -6,7 +6,10 @@ namespace App\Search\Application\Artisan;
 
 final readonly class SearchCandidate
 {
-    /** @param list<string> $labels */
+    /**
+     * @param list<string> $labels
+     * @param list<string> $jobIds
+     */
     public function __construct(
         public string $profileId,
         public string $name,
@@ -23,6 +26,7 @@ final readonly class SearchCandidate
         public bool $available,
         public array $labels,
         public bool $hasLogo,
+        public array $jobIds = [],
     ) {
     }
 }
