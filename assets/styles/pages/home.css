@@ -94,3 +94,15 @@
         .tm-home-categories { grid-auto-columns: calc((100% - 5 * var(--space-4)) / 6); }
     }
 }
+
+/* P18 — pages d'erreur et maintenance (T-307a) */
+@layer components {
+    .tm-error-page { display: grid; justify-items: center; gap: var(--space-4); max-width: 760px; padding-block: var(--space-12); text-align: center; }
+    .tm-error-page__picto { display: grid; place-items: center; width: 72px; height: 72px; border-radius: 50%; background: var(--color-info-bg); color: var(--color-link); }
+    .tm-error-page__code { margin: 0; color: var(--orange); font: var(--type-label); letter-spacing: .08em; text-transform: uppercase; }
+    .tm-error-page h1 { margin: 0; font: var(--type-h1-mobile); color: var(--color-heading); }
+    .tm-error-page__text { margin: 0; color: var(--color-text); }
+    .tm-error-page .tm-search__bar { width: 100%; text-align: left; }
+    .tm-error-page__subtitle { margin: 0 0 var(--space-2); font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-error-page__links { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2) var(--space-4); margin: 0; padding: 0; list-style: none; }
+}

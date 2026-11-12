@@ -5,6 +5,30 @@ twig:
     globals:
         # Clé publique du widget Turnstile (la clé secrète reste côté serveur, TURNSTILE_SECRET_KEY)
         turnstile_site_key: '%env(TURNSTILE_SITE_KEY)%'
+        # Registre des traceurs (CMP, P17 /cookies) : catégories du bandeau et tableau de la politique de cookies.
+        # Toute nouvelle balise doit être déclarée ici avant d'être chargée (chargée seulement après consentement).
+        cookie_registry:
+            - key: necessary
+              label: 'Nécessaires'
+              description: 'Indispensables au fonctionnement du site : session, sécurité des formulaires, mémorisation de vos choix. Exemptés de consentement.'
+              trackers:
+                  - { name: 'tm_sess', purpose: 'Session de navigation et de connexion', duration: 'Fin de session', type: 'Cookie (première partie)' }
+                  - { name: 'REMEMBERME', purpose: 'Option « Rester connecté »', duration: '30 jours maximum', type: 'Cookie (première partie)' }
+                  - { name: 'csrf-token_*', purpose: 'Protection des formulaires contre la falsification de requête', duration: 'Le temps de l’envoi', type: 'Cookie (première partie)' }
+                  - { name: 'tm_consent', purpose: 'Mémorisation de vos choix de cookies', duration: 'Durée du consentement (cookies.consent_months)', type: 'Cookie (première partie)' }
+                  - { name: 'tm.last_place', purpose: 'Dernier lieu de recherche choisi', duration: 'Jusqu’à suppression', type: 'Stockage local du navigateur' }
+            - key: audience
+              label: 'Mesure d’audience'
+              description: 'Statistiques de fréquentation pour améliorer le site et ses services.'
+              trackers: []
+            - key: social
+              label: 'Réseaux sociaux et vidéos'
+              description: 'Partage sur les réseaux sociaux et lecture des vidéos intégrées.'
+              trackers: []
+            - key: marketing
+              label: 'Marketing'
+              description: 'Mesure de l’efficacité de nos campagnes et contenus adaptés à vos centres d’intérêt.'
+              trackers: []
 
 when@test:
     twig:

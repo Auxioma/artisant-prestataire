@@ -1,0 +1,25 @@
+{#- RG-002 — ré-acceptation bloquante des nouvelles CGU / CGV substantielles. -#}
+{% extends 'base.html.twig' %}
+{% set header_variant = 'tunnel' %}
+{% block title %}Mise à jour de nos conditions — TrouveMoi{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block body %}
+<section class="tm-container tm-auth-message">
+    <div class="tm-state-card tm-card-panel tm-legal-reaccept">
+        <h1 class="tm-state-card__title">Nos conditions évoluent</h1>
+        <p class="tm-body-sm">Pour continuer à utiliser TrouveMoi, merci de prendre connaissance des nouvelles versions et de les accepter.</p>
+        <ul class="tm-legal__versions">
+            {% for d in documents %}
+                <li><a href="{{ path('identity_legal_document', {slug: d.type.slug}) }}" target="_blank" rel="noopener">{{ d.title }}</a> — version {{ d.version }} du {{ d.publishedAt|date('d/m/Y', 'Europe/Paris') }}</li>
+            {% endfor %}
+        </ul>
+        <form method="post" action="{{ path('identity_legal_reaccept') }}" novalidate>
+            <input type="hidden" name="_token" value="{{ csrf_token('submit') }}">
+            {% if error %}<p class="tm-field__error" role="alert">{{ error }}</p>{% endif %}
+            <label class="tm-check"><input class="tm-check__input" type="checkbox" name="accept" value="1" required><span>J’ai lu et j’accepte les nouvelles conditions.</span></label>
+            <twig:Button type="submit" block>Accepter et continuer</twig:Button>
+        </form>
+        <p class="tm-caption"><a href="{{ logout_path('main') }}">Me déconnecter</a></p>
+    </div>
+</section>
+{% endblock %}

@@ -220,6 +220,11 @@ notifications:
         label: "Remboursement effectué / avoir"
         recipient: "Artisan"
         channels: [email]
+    'E-95':
+        label: "Mise à jour des CGU / CGV"
+        recipient: "Tous"
+        channels: [email, in_app]
+        variables: [prenom, document, version, date, substantielle, lien]
     'I-01':
         label: "Inscription tentée avec l'adresse d'un compte existant (anti-énumération A02)"
         recipient: "Titulaire du compte"

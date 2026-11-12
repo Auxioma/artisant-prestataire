@@ -5,11 +5,7 @@
     Rendu masqué : le script l'affiche s'il n'existe pas de choix valide (aucun traceur sans JavaScript).
 #}
 {% set months = tm_setting_int('cookies.consent_months') %}
-{% set categories = [
-    {key: 'audience', label: 'Mesure d’audience', description: 'Statistiques de fréquentation pour améliorer le site et ses services.'},
-    {key: 'social', label: 'Réseaux sociaux et vidéos', description: 'Partage sur les réseaux sociaux et lecture des vidéos intégrées.'},
-    {key: 'marketing', label: 'Marketing', description: 'Mesure de l’efficacité de nos campagnes et contenus adaptés à vos centres d’intérêt.'},
-] %}
+{% set categories = cookie_registry|filter(c => c.key != 'necessary') %}
 <div class="tm-cmp" data-controller="consent"
      data-consent-version-value="{{ tm_setting_int('cookies.policy_version') }}"
      data-consent-months-value="{{ months }}"
@@ -21,7 +17,7 @@
             <p class="tm-cmp__body">
                 Nous utilisons des cookies nécessaires au fonctionnement du site et, avec votre accord, des cookies de mesure d’audience,
                 réseaux sociaux et marketing. Consentement conservé {{ months }} mois.
-                <a href="{{ tm_path('content_page', {slug: 'cookies'}) }}">Politique de cookies</a>
+                <a href="{{ tm_path('identity_legal_document', {slug: 'cookies'}) }}">Politique de cookies</a>
             </p>
             <button type="button" class="tm-cmp__customize" data-action="consent#openPreferences" aria-haspopup="dialog">Personnaliser</button>
         </div>

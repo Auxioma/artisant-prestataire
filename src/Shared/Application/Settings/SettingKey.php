@@ -141,6 +141,8 @@ enum SettingKey: string
     case CookiesConsentMonths = 'cookies.consent_months';
     case CookiesPolicyVersion = 'cookies.policy_version';
     case NewsletterProvider = 'newsletter.provider';
+    case SiteMaintenance = 'site.maintenance';
+    case SiteMaintenanceRetryMinutes = 'site.maintenance_retry_minutes';
 
     // Identité de la plateforme (BO13) — réseaux sociaux du pied de page (vides = non affichés)
     case SocialFacebook = 'social.facebook';
@@ -281,6 +283,8 @@ enum SettingKey: string
             self::CookiesPolicyVersion => $d(T::Integer, 1, 'Version de la politique cookies (l\'incrémenter redemande le consentement)', 1, 10_000, proposed: true),
             self::CookiesConsentMonths => $d(T::Integer, 6, 'Durée du consentement cookies (mois)', 1, 13),
             self::NewsletterProvider => $d(T::Choice, 'brevo', 'Outil de newsletter (Q25)', choices: ['brevo', 'mailchimp', 'internal'], proposed: true),
+            self::SiteMaintenance => $d(T::Boolean, false, 'Mode maintenance du site public (P18 : 503, back-office accessible)', proposed: true),
+            self::SiteMaintenanceRetryMinutes => $d(T::Integer, 30, 'Maintenance : délai annoncé avant nouvel essai (Retry-After, min)', 1, 1440, proposed: true),
 
             self::SocialFacebook => $d(T::NullableUrl, null, 'Page Facebook', choices: ['facebook.com'], proposed: true),
             self::SocialInstagram => $d(T::NullableUrl, null, 'Compte Instagram', choices: ['instagram.com'], proposed: true),

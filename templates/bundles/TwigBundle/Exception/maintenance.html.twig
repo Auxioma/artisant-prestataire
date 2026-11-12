@@ -1,0 +1,6 @@
+{#- P18 — maintenance (503 + Retry-After) : aucune donnée chargée, en-tête réduit. -#}
+{% extends 'base.html.twig' %}
+{% block title %}Maintenance en cours — TrouveMoi{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block header %}<twig:Header variant="tunnel" />{% endblock %}
+{% block body %}{% include 'bundles/TwigBundle/Exception/_page.html.twig' with {code: 503, icon: 'wrench', title: 'TrouveMoi fait peau neuve', text: 'Le site est en maintenance pour quelques instants (environ ' ~ minutes ~ ' minutes). Merci de votre patience.', search: false} %}{% endblock %}

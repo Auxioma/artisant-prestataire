@@ -80,7 +80,7 @@
                     <label class="tm-check" for="{{ form.terms.vars.id }}">
                         {{ form_widget(form.terms) }}
                         <span>J’accepte les <a href="{{ path('identity_legal_document', {slug: 'cgu'}) }}" target="_blank" rel="noopener">Conditions Générales d’Utilisation (CGU)</a>
-                            et la <a href="{{ path('identity_legal_document', {slug: 'politique-de-confidentialite'}) }}" target="_blank" rel="noopener">Politique de confidentialité</a>.<abbr class="tm-field__required" title="obligatoire">*</abbr>
+                            et la <a href="{{ path('identity_legal_document', {slug: 'confidentialite'}) }}" target="_blank" rel="noopener">Politique de confidentialité</a>.<abbr class="tm-field__required" title="obligatoire">*</abbr>
                             <span class="tm-visually-hidden">(s’ouvrent dans un nouvel onglet)</span></span>
                     </label>
                     {{ form_errors(form.terms) }}

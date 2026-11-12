@@ -31,6 +31,24 @@ final readonly class DbalLegalDocuments implements LegalDocuments
         return false === $row ? null : self::version($row);
     }
 
+    public function versions(LegalDocumentType $type, \DateTimeImmutable $now): array
+    {
+        return array_map(self::version(...), $this->connection->fetchAllAssociative(
+            'SELECT * FROM identity.legal_document WHERE type = :type AND published_at <= :now ORDER BY version DESC',
+            ['type' => $type->value, 'now' => $now->format(\DATE_ATOM)],
+        ));
+    }
+
+    public function latestSubstantial(LegalDocumentType $type, \DateTimeImmutable $now): ?LegalDocumentVersion
+    {
+        $row = $this->connection->fetchAssociative(
+            'SELECT * FROM identity.legal_document WHERE type = :type AND substantial AND published_at <= :now ORDER BY version DESC LIMIT 1',
+            ['type' => $type->value, 'now' => $now->format(\DATE_ATOM)],
+        );
+
+        return false === $row ? null : self::version($row);
+    }
+
     public function get(string $id): ?LegalDocumentVersion
     {
         if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $id)) {

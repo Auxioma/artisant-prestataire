@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Identity\Application\Port;
 
+use App\Identity\Application\Legal\LegalDocumentVersion;
 use App\Shared\Domain\ValueObject\Email;
 
 /**
@@ -33,4 +34,7 @@ interface IdentityMailer
 
     /** E-26 — compte suspendu (avec motif) ou réactivé. */
     public function sendAccountStatus(Email $to, string $firstName, bool $suspended, ?string $reason, string $userId): void;
+
+    /** E-95 — information de mise à jour des CGU / CGV (acceptation demandée à la prochaine connexion si substantielle). */
+    public function sendLegalUpdate(Email $to, string $firstName, string $userId, LegalDocumentVersion $document): void;
 }

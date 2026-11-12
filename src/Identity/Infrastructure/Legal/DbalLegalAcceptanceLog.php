@@ -24,6 +24,15 @@ final readonly class DbalLegalAcceptanceLog implements LegalAcceptanceLog
         );
     }
 
+    public function hasAcceptedSince(string $userId, LegalDocumentVersion $document): bool
+    {
+        return false !== $this->connection->fetchOne(
+            'SELECT 1 FROM identity.legal_acceptance a JOIN identity.legal_document d ON d.id = a.legal_document_id
+             WHERE a.user_id = :user AND d.type = :type AND d.version >= :version LIMIT 1',
+            ['user' => $userId, 'type' => $document->type->value, 'version' => $document->version],
+        );
+    }
+
     public function hasAccepted(string $userId, LegalDocumentVersion $document): bool
     {
         return false !== $this->connection->fetchOne(

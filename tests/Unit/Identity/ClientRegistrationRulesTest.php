@@ -58,9 +58,11 @@ final class ClientRegistrationRulesTest extends TestCase
 
     public function testLegalDocumentSlugs(): void
     {
-        self::assertSame(LegalDocumentType::Privacy, LegalDocumentType::fromSlug('politique-de-confidentialite'));
+        self::assertSame(LegalDocumentType::Privacy, LegalDocumentType::fromSlug('confidentialite'));
+        self::assertSame(LegalDocumentType::Privacy, LegalDocumentType::legacySlug('politique-de-confidentialite'), 'ancienne adresse redirigée');
         self::assertSame('cgu', LegalDocumentType::TermsOfUse->slug());
-        self::assertNull(LegalDocumentType::fromSlug('mentions-legales'));
+        self::assertSame(LegalDocumentType::LegalNotice, LegalDocumentType::fromSlug('mentions-legales'));
+        self::assertNull(LegalDocumentType::fromSlug('politique-de-confidentialite'), 'ancienne adresse : redirection seulement');
     }
 
     public function testDisposableDomainsIncludingSubdomains(): void

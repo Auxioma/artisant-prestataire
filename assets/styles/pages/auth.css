@@ -861,10 +861,30 @@
     .tm-legal {
         display: grid;
         gap: var(--space-4);
-        max-width: 820px;
-        padding-block: var(--space-10);
+        max-width: 1100px;
+        padding-block: var(--space-6) var(--space-10);
     }
 
-    .tm-legal__content { display: grid; gap: var(--space-4); font: var(--type-body); }
-    .tm-legal__content h2 { margin-top: var(--space-4); }
+    .tm-legal h1 { margin: 0; font: var(--type-h1-mobile); color: var(--color-heading); }
+    .tm-legal__layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+    .tm-legal__toc { padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
+    .tm-legal__toc h2 { margin: 0 0 var(--space-2); font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-legal__toc ul { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; font: var(--type-body-sm); }
+    .tm-legal__content section { display: grid; gap: var(--space-3); }
+    .tm-legal__content :is(h3, p) { margin: 0; }
+    .tm-legal__content h3 { margin-top: var(--space-3); font: var(--type-h3-mobile); color: var(--color-heading); }
+    .tm-legal__content { display: grid; gap: var(--space-4); min-width: 0; font: var(--type-body); }
+    .tm-legal__content h2 { margin-top: var(--space-4); scroll-margin-top: var(--space-6); }
+    .tm-legal__archived { margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--color-warning-bg); font: var(--type-body-sm); }
+    .tm-legal__versions { display: grid; gap: var(--space-2); margin: 0; padding-left: var(--space-5); }
+    .tm-legal__table-wrap { overflow-x: auto; }
+    .tm-legal__table { width: 100%; border-collapse: collapse; font: var(--type-body-sm); }
+    .tm-legal__table :is(th, td) { padding: var(--space-2); border-bottom: 1px solid var(--color-border); text-align: left; vertical-align: top; }
+    .tm-legal-reaccept form { display: grid; gap: var(--space-3); }
+
+    @media (min-width: 1024px) {
+        .tm-legal h1 { font: var(--type-h1); }
+        .tm-legal__layout:has(.tm-legal__toc) { grid-template-columns: 260px minmax(0, 1fr); }
+        .tm-legal__toc { position: sticky; top: var(--space-6); }
+    }
 }

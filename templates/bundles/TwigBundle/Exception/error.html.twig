@@ -1,0 +1,6 @@
+{#- Erreurs serveur et autres codes : page minimale (sans requête en base, qui pourrait être la cause de l'erreur). -#}
+{% extends 'base.html.twig' %}
+{% block title %}Une erreur est survenue — TrouveMoi{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block header %}<twig:Header variant="tunnel" />{% endblock %}
+{% block body %}{% include 'bundles/TwigBundle/Exception/_page.html.twig' with {code: status_code, icon: 'alert', title: status_code >= 500 ? 'Le service rencontre un problème' : 'Cette action n’a pas pu aboutir', text: status_code >= 500 ? 'Notre équipe est prévenue. Réessayez dans quelques instants.' : 'Vérifiez l’adresse ou revenez à la page précédente.', search: false} %}{% endblock %}

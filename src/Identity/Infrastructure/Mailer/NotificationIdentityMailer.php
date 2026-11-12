@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Identity\Infrastructure\Mailer;
 
+use App\Identity\Application\Legal\LegalDocumentVersion;
 use App\Identity\Application\Port\IdentityMailer;
 use App\Notification\Application\Notification;
 use App\Notification\Application\Notifier;
@@ -80,6 +81,19 @@ final readonly class NotificationIdentityMailer implements IdentityMailer
             'motif' => $reason,
             'lien_aide' => $this->absolute('content_contact'),
         ]));
+    }
+
+    public function sendLegalUpdate(Email $to, string $firstName, string $userId, LegalDocumentVersion $document): void
+    {
+        $link = $this->urls->generate('identity_legal_document', ['slug' => $document->type->slug()], UrlGeneratorInterface::ABSOLUTE_URL);
+        $this->notifier->notify(new Notification('E-95', $to->value, $userId, [
+            'prenom' => $firstName,
+            'document' => $document->type->label(),
+            'version' => $document->version,
+            'date' => $document->publishedAt->setTimezone(new \DateTimeZone('Europe/Paris'))->format('d/m/Y'),
+            'substantielle' => $document->substantial,
+            'lien' => $link,
+        ], $link));
     }
 
     private function absolute(string $route): string

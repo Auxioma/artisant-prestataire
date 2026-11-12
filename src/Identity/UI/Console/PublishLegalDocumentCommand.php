@@ -17,7 +17,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /** Publie une nouvelle version d'un document légal (en attendant l'éditeur BO > CMS > Pages légales, T-8xx). */
-#[AsCommand(name: 'app:legal:publish', description: 'Publie une nouvelle version d’un document légal (CGU, CGV, confidentialité)')]
+#[AsCommand(name: 'app:legal:publish', description: 'Publie une nouvelle version d’un document légal (CGU, CGV, confidentialité, mentions légales, cookies)')]
 final class PublishLegalDocumentCommand extends Command
 {
     public function __construct(private readonly CommandBus $commands, private readonly IdGenerator $ids)
@@ -28,7 +28,7 @@ final class PublishLegalDocumentCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('type', InputArgument::REQUIRED, 'cgu | cgv | cgv_pro | privacy')
+            ->addArgument('type', InputArgument::REQUIRED, 'cgu | cgv | cgv_pro | privacy | legal_notice | cookies')
             ->addArgument('file', InputArgument::REQUIRED, 'Fichier HTML du document')
             ->addOption('title', null, InputOption::VALUE_REQUIRED, 'Titre affiché')
             ->addOption('substantial', null, InputOption::VALUE_NONE, 'Modification substantielle : ré-acceptation exigée (RG-002)');
