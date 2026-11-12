@@ -222,3 +222,5 @@ Registre commun à tous les fichiers (justificatifs, photos de demande, d'avis e
 | Brouillons de demande | request.request_draft | 30 j | `requests.draft_retention_days` |
 
 Les IP sont stockées **hachées** (HMAC avec un sel tournant) sauf dans l'AuditLog sécurité. Là, l'IP en clair est conservée 1 an : c'est un intérêt légitime documenté dans le registre des traitements.
+
+| `home_version` (T-306, schéma `content`) | id, number (**UQ**), blocks jsonb (blocs ordonnés : type, actif, réglages), author_id, created_at, updated_at, publish_at (null = brouillon ; future = programmée), published_by | **UQ** brouillon unique (index partiel WHERE publish_at IS NULL) · **CK** publish_at et published_by renseignés ensemble · **IX** publish_at DESC |

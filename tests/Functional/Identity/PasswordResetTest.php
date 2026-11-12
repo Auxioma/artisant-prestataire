@@ -154,7 +154,7 @@ final class PasswordResetTest extends WebTestCase
         $this->submitNewPassword($link, self::NEW);
         self::assertResponseRedirects('/', 303);
         $this->client->followRedirect();
-        self::assertSelectorTextContains('main', 'Vous êtes connecté avec '.self::EMAIL);
+        self::assertSelectorTextContains('.tm-dropdown__title', self::EMAIL, 'en-tête du compte connecté');
 
         $this->client->request('GET', $link);
         self::assertResponseStatusCodeSame(410);
@@ -169,7 +169,7 @@ final class PasswordResetTest extends WebTestCase
         $this->client->getCookieJar()->clear();
         $this->client->getCookieJar()->set($openedSession);
         $this->client->request('GET', '/');
-        self::assertSelectorTextContains('main', 'Bienvenue sur TrouveMoi');
+        self::assertSelectorExists('header a[href="/connexion"]', 'en-tête visiteur (déconnecté)');
     }
 
     public function testOldPasswordStopsWorkingAndExpiredLinksOfferANewOne(): void

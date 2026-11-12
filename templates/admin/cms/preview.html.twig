@@ -1,0 +1,12 @@
+{#- BO10.1 — aperçu desktop / mobile du brouillon (ou d'une version de l'historique), dans des cadres de même origine. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'cms' %}
+{% block title %}Aperçu de l’accueil — CMS{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Aperçu desktop / mobile', crumbs: ['Contenus', 'CMS', 'Page d’accueil'], subtitle: version ? 'Brouillon ou version sélectionnée — non indexé' : 'Version en ligne'}) }}
+    {% set src = path('admin_cms_preview_render', version ? {version: version} : {}) %}
+    <div class="tm-cms-preview">
+        <figure><figcaption>Desktop (1 280 px)</figcaption><div class="tm-cms-preview__desktop"><iframe src="{{ src }}" title="Aperçu desktop de la page d’accueil" width="1280" height="900" loading="lazy"></iframe></div></figure>
+        <figure><figcaption>Mobile (375 px)</figcaption><iframe class="tm-cms-preview__mobile" src="{{ src }}" title="Aperçu mobile de la page d’accueil" width="375" height="760" loading="lazy"></iframe></figure>
+    </div>
+{% endblock %}

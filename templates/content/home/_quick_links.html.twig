@@ -1,0 +1,10 @@
+{#- P01.4 — accès rapides : liens vers des pages existantes seulement ; style dégradé bleu, dégradé orange ou secondaire. -#}
+<nav class="tm-container tm-home-quick" aria-label="Accès rapides">
+    <ul>
+        {% for item in s.items %}
+            <li class="tm-home-quick__item--{{ item.style }}">
+                <a class="tm-home-quick__link tm-home-quick__link--{{ item.style }}" href="{{ item.href }}" data-action="analytics#track" data-analytics-event-param="quick_access_click" data-analytics-id-param="{{ item.target }}"><twig:Icon name="{{ item.icon }}" size="sm" /><span>{{ item.label }}</span><twig:Icon name="chevR" size="sm" /></a>
+            </li>
+        {% endfor %}
+    </ul>
+</nav>

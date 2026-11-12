@@ -82,7 +82,7 @@ final class LoginTest extends WebTestCase
         self::assertResponseRedirects('/', 303);
         self::assertTrue($this->client->getResponse()->headers->has('Set-Cookie'));
         $this->client->followRedirect();
-        self::assertSelectorTextContains('main', 'Vous êtes connecté avec '.self::EMAIL);
+        self::assertSelectorTextContains('.tm-dropdown__title', self::EMAIL, 'en-tête du compte connecté');
         self::assertSame(1, $this->rows("SELECT count(*) FROM identity.session_device WHERE description = 'Chrome sur Windows'"));
         self::assertSame(1, $this->rows('SELECT count(*) FROM identity.user_account WHERE last_login_at IS NOT NULL'));
         self::assertSame(1, $this->rows("SELECT count(*) FROM admin.audit_log WHERE action = 'identity.login'"));
@@ -203,6 +203,6 @@ final class LoginTest extends WebTestCase
         $this->client->request('GET', (string) $link);
         self::assertResponseRedirects('/');
         $this->client->followRedirect();
-        self::assertSelectorTextContains('main', 'Bienvenue sur TrouveMoi');
+        self::assertSelectorExists('header a[href="/connexion"]', 'en-tête visiteur (déconnecté)');
     }
 }

@@ -99,6 +99,7 @@ services:
 
     # Ports du module Content
     App\Content\Application\Port\RedirectStore: '@App\Content\Infrastructure\Redirect\DbalRedirectStore'
+    App\Content\Application\Port\HomeVersions: '@App\Content\Infrastructure\Home\DbalHomeVersions'
 
     App\Catalog\Application\Geo\Port\AddressGeocoder: '@App\Catalog\Infrastructure\Geo\BanAddressGeocoder'
     App\Shared\Application\Integration\CompanyRegistry: '@App\Shared\Infrastructure\Integration\Sirene\InseeSireneCompanyRegistry'

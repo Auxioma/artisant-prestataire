@@ -1,0 +1,37 @@
+{#- BO10.1 — historique des versions publiées ou programmées de l'accueil, aperçu et restauration dans le brouillon. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'cms' %}
+{% block title %}Historique de l’accueil — CMS{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Historique et restauration', crumbs: ['Contenus', 'CMS', 'Page d’accueil']}) }}
+    <section class="tm-admin-panel" aria-labelledby="history-title">
+        <h2 id="history-title" class="tm-card-title">Versions publiées</h2>
+        {% if state.history is empty %}
+            <p>Aucune version publiée : le contenu initial est affiché.</p>
+        {% else %}
+            <div class="tm-admin-table-wrap">
+                <table class="tm-admin-table">
+                    <thead><tr><th scope="col">Version</th><th scope="col">Publication</th><th scope="col">État</th><th scope="col"><span class="tm-visually-hidden">Actions</span></th></tr></thead>
+                    <tbody>
+                    {% for v in state.history %}
+                        <tr>
+                            <th scope="row">Version {{ v.number }}</th>
+                            <td>{{ v.publishAt|date('d/m/Y à H:i', 'Europe/Paris') }}</td>
+                            <td>{% if state.live and v.id == state.live.id %}<twig:Badge variant="available">En ligne</twig:Badge>{% elseif state.scheduled and v.id == state.scheduled.id %}<twig:Badge variant="pending">Programmée</twig:Badge>{% else %}<twig:Badge variant="neutral">Archivée</twig:Badge>{% endif %}</td>
+                            <td class="tm-cms-history__actions">
+                                <a href="{{ path('admin_cms_preview', {version: v.id}) }}">Aperçu</a>
+                                {% if is_granted('admin.cms.edit') %}
+                                    <form method="post" action="{{ path('admin_cms_restore', {id: v.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('admin_cms_restore_' ~ v.id) }}">
+                                        <button type="submit" class="tm-link-button">Restaurer<span class="tm-visually-hidden"> la version {{ v.number }}</span></button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

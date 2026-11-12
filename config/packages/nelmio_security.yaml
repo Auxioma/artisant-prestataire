@@ -4,6 +4,8 @@ nelmio_security:
         paths:
             # BO03 : justificatifs affichés dans la visionneuse du back-office (même origine uniquement).
             '^/admin/artisans/[0-9a-f-]{36}/pieces/[0-9a-f-]{36}$': SAMEORIGIN
+            # BO10.1 : rendu de l'aperçu de la page d'accueil, affiché dans les cadres desktop / mobile du back-office.
+            '^/admin/cms/accueil/apercu/rendu$': SAMEORIGIN
             '^/.*': DENY
 
     content_type:

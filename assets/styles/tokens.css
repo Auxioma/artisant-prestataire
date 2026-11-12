@@ -133,6 +133,7 @@
         --shadow-header: 0 1px 8px rgb(0 21 104 / 0.06);
         --shadow-hover: 0 8px 24px rgb(0 21 104 / 0.14);
         --shadow-overlay: 0 16px 40px rgb(0 21 104 / 0.18);
+        --shadow-text: 0 1px 10px rgb(0 21 104 / 0.45); /* lisibilité d’un texte clair sur photo (hero P01) */
         --overlay-backdrop: rgb(0 21 104 / 0.45);
         /* Voile de lisibilité de la bannière de page (Figma A02 393:16167) ; plus couvrant sur mobile (texte sur la photo) */
         --banner-veil: linear-gradient(90deg, rgb(255 255 255 / 0.95) 0%, rgb(255 255 255 / 0.8) 30%, rgb(255 255 255 / 0) 46%);

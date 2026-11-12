@@ -1,0 +1,15 @@
+{#- P01.7 — étapes numérotées (3 à 5) ; animation d'apparition désactivée si mouvement réduit. -#}
+<section class="tm-container tm-home-section" aria-labelledby="home-how">
+    <h2 class="tm-section-title" id="home-how">{{ s.title }}</h2>
+    <ol class="tm-home-steps">
+        {% for step in s.items %}
+            <li>
+                <span class="tm-home-steps__number" aria-hidden="true">{{ loop.index }}</span>
+                <span class="tm-home-steps__icon"><twig:Icon name="{{ step.icon }}" /></span>
+                <h3>{{ step.title }}</h3>
+                <p>{{ step.text }}</p>
+            </li>
+        {% endfor %}
+    </ol>
+    {% if d.href %}<p><a class="tm-home-section__more" href="{{ d.href }}">{{ s.link_label }}<twig:Icon name="arrowR" size="sm" /></a></p>{% endif %}
+</section>
