@@ -14,7 +14,10 @@
 | RG-045 | Limitation des tentatives, nouvel appareil, non-énumération | Identity | | | T-204 | ⬜ |
 | RG-062 | Diffusion aux éligibles | QuoteRequest | | | T-404 | ⬜ |
 | RG-063 | Score de risque → modération | QuoteRequest / Moderation | | | T-403 | ⬜ |
-| RG-066 | Cycle de statuts de la demande | QuoteRequest | | | T-401 | ⬜ |
+| RG-064 | Expiration sans devis accepté, relance unique | QuoteRequest | `QuoteRequest::{expire,isDue,relaunch}`, `RELAUNCH_MAX`, index `quote_request_expiry_idx` | `QuoteRequestTest::testExpiryRelaunchOnceAndCancellation` | T-401 (tâche planifiée : T-407) | 🟨 |
+| RG-065 | Plafond de demandes ouvertes, anti-doublon 72 h | QuoteRequest | `SubmitQuoteRequestHandler`, `DuplicateKey`, `RequestStatus::{ACTIVE,NOT_DUPLICABLE}`, `QuoteRequestRepository::{lockClient,countActiveOfClient,hasDuplicateSince}` | `SubmitQuoteRequestTest` | T-401 | ✅ |
+| RG-066 | Cycle de statuts de la demande | QuoteRequest | `RequestStatus` (table de transitions), méthodes de `QuoteRequest`, `QuoteRequestStatusChanged` ; modification bloquée après le premier devis (`edit`) | `QuoteRequestTest` | T-401 | ✅ |
+| RG-070 | Max atteint → complète, réouverture unique | QuoteRequest | `QuoteRequest::{recordQuote,releaseQuote,reopen,remainingSlots}`, `max_quotes` figé, contrainte `quote_request_slots_ck` | `QuoteRequestTest`, `SubmitQuoteRequestTest` | T-401 (envoi de devis : T-504) | 🟨 |
 | RG-080 | Masquage des coordonnées | Messaging | | | T-701 | ⬜ |
 | RG-100 | Seul l'envoi v1 consomme 1 crédit | Quote / Billing | | | T-504 | ⬜ |
 | RG-101 | Contrôle atomique à l'envoi | Quote / Billing | | concurrence | T-504 | ⬜ |

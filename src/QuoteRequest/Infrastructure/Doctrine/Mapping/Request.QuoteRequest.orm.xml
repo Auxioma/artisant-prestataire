@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- QuoteRequest — demande de devis (RG-063 à RG-066, RG-070). Contraintes et index : migration Version20261116120000. -->
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\QuoteRequest\Domain\Request\QuoteRequest" table="quote_request" schema="request">
+        <id name="id" type="quote_request_id" column="id"/>
+        <field name="number" type="string" length="20" unique="true"/>
+        <field name="clientId" type="guid" column="client_id"/>
+        <field name="jobId" type="guid" column="job_id"/>
+        <field name="targetArtisanId" type="guid" column="target_artisan_id" nullable="true"/>
+        <field name="broadcastToOthers" type="boolean" column="broadcast_to_others"/>
+        <field name="cityInsee" type="string" length="5" column="city_insee"/>
+        <field name="postalCode" type="string" length="5" column="postal_code"/>
+        <field name="duplicateKey" type="string" length="64" column="duplicate_key"/>
+        <field name="status" type="string" length="20" enum-type="App\QuoteRequest\Domain\Request\RequestStatus"/>
+        <field name="projectType" type="string" length="20" column="project_type" enum-type="App\QuoteRequest\Domain\Request\ProjectType"/>
+        <field name="description" type="text"/>
+        <field name="answers" type="json"><options><option name="jsonb">true</option></options></field>
+        <field name="budgetRange" type="string" length="30" column="budget_range" nullable="true"/>
+        <field name="timing" type="string" length="10" enum-type="App\QuoteRequest\Domain\Request\Timing"/>
+        <field name="desiredDate" type="date_immutable" column="desired_date" nullable="true"/>
+        <field name="maxQuotes" type="smallint" column="max_quotes"/>
+        <field name="activeQuotesCount" type="smallint" column="active_quotes_count"/>
+        <field name="receivedQuotesCount" type="smallint" column="received_quotes_count"/>
+        <field name="riskScore" type="smallint" column="risk_score"/>
+        <field name="riskSignals" type="json" column="risk_signals"><options><option name="jsonb">true</option></options></field>
+        <field name="submittedAt" type="datetimetz_immutable" column="submitted_at"/>
+        <field name="publishedAt" type="datetimetz_immutable" column="published_at" nullable="true"/>
+        <field name="expiresAt" type="datetimetz_immutable" column="expires_at" nullable="true"/>
+        <field name="reopenCount" type="smallint" column="reopen_count"/>
+        <field name="relaunchCount" type="smallint" column="relaunch_count"/>
+        <field name="statusReason" type="string" length="500" column="status_reason" nullable="true"/>
+        <field name="statusChangedAt" type="datetimetz_immutable" column="status_changed_at"/>
+        <field name="updatedAt" type="datetimetz_immutable" column="updated_at"/>
+        <field name="version" type="integer" version="true"/>
+    </entity>
+</doctrine-mapping>
