@@ -35,6 +35,8 @@
             <p class="tm-submitted__credits"><twig:Icon name="tag" size="sm" class="tm-icon--inherit" />{{ free_credits }} devis offerts dès la validation de votre compte</p>
         {% elseif status == 'verified' %}
             <p>Votre profil est visible des clients et vous recevez les demandes de votre zone.</p>
+            {% set credits = tm_artisan_credits() %}
+            {% if credits %}<p class="tm-submitted__credits"><twig:Icon name="tag" size="sm" class="tm-icon--inherit" />{{ credits.remaining|number_format(0, ',', ' ') }} devis disponibles sur votre compte</p>{% endif %}
         {% elseif status == 'rejected' %}
             <div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p><strong>Motif :</strong> {{ rejection_label ?? 'non précisé' }}{% if state.statusComment %} — {{ state.statusComment }}{% endif %}</p></div>
             <p>Vous pensez qu’il s’agit d’une erreur ? <a href="{{ tm_path('content_contact') }}">Contactez-nous</a> pour faire réexaminer votre dossier.</p>

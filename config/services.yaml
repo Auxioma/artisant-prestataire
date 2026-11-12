@@ -41,6 +41,7 @@ services:
             - '../src/ArtisanProfile/Application/Verification/{QueueItem,DossierView}.php'
             - '../src/Catalog/Application/Query/JobRequirement.php'
             - '../src/Catalog/Application/Geo/Query/Coverage.php'
+            - '../src/Billing/Application/Credit/CreditBalance.php'
             - '../src/ArtisanProfile/Domain/'
             - '../src/Administration/Application/Team/{TeamRejected,InvitationToken,AdminMemberView}.php'
             - '../src/Administration/Infrastructure/Security/AdminSecurityUser.php'
@@ -107,6 +108,9 @@ services:
     App\Notification\Application\Port\EmailSender: '@App\Notification\Infrastructure\Mailer\SymfonyMailerEmailSender'
     App\Notification\Application\Port\DeliveryLog: '@App\Notification\Infrastructure\Persistence\DbalDeliveryLog'
     App\Notification\Application\Port\InAppNotifications: '@App\Notification\Infrastructure\Persistence\DbalInAppNotifications'
+
+    # Ports du module Billing
+    App\Billing\Application\Credit\CreditLedger: '@App\Billing\Infrastructure\Credit\DbalCreditLedger'
 
     # Ports du module ArtisanProfile
     App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository: '@App\ArtisanProfile\Infrastructure\Doctrine\Repository\DoctrineArtisanProfileRepository'

@@ -18,6 +18,7 @@ use App\ArtisanProfile\Domain\Profile\Event\ArtisanSuspended;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanVerified;
 use App\Catalog\Domain\Job\JobId;
 use App\Shared\Domain\AggregateRoot;
+use App\Shared\Domain\Event\Integration\ProfessionalAccountVerified;
 use App\Shared\Domain\ValueObject\Siret;
 
 /**
@@ -275,6 +276,7 @@ final class ArtisanProfile extends AggregateRoot
         $this->verifiedAt = $now;
         $this->changed($adminId, null, null, $now);
         $this->recordEvent(new ArtisanVerified($this->id->value, $this->userId, $adminId, $now));
+        $this->recordEvent(new ProfessionalAccountVerified($this->id->value, $this->userId, $now));
     }
 
     /** BO03 — refus motivé (motif normalisé ; commentaire obligatoire pour « autre »). */

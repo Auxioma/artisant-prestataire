@@ -14,6 +14,7 @@ use App\ArtisanProfile\Application\Verification\RequestArtisanInfo;
 use App\ArtisanProfile\Application\Verification\SuspendArtisan;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanServiceAreaDefined;
 use App\ArtisanProfile\Domain\Profile\Event\ArtisanSignupSubmitted;
+use App\Billing\Application\Credit\GrantFreeCredit;
 use App\Catalog\Application\Command\CreateCategory;
 use App\Catalog\Application\Command\CreateJob;
 use App\Catalog\Application\Geo\GeoReferentialImporter;
@@ -21,6 +22,7 @@ use App\Catalog\Application\Geo\Port\GeoReferentialSourceFactory;
 use App\Identity\Application\Legal\PublishLegalDocument;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Storage\ScanQuarantinedFile;
+use App\Shared\Domain\Event\Integration\ProfessionalAccountVerified;
 use App\Shared\Domain\Storage\FileAvailable;
 use App\Shared\Domain\Storage\FileQuarantined;
 use App\Shared\Infrastructure\Persistence\DbalValue;
@@ -397,8 +399,16 @@ final class ArtisanSignupCompletionTest extends WebTestCase
             $this->scan($this->value("SELECT file_id FROM artisan.document WHERE status = 'quarantined'"));
         }
         $this->dispatch(new ApproveArtisan($id, self::ADMIN));
-        $this->client->request('GET', '/inscription/pro/dossier-envoye');
+        // RG-044 : crédit gratuit attribué à la vérification (événement d'intégration relayé par l'outbox vers Billing).
+        self::assertSame('1', $this->value("SELECT count(*) FROM shared.outbox_message WHERE message_type = 'App\\Shared\\Domain\\Event\\Integration\\ProfessionalAccountVerified'"));
+        $grant = self::getContainer()->get(GrantFreeCredit::class);
+        \assert($grant instanceof GrantFreeCredit);
+        $grant(new ProfessionalAccountVerified($id, $this->value('SELECT user_id FROM artisan.artisan_profile'), new \DateTimeImmutable()));
+        $crawler = $this->client->request('GET', '/inscription/pro/dossier-envoye');
         self::assertSelectorTextContains('h1', 'Votre compte professionnel est vérifié');
+        self::assertStringContainsString('100 devis disponibles sur votre compte', $crawler->filter('.tm-submitted')->text());
+        $this->client->request('GET', '/');
+        self::assertSelectorTextContains('.tm-credit-pill', '100 devis', 'pastille de crédits dans l’en-tête artisan');
         $this->client->request('GET', '/inscription/pro/profil');
         self::assertResponseRedirects('/inscription/pro/dossier-envoye', null, 'tunnel fermé après validation');
         $this->client->request('GET', '/inscription/pro/zone');
@@ -417,7 +427,7 @@ final class ArtisanSignupCompletionTest extends WebTestCase
         $this->dispatch(new ReinstateArtisan($id, null));
         self::assertSame('verified', $this->value('SELECT status FROM artisan.artisan_profile'));
         self::assertSame(
-            'artisan.more_info_requested,artisan.verified,artisan.suspended,artisan.reinstated',
+            'artisan.more_info_requested,artisan.verified,billing.free_credit_granted,artisan.suspended,artisan.reinstated',
             $this->value("SELECT string_agg(action, ',' ORDER BY seq) FROM admin.audit_log WHERE subject_type = 'artisan_profile' AND action <> 'artisan.signup_submitted'"),
         );
         self::assertSame('admin|system', $this->value("SELECT string_agg(actor_type, '|' ORDER BY seq) FROM admin.audit_log WHERE action IN ('artisan.verified', 'artisan.reinstated')"));
