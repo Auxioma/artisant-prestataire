@@ -50,4 +50,22 @@ interface ArtisanSearchIndex
      * @return list<SearchCandidate>
      */
     public function featured(array $jobIds, ?string $departmentCode, int $minCompletion, int $limit): array;
+
+    /**
+     * P06 — annuaire alphabétique des artisans publics, filtré par métiers, département, initiale (`#` = chiffre),
+     * labels et note minimale.
+     *
+     * @param list<string> $jobIds
+     * @param list<string> $labels
+     *
+     * @return array{total: int, candidates: list<SearchCandidate>}
+     */
+    public function directory(array $jobIds, ?string $departmentCode, ?string $letter, array $labels, ?float $minRating, int $offset, int $limit): array;
+
+    /**
+     * Initiales présentes dans l'annuaire (filtre alphabétique sans lettre vide).
+     *
+     * @return list<string>
+     */
+    public function directoryLetters(): array;
 }

@@ -1,0 +1,104 @@
+{#- P06 — annuaire « Nos professionnels » : recherche, filtres (métier, département, initiale), grille 3/2/1 colonnes, pagination numérotée, bloc « Vous êtes artisan ? ». -#}
+{% extends 'base.html.twig' %}
+{% set active_nav = 'pros' %}
+{% set page = result.page %}
+{% macro page_url(n, filters) %}{{ filters is empty ? (n == 1 ? path('search_directory') : path('search_directory_page', {page: n})) : path('search_directory', filters|merge(n > 1 ? {page: n} : {})) }}{% endmacro %}
+{% import _self as m %}
+{% block title %}Nos professionnels vérifiés{{ page > 1 ? ' — page ' ~ page }} — TrouveMoi{% endblock %}
+{% block meta %}
+    {% if filters is not empty %}<meta name="robots" content="noindex, follow">{% endif %}
+    <meta name="description" content="Annuaire des artisans et prestataires vérifiés par TrouveMoi : SIRET, Kbis et assurances contrôlés. Parcourez-les par métier, département ou ordre alphabétique.">
+    <link rel="canonical" href="{{ app.request.schemeAndHttpHost ~ m.page_url(filters is empty ? page : 1, {})|trim }}">
+{% endblock %}
+{% block body %}
+<div class="tm-catalog tm-directory" data-controller="analytics" data-analytics-auto-event-value="directory_view" data-analytics-auto-type-value="{{ page }}">
+    <twig:PageBanner title="Nos professionnels" subtitle="Découvrez des artisans et prestataires vérifiés près de chez vous." image="images/auth/a02-banner" />
+    <div class="tm-container tm-catalog__body">
+        <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Nos professionnels'}]" />
+        {% include 'catalog/_search_bar.html.twig' with {job: job, place: null} only %}
+
+        <section aria-labelledby="directory-title">
+            <div class="tm-catalog__head">
+                <h1 class="tm-section-title" id="directory-title">Tous les professionnels vérifiés</h1>
+                <p class="tm-search__count" role="status">{{ result.total|number_format(0, ',', ' ') }} professionnel{{ result.total > 1 ? 's' }}{% if result.pages > 1 %} · page {{ page }} sur {{ result.pages }}{% endif %}</p>
+            </div>
+
+            <form method="get" action="{{ path('search_directory') }}" class="tm-directory__filters" data-controller="autosubmit" data-turbo="false">
+                <twig:Select id="metier" name="metier" label="Métier" :options="{'': 'Tous les métiers'}|merge(jobs|reduce((carry, j) => carry|merge({(j.slug): j.name}), {}))" value="{{ job ? job.slug : '' }}" data-action="change->autosubmit#submit" />
+                <twig:Select id="departement" name="departement" label="Département" :options="department_options" value="{{ department ?? '' }}" data-action="change->autosubmit#submit" />
+                {% if letter %}<input type="hidden" name="lettre" value="{{ letter }}">{% endif %}
+                <noscript><twig:Button type="submit" variant="secondary">Filtrer</twig:Button></noscript>
+                {% if filters is not empty %}<a class="tm-directory__reset" href="{{ path('search_directory') }}">Effacer les filtres</a>{% endif %}
+            </form>
+
+            <nav class="tm-directory__letters" aria-label="Filtre alphabétique">
+                <ul>
+                    <li><a href="{{ path('search_directory', filters|filter((v, k) => k != 'lettre')) }}"{% if not letter %} aria-current="true"{% endif %}>Tous</a></li>
+                    {% for l in letters %}
+                        <li>
+                            {% if l in result.letters %}
+                                <a href="{{ path('search_directory', filters|merge({lettre: l})) }}"{% if l == letter %} aria-current="true"{% endif %}>{{ l == '#' ? '0–9' : l }}</a>
+                            {% else %}
+                                <span aria-disabled="true">{{ l == '#' ? '0–9' : l }}</span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+
+            {% if result.artisans is empty %}
+                <twig:EmptyState icon="users" title="Aucun professionnel ne correspond à ces filtres" text="Élargissez votre sélection ou recherchez près de chez vous.">
+                    <twig:Button href="{{ path('search_directory') }}" variant="secondary">Voir tous les professionnels</twig:Button>
+                </twig:EmptyState>
+            {% else %}
+                <ul class="tm-directory__grid">
+                    {% for a in result.artisans %}
+                        <li>
+                            <twig:CardArtisan
+                                name="{{ a.name }}"
+                                href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}"
+                                trades="{{ a.jobIds|map(id => job_names[id] ?? null)|filter(n => n)|join(' · ') }}"
+                                location="{{ a.communeName ? a.communeName ~ (a.departmentCode ? ' (' ~ a.departmentCode ~ ')') : '' }}"
+                                :rating="a.reviewsCount > 0 ? a.ratingAverage : null"
+                                :reviewsCount="a.reviewsCount"
+                                photo="{{ a.hasLogo ? path('public_artisan_logo', {id: a.profileId}) : null }}"
+                                photoAlt="Logo de {{ a.name }}"
+                                :verified="true" />
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            {% if result.pages > 1 %}
+                <nav class="tm-directory__pagination" aria-label="Pagination">
+                    <ul>
+                        {% if page > 1 %}<li><a href="{{ m.page_url(page - 1, filters)|trim }}"><twig:Icon name="chevL" size="sm" /><span class="tm-visually-hidden">Page précédente</span></a></li>{% endif %}
+                        {% for n in 1..result.pages %}
+                            {% if n == 1 or n == result.pages or (n >= page - 2 and n <= page + 2) %}
+                                <li>{% if n == page %}<span aria-current="page">{{ n }}</span>{% else %}<a href="{{ m.page_url(n, filters)|trim }}">{{ n }}</a>{% endif %}</li>
+                            {% elseif n == page - 3 or n == page + 3 %}
+                                <li><span aria-hidden="true">…</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        {% if page < result.pages %}<li><a href="{{ m.page_url(page + 1, filters)|trim }}"><span class="tm-visually-hidden">Page suivante</span><twig:Icon name="chevR" size="sm" /></a></li>{% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        </section>
+
+        <aside class="tm-directory__pro" aria-labelledby="pro-title">
+            <twig:Icon name="crown" class="tm-directory__pro-icon" />
+            <div>
+                <h2 id="pro-title">Vous êtes un professionnel ?</h2>
+                <ul>
+                    <li><twig:Icon name="checkC" size="sm" />Gagnez en visibilité locale et nationale</li>
+                    <li><twig:Icon name="checkC" size="sm" />Recevez des demandes de devis qualifiées</li>
+                    <li><twig:Icon name="checkC" size="sm" />Affichez un profil vérifié : SIRET, Kbis et assurances contrôlés</li>
+                    {% if free_credits > 0 %}<li><twig:Icon name="checkC" size="sm" /><span><strong>{{ free_credits }} devis offerts</strong> à la validation de votre dossier</span></li>{% endif %}
+                </ul>
+            </div>
+            <twig:Button href="{{ tm_path('identity_register_pro') }}" icon="userPlus" iconPosition="start" data-action="analytics#track" data-analytics-event-param="pro_signup_cta_click" data-analytics-type-param="directory">Créer mon compte pro</twig:Button>
+        </aside>
+    </div>
+</div>
+{% endblock %}

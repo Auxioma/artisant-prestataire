@@ -11,7 +11,7 @@ use App\Shared\Application\Bus\QueryHandler;
 use App\Shared\Application\Settings\SettingKey;
 use App\Shared\Application\Settings\SettingsProvider;
 
-/** Comptages et mises en avant des pages publiques du référentiel (P03, P04, P05). */
+/** Comptages, mises en avant et annuaire des pages publiques (P03 à P06). */
 final readonly class DirectoryQueriesHandler implements QueryHandler
 {
     /** Aucune note publiée : la note bayésienne vaut 0 pour tous (même convention que la recherche, P-50). */
@@ -22,9 +22,16 @@ final readonly class DirectoryQueriesHandler implements QueryHandler
     {
     }
 
-    /** @return array<string, int>|int|list<ArtisanHit> */
-    public function __invoke(ArtisanCountsByJob|CountArtisans|FeaturedArtisans $query): array|int
+    /** @return array<string, int>|int|list<ArtisanHit>|DirectoryResult */
+    public function __invoke(ArtisanCountsByJob|CountArtisans|FeaturedArtisans|DirectoryArtisans $query): array|int|DirectoryResult
     {
+        if ($query instanceof DirectoryArtisans) {
+            $perPage = $this->settings->int(SettingKey::SearchPageSize);
+            $page = max(1, $query->page);
+            $found = $this->index->directory($query->jobIds, $query->departmentCode, $query->letter, $query->labels, $query->minRating, ($page - 1) * $perPage, $perPage);
+
+            return new DirectoryResult($found['candidates'], $found['total'], $page, $perPage, $this->index->directoryLetters());
+        }
         if ($query instanceof CountArtisans) {
             return $this->index->countAmong($query->jobIds, $query->departmentCode);
         }

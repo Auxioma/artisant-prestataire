@@ -127,6 +127,39 @@ final readonly class DbalArtisanSearchIndex implements ArtisanSearchIndex
         return array_map(static fn (array $r): SearchCandidate => self::candidate($r, $jobIds), $rows);
     }
 
+    public function directory(array $jobIds, ?string $departmentCode, ?string $letter, array $labels, ?float $minRating, int $offset, int $limit): array
+    {
+        $where = <<<'SQL'
+            (cardinality(CAST(:jobs AS uuid[])) = 0 OR v.job_ids && CAST(:jobs AS uuid[]))
+            AND (CAST(:department AS text) IS NULL OR v.department_code = :department)
+            AND (CAST(:letter AS text) IS NULL OR
+                 CASE WHEN :letter = '#' THEN upper(left(catalog.immutable_unaccent(v.name), 1)) !~ '^[A-Z]$'
+                      ELSE upper(left(catalog.immutable_unaccent(v.name), 1)) = :letter END)
+            AND (cardinality(CAST(:labels AS text[])) = 0 OR v.labels && CAST(:labels AS text[]))
+            AND (CAST(:rating AS numeric) IS NULL OR v.rating_avg >= CAST(:rating AS numeric))
+            SQL;
+        $jobIds = self::uuids($jobIds);
+        $params = ['jobs' => self::pgArray($jobIds), 'department' => $departmentCode, 'letter' => $letter, 'labels' => self::pgArray($labels), 'rating' => $minRating];
+        $total = DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM search.artisan_search_view v WHERE '.$where, $params));
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT v.artisan_id, v.name, v.short_description, v.main_job_id, v.commune_name, v.department_code, v.labels, v.completion,
+                    v.rating_avg, v.reviews_count, v.response_rate, v.available_soon, v.logo_file_id IS NOT NULL AS has_logo, v.job_ids, 0 AS distance_km
+             FROM search.artisan_search_view v WHERE '.$where.'
+             ORDER BY catalog.immutable_unaccent(lower(v.name)), v.artisan_id OFFSET :offset LIMIT :limit',
+            $params + ['offset' => max(0, $offset), 'limit' => max(1, min($limit, self::MAX_CANDIDATES))],
+        );
+
+        return ['total' => $total, 'candidates' => array_map(static fn (array $r): SearchCandidate => self::candidate($r, $jobIds), $rows)];
+    }
+
+    public function directoryLetters(): array
+    {
+        return array_map(DbalValue::string(...), $this->connection->fetchFirstColumn(
+            "SELECT DISTINCT CASE WHEN l ~ '^[A-Z]$' THEN l ELSE '#' END AS letter
+             FROM (SELECT upper(left(catalog.immutable_unaccent(name), 1)) AS l FROM search.artisan_search_view) x ORDER BY letter",
+        ));
+    }
+
     /**
      * @param list<string> $ids
      *
