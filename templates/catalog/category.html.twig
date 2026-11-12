@@ -48,8 +48,8 @@
                 <ul class="tm-catalog__carousel">
                     {% for hit in featured %}<li>{% include 'catalog/_artisan_card.html.twig' with {hit: hit, job_names: job_names} only %}</li>{% endfor %}
                 </ul>
-                {% set ranking = tm_path('content_page', {slug: 'classement-des-professionnels'}) %}
-                <p class="tm-catalog__fine">Professionnels vérifiés au profil complet, les mieux notés d’abord.{% if ranking != '#' %} <a href="{{ ranking }}">Comment sont classés les professionnels ?</a>{% endif %}</p>
+                {% set ranking = tm_path('content_how_it_works') ~ '#classement' %}
+                <p class="tm-catalog__fine">Professionnels vérifiés au profil complet, les mieux notés d’abord.{% if ranking != '##classement' %} <a href="{{ ranking }}">Comment sont classés les professionnels ?</a>{% endif %}</p>
             </section>
         {% endif %}
     </div>

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Identity\Infrastructure\Turnstile;
 
-use App\Identity\Application\Port\HumanVerification;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
+use App\Shared\Application\Security\HumanVerification;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;

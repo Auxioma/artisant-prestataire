@@ -106,3 +106,56 @@
     .tm-error-page__subtitle { margin: 0 0 var(--space-2); font: var(--type-body-strong); color: var(--color-heading); }
     .tm-error-page__links { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2) var(--space-4); margin: 0; padding: 0; list-style: none; }
 }
+
+/* P12 et P16 — comment ça marche, contact (T-307b) */
+@layer components {
+    .tm-how__body { display: grid; gap: var(--space-8); padding-block: var(--space-6) var(--space-12); }
+    .tm-how__tabs { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); }
+    .tm-how__tab { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 48px; padding: 0 var(--space-5); border: 1px solid var(--secondary); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-link); font: var(--type-button); text-decoration: none; }
+    .tm-how__tab[aria-selected='true'] { background: var(--gradient-blue); border-color: transparent; color: var(--color-surface); }
+    .tm-how__tab:focus-visible { box-shadow: var(--focus-ring); outline: none; }
+    .tm-how__panel { display: grid; gap: var(--space-5); }
+    .tm-how__steps { display: grid; gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
+    .tm-how__steps li { display: grid; grid-template-columns: auto auto 1fr; grid-template-areas: 'num icon title' 'num icon text'; gap: 0 var(--space-3); align-items: center; padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
+    .tm-how__steps .tm-home-steps__number { grid-area: num; }
+    .tm-how__steps .tm-home-steps__icon { grid-area: icon; }
+    .tm-how__steps h3 { grid-area: title; margin: 0; font: var(--type-h3-mobile); color: var(--color-heading); }
+    .tm-how__steps p { grid-area: text; margin: 0; color: var(--color-text-muted); font: var(--type-body-sm); }
+    .tm-how__cta { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3); }
+    .tm-how__trust { display: grid; gap: var(--space-4); }
+    .tm-how__cards { display: grid; gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
+    .tm-how__cards li { display: grid; gap: var(--space-2); padding: var(--space-5); border-radius: var(--radius-card); background: var(--color-info-bg); scroll-margin-top: var(--space-6); }
+    .tm-how__cards .tm-icon { color: var(--orange); }
+    .tm-how__cards h3, .tm-how__ranking h3 { margin: 0; font: var(--type-h3-mobile); color: var(--color-heading); }
+    .tm-how__cards p { margin: 0; font: var(--type-body-sm); }
+    .tm-how__ranking { display: grid; gap: var(--space-3); scroll-margin-top: var(--space-6); }
+    .tm-how__ranking :is(p, ul) { margin: 0; }
+
+    .tm-contact__layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); align-items: start; padding-block: var(--space-6) var(--space-12); }
+    .tm-contact__form select { width: 100%; min-width: 0; text-overflow: ellipsis; }
+    .tm-contact__form, .tm-contact__form form { display: grid; gap: var(--space-4); }
+    .tm-contact__form h2, .tm-contact__aside h2 { margin: 0; font: var(--type-h2-mobile); color: var(--color-heading); }
+    .tm-contact__form > p { margin: 0; }
+    .tm-contact__row { display: grid; gap: var(--space-4); }
+    .tm-contact__file { font: var(--type-body-sm); }
+    .tm-contact__success { display: flex; gap: var(--space-2); align-items: flex-start; padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--color-success-bg); color: var(--color-success-text); }
+    .tm-contact__success p { margin: 0; }
+    .tm-contact__aside { display: grid; gap: var(--space-4); }
+    .tm-contact__aside .tm-card-panel { display: grid; gap: var(--space-2); }
+    .tm-contact__aside h2 { font: var(--type-h3); }
+    .tm-contact__line { display: flex; gap: var(--space-2); align-items: center; margin: 0; font: var(--type-body-sm); }
+    .tm-contact__help { background: var(--color-info-bg); }
+    .tm-contact__help ul { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; font: var(--type-body-sm); }
+
+    @media (min-width: 768px) {
+        .tm-how__steps li { grid-template-columns: auto auto 1fr; }
+        .tm-how__cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .tm-contact__row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (min-width: 1024px) {
+        .tm-how__steps { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+        .tm-how__steps li { grid-template-columns: 1fr; grid-template-areas: 'num' 'icon' 'title' 'text'; justify-items: center; gap: var(--space-2); text-align: center; }
+        .tm-contact__layout { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+    }
+}

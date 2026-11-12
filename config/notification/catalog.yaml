@@ -220,6 +220,11 @@ notifications:
         label: "Remboursement effectué / avoir"
         recipient: "Artisan"
         channels: [email]
+    'E-90':
+        label: "Accusé de réception du formulaire de contact"
+        recipient: "Tous"
+        channels: [email]
+        variables: [nom, motif, reference, delai_heures, extrait]
     'E-95':
         label: "Mise à jour des CGU / CGV"
         recipient: "Tous"
@@ -235,3 +240,8 @@ notifications:
         recipient: "Administrateur invité"
         channels: [email]
         variables: [nom, role, lien, validite_heures]
+    'I-03':
+        label: "Nouveau message du formulaire de contact (P16) — boîte du support"
+        recipient: "Support"
+        channels: [email]
+        variables: [reference, motif, nom, email, telephone, numero_demande, message, piece_jointe, compte]

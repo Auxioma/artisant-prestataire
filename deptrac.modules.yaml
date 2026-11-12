@@ -30,6 +30,6 @@ deptrac:
     Messaging: [Shared, QuoteRequest, Quote]
     Review: [Shared, Quote, Moderation]
     Moderation: [Shared]
-    Content: [Shared, Catalog, Search] # Search : compteurs et cartes artisans de l'accueil (P01.5, P01.6)
+    Content: [Shared, Catalog, Search, Notification] # Search : cartes de l'accueil (P01) ; Notification : E-90, I-03 (P16)
     Notification: [Shared]
     Administration: [Shared, Notification] # Notification : invitation de l'équipe (I-02)

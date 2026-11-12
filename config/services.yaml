@@ -100,11 +100,13 @@ services:
     # Ports du module Content
     App\Content\Application\Port\RedirectStore: '@App\Content\Infrastructure\Redirect\DbalRedirectStore'
     App\Content\Application\Port\HomeVersions: '@App\Content\Infrastructure\Home\DbalHomeVersions'
+    App\Content\Application\Port\ContactMessages: '@App\Content\Infrastructure\Contact\DbalContactMessages'
+    App\Content\Application\Port\ContactMailer: '@App\Content\Infrastructure\Contact\NotificationContactMailer'
 
     App\Catalog\Application\Geo\Port\AddressGeocoder: '@App\Catalog\Infrastructure\Geo\BanAddressGeocoder'
     App\Shared\Application\Integration\CompanyRegistry: '@App\Shared\Infrastructure\Integration\Sirene\InseeSireneCompanyRegistry'
     App\Billing\Application\Port\VatNumberChecker: '@App\Billing\Infrastructure\Vies\ViesVatNumberChecker'
-    App\Identity\Application\Port\HumanVerification: '@App\Identity\Infrastructure\Turnstile\TurnstileHumanVerification'
+    App\Shared\Application\Security\HumanVerification: '@App\Identity\Infrastructure\Turnstile\TurnstileHumanVerification'
 
     # Ports du module Notification (CDC §6, annexe F)
     App\Notification\Application\Notifier: '@App\Notification\Application\NotificationDispatcher'
@@ -196,7 +198,7 @@ when@test:
         test.storage.documents:
             alias: documents.storage
             public: true
-        App\Identity\Application\Port\HumanVerification:
+        App\Shared\Application\Security\HumanVerification:
             class: App\Tests\Support\Fake\AcceptingHumanVerification
         # Limites de débit : stockage en mémoire non réinitialisé entre requêtes (comme Redis en production) mais propre
         # à chaque noyau de test (isolation entre tests, cf. bf78dc0).

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Identity\Infrastructure\Security;
 
 use App\Identity\Application\Login\RecordLogin;
-use App\Identity\Application\Port\HumanVerification;
 use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
+use App\Shared\Application\Security\HumanVerification;
 use App\Shared\Application\Security\IpAnonymizer;
 use App\Shared\Domain\Audit\AuditRecord;
 use App\Shared\Domain\Identifier\IdGenerator;

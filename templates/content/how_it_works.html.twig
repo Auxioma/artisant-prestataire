@@ -1,0 +1,96 @@
+{#- P12 — « Comment ça marche ? » : onglets particuliers / professionnels (#particuliers, #professionnels), étapes, engagements, classement (#classement), CTA. -#}
+{% extends 'base.html.twig' %}
+{% set active_nav = 'how' %}
+{% set request_href = tm_route_exists('request_new') ? path('request_new') : path('public_search') %}
+{% block title %}Comment ça marche ? — TrouveMoi{% endblock %}
+{% block meta %}
+    <meta name="description" content="Trouvez un professionnel vérifié et comparez jusqu’à {{ max_quotes }} devis gratuits, ou développez votre activité d’artisan avec {{ free_credits }} devis offerts.">
+    <link rel="canonical" href="{{ url('content_how_it_works') }}">
+{% endblock %}
+{% macro steps(items) %}
+    <ol class="tm-how__steps">
+        {% for step in items %}
+            <li>
+                <span class="tm-home-steps__number" aria-hidden="true">{{ loop.index }}</span>
+                <span class="tm-home-steps__icon"><twig:Icon name="{{ step.icon }}" /></span>
+                <h3>{{ step.title }}</h3>
+                <p>{{ step.text }}</p>
+            </li>
+        {% endfor %}
+    </ol>
+{% endmacro %}
+{% import _self as m %}
+{% block body %}
+<div class="tm-how">
+    <twig:PageBanner title="Comment ça marche ?" subtitle="Simple, rapide et gratuit : trouvez un professionnel vérifié, ou développez votre activité." image="images/auth/a02-banner" />
+    <div class="tm-container tm-how__body" data-controller="tabs" data-tabs-event-value="how_it_works_tab">
+        <div class="tm-how__tabs" role="tablist" aria-label="Je suis">
+            <a class="tm-how__tab" id="tab-particuliers" href="#particuliers" role="tab" aria-controls="particuliers" data-tabs-target="tab" data-action="tabs#open keydown->tabs#keydown"><twig:Icon name="users" size="sm" />Je cherche un professionnel</a>
+            <a class="tm-how__tab" id="tab-professionnels" href="#professionnels" role="tab" aria-controls="professionnels" data-tabs-target="tab" data-action="tabs#open keydown->tabs#keydown"><twig:Icon name="briefcase" size="sm" />Je suis professionnel</a>
+        </div>
+
+        <section class="tm-how__panel" id="particuliers" role="tabpanel" aria-labelledby="tab-particuliers" data-tabs-target="panel">
+            <h2 class="tm-section-title">Trouver un professionnel en 5 étapes</h2>
+            {{ m.steps([
+                {icon: 'search', title: 'Je recherche un professionnel', text: 'Par métier et par ville : seuls des professionnels vérifiés vous sont proposés.'},
+                {icon: 'file', title: 'Je décris mon besoin', text: 'Une demande gratuite et sans engagement, avec photos si besoin.'},
+                {icon: 'users', title: 'Je compare jusqu’à ' ~ max_quotes ~ ' devis', text: 'Prix, délais, profils et avis : vous choisissez librement.'},
+                {icon: 'calCheck', title: 'Je choisis et je planifie', text: 'J’accepte le devis qui me convient et je fixe l’intervention avec le professionnel.'},
+                {icon: 'star', title: 'J’évalue la prestation', text: 'Mon avis certifié aide les autres clients à bien choisir.'},
+            ]) }}
+            <div class="tm-how__cta">
+                <twig:Button href="{{ request_href }}" icon="arrowR">{{ tm_route_exists('request_new') ? 'Déposer ma demande' : 'Trouver un professionnel' }}</twig:Button>
+            </div>
+        </section>
+
+        <section class="tm-how__panel" id="professionnels" role="tabpanel" aria-labelledby="tab-professionnels" data-tabs-target="panel">
+            <h2 class="tm-section-title">Développer votre activité en 5 étapes</h2>
+            {{ m.steps([
+                {icon: 'userPlus', title: 'Je crée mon compte', text: 'SIRET vérifié au répertoire Sirene, métiers et zone d’intervention en quelques minutes.'},
+                {icon: 'shield', title: 'Mon dossier est vérifié', text: 'Identité, Kbis et assurances sont contrôlés par l’équipe' ~ (verification_hours > 0 ? ' sous ' ~ verification_hours ~ ' h ouvrées' : '') ~ ' ; le badge « Vérifié » s’affiche sur ma fiche.'},
+                {icon: 'msg', title: 'Je reçois des demandes', text: 'Des demandes de clients de ma zone, pour les métiers que j’exerce.'},
+                {icon: 'file', title: 'J’envoie mes devis', text: free_credits > 0 ? free_credits ~ ' devis offerts à la validation de mon dossier, sans carte bancaire.' : 'Je réponds aux demandes qui m’intéressent.'},
+                {icon: 'rocket', title: 'Je passe à un forfait', text: 'Quand je le souhaite, un forfait me permet de continuer à envoyer des devis chaque mois.'},
+            ]) }}
+            <div class="tm-how__cta">
+                <twig:Button href="{{ tm_path('identity_register_pro') }}" icon="userPlus" iconPosition="start" data-action="analytics#track" data-analytics-event-param="pro_signup_cta_click" data-analytics-type-param="how_it_works">Créer mon compte pro</twig:Button>
+                {% if tm_route_exists('content_pricing') %}<twig:Button href="{{ path('content_pricing') }}" variant="secondary">Voir les tarifs</twig:Button>{% endif %}
+            </div>
+        </section>
+
+        <section class="tm-how__trust" aria-labelledby="trust-title">
+            <h2 class="tm-section-title" id="trust-title">Nos engagements de confiance</h2>
+            <ul class="tm-how__cards">
+                <li id="verification">
+                    <twig:Icon name="shield" />
+                    <h3>Des professionnels vérifiés</h3>
+                    <p>Avant d’attribuer le badge « Vérifié », l’équipe contrôle le SIRET au répertoire Sirene, l’extrait Kbis, l’identité du dirigeant et les attestations d’assurance. Une assurance échue est signalée et le profil masqué tant qu’elle n’est pas renouvelée.</p>
+                </li>
+                <li id="avis">
+                    <twig:Icon name="star" />
+                    <h3>Des avis certifiés</h3>
+                    <p>Seul un client dont la demande a abouti à une prestation via TrouveMoi peut déposer un avis. Les avis sont modérés avant publication, sans contrepartie, et affichés du plus récent au plus ancien (art. L111-7-2 du Code de la consommation).</p>
+                </li>
+                <li id="donnees">
+                    <twig:Icon name="lock" />
+                    <h3>Vos données protégées</h3>
+                    <p>Vos coordonnées ne servent qu’à la mise en relation que vous avez choisie ; vous gardez la main sur vos cookies et vos données. <a href="{{ path('identity_legal_document', {slug: 'confidentialite'}) }}">Politique de confidentialité</a></p>
+                </li>
+            </ul>
+            <div class="tm-card-panel tm-how__ranking" id="classement">
+                <h3>Comment sont classés les professionnels ?</h3>
+                <p>Seuls les professionnels <strong>vérifiés</strong> qui interviennent dans la commune recherchée et se situent dans le rayon choisi sont affichés. Le tri « Pertinence » combine les critères suivants :</p>
+                <ul>
+                    <li>métier recherché exercé à titre principal : {{ (weights.job * 100)|round }} % ;</li>
+                    <li>distance : {{ (weights.distance * 100)|round }} % ;</li>
+                    <li>note bayésienne des avis : {{ (weights.rating * 100)|round }} % — la moyenne est pondérée par le nombre d’avis, un seul avis ne suffit pas à passer devant de nombreux avis ;</li>
+                    <li>réactivité : {{ (weights.responsiveness * 100)|round }} % ;</li>
+                    <li>complétude du profil : {{ (weights.completion * 100)|round }} % ;</li>
+                    <li>disponibilité : {{ (weights.availability * 100)|round }} %.</li>
+                </ul>
+                <p>Vous pouvez aussi trier par distance, note ou nombre d’avis. Aucun professionnel ne paie pour être mieux classé (art. L111-7 du Code de la consommation).</p>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

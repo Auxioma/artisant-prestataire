@@ -1,5 +1,5 @@
 {#- P01.6 — professionnels éligibles (RG-011) : sélection nationale au rendu, puis autour du dernier lieu mémorisé (mode proximité). -#}
-{% set ranking = tm_path('content_page', {slug: 'classement-des-professionnels'}) %}
+{% set ranking = tm_path('content_how_it_works') ~ '#classement' %}
 <section class="tm-container tm-home-section" aria-labelledby="home-pros"
          {% if s.mode == 'proximity' %}data-controller="home-pros" data-home-pros-url-value="{{ path('home_pros', {rayon: s.radius, nombre: s.count}) }}"{% endif %}>
     <div class="tm-catalog__head">
@@ -9,5 +9,5 @@
     <div data-home-pros-target="list" aria-live="polite">
         {% include 'content/home/_pros_list.html.twig' with {hits: d.hits, job_names: d.job_names, commune: null, widened: false} only %}
     </div>
-    {% if ranking != '#' %}<p class="tm-catalog__fine"><a href="{{ ranking }}">Comment sont classés les professionnels ?</a></p>{% endif %}
+    {% if ranking != '##classement' %}<p class="tm-catalog__fine"><a href="{{ ranking }}">Comment sont classés les professionnels ?</a></p>{% endif %}
 </section>

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Support\Fake;
 
-use App\Identity\Application\Port\HumanVerification;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
+use App\Shared\Application\Security\HumanVerification;
 
 /** Captcha de test : jeton « humain » accepté, « robot » refusé, `$down` simule une panne du fournisseur. */
 final class AcceptingHumanVerification implements HumanVerification

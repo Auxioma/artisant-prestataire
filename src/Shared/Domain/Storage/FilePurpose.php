@@ -19,12 +19,13 @@ enum FilePurpose: string
     case QuotePdf = 'quote_pdf';
     case ReviewPhoto = 'review_photo';
     case PortfolioPhoto = 'portfolio_photo';
+    case ContactAttachment = 'contact_attachment';
 
     /** @return list<FileType> */
     public function allowedTypes(): array
     {
         return match ($this) {
-            self::ArtisanDocument, self::MessageAttachment => [FileType::Pdf, FileType::Jpeg, FileType::Png, FileType::Webp],
+            self::ArtisanDocument, self::MessageAttachment, self::ContactAttachment => [FileType::Pdf, FileType::Jpeg, FileType::Png, FileType::Webp],
             self::ArtisanLogo, self::RequestPhoto, self::ReviewPhoto, self::PortfolioPhoto => [FileType::Jpeg, FileType::Png, FileType::Webp],
             self::QuotePdf => [FileType::Pdf],
         };
@@ -43,6 +44,6 @@ enum FilePurpose: string
 
     public function encryptedAtRest(): bool
     {
-        return self::ArtisanDocument === $this;
+        return self::ArtisanDocument === $this || self::ContactAttachment === $this;
     }
 }

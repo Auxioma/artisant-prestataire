@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Identity\Application\Port;
+namespace App\Shared\Application\Security;
 
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
 

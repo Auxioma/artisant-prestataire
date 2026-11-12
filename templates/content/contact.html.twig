@@ -1,0 +1,105 @@
+{#- P16 (Figma 162:2178) — contact : formulaire (motif, coordonnées, n° de demande, message, pièce jointe, consentement, captcha invisible) et coordonnées du support. -#}
+{% extends 'base.html.twig' %}
+{% block title %}Contactez-nous — TrouveMoi{% endblock %}
+{% block meta %}
+    <meta name="description" content="Une question, un partenariat, un signalement ? Écrivez à l’équipe TrouveMoi : réponse sous {{ reply_hours }} h ouvrées.">
+    <link rel="canonical" href="{{ url('content_contact') }}">
+{% endblock %}
+{% block javascripts %}
+    {{ parent() }}
+    {# Turnstile (cadrage §5.8) : script tiers autorisé par la CSP, nécessaire à la sécurité (exempté de consentement) #}
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="{{ csp_nonce('script') }}"></script>
+{% endblock %}
+{% macro error(errors, field) %}{% if errors[field] is defined %}<p class="tm-field__error" id="{{ field }}_error" role="alert"><twig:Icon name="alert" size="xs" />{{ errors[field] }}</p>{% endif %}{% endmacro %}
+{% import _self as m %}
+{% block body %}
+<div class="tm-contact">
+    <twig:PageBanner title="Contactez-nous" subtitle="Une question, un besoin ? Notre équipe vous répond sous {{ reply_hours }} h ouvrées." image="images/auth/a02-banner" />
+    <div class="tm-container tm-contact__layout">
+        <section class="tm-card-panel tm-contact__form" aria-labelledby="contact-title">
+            <h2 id="contact-title">Écrivez-nous</h2>
+            {% if sent %}
+                <div class="tm-contact__success" role="status" data-controller="analytics" data-analytics-auto-event-value="contact_submit" data-analytics-auto-type-value="{{ sent }}">
+                    <twig:Icon name="checkC" />
+                    <p><strong>Message envoyé.</strong> Nous vous répondons sous {{ reply_hours }} h ouvrées. Un accusé de réception vient de vous être adressé par e-mail.</p>
+                </div>
+            {% endif %}
+            <p class="tm-body-sm">Support, partenariats, presse ou signalement : nous vous répondons sous {{ reply_hours }} h ouvrées. Les champs marqués * sont obligatoires.</p>
+            {% if errors._form is defined or errors._limit is defined %}<p class="tm-field__error" role="alert"><twig:Icon name="alert" size="xs" />{{ errors._form ?? errors._limit }}</p>{% endif %}
+
+            <form method="post" action="{{ path('content_contact') }}" enctype="multipart/form-data" novalidate data-turbo="false">
+                <input type="hidden" name="_token" value="{{ csrf_token('submit') }}">
+                <div class="tm-field{{ errors.reason is defined ? ' tm-field--error' }}">
+                    <label class="tm-field__label" for="reason">Motif <abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+                    <div class="tm-field__control"><select class="tm-field__input" id="reason" name="reason" required{% if errors.reason is defined %} aria-invalid="true" aria-describedby="reason_error"{% endif %}>
+                        <option value="">Choisissez un motif</option>
+                        {% for r in reasons %}<option value="{{ r }}"{% if r == data.reason %} selected{% endif %}>{{ r }}</option>{% endfor %}
+                    </select></div>
+                    {{ m.error(errors, 'reason') }}
+                </div>
+                <div class="tm-contact__row">
+                    <div class="tm-field{{ errors.name is defined ? ' tm-field--error' }}">
+                        <label class="tm-field__label" for="name">Nom <abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+                        <div class="tm-field__control"><input class="tm-field__input" id="name" name="name" value="{{ data.name }}" maxlength="100" autocomplete="name" required{% if locked %} readonly{% endif %}></div>
+                        {{ m.error(errors, 'name') }}
+                    </div>
+                    <div class="tm-field{{ errors.email is defined ? ' tm-field--error' }}">
+                        <label class="tm-field__label" for="email">Adresse e-mail <abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+                        <div class="tm-field__control"><input class="tm-field__input" id="email" name="email" type="email" value="{{ data.email }}" maxlength="254" autocomplete="email" required{% if locked %} readonly{% endif %}></div>
+                        {% if locked %}<p class="tm-field__help">Coordonnées de votre compte.</p>{% endif %}
+                        {{ m.error(errors, 'email') }}
+                    </div>
+                </div>
+                <div class="tm-contact__row">
+                    <div class="tm-field{{ errors.phone is defined ? ' tm-field--error' }}">
+                        <label class="tm-field__label" for="phone">Téléphone (facultatif)</label>
+                        <div class="tm-field__control"><input class="tm-field__input" id="phone" name="phone" type="tel" value="{{ data.phone }}" maxlength="20" autocomplete="tel"></div>
+                        {{ m.error(errors, 'phone') }}
+                    </div>
+                    <div class="tm-field{{ errors.request_reference is defined ? ' tm-field--error' }}">
+                        <label class="tm-field__label" for="request_reference">N° de demande ou de devis (facultatif)</label>
+                        <div class="tm-field__control"><input class="tm-field__input" id="request_reference" name="request_reference" value="{{ data.request_reference }}" maxlength="30"></div>
+                        {{ m.error(errors, 'request_reference') }}
+                    </div>
+                </div>
+                <div class="tm-field{{ errors.message is defined ? ' tm-field--error' }}" data-controller="char-count" data-char-count-max-value="5000">
+                    <label class="tm-field__label" for="message">Message <abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+                    <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="message" name="message" rows="6" minlength="20" maxlength="5000" required aria-describedby="message_count{{ errors.message is defined ? ' message_error' }}"
+                        data-char-count-target="input" data-action="input->char-count#update">{{ data.message }}</textarea></div>
+                    <p class="tm-caption" id="message_count">20 à 5 000 caractères · <span data-char-count-target="count">{{ data.message|length }} / 5000</span></p>
+                    {{ m.error(errors, 'message') }}
+                </div>
+                <div class="tm-field{{ errors.attachment is defined ? ' tm-field--error' }}">
+                    <label class="tm-field__label" for="attachment">Pièce jointe (facultatif, {{ max_file_mb }} Mo max — PDF, JPEG, PNG, WebP)</label>
+                    <input class="tm-contact__file" id="attachment" name="attachment" type="file" accept="application/pdf,image/jpeg,image/png,image/webp">
+                    {{ m.error(errors, 'attachment') }}
+                </div>
+                <label class="tm-check{{ errors.consent is defined ? ' tm-field--error' }}">
+                    <input class="tm-check__input" type="checkbox" name="consent" value="1"{% if data.consent %} checked{% endif %} required>
+                    <span>J’accepte que mes données soient traitées pour répondre à ma demande (<a href="{{ path('identity_legal_document', {slug: 'confidentialite'}) }}">politique de confidentialité</a>). <abbr class="tm-field__required" title="obligatoire">*</abbr></span>
+                </label>
+                {{ m.error(errors, 'consent') }}
+                <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-action="contact" data-size="flexible" data-language="fr" data-appearance="interaction-only"></div>
+                <twig:Button type="submit" icon="arrowR">Envoyer le message</twig:Button>
+            </form>
+        </section>
+
+        <aside class="tm-contact__aside">
+            <section class="tm-card-panel" aria-labelledby="write-title">
+                <h2 id="write-title">Nous écrire</h2>
+                <p class="tm-contact__line"><twig:Icon name="clock" size="sm" />Réponse sous {{ reply_hours }} h ouvrées</p>
+                <p class="tm-contact__line"><twig:Icon name="lock" size="sm" />Vos données servent uniquement à vous répondre</p>
+            </section>
+            {% if tm_route_exists('content_faq') or tm_route_exists('content_how_it_works') %}
+                <section class="tm-card-panel tm-contact__help" aria-labelledby="help-title">
+                    <h2 id="help-title">Avant de nous écrire</h2>
+                    <ul>
+                        {% if tm_route_exists('content_faq') %}<li><a href="{{ path('content_faq') }}">Aide et questions fréquentes</a></li>{% endif %}
+                        {% if tm_route_exists('content_how_it_works') %}<li><a href="{{ path('content_how_it_works') }}">Comment fonctionne TrouveMoi ?</a></li>{% endif %}
+                    </ul>
+                </section>
+            {% endif %}
+        </aside>
+    </div>
+</div>
+{% endblock %}

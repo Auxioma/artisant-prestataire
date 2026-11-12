@@ -1,0 +1,11 @@
+Nouveau message reçu par le formulaire de contact.
+
+Référence : {{ reference }}
+Motif : {{ motif }}
+Nom : {{ nom }}{% if compte %} (compte inscrit){% endif %}
+E-mail : {{ email }}
+{% if telephone %}Téléphone : {{ telephone }}
+{% endif %}{% if numero_demande %}N° de demande ou devis : {{ numero_demande }}
+{% endif %}Pièce jointe : {% if piece_jointe %}oui{% else %}non{% endif %}
+
+{{ message }}
