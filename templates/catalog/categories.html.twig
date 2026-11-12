@@ -1,0 +1,55 @@
+{#- P03 (Figma 162:1590) — liste des catégories : en-tête, filtre instantané (catégories, métiers, synonymes), grille, bannière CTA. -#}
+{% extends 'base.html.twig' %}
+{% set active_nav = 'categories' %}
+{% block title %}Toutes les catégories de services — TrouveMoi{% endblock %}
+{% block meta %}
+    <meta name="description" content="Plomberie, électricité, rénovation, jardin… Parcourez toutes les catégories de services et trouvez un professionnel vérifié près de chez vous.">
+    <link rel="canonical" href="{{ url('catalog_categories') }}">
+{% endblock %}
+{% block body %}
+<div class="tm-catalog" data-controller="analytics catalog-filter" data-analytics-auto-event-value="category_list_view">
+    <twig:PageBanner title="Catégories" subtitle="Explorez tous les domaines de services et trouvez rapidement le professionnel qu’il vous faut." image="images/auth/a02-banner" />
+    <div class="tm-container tm-catalog__body">
+        <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Catégories'}]" />
+
+        <div class="tm-catalog__filter">
+            <label class="tm-search__label" for="category_filter">Rechercher un métier</label>
+            <div class="tm-field__control">
+                <twig:Icon name="search" size="sm" />
+                <input id="category_filter" type="search" placeholder="Ex. plombier, chauffe-eau, peintre…" autocomplete="off" maxlength="60"
+                       data-catalog-filter-target="input" data-action="input->catalog-filter#filter">
+            </div>
+            <p class="tm-visually-hidden" role="status" data-catalog-filter-target="status"></p>
+        </div>
+
+        <section aria-labelledby="categories-title">
+            <h2 class="tm-section-title" id="categories-title">Toutes les catégories de services</h2>
+            <ul class="tm-catalog__grid">
+                {% for c in categories %}
+                    {% set s = c.summary %}
+                    <li class="tm-category-card" data-catalog-filter-target="item" data-terms="{{ c.terms }}">
+                        <a class="tm-category-card__head" href="{{ path('catalog_category', {slug: s.slug}) }}">
+                            <span class="tm-category-card__icon"><twig:Icon name="{{ s.icon }}" /></span>
+                            <span class="tm-category-card__name">{{ s.name }}</span>
+                            <twig:Icon name="chevR" size="sm" class="tm-category-card__chev" />
+                        </a>
+                        <p class="tm-category-card__count">{{ c.count > 0 ? c.count|number_format(0, ',', ' ') ~ ' professionnel' ~ (c.count > 1 ? 's') ~ ' vérifié' ~ (c.count > 1 ? 's') : 'Professionnels bientôt disponibles' }}</p>
+                        <ul class="tm-category-card__jobs">
+                            {% for j in c.first_jobs %}<li><a href="{{ path('catalog_job', {slug: j.slug}) }}" data-action="analytics#track" data-analytics-event-param="job_link_click" data-analytics-type-param="{{ j.slug }}">{{ j.name }}</a></li>{% endfor %}
+                        </ul>
+                        {% if s.activeJobCount > c.first_jobs|length %}
+                            <a class="tm-category-card__more" href="{{ path('catalog_category', {slug: s.slug}) }}">Voir les {{ s.activeJobCount }} métiers</a>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+            <div data-catalog-filter-target="empty" hidden>
+                <twig:EmptyState icon="search" title="Aucun métier trouvé" text="Décrivez votre besoin : nous vous orientons vers le bon professionnel.">
+                    <twig:Button href="{{ path('public_search') }}" icon="search" iconPosition="start">Rechercher un professionnel</twig:Button>
+                </twig:EmptyState>
+            </div>
+        </section>
+    </div>
+    {% include 'catalog/_cta.html.twig' with {title: 'Vous ne trouvez pas la catégorie souhaitée ?', text: 'Recherchez directement le professionnel qu’il vous faut près de chez vous.', href: path('public_search'), label: 'Rechercher un professionnel'} only %}
+</div>
+{% endblock %}

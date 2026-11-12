@@ -1,0 +1,93 @@
+/*
+ * P03, P04, P05 (T-304) — pages du référentiel : grille des catégories (3 / 2 / 1 colonnes), hero catégorie, puces
+ * métiers, carrousel de cartes, indicateurs locaux, contenu SEO, FAQ, maillage interne, bannière CTA. Mobile d'abord.
+ */
+@layer components {
+    .tm-catalog { background: var(--color-surface-alt); }
+    .tm-catalog__body { display: grid; gap: var(--space-8); padding-block: var(--space-5) var(--space-12); }
+    .tm-catalog__body > section { display: grid; gap: var(--space-4); min-width: 0; }
+    .tm-catalog__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-2); }
+    .tm-catalog__head .tm-section-title { margin: 0; }
+    .tm-catalog__fine { margin: 0; color: var(--color-text-muted); font: var(--type-caption); }
+
+    .tm-catalog__filter { display: grid; gap: var(--space-1); max-width: 560px; }
+    .tm-catalog__filter .tm-field__control { display: flex; align-items: center; gap: var(--space-2); padding-inline: var(--space-3); background: var(--color-surface); }
+    .tm-catalog__filter input { flex: 1; min-width: 0; min-height: var(--control-height); border: 0; background: none; font: var(--type-body); color: var(--color-heading); }
+    .tm-catalog__filter input:focus { outline: none; }
+
+    .tm-catalog__grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
+    .tm-category-card { display: grid; gap: var(--space-2); align-content: start; padding: var(--space-4) var(--space-5) var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); box-shadow: var(--shadow-card); }
+    .tm-category-card__head { display: flex; align-items: center; gap: var(--space-3); color: var(--color-heading); text-decoration: none; }
+    .tm-category-card__head:hover .tm-category-card__name { color: var(--color-link); text-decoration: underline; }
+    .tm-category-card__icon { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--color-info-bg); color: var(--color-link); }
+    .tm-category-card__name { flex: 1; font: var(--type-h3-mobile); }
+    .tm-category-card__chev { color: var(--orange); }
+    .tm-category-card__count { margin: 0; color: var(--color-text-muted); font: var(--type-body-sm); }
+    .tm-category-card__jobs { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-3); margin: 0; padding: 0; list-style: none; font: var(--type-body-sm); }
+    .tm-category-card__jobs a { color: var(--color-text); }
+    .tm-category-card__jobs a:hover { color: var(--color-link); }
+    .tm-category-card__more { font: var(--type-label); color: var(--color-link); }
+
+    .tm-catalog-hero { background: var(--gradient-blue); color: var(--color-surface); }
+    .tm-catalog-hero__inner { display: grid; gap: var(--space-4); padding-block: var(--space-4) var(--space-8); }
+    .tm-catalog-hero:not(.tm-catalog-hero--light) :is(.tm-breadcrumb__list, .tm-breadcrumb__link, .tm-breadcrumb__sep, [aria-current]) { color: var(--color-surface); }
+    .tm-catalog-hero__title { display: flex; align-items: center; gap: var(--space-3); }
+    .tm-catalog-hero__title h1, .tm-catalog-hero__h1 { margin: 0; font: var(--type-h1-mobile); color: inherit; overflow-wrap: anywhere; }
+    .tm-catalog-hero__icon { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: 50%; background: var(--orange); color: var(--color-surface); }
+    .tm-catalog-hero__chapo { margin: 0; max-width: 720px; font: var(--type-body); }
+    .tm-catalog-hero--light { background: var(--color-surface); color: var(--color-heading); border-bottom: 1px solid var(--color-border); }
+    .tm-catalog-hero--light .tm-breadcrumb a { color: var(--color-link); }
+    .tm-catalog-hero--light .tm-catalog-hero__chapo { color: var(--color-text); }
+    .tm-catalog__bar { max-width: 880px; color: var(--color-heading); }
+
+    .tm-job-chips { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+    .tm-job-chip { display: flex; align-items: center; gap: var(--space-3); min-height: 56px; padding: var(--space-2) var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-heading); text-decoration: none; }
+    .tm-job-chip:hover { border-color: var(--color-link); }
+    .tm-job-chip > .tm-icon:first-child { color: var(--orange); }
+    .tm-job-chip > span { display: grid; flex: 1; min-width: 0; }
+    .tm-job-chip strong { font: var(--type-body-strong); }
+    .tm-job-chip span span { color: var(--color-text-muted); font: var(--type-caption); }
+
+    .tm-catalog__carousel { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(240px, 80%); gap: var(--space-4); margin: 0; padding: 0 0 var(--space-2); list-style: none; overflow-x: auto; scroll-snap-type: x mandatory; }
+    .tm-catalog__carousel > li { scroll-snap-align: start; }
+
+    .tm-catalog__stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 280px)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+    .tm-catalog__stats li { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 0 var(--space-3); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
+    .tm-catalog__stats .tm-icon { grid-row: span 2; color: var(--color-link); }
+    .tm-catalog__stats strong { font: var(--type-h2); color: var(--color-heading); }
+    .tm-catalog__stats span { color: var(--color-text-muted); font: var(--type-caption); }
+
+    .tm-catalog__columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+    .tm-catalog__panel { display: grid; gap: var(--space-3); padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
+    .tm-catalog__panel h2 { margin: 0; font: var(--type-h3); color: var(--color-heading); }
+    .tm-catalog__panel p { margin: 0; }
+    .tm-catalog__faq { border-top: 1px solid var(--color-border); padding-top: var(--space-3); }
+    .tm-catalog__faq summary { cursor: pointer; font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-catalog__faq p { margin-top: var(--space-2); color: var(--color-text); font: var(--type-body-sm); }
+
+    .tm-catalog__links { display: grid; gap: var(--space-5); padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
+    .tm-catalog__links h2 { margin: 0 0 var(--space-2); font: var(--type-h3-mobile); color: var(--color-heading); }
+    .tm-catalog__links ul { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: 0; padding: 0; list-style: none; font: var(--type-body-sm); }
+    .tm-catalog__up { margin: 0; font: var(--type-label); }
+
+    .tm-catalog-cta { background: var(--color-heading); color: var(--color-surface); }
+    .tm-catalog-cta__inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); padding-block: var(--space-8); }
+    .tm-catalog-cta__title { margin: 0; font: var(--type-h2-mobile); color: inherit; }
+    .tm-catalog-cta__text { margin: var(--space-1) 0 0; }
+
+    @media (min-width: 768px) {
+        .tm-catalog__grid, .tm-job-chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .tm-catalog__carousel { grid-auto-columns: calc((100% - 2 * var(--space-4)) / 3); }
+        .tm-catalog-hero__title h1, .tm-catalog-hero__h1 { font: var(--type-h1); letter-spacing: var(--type-h1-tracking); }
+        .tm-catalog-cta__title { font: var(--type-h2); }
+        .tm-catalog__links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .tm-catalog__up { grid-column: 1 / -1; }
+    }
+
+    @media (min-width: 1024px) {
+        .tm-catalog__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .tm-job-chips { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .tm-catalog__carousel { grid-auto-columns: calc((100% - 3 * var(--space-4)) / 4); }
+        .tm-catalog__columns { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+    }
+}

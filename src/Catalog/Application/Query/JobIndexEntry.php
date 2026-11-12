@@ -17,6 +17,7 @@ final readonly class JobIndexEntry
         public string $categoryName,
         public string $categorySlug,
         public bool $searchable,
+        public ?string $description = null,
     ) {
     }
 }

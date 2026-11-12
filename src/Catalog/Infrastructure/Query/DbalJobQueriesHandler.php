@@ -16,7 +16,7 @@ use Doctrine\DBAL\Connection;
 final readonly class DbalJobQueriesHandler implements QueryHandler
 {
     private const string SELECT = <<<'SQL'
-        SELECT j.id, j.name, j.slug, j.synonyms, j.active, root.name AS category_name, root.slug AS category_slug,
+        SELECT j.id, j.name, j.slug, j.synonyms, j.active, j.description, root.name AS category_name, root.slug AS category_slug,
                (j.active AND c.active AND root.active) AS searchable
         FROM catalog.job j
         JOIN catalog.category c ON c.id = j.category_id
@@ -83,6 +83,7 @@ final readonly class DbalJobQueriesHandler implements QueryHandler
             DbalValue::string($row['category_name']),
             DbalValue::string($row['category_slug']),
             true === $row['searchable'],
+            DbalValue::nullableString($row['description'] ?? null),
         );
     }
 }

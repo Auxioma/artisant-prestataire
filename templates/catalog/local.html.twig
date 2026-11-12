@@ -1,0 +1,153 @@
+{#-
+    P05 (Figma 222:10373) — page métier, métier × ville, ville et département : hero et recherche pré-remplie, indicateurs
+    locaux, professionnels (10 premiers), contenu par gabarit + paragraphe local, FAQ, maillage interne, CTA.
+    RG-023 : sous `seo.min_pros_index` professionnels, noindex et professionnels des communes voisines.
+-#}
+{% extends 'base.html.twig' %}
+{% set active_nav = 'categories' %}
+{% set c = commune ? commune.commune : null %}
+{% set cp = c and c.postalCodes is not empty ? c.postalCodes|first : null %}
+{% set where = c ? c.name ~ (cp ? ' (' ~ cp ~ ')') : (department ? department.name ~ ' (' ~ department.code ~ ')' : null) %}
+{% set job_plural = job ? (job.name|lower ends with 's' or job.name|lower ends with 'x' ? job.name|lower : job.name|lower ~ 's') : null %}
+{% set pros = total ~ ' professionnel' ~ (total > 1 ? 's') ~ ' vérifié' ~ (total > 1 ? 's') %}
+{% set h1 = kind == 'job' ? job.name ~ ' : trouvez un professionnel vérifié'
+    : (kind == 'job_city' ? job.name ~ ' ' ~ where|a_lieu
+    : (kind == 'city' ? 'Artisans et prestataires ' ~ where|a_lieu : 'Artisans et prestataires en ' ~ where)) %}
+{% set chapo = (kind == 'job' ? (total > 0 ? pros ~ ' exercent le métier de ' ~ job.name|lower ~ ' sur TrouveMoi.' : 'Les premiers ' ~ job_plural ~ ' vérifiés rejoignent TrouveMoi.')
+    : (total > 0 ? pros ~ (job ? ' (' ~ job.name|lower ~ ')' : '') ~ ' ' ~ (c ? c.name|a_lieu : 'en ' ~ department.name) ~ ' et alentours.' : 'Aucun professionnel vérifié n’intervient encore ' ~ (c ? c.name|a_lieu : 'en ' ~ department.name) ~ (job ? ' pour ce métier' : '') ~ '.'))
+    ~ ' Comparez les profils, les assurances contrôlées et les avis clients.' %}
+{% set canonical = kind == 'job' ? url('catalog_job', {slug: job.slug})
+    : (kind == 'job_city' ? url('catalog_job_city', {job: job.slug, city: c.slug})
+    : (kind == 'city' ? url('catalog_city', {city: c.slug}) : url('catalog_department', {code: department.code}))) %}
+{% block title %}{{ h1 }} — TrouveMoi{% endblock %}
+{% block meta %}
+    {% if not indexable %}<meta name="robots" content="noindex, follow">{% endif %}
+    <meta name="description" content="{{ chapo|length > 155 ? chapo|slice(0, 154) ~ '…' : chapo }}">
+    <link rel="canonical" href="{{ canonical }}">
+{% endblock %}
+{% block body %}
+<div class="tm-catalog" data-controller="analytics" data-analytics-auto-event-value="seo_page_view"
+     data-analytics-auto-params-value="{{ {metier: job ? job.slug : null, ville: c ? c.slug : (department ? department.code : null), indexable: indexable}|json_encode }}">
+    <header class="tm-catalog-hero tm-catalog-hero--light">
+        <div class="tm-container tm-catalog-hero__inner">
+            {% set crumbs = [{label: 'Accueil', href: tm_path('public_home')}] %}
+            {% if job %}{% set crumbs = crumbs|merge([{label: job.categoryName, href: path('catalog_category', {slug: job.categorySlug})}]) %}{% endif %}
+            {% if kind == 'job_city' %}{% set crumbs = crumbs|merge([{label: job.name, href: path('catalog_job', {slug: job.slug})}, {label: c.name}]) %}
+            {% elseif kind == 'job' %}{% set crumbs = crumbs|merge([{label: job.name}]) %}
+            {% elseif kind == 'city' %}{% set crumbs = crumbs|merge([{label: c.departmentName ?? c.departmentCode, href: path('catalog_department', {code: c.departmentCode})}, {label: c.name}]) %}
+            {% else %}{% set crumbs = crumbs|merge([{label: department.name}]) %}{% endif %}
+            <twig:Breadcrumb :items="crumbs" />
+            <h1 class="tm-catalog-hero__h1">{{ h1 }}</h1>
+            <p class="tm-catalog-hero__chapo">{{ chapo }}</p>
+            {% include 'catalog/_search_bar.html.twig' with {job: job, place: c} only %}
+        </div>
+    </header>
+
+    <div class="tm-container tm-catalog__body">
+        {% if kind != 'job' %}
+            <ul class="tm-catalog__stats" aria-label="Indicateurs locaux">
+                <li><twig:Icon name="shield" /><strong>{{ total|number_format(0, ',', ' ') }}</strong><span>professionnel{{ total > 1 ? 's' }} vérifié{{ total > 1 ? 's' }}</span></li>
+            </ul>
+        {% endif %}
+
+        <section aria-labelledby="pros-title">
+            <div class="tm-catalog__head">
+                <h2 class="tm-section-title" id="pros-title">{{ kind == 'job' or kind == 'department' ? 'Professionnels recommandés' : (job ? 'Les ' ~ job_plural ~ ' ' ~ c.name|a_lieu : 'Les professionnels ' ~ c.name|a_lieu) }}</h2>
+                {% if c and total > hits|length %}<a href="{{ path('public_search', {metier: job ? job.slug : null, lieu: c.insee}|filter(v => v)) }}">Voir les {{ total }} professionnels</a>{% endif %}
+            </div>
+            {% if hits is not empty %}
+                <ol class="tm-search__list">
+                    {% for hit in hits %}<li>{% include 'catalog/_artisan_row.html.twig' with {hit: hit, job_names: job_names, show_distance: c is not null} only %}</li>{% endfor %}
+                </ol>
+            {% elseif neighbours is empty %}
+                <twig:EmptyState icon="users" title="Aucun professionnel vérifié pour le moment" text="De nouveaux professionnels rejoignent TrouveMoi chaque semaine : élargissez votre recherche aux communes voisines.">
+                    <twig:Button href="{{ path('public_search', {metier: job ? job.slug : null, lieu: c ? c.insee : null}|filter(v => v)) }}" icon="search" iconPosition="start">Élargir la recherche</twig:Button>
+                </twig:EmptyState>
+            {% endif %}
+        </section>
+
+        {% if neighbours is not empty %}
+            <section aria-labelledby="neighbours-title">
+                <h2 class="tm-section-title" id="neighbours-title">Professionnels des communes voisines</h2>
+                <ol class="tm-search__list">
+                    {% for hit in neighbours %}<li>{% include 'catalog/_artisan_row.html.twig' with {hit: hit, job_names: job_names, show_distance: true} only %}</li>{% endfor %}
+                </ol>
+            </section>
+        {% endif %}
+
+        <div class="tm-catalog__columns">
+            <section class="tm-catalog__panel" aria-labelledby="about-title">
+                <h2 id="about-title">{{ job ? job.name ~ (c ? ' ' ~ c.name|a_lieu : '') : 'Artisans ' ~ (c ? c.name|a_lieu : 'en ' ~ department.name) }} : ce qu’il faut savoir</h2>
+                {% if kind == 'job' %}
+                    {% if job.description %}<p>{{ job.description }}</p>{% endif %}
+                    <p>Sur TrouveMoi, chaque {{ job.name|lower }} affiché est un professionnel vérifié : l’équipe contrôle son SIRET au répertoire Sirene, son extrait Kbis et ses attestations d’assurance avant d’attribuer le badge « Vérifié ».
+                    {% if total > 0 %}{{ pros|capitalize }} {{ total > 1 ? 'sont' : 'est' }} aujourd’hui inscrit{{ total > 1 ? 's' }} pour ce métier.{% endif %}</p>
+                {% else %}
+                    <p>
+                        {% if total > 0 %}{{ pros|capitalize }}{{ job ? ' (' ~ job.name|lower ~ ')' : '' }} {{ total > 1 ? 'interviennent' : 'intervient' }} {{ c ? c.name|a_lieu ~ (radius ? ' et dans un rayon de ' ~ radius ~ ' km' : '') : 'en ' ~ department.name }}.
+                        {% else %}Aucun professionnel vérifié{{ job ? ' (' ~ job.name|lower ~ ')' : '' }} n’intervient encore {{ c ? c.name|a_lieu : 'en ' ~ department.name }} : les professionnels des communes voisines sont présentés ci-dessus.{% endif %}
+                        {% if cities is not empty %}{{ c ? 'Communes voisines' : 'Principales villes' }} : {{ cities|slice(0, 5)|map(x => x.name)|join(', ') }}.{% endif %}
+                    </p>
+                    {% if commune and commune.seoText %}<p>{{ commune.seoText }}</p>{% endif %}
+                    <p>Le badge « Vérifié » signifie que l’équipe TrouveMoi a contrôlé le SIRET, l’extrait Kbis et les attestations d’assurance du professionnel.</p>
+                {% endif %}
+            </section>
+
+            {% if job %}
+                {% set faq = [
+                    {q: 'Comment choisir un ' ~ job.name|lower ~ (c ? ' ' ~ c.name|a_lieu : '') ~ ' ?', a: 'Privilégiez un professionnel au badge « Vérifié » : l’équipe TrouveMoi a contrôlé son SIRET, son extrait Kbis et ses assurances. Comparez ensuite les présentations, les zones d’intervention et les avis clients.'},
+                    {q: 'Combien de ' ~ job_plural ~ ' vérifiés ' ~ (c ? 'interviennent ' ~ c.name|a_lieu : 'sont inscrits sur TrouveMoi') ~ ' ?', a: total > 0 ? (pros|capitalize ~ (c ? (total > 1 ? ' interviennent ' : ' intervient ') ~ c.name|a_lieu ~ (radius ? ' et dans un rayon de ' ~ radius ~ ' km' : '') : (total > 1 ? ' sont inscrits' : ' est inscrit')) ~ '.') : 'Aucun pour le moment : de nouveaux professionnels sont vérifiés chaque semaine.'},
+                    {q: 'Comment vérifier l’assurance d’un ' ~ job.name|lower ~ ' ?', a: 'Sur la fiche du professionnel, la rubrique « Assurances et certifications » affiche « Justificatif vérifié » lorsque l’attestation a été contrôlée par l’équipe et reste valide.'},
+                ] %}
+                <section class="tm-catalog__panel" aria-labelledby="faq-title">
+                    <h2 id="faq-title">Questions fréquentes</h2>
+                    {% for item in faq %}
+                        <details class="tm-catalog__faq"{% if loop.first %} open{% endif %}>
+                            <summary>{{ item.q }}</summary>
+                            <p>{{ item.a }}</p>
+                        </details>
+                    {% endfor %}
+                </section>
+                {% set faq_ld = {'@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq|map(i => {'@type': 'Question', name: i.q, acceptedAnswer: {'@type': 'Answer', text: i.a}})} %}
+                {# |raw justifié : json_encode avec JSON_HEX_TAG/JSON_HEX_AMP. #}
+                <script type="application/ld+json" nonce="{{ csp_nonce('script') }}">{{ faq_ld|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP'))|raw }}</script>
+            {% endif %}
+        </div>
+
+        <nav class="tm-catalog__links" aria-label="Pages liées">
+            {% if cities is not empty %}
+                <div>
+                    <h2>{{ kind == 'job_city' ? job.name ~ ' dans les villes voisines' : (kind == 'job' ? job.name ~ ' dans votre ville' : (kind == 'city' ? 'Villes voisines' : 'Villes du département')) }}</h2>
+                    <ul>
+                        {% for x in cities %}
+                            <li><a href="{{ job ? path('catalog_job_city', {job: job.slug, city: x.slug}) : path('catalog_city', {city: x.slug}) }}">{{ job and kind == 'job' ? job.name ~ ' ' ~ x.name|a_lieu : x.name }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            {% if related_jobs is not empty %}
+                <div>
+                    <h2>{{ c ? 'Autres métiers ' ~ c.name|a_lieu : (department ? 'Métiers en ' ~ department.name : 'Métiers proches') }}</h2>
+                    <ul>
+                        {% for j in related_jobs %}
+                            {% set n = job_counts[j.id] ?? null %}
+                            <li><a href="{{ c ? path('catalog_job_city', {job: j.slug, city: c.slug}) : path('catalog_job', {slug: j.slug}) }}">{{ j.name }}{{ n ? ' (' ~ n ~ ')' }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            {% if c %}
+                <p class="tm-catalog__up">
+                    {% if kind == 'job_city' %}<a href="{{ path('catalog_city', {city: c.slug}) }}">Tous les artisans {{ c.name|a_lieu }}</a> · {% endif %}
+                    <a href="{{ path('catalog_department', {code: c.departmentCode}) }}">Tous les artisans {{ c.departmentName ? 'en ' ~ c.departmentName : 'du ' ~ c.departmentCode }} ({{ c.departmentCode }})</a>
+                </p>
+            {% endif %}
+        </nav>
+    </div>
+    {% include 'catalog/_cta.html.twig' with {
+        title: job ? 'Besoin d’un ' ~ job.name|lower ~ (c ? ' ' ~ c.name|a_lieu : '') ~ ' ?' : 'Un projet ' ~ (c ? c.name|a_lieu : 'en ' ~ department.name) ~ ' ?',
+        text: 'Comparez les professionnels vérifiés et contactez celui qui vous convient.',
+        href: path('public_search', {metier: job ? job.slug : null, lieu: c ? c.insee : null}|filter(v => v)),
+        label: 'Trouver un professionnel'} only %}
+</div>
+{% endblock %}

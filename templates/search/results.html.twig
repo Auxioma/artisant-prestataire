@@ -1,16 +1,16 @@
 {#- P02 (Figma 95:395) — recherche et résultats : barre compacte, en-tête (H1 dynamique, compteur, tri), filtres, cartes horizontales, « Afficher plus », états vide / sans lieu. -#}
 {% extends 'base.html.twig' %}
 {% set active_nav = 'search' %}
-{% block title %}{{ job ? job.name : 'Professionnels' }}{{ place ? ' à ' ~ place.name }} — TrouveMoi{% endblock %}
+{% block title %}{{ job ? job.name : 'Professionnels' }}{{ place ? ' ' ~ place.name|a_lieu }} — TrouveMoi{% endblock %}
 {% block meta %}<meta name="robots" content="noindex, follow">{% endblock %}
 {% block body %}
-{% set h1 = (job ? job.name : 'Professionnels') ~ (place ? ' à ' ~ place.name ~ ' et alentours' : '') %}
+{% set h1 = (job ? job.name : 'Professionnels') ~ (place ? ' ' ~ place.name|a_lieu ~ ' et alentours' : '') %}
 {% set count = result ? result.total : 0 %}
 {% set active_filters = (selected_jobs|length > 1 ? 1 : 0) + (note ? 1 : 0) + labels|length %}
 <div class="tm-search"{% if result %} data-controller="analytics" data-analytics-auto-event-value="{{ count > 0 ? 'search_results_view' : 'search_no_result' }}" data-analytics-auto-type-value="{{ count }}"{% endif %}>
     <div class="tm-search__top">
         <div class="tm-container">
-            <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}]|merge(job ? [{label: job.categoryName, href: tm_path('public_category', {slug: job.categorySlug})}] : [])|merge([{label: place ? place.name : 'Recherche'}])" />
+            <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}]|merge(job ? [{label: job.categoryName, href: tm_path('catalog_category', {slug: job.categorySlug})}] : [])|merge([{label: place ? place.name : 'Recherche'}])" />
             <form method="get" action="{{ path('public_search') }}" class="tm-search__bar" role="search" data-turbo="false">
                 <div class="tm-search__field" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="metier">
                     <label class="tm-search__label" for="search_job">Métier</label>

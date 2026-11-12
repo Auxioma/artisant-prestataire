@@ -50,7 +50,7 @@ final readonly class DbalArtisanSearchIndex implements ArtisanSearchIndex
 
     public function candidates(string $communeInsee, int $radiusKm, array $jobIds, array $labels): array
     {
-        $jobIds = array_values(array_filter($jobIds, static fn (string $id): bool => 1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $id)));
+        $jobIds = self::uuids($jobIds);
         if (1 !== preg_match('/^(\d{2}|2A|2B)\d{3}$/', $communeInsee)) {
             return [];
         }
@@ -73,7 +73,77 @@ final readonly class DbalArtisanSearchIndex implements ArtisanSearchIndex
             ],
         );
 
-        return array_map(static fn (array $r): SearchCandidate => new SearchCandidate(
+        return array_map(static fn (array $r): SearchCandidate => self::candidate($r, $jobIds), $rows);
+    }
+
+    public function globalRatingMean(): ?float
+    {
+        $mean = $this->connection->fetchOne('SELECT sum(rating_avg * reviews_count) / nullif(sum(reviews_count), 0) FROM search.artisan_search_view WHERE reviews_count > 0');
+
+        return is_numeric($mean) ? (float) $mean : null;
+    }
+
+    public function countsByJob(?string $departmentCode = null): array
+    {
+        $counts = [];
+        foreach ($this->connection->fetchAllAssociative(
+            'SELECT j AS job_id, count(*) AS n FROM search.artisan_search_view v, unnest(v.job_ids) j
+             WHERE CAST(:department AS text) IS NULL OR v.department_code = :department GROUP BY j',
+            ['department' => $departmentCode],
+        ) as $row) {
+            $counts[DbalValue::string($row['job_id'])] = DbalValue::int($row['n']);
+        }
+
+        return $counts;
+    }
+
+    public function countAmong(array $jobIds, ?string $departmentCode = null): int
+    {
+        return DbalValue::int($this->connection->fetchOne(
+            'SELECT count(*) FROM search.artisan_search_view v
+             WHERE (cardinality(CAST(:jobs AS uuid[])) = 0 OR v.job_ids && CAST(:jobs AS uuid[]))
+               AND (CAST(:department AS text) IS NULL OR v.department_code = :department)',
+            ['jobs' => self::pgArray(self::uuids($jobIds)), 'department' => $departmentCode],
+        ));
+    }
+
+    public function featured(array $jobIds, ?string $departmentCode, int $minCompletion, int $limit): array
+    {
+        $jobIds = self::uuids($jobIds);
+        $rows = $this->connection->fetchAllAssociative(
+            <<<'SQL'
+                SELECT v.artisan_id, v.name, v.short_description, v.main_job_id, v.commune_name, v.department_code, v.labels, v.completion,
+                       v.rating_avg, v.reviews_count, v.response_rate, v.available_soon, v.logo_file_id IS NOT NULL AS has_logo, v.job_ids, 0 AS distance_km
+                FROM search.artisan_search_view v
+                WHERE v.completion >= :min
+                  AND (cardinality(CAST(:jobs AS uuid[])) = 0 OR v.job_ids && CAST(:jobs AS uuid[]))
+                  AND (CAST(:department AS text) IS NULL OR v.department_code = :department)
+                ORDER BY v.rating_avg DESC NULLS LAST, v.reviews_count DESC, v.completion DESC, v.verified_at, v.artisan_id
+                LIMIT :limit
+                SQL,
+            ['min' => $minCompletion, 'jobs' => self::pgArray($jobIds), 'department' => $departmentCode, 'limit' => max(1, min($limit, self::MAX_CANDIDATES))],
+        );
+
+        return array_map(static fn (array $r): SearchCandidate => self::candidate($r, $jobIds), $rows);
+    }
+
+    /**
+     * @param list<string> $ids
+     *
+     * @return list<string>
+     */
+    private static function uuids(array $ids): array
+    {
+        return array_values(array_filter($ids, static fn (string $id): bool => 1 === preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $id)));
+    }
+
+    /**
+     * @param array<string, mixed> $r
+     * @param list<string>         $jobIds
+     */
+    private static function candidate(array $r, array $jobIds): SearchCandidate
+    {
+        return new SearchCandidate(
             DbalValue::string($r['artisan_id']),
             DbalValue::string($r['name']),
             null === $r['short_description'] ? null : DbalValue::string($r['short_description']),
@@ -90,14 +160,7 @@ final readonly class DbalArtisanSearchIndex implements ArtisanSearchIndex
             self::fromPgArray($r['labels']),
             true === $r['has_logo'],
             self::fromPgArray($r['job_ids']),
-        ), $rows);
-    }
-
-    public function globalRatingMean(): ?float
-    {
-        $mean = $this->connection->fetchOne('SELECT sum(rating_avg * reviews_count) / nullif(sum(reviews_count), 0) FROM search.artisan_search_view WHERE reviews_count > 0');
-
-        return is_numeric($mean) ? (float) $mean : null;
+        );
     }
 
     /** @param list<string> $values */

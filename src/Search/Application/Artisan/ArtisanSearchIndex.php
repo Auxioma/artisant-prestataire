@@ -26,4 +26,28 @@ interface ArtisanSearchIndex
 
     /** Moyenne des notes publiées (m par défaut, RG-024) ; null sans avis. */
     public function globalRatingMean(): ?float;
+
+    /**
+     * Nombre d'artisans publics par métier, en France ou dans un département.
+     *
+     * @return array<string, int> id du métier => nombre d'artisans
+     */
+    public function countsByJob(?string $departmentCode = null): array;
+
+    /**
+     * Nombre d'artisans publics distincts exerçant l'un des métiers (tous si vide), en France ou dans un département.
+     *
+     * @param list<string> $jobIds
+     */
+    public function countAmong(array $jobIds, ?string $departmentCode = null): int;
+
+    /**
+     * RG-011 — artisans éligibles aux blocs de mise en avant (complétude minimale), exerçant l'un des métiers (tous si
+     * vide), les mieux notés d'abord puis les plus complets ; distance nulle (aucun lieu connu).
+     *
+     * @param list<string> $jobIds
+     *
+     * @return list<SearchCandidate>
+     */
+    public function featured(array $jobIds, ?string $departmentCode, int $minCompletion, int $limit): array;
 }

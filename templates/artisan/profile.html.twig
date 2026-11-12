@@ -7,8 +7,8 @@
 {% set department_areas = [] %}{% for name in departments %}{% set department_areas = department_areas|merge([{'@type': 'AdministrativeArea', name: name}]) %}{% endfor %}
 {% set logo = p.hasLogo ? path('public_artisan_logo', {id: p.profileId}) : null %}
 {% set revealed = app.flashes('artisan_phone')|first %}
-{% set summary = p.description ?? (p.name ~ ', professionnel vérifié' ~ (main_job ? ' — ' ~ main_job.name) ~ (place ? ' à ' ~ place) ~ '.') %}
-{% block title %}{{ p.name }}{{ main_job ? ' — ' ~ main_job.name }}{{ p.communeName ? ' à ' ~ p.communeName }} | TrouveMoi{% endblock %}
+{% set summary = p.description ?? (p.name ~ ', professionnel vérifié' ~ (main_job ? ' — ' ~ main_job.name) ~ (place ? ' ' ~ place|a_lieu) ~ '.') %}
+{% block title %}{{ p.name }}{{ main_job ? ' — ' ~ main_job.name }}{{ p.communeName ? ' ' ~ p.communeName|a_lieu }} | TrouveMoi{% endblock %}
 {% block meta %}
     <meta name="description" content="{{ summary|length > 155 ? summary|slice(0, 154) ~ '…' : summary }}">
     <link rel="canonical" href="{{ canonical }}">
@@ -22,8 +22,8 @@
     <div class="tm-profile__top">
         <div class="tm-container">
             <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}]
-                |merge(main_job ? [{label: main_job.categoryName, href: tm_path('public_category', {slug: main_job.categorySlug})}] : [])
-                |merge(main_job and p.communeInsee ? [{label: main_job.name ~ (p.communeName ? ' à ' ~ p.communeName), href: path('public_search', {metier: main_job.slug, lieu: p.communeInsee})}] : [])
+                |merge(main_job ? [{label: main_job.categoryName, href: tm_path('catalog_category', {slug: main_job.categorySlug})}] : [])
+                |merge(main_job and p.communeInsee ? [{label: main_job.name ~ (p.communeName ? ' ' ~ p.communeName|a_lieu), href: path('public_search', {metier: main_job.slug, lieu: p.communeInsee})}] : [])
                 |merge([{label: p.name}])" />
 
             <header class="tm-profile__header">
