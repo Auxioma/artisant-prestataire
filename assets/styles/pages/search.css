@@ -142,3 +142,18 @@
         .tm-pro-profile__row, .tm-pro-profile__day { grid-template-columns: minmax(0, 1fr); }
     }
 }
+
+/* PR08.6 — réalisations dans l'espace pro (T-309b) */
+@layer components {
+    .tm-pro-portfolio { display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+    .tm-pro-portfolio header h3, .tm-pro-portfolio__new h3 { margin: 0; font: var(--type-h3-mobile); color: var(--color-heading); }
+    .tm-pro-portfolio header p { margin: 0; }
+    .tm-pro-portfolio__photos { display: flex; flex-wrap: wrap; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+    .tm-pro-portfolio__photos li { display: grid; gap: var(--space-1); justify-items: start; width: 120px; }
+    .tm-pro-portfolio__photos img { border-radius: var(--radius-md); object-fit: cover; }
+    .tm-pro-portfolio__pending { display: grid; place-items: center; width: 120px; height: 90px; padding: var(--space-2); border-radius: var(--radius-md); background: var(--color-surface-alt); color: var(--color-text-muted); font: var(--type-caption); text-align: center; }
+    .tm-pro-portfolio__upload { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-3); }
+    .tm-pro-portfolio__upload > * { min-width: 0; flex: 1 1 180px; }
+    .tm-pro-portfolio__upload .tm-button { flex: 0 0 auto; }
+    .tm-pro-portfolio__new { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); padding-top: var(--space-3); border-top: 1px dashed var(--color-border); }
+}

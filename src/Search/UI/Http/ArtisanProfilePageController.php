@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Search\UI\Http;
 
+use App\ArtisanProfile\Application\Portfolio\PortfolioEditor;
 use App\ArtisanProfile\Application\PublicProfile\PublicArtisanProfile;
 use App\ArtisanProfile\Application\PublicProfile\PublicProfileView;
 use App\ArtisanProfile\Domain\Profile\OpeningHours;
@@ -63,6 +64,7 @@ final class ArtisanProfilePageController extends AbstractController
             'languages' => PublicPresentation::LANGUAGES,
             'clients' => PublicPresentation::CLIENTS,
             'hours_days' => OpeningHours::DAYS,
+            'photo_kinds' => PortfolioEditor::KINDS,
         ]);
     }
 

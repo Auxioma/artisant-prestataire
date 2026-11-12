@@ -129,3 +129,14 @@
     .tm-profile__hours dd { margin: 0; }
     .tm-profile__emergency { display: flex; gap: var(--space-2); align-items: center; margin: 0; color: var(--color-success-text); font: var(--type-label); }
 }
+
+/* PR08.6 — réalisations sur la fiche (T-309b) */
+@layer components {
+    .tm-profile__project { display: grid; gap: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
+    .tm-profile__project:first-of-type { padding-top: 0; border-top: 0; }
+    .tm-profile__project h3 { margin: 0; font: var(--type-h3-mobile); color: var(--color-heading); }
+    .tm-profile__gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .tm-profile__gallery figure { position: relative; margin: 0; }
+    .tm-profile__gallery img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-md); }
+    .tm-profile__gallery figcaption { position: absolute; inset-inline-start: var(--space-2); inset-block-start: var(--space-2); padding: 2px var(--space-2); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-heading); font: var(--type-caption); }
+}

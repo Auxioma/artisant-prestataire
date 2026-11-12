@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace App\ArtisanProfile\Application\Edit;
 
 use App\ArtisanProfile\Application\Completion\ProfileCompletionCalculator;
+use App\ArtisanProfile\Application\Port\PortfolioStore;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository;
+use App\Catalog\Domain\Job\JobId;
 use App\Shared\Application\Bus\QueryHandler;
 use App\Shared\Application\Settings\SettingKey;
 use App\Shared\Application\Settings\SettingsProvider;
 
 final readonly class EditablePublicProfileHandler implements QueryHandler
 {
-    public function __construct(private ArtisanProfileRepository $profiles, private ProfileCompletionCalculator $completion, private SettingsProvider $settings)
+    public function __construct(private ArtisanProfileRepository $profiles, private ProfileCompletionCalculator $completion, private SettingsProvider $settings, private PortfolioStore $portfolio)
     {
     }
 
@@ -37,6 +39,8 @@ final readonly class EditablePublicProfileHandler implements QueryHandler
             $profile->isPhonePublic(),
             $this->settings->bool(SettingKey::ProPhonePublicAllowed),
             $this->completion->of($profile),
+            $this->portfolio->projects($profile->id()->value, false),
+            array_map(static fn (JobId $job): string => $job->value, $profile->jobIds()),
         );
     }
 }

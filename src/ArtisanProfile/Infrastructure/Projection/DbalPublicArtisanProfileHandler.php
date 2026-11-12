@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\ArtisanProfile\Infrastructure\Projection;
 
+use App\ArtisanProfile\Application\Port\PortfolioStore;
 use App\ArtisanProfile\Application\PublicProfile\ArtisanPhone;
 use App\ArtisanProfile\Application\PublicProfile\PublicArtisanProfile;
 use App\ArtisanProfile\Application\PublicProfile\PublicCredential;
@@ -35,7 +36,7 @@ final readonly class DbalPublicArtisanProfileHandler implements QueryHandler
     ];
     private const string SIRENE_CHECK = 'SIRET actif au répertoire Sirene';
 
-    public function __construct(private Connection $connection, private QueryBus $queries, private Clock $clock)
+    public function __construct(private Connection $connection, private QueryBus $queries, private Clock $clock, private PortfolioStore $portfolio)
     {
     }
 
@@ -133,6 +134,7 @@ final readonly class DbalPublicArtisanProfileHandler implements QueryHandler
             presentation: PublicPresentation::fromArray(self::map($row['presentation'])),
             services: $this->services($row['services']),
             hours: OpeningHours::fromArray(self::map($row['opening_hours'])),
+            portfolio: $this->portfolio->projects($profileId, true),
         );
     }
 

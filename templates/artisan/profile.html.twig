@@ -59,6 +59,7 @@
             <ul class="tm-container">
                 <li><a href="#presentation">Présentation</a></li>
                 {% if p.services is not empty %}<li><a href="#prestations">Prestations</a></li>{% endif %}
+                {% if p.portfolio is not empty %}<li><a href="#realisations">Réalisations</a></li>{% endif %}
                 <li><a href="#garanties">Assurances et certifications</a></li>
                 <li><a href="#zone">Zone d’intervention</a></li>
                 <li><a href="#avis">Avis</a></li>
@@ -96,6 +97,30 @@
                     <h2 id="prestations-title">Prestations et tarifs indicatifs</h2>
                     <ul class="tm-profile__services">{% for s in p.services %}<li><span>{{ s.title }}</span>{% if s.price %}<strong>{{ s.price }}</strong>{% endif %}</li>{% endfor %}</ul>
                     <p class="tm-profile__fine">Tarifs indicatifs communiqués par le professionnel : seul le devis fait foi.</p>
+                </section>
+            {% endif %}
+
+            {% if p.portfolio is not empty %}
+                <section class="tm-profile__section" id="realisations" aria-labelledby="realisations-title">
+                    <h2 id="realisations-title">Réalisations</h2>
+                    {% for project in p.portfolio %}
+                        <article class="tm-profile__project">
+                            <h3>{{ project.title }}</h3>
+                            {% set meta = [project.city, project.doneOn ? project.doneOn|date('m/Y') : null, project.jobId and jobs[project.jobId] is defined ? jobs[project.jobId].name : null]|filter(v => v) %}
+                            {% if meta is not empty %}<p class="tm-profile__muted">{{ meta|join(' · ') }}</p>{% endif %}
+                            {% if project.description %}<p>{{ project.description }}</p>{% endif %}
+                            <ul class="tm-profile__gallery">
+                                {% for photo in project.photos %}
+                                    <li>
+                                        <figure>
+                                            <a href="{{ path('public_portfolio_photo', {id: p.profileId, photo: photo.id}) }}" target="_blank" rel="noopener"><img src="{{ path('public_portfolio_photo', {id: p.profileId, photo: photo.id}) }}" alt="{{ project.title }}{{ photo.kind != 'photo' ? ' — ' ~ photo_kinds[photo.kind]|lower }}" width="320" height="240" loading="lazy" decoding="async"></a>
+                                            {% if photo.kind != 'photo' %}<figcaption>{{ photo_kinds[photo.kind] }}</figcaption>{% endif %}
+                                        </figure>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </article>
+                    {% endfor %}
                 </section>
             {% endif %}
 

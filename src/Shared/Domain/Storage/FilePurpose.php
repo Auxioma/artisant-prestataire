@@ -36,10 +36,10 @@ enum FilePurpose: string
         return \in_array($type, $this->allowedTypes(), true);
     }
 
-    /** Destiné à l'affichage public (logo d'un artisan vérifié) : lecture sans journalisation, cache HTTP possible. */
+    /** Destiné à l'affichage public (logo, photos de réalisations d'un artisan public) : lecture sans journalisation, cache HTTP possible. */
     public function isPublic(): bool
     {
-        return self::ArtisanLogo === $this;
+        return self::ArtisanLogo === $this || self::PortfolioPhoto === $this;
     }
 
     public function encryptedAtRest(): bool

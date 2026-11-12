@@ -32,7 +32,7 @@
     </section>
 
     <nav class="tm-pro-profile__nav" aria-label="Sections du profil">
-        <a href="#identite">Identité</a><a href="#presentation">Présentation</a><a href="#prestations">Prestations</a><a href="#horaires">Horaires et contact</a><a href="#dossier">Métiers, zone et justificatifs</a>
+        <a href="#identite">Identité</a><a href="#presentation">Présentation</a><a href="#prestations">Prestations</a><a href="#realisations">Réalisations</a><a href="#horaires">Horaires et contact</a><a href="#dossier">Métiers, zone et justificatifs</a>
     </nav>
 
     {# PR08.2 #}
@@ -103,6 +103,63 @@
             <p class="tm-field__help">Laissez une ligne vide pour la retirer ; enregistrez pour obtenir de nouvelles lignes ({{ limits.services }} au maximum). Les tarifs sont indicatifs : le devis fait foi.</p>
             <twig:Button type="submit">Enregistrer</twig:Button>
         </form>
+    </section>
+
+    {# PR08.6 #}
+    <section class="tm-card-panel tm-pro-profile__section" id="realisations" aria-labelledby="realisations-title">
+        <h2 id="realisations-title">Réalisations ({{ p.portfolio|length }} / {{ portfolio_limits.projects }})</h2>
+        <p class="tm-field__help">Montrez vos chantiers : photos avant / après, ville et date. Les photos sont ré-encodées (métadonnées et position GPS retirées) et analysées avant d’apparaître sur votre fiche.</p>
+        {% for project in p.portfolio %}
+            <article class="tm-pro-portfolio">
+                <header>
+                    <h3>{{ project.title }}</h3>
+                    <p class="tm-caption">{{ [project.city, project.doneOn ? project.doneOn|date('m/Y') : null, project.jobId ? job_names[project.jobId] ?? null : null]|filter(v => v)|join(' · ') }}</p>
+                </header>
+                {% if project.photos is not empty %}
+                    <ul class="tm-pro-portfolio__photos">
+                        {% for photo in project.photos %}
+                            <li>
+                                {% if photo.available and p.public %}<img src="{{ path('public_portfolio_photo', {id: p.profileId, photo: photo.id}) }}" alt="{{ project.title }} — {{ photo_kinds[photo.kind] }}" width="120" height="90" loading="lazy">
+                                {% else %}<span class="tm-pro-portfolio__pending">{{ photo.available ? 'Publiée à la validation de votre dossier' : 'Analyse en cours' }}</span>{% endif %}
+                                <span class="tm-caption">{{ photo_kinds[photo.kind] }}</span>
+                                <form method="post" action="{{ path('pro_portfolio_photo_delete', {id: photo.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('pro_portfolio') }}">
+                                    <button type="submit" class="tm-link-button tm-admin-danger">Supprimer<span class="tm-visually-hidden"> la photo {{ loop.index }}</span></button>
+                                </form>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if project.photos|length < portfolio_limits.photos %}
+                    <form method="post" action="{{ path('pro_portfolio_photo', {id: project.id}) }}" enctype="multipart/form-data" class="tm-pro-portfolio__upload" data-turbo="false">
+                        <input type="hidden" name="_token" value="{{ csrf_token('pro_portfolio') }}">
+                        <div class="tm-field"><label class="tm-field__label" for="photo_{{ project.id }}">Ajouter une photo</label><input id="photo_{{ project.id }}" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required></div>
+                        <div class="tm-field"><label class="tm-field__label" for="kind_{{ project.id }}">Type</label><div class="tm-field__control"><select class="tm-field__input" id="kind_{{ project.id }}" name="kind">{% for k, label in photo_kinds %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select></div></div>
+                        <twig:Button type="submit" variant="secondary" icon="upload" iconPosition="start">Envoyer</twig:Button>
+                    </form>
+                {% endif %}
+                <form method="post" action="{{ path('pro_portfolio_delete', {id: project.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('pro_portfolio') }}">
+                    <button type="submit" class="tm-link-button tm-admin-danger">Supprimer la réalisation<span class="tm-visually-hidden"> « {{ project.title }} »</span></button>
+                </form>
+            </article>
+        {% endfor %}
+        {% if p.portfolio|length < portfolio_limits.projects %}
+            <form method="post" action="{{ path('pro_portfolio_save') }}" class="tm-pro-portfolio__new" data-turbo="false">
+                <input type="hidden" name="_token" value="{{ csrf_token('pro_portfolio') }}">
+                <h3>Nouvelle réalisation</h3>
+                <div class="tm-field"><label class="tm-field__label" for="pf_title">Titre *</label><div class="tm-field__control"><input class="tm-field__input" id="pf_title" name="title" maxlength="100" required placeholder="Ex. Rénovation d’une salle de bains"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="pf_desc">Description</label><div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="pf_desc" name="description" rows="3" maxlength="1000"></textarea></div></div>
+                <div class="tm-pro-profile__row">
+                    <div class="tm-field"><label class="tm-field__label" for="pf_city">Ville</label><div class="tm-field__control"><input class="tm-field__input" id="pf_city" name="city" maxlength="100"></div></div>
+                    <div class="tm-field"><label class="tm-field__label" for="pf_date">Date de réalisation</label><div class="tm-field__control"><input class="tm-field__input" id="pf_date" name="done_on" type="date" max="{{ 'now'|date('Y-m-d') }}"></div></div>
+                </div>
+                {% if job_names is not empty %}
+                    <div class="tm-field"><label class="tm-field__label" for="pf_job">Métier</label><div class="tm-field__control"><select class="tm-field__input" id="pf_job" name="job_id"><option value="">—</option>{% for id, name in job_names %}<option value="{{ id }}">{{ name }}</option>{% endfor %}</select></div></div>
+                {% endif %}
+                <twig:Button type="submit">Ajouter la réalisation</twig:Button>
+            </form>
+        {% endif %}
     </section>
 
     {# PR08.8 #}

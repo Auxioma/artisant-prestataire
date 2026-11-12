@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\ArtisanProfile\Application\PublicProfile;
 
+use App\ArtisanProfile\Application\Portfolio\PortfolioProject;
 use App\ArtisanProfile\Domain\Profile\OpeningHours;
 use App\ArtisanProfile\Domain\Profile\PublicPresentation;
 use App\ArtisanProfile\Domain\Profile\ServiceOffer;
@@ -21,6 +22,7 @@ final readonly class PublicProfileView
      * @param list<PublicCredential> $qualifications
      * @param list<string>           $verifiedChecks  contrôles réalisés avant l'attribution du badge
      * @param list<ServiceOffer>     $services        prestations et tarifs indicatifs (PR08.5)
+     * @param list<PortfolioProject> $portfolio       réalisations dont les photos sont publiables (PR08.6)
      */
     public function __construct(
         public string $profileId,
@@ -54,6 +56,7 @@ final readonly class PublicProfileView
         public ?PublicPresentation $presentation = null,
         public array $services = [],
         public ?OpeningHours $hours = null,
+        public array $portfolio = [],
     ) {
     }
 }

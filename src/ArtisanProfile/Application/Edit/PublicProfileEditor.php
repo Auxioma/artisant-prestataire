@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\ArtisanProfile\Application\Edit;
 
-use App\ArtisanProfile\Application\Port\ProfileReviews;
-use App\ArtisanProfile\Domain\Profile\ArtisanProfile;
 use App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository;
 use App\ArtisanProfile\Domain\Profile\ArtisanRuleViolation;
 use App\ArtisanProfile\Domain\Profile\ArtisanStatus;
@@ -14,10 +12,6 @@ use App\ArtisanProfile\Domain\Profile\PublicPresentation;
 use App\ArtisanProfile\Domain\Profile\ServiceOffer;
 use App\Shared\Application\Bus\CommandHandler;
 use App\Shared\Application\Bus\EventBus;
-use App\Shared\Application\Settings\SettingKey;
-use App\Shared\Application\Settings\SettingsProvider;
-use App\Shared\Domain\Identifier\IdGenerator;
-use App\Shared\Domain\Text\ContactDetector;
 use App\Shared\Domain\Time\Clock;
 
 /**
@@ -27,15 +21,10 @@ use App\Shared\Domain\Time\Clock;
  */
 final readonly class PublicProfileEditor implements CommandHandler
 {
-    private const int PERCENT = 100;
-    private const array CONTACT_LABELS = [ContactDetector::EMAIL => 'une adresse e-mail', ContactDetector::PHONE => 'un numéro de téléphone', ContactDetector::LINK => 'un lien ou un site web'];
-
     public function __construct(
         private ArtisanProfileRepository $profiles,
-        private ProfileReviews $reviews,
-        private SettingsProvider $settings,
+        private ProfileModeration $moderation,
         private EventBus $events,
-        private IdGenerator $ids,
         private Clock $clock,
     ) {
     }
@@ -57,9 +46,9 @@ final readonly class PublicProfileEditor implements CommandHandler
                 $command->yearsExperience,
                 array_values(array_unique($command->clients)),
             );
-            $this->moderate(array_merge([$command->tradeName ?? '', $presentation->slogan ?? '', $presentation->description ?? ''], $presentation->strengths));
+            $this->moderation->check(array_merge([$command->tradeName ?? '', $presentation->slogan ?? '', $presentation->description ?? ''], $presentation->strengths));
             $profile->updatePresentation(self::clean($command->tradeName), $presentation, $now);
-            $this->sample($profile, 'presentation', $presentation->toArray() + ['trade_name' => self::clean($command->tradeName)], $now);
+            $this->moderation->sample($profile->id()->value, 'presentation', $presentation->toArray() + ['trade_name' => self::clean($command->tradeName)], $now);
         } elseif ($command instanceof UpdateServices) {
             $services = [];
             foreach ($command->services as $row) {
@@ -67,43 +56,19 @@ final readonly class PublicProfileEditor implements CommandHandler
                     $services[] = new ServiceOffer(trim($row['title']), self::clean($row['price']));
                 }
             }
-            $this->moderate(array_map(static fn (ServiceOffer $s): string => $s->title, $services));
+            $this->moderation->check(array_map(static fn (ServiceOffer $s): string => $s->title, $services));
             $profile->updateServices($services, $now);
-            $this->sample($profile, 'services', ['services' => array_map(static fn (ServiceOffer $s): array => ['title' => $s->title, 'price' => $s->price], $services)], $now);
+            $this->moderation->sample($profile->id()->value, 'services', ['services' => array_map(static fn (ServiceOffer $s): array => ['title' => $s->title, 'price' => $s->price], $services)], $now);
         } else {
             $days = [];
             foreach (OpeningHours::DAYS as $day) {
                 $days[$day] = array_values(array_filter(array_map('strval', $command->days[$day] ?? []), static fn (string $r): bool => '' !== trim($r)));
             }
             $note = self::clean($command->emergencyNote);
-            $this->moderate([$note ?? '']);
+            $this->moderation->check([$note ?? '']);
             $profile->updateAvailability(new OpeningHours($days, $command->emergencies, $note), $command->phonePublic, $now);
         }
         $this->events->publish(...$profile->releaseEvents());
-    }
-
-    /** @param list<string> $texts */
-    private function moderate(array $texts): void
-    {
-        $text = implode("\n", $texts);
-        $found = ContactDetector::find($text);
-        if ([] !== $found) {
-            throw new ArtisanRuleViolation(\sprintf('Votre profil ne peut pas contenir %s : les clients vous contactent via TrouveMoi.', implode(' ni ', array_map(static fn (string $t): string => self::CONTACT_LABELS[$t], $found))));
-        }
-        $lower = mb_strtolower($text);
-        foreach ($this->settings->stringList(SettingKey::ModerationForbiddenTerms) as $term) {
-            if ('' !== trim($term) && str_contains($lower, mb_strtolower(trim($term)))) {
-                throw new ArtisanRuleViolation('Votre texte contient un terme non autorisé sur TrouveMoi. Merci de le reformuler.');
-            }
-        }
-    }
-
-    /** @param array<string, mixed> $content */
-    private function sample(ArtisanProfile $profile, string $section, array $content, \DateTimeImmutable $now): void
-    {
-        if (random_int(1, self::PERCENT) <= $this->settings->int(SettingKey::ModerationProfileSampleRate)) {
-            $this->reviews->record($this->ids->next(), $profile->id()->value, $section, $content, $now);
-        }
     }
 
     private static function clean(?string $value): ?string
