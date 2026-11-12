@@ -10,3 +10,12 @@ framework:
                 allow_relative_links: true
                 force_https_urls: true
                 max_input_length: 200000
+            # Contenus éditoriaux (FAQ, puis pages CMS) : même liste blanche que les pages légales.
+            app.content_sanitizer:
+                allow_safe_elements: true
+                block_elements: ['div', 'span']
+                drop_elements: ['img', 'iframe', 'form', 'input', 'button', 'svg', 'math', 'style', 'script']
+                allowed_link_schemes: ['https', 'mailto']
+                allow_relative_links: true
+                force_https_urls: true
+                max_input_length: 50000

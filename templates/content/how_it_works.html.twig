@@ -38,6 +38,10 @@
                 {icon: 'calCheck', title: 'Je choisis et je planifie', text: 'J’accepte le devis qui me convient et je fixe l’intervention avec le professionnel.'},
                 {icon: 'star', title: 'J’évalue la prestation', text: 'Mon avis certifié aide les autres clients à bien choisir.'},
             ]) }}
+            {% if faq_client is not empty %}
+                <h3 class="tm-how__faq-title">Questions fréquentes des particuliers</h3>
+                {% include 'content/help/_accordion.html.twig' with {questions: faq_client} %}
+            {% endif %}
             <div class="tm-how__cta">
                 <twig:Button href="{{ request_href }}" icon="arrowR">{{ tm_route_exists('request_new') ? 'Déposer ma demande' : 'Trouver un professionnel' }}</twig:Button>
             </div>
@@ -52,6 +56,10 @@
                 {icon: 'file', title: 'J’envoie mes devis', text: free_credits > 0 ? free_credits ~ ' devis offerts à la validation de mon dossier, sans carte bancaire.' : 'Je réponds aux demandes qui m’intéressent.'},
                 {icon: 'rocket', title: 'Je passe à un forfait', text: 'Quand je le souhaite, un forfait me permet de continuer à envoyer des devis chaque mois.'},
             ]) }}
+            {% if faq_artisan is not empty %}
+                <h3 class="tm-how__faq-title">Questions fréquentes des professionnels</h3>
+                {% include 'content/help/_accordion.html.twig' with {questions: faq_artisan} %}
+            {% endif %}
             <div class="tm-how__cta">
                 <twig:Button href="{{ tm_path('identity_register_pro') }}" icon="userPlus" iconPosition="start" data-action="analytics#track" data-analytics-event-param="pro_signup_cta_click" data-analytics-type-param="how_it_works">Créer mon compte pro</twig:Button>
                 {% if tm_route_exists('content_pricing') %}<twig:Button href="{{ path('content_pricing') }}" variant="secondary">Voir les tarifs</twig:Button>{% endif %}

@@ -1,0 +1,39 @@
+{#- P13 (Figma 159:1364) — tarifs professionnels : devis offerts, forfaits (BO08, T-601 : pas encore publiés), FAQ tarifs, CTA. -#}
+{% extends 'base.html.twig' %}
+{% block title %}Tarifs professionnels — TrouveMoi{% endblock %}
+{% block meta %}
+    <meta name="description" content="{{ free_credits > 0 ? free_credits ~ ' devis offerts à la validation de votre dossier, sans carte bancaire. ' }}Seul l’envoi d’un devis consomme un crédit.">
+    <link rel="canonical" href="{{ url('content_pricing') }}">
+{% endblock %}
+{% block body %}
+<div class="tm-pricing" data-controller="analytics" data-analytics-auto-event-value="pricing_view">
+    <header class="tm-pricing__hero">
+        <div class="tm-container">
+            <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Tarifs professionnels'}]" />
+            <h1>Développez votre activité, payez seulement les devis envoyés</h1>
+            {% if free_credits > 0 %}<p class="tm-pricing__offer"><twig:Icon name="tag" size="sm" />{{ free_credits }} devis offerts à la validation de votre dossier, sans carte bancaire</p>{% endif %}
+        </div>
+    </header>
+    <div class="tm-container tm-pricing__body">
+        <section class="tm-card-panel tm-pricing__plans" aria-labelledby="plans-title">
+            <h2 id="plans-title">Nos forfaits</h2>
+            <p>Les forfaits mensuels et annuels seront présentés ici dès leur ouverture. En attendant, démarrez gratuitement :</p>
+            <ul>
+                <li><twig:Icon name="checkC" size="sm" />Consultation des demandes et questions aux clients gratuites</li>
+                <li><twig:Icon name="checkC" size="sm" />Un crédit consommé uniquement à l’envoi effectif d’un devis</li>
+                <li><twig:Icon name="checkC" size="sm" />Profil vérifié visible dans les recherches de votre zone</li>
+            </ul>
+            <twig:Button href="{{ tm_path('identity_register_pro') }}" icon="userPlus" iconPosition="start" data-action="analytics#track" data-analytics-event-param="pro_signup_cta_click" data-analytics-type-param="pricing">Créer mon compte pro</twig:Button>
+        </section>
+
+        {% if faq is not empty %}
+            <section aria-labelledby="pricing-faq-title">
+                <h2 class="tm-section-title" id="pricing-faq-title">Questions fréquentes</h2>
+                {% include 'content/help/_accordion.html.twig' with {questions: faq, open_first: true} %}
+            </section>
+        {% endif %}
+    </div>
+    {% include 'catalog/_cta.html.twig' with {title: free_credits > 0 ? 'Commencez avec ' ~ free_credits ~ ' devis offerts' : 'Rejoignez TrouveMoi', text: 'Inscription en quelques minutes, dossier vérifié par notre équipe.', href: tm_path('identity_register_pro'), label: 'Créer mon compte pro', pro: true} only %}
+</div>
+{% if faq is not empty %}{% include 'content/help/_faq_ld.html.twig' with {questions: faq} %}{% endif %}
+{% endblock %}

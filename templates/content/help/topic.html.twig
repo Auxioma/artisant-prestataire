@@ -1,0 +1,27 @@
+{#- P14 — rubrique d'aide : questions en accordéon, autres rubriques, contact ; balisage FAQPage. -#}
+{% extends 'base.html.twig' %}
+{% set active_nav = 'help' %}
+{% block title %}{{ topic.title }} — Aide — TrouveMoi{% endblock %}
+{% block meta %}
+    <meta name="description" content="{{ topic.description }}">
+    <link rel="canonical" href="{{ url('content_faq_topic', {topic: topic.slug}) }}">
+{% endblock %}
+{% block body %}
+<div class="tm-help">
+    <div class="tm-container tm-help__body">
+        <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Aide', href: path('content_faq')}, {label: topic.title}]" />
+        <header class="tm-help__head">
+            <twig:Icon name="{{ topic.icon }}" />
+            <div><h1>{{ topic.title }}</h1><p>{{ topic.description }}</p></div>
+        </header>
+        {% include 'content/help/_search.html.twig' with {term: ''} %}
+        {% include 'content/help/_accordion.html.twig' with {questions: questions, open_first: true} %}
+        <nav class="tm-help__others" aria-label="Autres rubriques">
+            <h2>Autres rubriques</h2>
+            <ul>{% for t in topics|filter(t => t.slug != topic.slug) %}<li><a href="{{ path('content_faq_topic', {topic: t.slug}) }}">{{ t.title }}</a></li>{% endfor %}</ul>
+        </nav>
+        {% include 'content/help/_contact.html.twig' %}
+    </div>
+</div>
+{% include 'content/help/_faq_ld.html.twig' with {questions: questions} %}
+{% endblock %}

@@ -1,0 +1,13 @@
+{#- Questions en accordéon : chaque question garde son URL propre (indexable). -#}
+<div class="tm-help__accordion">
+    {% for q in questions %}
+        <details class="tm-help__item"{% if open_first ?? false and loop.first %} open{% endif %}>
+            <summary>{{ q.question }}</summary>
+            <div class="tm-help__answer">
+                {# |raw justifié : HTML assaini à l'import (app.content_sanitizer). #}
+                {{ q.answerHtml|raw }}
+                <p><a href="{{ path('content_faq_question', {topic: q.topicSlug, question: q.slug}) }}">Lien vers cette réponse</a></p>
+            </div>
+        </details>
+    {% endfor %}
+</div>

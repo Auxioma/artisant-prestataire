@@ -100,6 +100,7 @@ services:
     # Ports du module Content
     App\Content\Application\Port\RedirectStore: '@App\Content\Infrastructure\Redirect\DbalRedirectStore'
     App\Content\Application\Port\HomeVersions: '@App\Content\Infrastructure\Home\DbalHomeVersions'
+    App\Content\Application\Port\FaqStore: '@App\Content\Infrastructure\Faq\DbalFaqStore'
     App\Content\Application\Port\ContactMessages: '@App\Content\Infrastructure\Contact\DbalContactMessages'
     App\Content\Application\Port\ContactMailer: '@App\Content\Infrastructure\Contact\NotificationContactMailer'
 

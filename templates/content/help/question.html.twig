@@ -1,0 +1,46 @@
+{#- P14.3 — une question = une URL : réponse, vote « Cette réponse vous a-t-elle aidé ? » (négatif → contact pré-rempli), questions liées. -#}
+{% extends 'base.html.twig' %}
+{% set active_nav = 'help' %}
+{% set contact = path('content_contact', {message: 'À propos de « ' ~ q.question ~ ' » : '}) %}
+{% block title %}{{ q.question }} — Aide — TrouveMoi{% endblock %}
+{% block meta %}
+    <meta name="description" content="{{ q.answerHtml|striptags|trim|slice(0, 155) }}">
+    <link rel="canonical" href="{{ url('content_faq_question', {topic: q.topicSlug, question: q.slug}) }}">
+{% endblock %}
+{% block body %}
+<div class="tm-help">
+    <div class="tm-container tm-help__body tm-help__body--narrow">
+        <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Aide', href: path('content_faq')}, {label: q.topicTitle, href: path('content_faq_topic', {topic: q.topicSlug})}, {label: q.question}]" />
+        <article class="tm-card-panel tm-help__article">
+            <h1>{{ q.question }}</h1>
+            {# |raw justifié : HTML assaini à l'import (app.content_sanitizer). #}
+            <div class="tm-help__answer">{{ q.answerHtml|raw }}</div>
+            <p class="tm-caption">Mis à jour le {{ q.updatedAt|date('d/m/Y', 'Europe/Paris') }}</p>
+
+            <section class="tm-help__vote" id="avis" aria-labelledby="vote-title" data-controller="faq-vote">
+                {% if voted %}
+                    <p role="status" data-controller="analytics" data-analytics-auto-event-value="faq_feedback" data-analytics-auto-type-value="{{ voted }}">
+                        Merci pour votre retour !{% if voted == 'no' %} <a href="{{ contact }}">Posez-nous votre question</a> : nous vous répondons par e-mail.{% endif %}
+                    </p>
+                {% else %}
+                    <h2 id="vote-title">Cette réponse vous a-t-elle aidé ?</h2>
+                    <form method="post" action="{{ path('content_faq_vote', {topic: q.topicSlug, question: q.slug}) }}" data-faq-vote-target="form" data-action="submit->faq-vote#submit" data-turbo="false">
+                        <input type="hidden" name="_token" value="{{ csrf_token('submit') }}">
+                        <button type="submit" name="helpful" value="1" class="tm-button tm-button--secondary">Oui</button>
+                        <button type="submit" name="helpful" value="0" class="tm-button tm-button--secondary">Non</button>
+                    </form>
+                    <p role="status" data-faq-vote-target="status" hidden></p>
+                {% endif %}
+            </section>
+        </article>
+        {% if related is not empty %}
+            <nav class="tm-help__others" aria-labelledby="related-title">
+                <h2 id="related-title">Dans la même rubrique</h2>
+                <ul>{% for r in related %}<li><a href="{{ path('content_faq_question', {topic: r.topicSlug, question: r.slug}) }}">{{ r.question }}</a></li>{% endfor %}</ul>
+            </nav>
+        {% endif %}
+        {% include 'content/help/_contact.html.twig' %}
+    </div>
+</div>
+{% include 'content/help/_faq_ld.html.twig' with {questions: [q]} %}
+{% endblock %}

@@ -159,3 +159,69 @@
         .tm-contact__layout { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
     }
 }
+
+/* P13 et P14 — tarifs, aide (T-307c) */
+@layer components {
+    .tm-help__body { display: grid; gap: var(--space-6); padding-block: var(--space-6) var(--space-12); }
+    .tm-help__body--narrow { max-width: 880px; }
+    .tm-help__search { max-width: 760px; width: 100%; margin-inline: auto; grid-template-columns: minmax(0, 1fr) auto; }
+    .tm-help__search .tm-search__field { position: relative; }
+    .tm-help__topics { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+    .tm-help__topic { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-1) var(--space-3); align-items: start; height: 100%; padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); color: var(--color-heading); text-decoration: none; }
+    .tm-help__topic:hover { border-color: var(--color-link); }
+    .tm-help__topic > .tm-icon { grid-row: span 2; color: var(--color-link); }
+    .tm-help__topic > span:first-of-type { display: grid; gap: 2px; }
+    .tm-help__topic strong { font: var(--type-body-strong); }
+    .tm-help__topic span span { color: var(--color-text-muted); font: var(--type-body-sm); }
+    .tm-help__topic .tm-caption { grid-column: 2; color: var(--color-text-muted); }
+    .tm-help__columns { display: grid; gap: var(--space-5); align-items: start; }
+    .tm-help__columns > section { display: grid; gap: var(--space-3); }
+    .tm-help__columns h2 { margin: 0; font: var(--type-h3); color: var(--color-heading); }
+    .tm-help__accordion { display: grid; gap: var(--space-2); }
+    .tm-help__item { border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); }
+    .tm-help__item summary { padding: var(--space-3) var(--space-4); cursor: pointer; font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-help__answer { display: grid; gap: var(--space-2); padding: 0 var(--space-4) var(--space-4); font: var(--type-body-sm); }
+    .tm-help__answer p { margin: 0; }
+    .tm-help__contact { display: grid; gap: var(--space-3); justify-items: start; background: var(--color-info-bg); }
+    .tm-help__contact > .tm-icon { color: var(--orange); }
+    .tm-help__contact h2 { margin: 0; font: var(--type-h3); color: var(--color-heading); }
+    .tm-help__contact p { margin: 0; }
+    .tm-help__head { display: flex; gap: var(--space-3); align-items: center; }
+    .tm-help__head > .tm-icon { width: 40px; height: 40px; color: var(--color-link); }
+    .tm-help__head h1, .tm-help__article h1 { margin: 0; font: var(--type-h1-mobile); color: var(--color-heading); }
+    .tm-help__head p { margin: 0; color: var(--color-text-muted); }
+    .tm-help__article { display: grid; gap: var(--space-4); }
+    .tm-help__article .tm-help__answer { padding: 0; font: var(--type-body); }
+    .tm-help__vote { display: grid; gap: var(--space-2); padding-top: var(--space-4); border-top: 1px solid var(--color-border); scroll-margin-top: var(--space-6); }
+    .tm-help__vote h2 { margin: 0; font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-help__vote form { display: flex; gap: var(--space-2); }
+    .tm-help__vote p { margin: 0; }
+    .tm-help__others h2 { margin: 0 0 var(--space-2); font: var(--type-h3-mobile); color: var(--color-heading); }
+    .tm-help__others ul { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: 0; padding: 0; list-style: none; }
+    .tm-how__faq-title { margin: 0; font: var(--type-h3); color: var(--color-heading); }
+
+    .tm-pricing { background: var(--color-surface-alt); }
+    .tm-pricing__hero { padding-block: var(--space-6) var(--space-8); background: var(--color-info-bg); text-align: center; }
+    .tm-pricing__hero .tm-container { display: grid; justify-items: center; gap: var(--space-3); }
+    .tm-pricing__hero h1 { margin: 0; max-width: 760px; font: var(--type-h1-mobile); color: var(--color-heading); }
+    .tm-pricing__offer { display: inline-flex; align-items: center; gap: var(--space-2); margin: 0; padding: var(--space-2) var(--space-4); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-heading); font: var(--type-label); }
+    .tm-pricing__offer .tm-icon { color: var(--orange); }
+    .tm-pricing__body { display: grid; gap: var(--space-8); padding-block: var(--space-8) var(--space-12); }
+    .tm-pricing__body > section:not(.tm-card-panel) { display: grid; gap: var(--space-4); }
+    .tm-pricing__plans { display: grid; gap: var(--space-3); justify-items: start; max-width: 760px; width: 100%; margin-inline: auto; }
+    .tm-pricing__plans h2 { margin: 0; font: var(--type-h2-mobile); color: var(--color-heading); }
+    .tm-pricing__plans p { margin: 0; }
+    .tm-pricing__plans ul { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .tm-pricing__plans li { display: flex; gap: var(--space-2); align-items: center; }
+    .tm-pricing__plans li .tm-icon { flex: none; color: var(--color-success-text); }
+
+    @media (min-width: 768px) {
+        .tm-help__topics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .tm-help__head h1, .tm-help__article h1, .tm-pricing__hero h1 { font: var(--type-h1); }
+    }
+
+    @media (min-width: 1024px) {
+        .tm-help__topics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .tm-help__columns { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+    }
+}

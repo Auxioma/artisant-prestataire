@@ -1,10 +1,11 @@
-{#- Bannière CTA (P03.3, P04.6, P05.6). La demande de devis (P11) arrive au lot 4 : d'ici là, le bouton mène à la recherche (P-53). -#}
+{#- Bannière CTA (P03.3, P04.6, P05.6, P13 avec `pro: true`). La demande de devis (P11) arrive au lot 4 : d'ici là, le bouton mène à la recherche (P-53). -#}
 <section class="tm-catalog-cta" aria-labelledby="cta-title">
     <div class="tm-container tm-catalog-cta__inner">
         <div>
             <h2 class="tm-catalog-cta__title" id="cta-title">{{ title }}</h2>
             <p class="tm-catalog-cta__text">{{ text }}</p>
         </div>
-        <twig:Button href="{{ tm_route_exists('request_new') ? path('request_new') : href }}" icon="arrowR">{{ tm_route_exists('request_new') ? 'Déposer ma demande de devis' : label }}</twig:Button>
+        {% set use_request = not (pro ?? false) and tm_route_exists('request_new') %}
+        <twig:Button href="{{ use_request ? path('request_new') : href }}" icon="arrowR">{{ use_request ? 'Déposer ma demande de devis' : label }}</twig:Button>
     </div>
 </section>

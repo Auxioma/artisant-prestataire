@@ -225,3 +225,6 @@ Les IP sont stockées **hachées** (HMAC avec un sel tournant) sauf dans l'Audit
 
 | `home_version` (T-306, schéma `content`) | id, number (**UQ**), blocks jsonb (blocs ordonnés : type, actif, réglages), author_id, created_at, updated_at, publish_at (null = brouillon ; future = programmée), published_by | **UQ** brouillon unique (index partiel WHERE publish_at IS NULL) · **CK** publish_at et published_by renseignés ensemble · **IX** publish_at DESC |
 | `contact_message` (T-307b, schéma `content`) | id, reference (**UQ**, `CT-…`), reason, name, email, phone, request_reference, message (20–5 000), attachment_file_id → `stored_file` (usage `contact_attachment`, chiffré), user_id, ip_hash, status (`new`/`answered`/`closed`), created_at | **CK** longueur du message · **IX** (status, created_at DESC) |
+| `faq_topic` (T-307c, schéma `content`) | id, slug (**UQ**), title, description, icon, position, active | — |
+| `faq_question` | id, topic_id → `faq_topic` (cascade), slug, question, answer_html (assaini), audience (`all`/`client`/`artisan`), position, published, helpful_yes, helpful_no, updated_at | **UQ** (topic_id, slug) · **IX** (topic_id, position) WHERE published |
+| `faq_vote` | question_id → `faq_question` (cascade), visitor_hash (HMAC de l'IP), helpful, voted_at | **PK** (question_id, visitor_hash) : un vote par visiteur |
