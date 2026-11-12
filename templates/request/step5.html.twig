@@ -2,8 +2,8 @@
 {% extends 'request/_layout.html.twig' %}
 
 {% block title %}Coordonnées — Demande de devis — TrouveMoi{% endblock %}
-{% block step_title %}Vos coordonnées{% endblock %}
-{% block step_subtitle %}Elles ne sont communiquées qu’au professionnel dont vous acceptez le devis.{% endblock %}
+{% block step_title %}Comment pouvons-nous vous contacter ?{% endblock %}
+{% block step_subtitle %}Vos coordonnées ne sont partagées qu’au moment prévu par les règles de mise en relation.{% endblock %}
 
 {% block step_content %}
     {% if contact is null %}
@@ -27,22 +27,32 @@
         {% set preference = posted.contact_preference ?? draft.contactPreference ?? 'messaging_only' %}
         <form method="post" novalidate data-turbo="false" data-request-tunnel-target="form" data-action="change->request-tunnel#changed">
             <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
-            <dl class="tm-request__summary">
-                <div><dt>Prénom</dt><dd>{{ contact.firstName }}</dd></div>
-                <div><dt>E-mail</dt><dd>{{ contact.email }}</dd></div>
-            </dl>
+            <div class="tm-field tm-field--inset">
+                <label class="tm-field__label" for="first_name">Prénom</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="first_name" type="text" value="{{ contact.firstName }}" readonly></div>
+            </div>
+            <div class="tm-field tm-field--inset">
+                <label class="tm-field__label" for="email">Adresse email</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="email" type="email" value="{{ contact.email }}" readonly></div>
+            </div>
             {% if not email_verified %}
                 <p class="tm-form-note" role="status"><twig:Icon name="alert" size="sm" />Validez votre adresse e-mail grâce au lien reçu à l’inscription : c’est nécessaire pour envoyer votre demande.</p>
             {% endif %}
             {% if not has_phone %}
-                <twig:Field id="phone" name="phone" type="tel" label="Téléphone mobile" autocomplete="tel" inputmode="tel" :value="posted.phone ?? null" :required="true"
-                    help="Requis pour votre première demande ; communiqué uniquement au professionnel retenu." :error="errors.phone ?? null" />
+                <div class="tm-field tm-field--inset{{ errors.phone is defined ? ' tm-field--error' }}">
+                    <label class="tm-field__label" for="phone">Téléphone<abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+                    <div class="tm-field__control"><input class="tm-field__input" id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" value="{{ posted.phone ?? '' }}" placeholder="06 12 34 56 78" aria-describedby="phone_help{{ errors.phone is defined ? ' phone_error' }}"></div>
+                    <p class="tm-field__help" id="phone_help">Requis pour votre première demande ; communiqué uniquement au professionnel retenu.</p>
+                    {{ include('request/_error.html.twig', {key: 'phone'}) }}
+                </div>
             {% endif %}
             <fieldset aria-describedby="{{ errors.contact_preference is defined ? 'contact_preference_error' }}">
-                <legend>Comment les professionnels peuvent-ils vous contacter ?<abbr class="tm-field__required" title="obligatoire">*</abbr></legend>
-                {% for p in preferences %}
-                    <twig:Checkbox type="radio" id="pref_{{ p.value }}" name="contact_preference" value="{{ p.value }}" label="{{ p.label }}" :checked="p.value == preference" />
-                {% endfor %}
+                <legend>Préférences de contact</legend>
+                <div class="tm-request__radios">
+                    {% for p in preferences %}
+                        <twig:Checkbox type="radio" id="pref_{{ p.value }}" name="contact_preference" value="{{ p.value }}" label="{{ p.value == 'messaging_only' ? 'Messagerie uniquement' : 'Téléphone autorisé après acceptation du devis' }}" :checked="p.value == preference" />
+                    {% endfor %}
+                </div>
                 {{ include('request/_error.html.twig', {key: 'contact_preference'}) }}
             </fieldset>
             {{ include('request/_actions.html.twig') }}
@@ -51,6 +61,6 @@
 {% endblock %}
 
 {% block step_why %}
-    <li><twig:Icon name="check" size="xs" />Un compte vous permet de suivre et comparer les devis reçus.</li>
-    <li><twig:Icon name="check" size="xs" />Vos coordonnées restent masquées jusqu’à votre choix d’un professionnel.</li>
+    <li><twig:Icon name="check" size="xs" />Un compte permet de comparer les devis et suivre les messages.</li>
+    <li><twig:Icon name="check" size="xs" />Vos coordonnées ne seront partagées qu’aux étapes autorisées.</li>
 {% endblock %}

@@ -1,4 +1,4 @@
-{#- P11.2 — Étape 1 « Votre besoin » (Figma 5:2) : métier (recherche ou catégories) et type de projet. Sans JavaScript, la liste complète reste utilisable. -#}
+{#- P11.2 — Étape 1 « Votre besoin » (Figma 5:2) : cartes de catégorie, type de prestation (métier), nature des travaux, type de projet. Sans JavaScript, la liste des prestations reste complète (groupée par catégorie). -#}
 {% extends 'request/_layout.html.twig' %}
 
 {% block title %}Votre besoin — Demande de devis — TrouveMoi{% endblock %}
@@ -8,41 +8,58 @@
 {% block step_content %}
     {% set job_id = posted.job_id ?? draft.jobId %}
     {% set project_type = posted.project_type ?? draft.projectType %}
+    {% set selected_category = null %}
+    {% for category, jobs in categories %}{% if jobs|filter(j => j.id == job_id)|length > 0 %}{% set selected_category = category %}{% endif %}{% endfor %}
     <form method="post" novalidate data-turbo="false" data-request-tunnel-target="form" data-action="change->request-tunnel#changed input->request-tunnel#changed">
         <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
-        <fieldset aria-describedby="{{ errors.job_id is defined ? 'job_error' }}">
-            <legend>Choisissez le métier<abbr class="tm-field__required" title="obligatoire">*</abbr></legend>
-            <twig:Field id="job_search" name="job_search" type="search" label="Rechercher un métier" icon="search" placeholder="Ex. plombier, peintre, électricien" autocomplete="off" data-action="input->request-tunnel#filterJobs" />
-            {% if errors.job_id is defined %}<p class="tm-field__error" id="job_error"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" />{{ errors.job_id }}</p>{% endif %}
-            <div class="tm-request-jobs">
+        <fieldset>
+            <legend class="tm-card-title">Choisissez une catégorie</legend>
+            <div class="tm-radio-cards">
                 {% for category, jobs in categories %}
-                    <details data-request-tunnel-target="category"{% if jobs|filter(j => j.id == job_id)|length > 0 or (job_id is null and loop.first) %} open{% endif %}>
-                        <summary>{{ category }}</summary>
-                        <div class="tm-pills">
-                            {% for job in jobs %}
-                                <label class="tm-pill" data-request-tunnel-target="job" data-search="{{ (job.name ~ ' ' ~ job.synonyms|join(' '))|lower }}">
-                                    <input type="radio" name="job_id" value="{{ job.id }}"{{ job.id == job_id ? ' checked' }}{{ target and job.id not in target.jobIds ? ' disabled' }}>
-                                    <span>{{ job.name }}</span>
-                                </label>
-                            {% endfor %}
-                        </div>
-                    </details>
+                    <label class="tm-radio-card" data-request-tunnel-target="category">
+                        <input type="radio" name="category" value="{{ category }}"{{ category == selected_category ? ' checked' }} data-action="change->request-tunnel#filterJobs">
+                        <span>{{ category }}</span>
+                    </label>
                 {% else %}
                     <twig:EmptyState title="Aucun métier disponible" text="Le référentiel des métiers n’est pas encore chargé. Réessayez plus tard." />
                 {% endfor %}
             </div>
         </fieldset>
 
+        <div class="tm-field tm-field--inset{{ errors.job_id is defined ? ' tm-field--error' }}">
+            <label class="tm-field__label" for="job_id">Type de prestation<abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+            <div class="tm-select">
+                <select class="tm-select__input" id="job_id" name="job_id" data-request-tunnel-target="jobSelect"{{ errors.job_id is defined ? ' aria-invalid="true" aria-describedby="job_id_error"' }}>
+                    <option value="">Choisissez la prestation</option>
+                    {% for category, jobs in categories %}
+                        <optgroup label="{{ category }}">
+                            {% for job in jobs %}
+                                <option value="{{ job.id }}"{{ job.id == job_id ? ' selected' }}{{ target and job.id not in target.jobIds ? ' disabled' }}>{{ job.name }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    {% endfor %}
+                </select>
+                <twig:Icon name="chevD" size="xs" class="tm-select__chevron" />
+            </div>
+            {{ include('request/_error.html.twig', {key: 'job_id'}) }}
+        </div>
+
+        <div class="tm-field tm-field--inset">
+            <label class="tm-field__label" for="work_nature">Nature des travaux</label>
+            <div class="tm-field__control"><input class="tm-field__input" id="work_nature" name="work_nature" type="text" maxlength="120" value="{{ posted.work_nature ?? draft.workNature }}" placeholder="Ex. installation et remplacement"></div>
+            {{ include('request/_error.html.twig', {key: 'work_nature'}) }}
+        </div>
+
         <hr class="tm-request__divider">
 
-        <fieldset aria-describedby="{{ errors.project_type is defined ? 'type_error' }}">
+        <fieldset aria-describedby="{{ errors.project_type is defined ? 'project_type_error' }}">
             <legend>Type de projet<abbr class="tm-field__required" title="obligatoire">*</abbr></legend>
             <div class="tm-pills">
                 {% for type in project_types %}
                     <label class="tm-pill"><input type="radio" name="project_type" value="{{ type.value }}"{{ type.value == project_type ? ' checked' }}><span>{{ type.label }}</span></label>
                 {% endfor %}
             </div>
-            {% if errors.project_type is defined %}<p class="tm-field__error" id="type_error"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" />{{ errors.project_type }}</p>{% endif %}
+            {{ include('request/_error.html.twig', {key: 'project_type'}) }}
         </fieldset>
 
         {% if target %}

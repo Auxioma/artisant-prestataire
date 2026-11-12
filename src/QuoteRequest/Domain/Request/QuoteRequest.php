@@ -35,6 +35,9 @@ final class QuoteRequest extends AggregateRoot
     private ?string $budgetRange;
     private Timing $timing;
     private ?\DateTimeImmutable $desiredDate;
+    private ?string $title = null;
+    private ?string $summary = null;
+    private ?string $workNature = null;
     /** @var list<string> */
     private array $preferredSlots = [];
     private ?OccupantStatus $occupantStatus = null;
@@ -310,6 +313,9 @@ final class QuoteRequest extends AggregateRoot
             $this->desiredDate,
             array_values(array_filter(array_map(PreferredSlot::tryFrom(...), $this->preferredSlots))),
             $this->occupantStatus,
+            $this->title,
+            $this->summary,
+            $this->workNature,
         );
     }
 
@@ -390,6 +396,9 @@ final class QuoteRequest extends AggregateRoot
         $this->desiredDate = $details->desiredDate;
         $this->preferredSlots = array_values(array_unique(array_map(static fn (PreferredSlot $s): string => $s->value, $details->preferredSlots)));
         $this->occupantStatus = $details->occupantStatus;
+        $this->title = $details->title;
+        $this->summary = $details->summary;
+        $this->workNature = $details->workNature;
     }
 
     private function publish(int $expiryDays, \DateTimeImmutable $now): void

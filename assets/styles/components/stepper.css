@@ -7,9 +7,21 @@
         margin: 0;
         padding: 0;
         list-style: none;
-        gap: var(--space-6);
+        gap: var(--space-3);
         flex-wrap: wrap;
+        row-gap: var(--space-3);
     }
+
+    /* Figma P11 (5:2) : trait reliant les étapes, vert une fois l'étape franchie. */
+    .tm-stepper__step:not(:last-child)::after {
+        content: '';
+        width: 48px;
+        height: 2px;
+        margin-inline-start: var(--space-1);
+        border-radius: var(--radius-pill);
+        background: var(--background-light);
+    }
+    .tm-stepper__step--done:not(:last-child)::after { background: var(--tm-green); }
 
     .tm-stepper__step { display: flex; align-items: center; gap: 10px; font: var(--type-label); color: var(--color-heading); }
 

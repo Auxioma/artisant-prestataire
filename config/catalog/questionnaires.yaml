@@ -4,39 +4,39 @@
 #
 # Format d'une question : key, label, type (choice | multi | yesno | text | number), required, options (valeur: libellé),
 # help, show_if: {field: clé d'une question précédente, in: [valeurs]}, min, max.
-# `common` est posé en tête de tous les questionnaires ; `jobs` remplace `categories` pour le métier concerné.
+# `common` est posé après les questions du métier (ordre de Figma 5:57) ; `jobs` remplace `categories` pour le métier concerné.
+# widget : chips (défaut) | radio | select ; half: true = demi-largeur (deux questions côte à côte).
 
 common:
   - key: logement
-    label: Type de lieu
+    label: Type de logement
     type: choice
+    widget: select
+    half: true
     required: true
-    options: {maison: Maison, appartement: Appartement, local_pro: Local professionnel, exterieur: Extérieur / jardin}
+    options: {appartement: Appartement, maison: Maison, local_pro: Local professionnel, exterieur: Extérieur / jardin}
   - key: etage
     label: Étage
     type: number
+    half: true
     required: false
     min: 0
     max: 60
     show_if: {field: logement, in: [appartement]}
-  - key: acces
-    label: Accès
-    type: choice
-    required: false
-    options: {facile: Facile, ascenseur: Avec ascenseur, sans_ascenseur: Sans ascenseur, difficile: "Difficile (stationnement, passage étroit…)"}
 
 categories:
   plomberie:
     - key: probleme
-      label: Nature de l'intervention
+      label: Type d'intervention
       type: choice
       required: true
-      options: {fuite: Fuite, bouchon: Canalisation bouchée, chauffe_eau: Chauffe-eau, sanitaire: Installation sanitaire, autre: Autre}
-    - key: eau_coupee
-      label: L'eau est-elle coupée ?
-      type: yesno
+      options: {fuite: Fuite, bouchon: Bouchon, chauffe_eau: Chauffe-eau, sanitaire: Installation sanitaire}
+    - key: urgence
+      label: Urgence
+      type: choice
+      widget: radio
       required: false
-      show_if: {field: probleme, in: [fuite]}
+      options: {oui: "Oui, sous 48 h", non: Non}
   electricite:
     - key: probleme
       label: Nature de l'intervention

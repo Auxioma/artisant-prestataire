@@ -6,11 +6,15 @@ namespace App\QuoteRequest\UI\Http;
 
 use App\ArtisanProfile\Application\PublicProfile\PublicArtisanProfile;
 use App\ArtisanProfile\Application\PublicProfile\PublicProfileView;
+use App\Catalog\Application\Geo\Query\CommunesByInsee;
+use App\Catalog\Application\Geo\Query\CommuneSummary;
 use App\Catalog\Application\Query\JobBySlug;
 use App\Catalog\Application\Query\JobIndexEntries;
 use App\Catalog\Application\Query\JobIndexEntry;
 use App\Catalog\Application\Questionnaire\JobQuestionnaire;
 use App\Catalog\Application\Questionnaire\JobQuestionnaireView;
+use App\Catalog\Domain\Questionnaire\QuestionnaireField;
+use App\Catalog\Domain\Questionnaire\QuestionnaireSchema;
 use App\QuoteRequest\Application\Draft\AddDraftAttachment;
 use App\QuoteRequest\Application\Draft\AdoptVisitorDraft;
 use App\QuoteRequest\Application\Draft\CurrentRequestDraft;
@@ -76,6 +80,7 @@ final class RequestTunnelController extends AbstractController
     private const int TOKEN_BYTES = 32;
     private const string TURNSTILE_FIELD = 'cf-turnstile-response';
     private const string CAPTCHA_ACTION = 'request';
+    private const string CONFIRM_MESSAGE = 'Confirmez l’exactitude des informations fournies.';
     private const string UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
     /** Attribut de requête portant le cookie à émettre (jamais une propriété : le contrôleur est un service partagé). */
@@ -180,8 +185,17 @@ final class RequestTunnelController extends AbstractController
             throw $this->createNotFoundException();
         }
 
+        $city = null;
+        $communes = $this->queries->ask(new CommunesByInsee([$request->cityInsee()]));
+        foreach (\is_array($communes) ? $communes : [] as $commune) {
+            $city = $commune instanceof CommuneSummary ? $commune->name : $city;
+        }
+
         return $this->render('request/sent.html.twig', [
             'request' => $request,
+            'city' => $city,
+            // Figma 25:3 « Délai moyen de première réponse » : affiché une fois mesuré sur les devis (lot 5, P-64).
+            'average_response' => null,
             'job' => $this->job($request->jobId()),
             'target' => null === $request->targetArtisanId() ? null : $this->artisan($request->targetArtisanId()),
         ]);
@@ -196,15 +210,16 @@ final class RequestTunnelController extends AbstractController
         $error = match (true) {
             null === $owner->userId => 'Connectez-vous ou créez votre compte pour envoyer votre demande : votre brouillon est conservé.',
             !$this->currentUser->isEmailVerified() => 'Validez d’abord votre adresse e-mail (lien reçu à l’inscription) : votre demande sera envoyée ensuite, votre brouillon est conservé.',
+            !$request->request->getBoolean('confirm') => self::CONFIRM_MESSAGE,
             !$this->submitLimiter->create($request->getClientIp() ?? 'unknown')->consume()->isAccepted() => 'Vous avez déjà envoyé plusieurs demandes : merci de réessayer dans une heure.',
             default => $this->captchaError($request),
         };
         if (null !== $error || null === $owner->userId) {
-            return $this->page($request, $owner, RequestDraftEditor::STEP_RECAP, new DraftRejected($error), null);
+            return $this->page($request, $owner, RequestDraftEditor::STEP_RECAP, new DraftRejected($error, self::CONFIRM_MESSAGE === $error ? ['confirm' => 'Cochez cette case pour envoyer votre demande.'] : []), $request->request->all());
         }
         $requestId = $this->ids->next();
         try {
-            $this->commands->dispatch(new SubmitRequestDraft($owner->userId, $requestId, $this->ipAnonymizer->hash($request->getClientIp())));
+            $this->commands->dispatch(new SubmitRequestDraft($owner->userId, $requestId, $this->ipAnonymizer->hash($request->getClientIp()), $request->request->has('broadcast') ? $request->request->getBoolean('broadcast') : null));
         } catch (DraftRejected|RequestRuleViolation $e) {
             return $this->page($request, $owner, RequestDraftEditor::STEP_RECAP, new DraftRejected($e->getMessage()), null);
         }
@@ -286,6 +301,11 @@ final class RequestTunnelController extends AbstractController
                 $this->addFlash('error', \sprintf('« %s » : %s', mb_substr($file->getClientOriginalName(), 0, 60), $e->getMessage()));
             }
         }
+        // Envoi fichier par fichier avec progression (Figma 99:2230) : réponse JSON, la page est ensuite rechargée ; les
+        // erreurs restent en messages flash pour y être affichées.
+        if ('json' === $request->getPreferredFormat()) {
+            return new JsonResponse(['accepted' => $accepted]);
+        }
         if ($accepted > 0) {
             $this->addFlash('success', 1 === $accepted ? 'Fichier ajouté : il sera visible après son analyse de sécurité.' : \sprintf('%d fichiers ajoutés : ils seront visibles après leur analyse de sécurité.', $accepted));
         } elseif ([] === $files) {
@@ -360,7 +380,10 @@ final class RequestTunnelController extends AbstractController
             RequestDraftEditor::STEP_NEED => ['categories' => $this->jobsByCategory(), 'project_types' => ProjectType::cases()],
             RequestDraftEditor::STEP_DETAILS => [
                 'job' => $this->job($draft->jobId),
-                'questionnaire' => null === $draft->jobId ? null : $this->questionnaire($draft->jobId),
+                'questionnaire' => $questionnaire = null === $draft->jobId ? null : $this->questionnaire($draft->jobId),
+                'question_rows' => null === $questionnaire ? [] : self::questionRows($questionnaire->schema),
+                'title_max' => RequestDetails::TITLE_MAX,
+                'summary_max' => RequestDetails::SUMMARY_MAX,
                 'budget_ranges' => BudgetRange::cases(),
                 'description_min' => RequestDetails::DESCRIPTION_MIN,
                 'description_max' => RequestDetails::DESCRIPTION_MAX,
@@ -410,6 +433,36 @@ final class RequestTunnelController extends AbstractController
             'signed_in' => null !== $owner->userId,
             'email_verified' => $this->currentUser->isEmailVerified(),
         ];
+    }
+
+    /**
+     * Figma 5:57 : deux questions « demi-largeur » consécutives partagent une ligne (type de logement, étage).
+     *
+     * @return list<list<QuestionnaireField>>
+     */
+    private static function questionRows(QuestionnaireSchema $schema): array
+    {
+        $rows = [];
+        $pending = null;
+        foreach ($schema->fields as $field) {
+            if ($field->half && null !== $pending) {
+                $rows[] = [$pending, $field];
+                $pending = null;
+            } elseif ($field->half) {
+                $pending = $field;
+            } else {
+                if (null !== $pending) {
+                    $rows[] = [$pending];
+                    $pending = null;
+                }
+                $rows[] = [$field];
+            }
+        }
+        if (null !== $pending) {
+            $rows[] = [$pending];
+        }
+
+        return $rows;
     }
 
     private function phone(string $userId): ?string

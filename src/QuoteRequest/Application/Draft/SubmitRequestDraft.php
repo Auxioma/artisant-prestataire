@@ -13,7 +13,8 @@ use App\Shared\Application\Bus\Command;
  */
 final readonly class SubmitRequestDraft implements Command
 {
-    public function __construct(public string $userId, public string $requestId, public ?string $ipHash = null)
+    /** @param bool|null $broadcastToOthers choix « Recevoir aussi d'autres devis » du récapitulatif (demande directe) */
+    public function __construct(public string $userId, public string $requestId, public ?string $ipHash = null, public ?bool $broadcastToOthers = null)
     {
     }
 }

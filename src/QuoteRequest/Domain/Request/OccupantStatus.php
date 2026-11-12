@@ -17,7 +17,7 @@ enum OccupantStatus: string
         return match ($this) {
             self::Owner => 'Propriétaire',
             self::Tenant => 'Locataire',
-            self::Syndic => 'Syndic de copropriété',
+            self::Syndic => 'Syndic',
             self::Company => 'Entreprise',
         };
     }

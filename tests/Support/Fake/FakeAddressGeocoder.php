@@ -29,7 +29,7 @@ final class FakeAddressGeocoder implements AddressGeocoder
         return null;
     }
 
-    public function suggest(string $query, int $limit): array
+    public function suggest(string $query, int $limit, ?string $inseeCode = null): array
     {
         $needle = mb_strtolower(trim($query));
         if (str_contains($needle, self::UNAVAILABLE)) {
@@ -38,6 +38,9 @@ final class FakeAddressGeocoder implements AddressGeocoder
         $found = [];
         foreach (self::ADDRESSES as [$label, $number, $street, $postal, $insee, $city, $lat, $lon]) {
             $words = preg_split('/[\s,]+/', $needle) ?: [];
+            if (null !== $inseeCode && $insee !== $inseeCode) {
+                continue;
+            }
             if ([] !== $words && [] === array_filter($words, static fn (string $w): bool => '' !== $w && !str_contains(mb_strtolower($label), $w))) {
                 $found[] = new GeocodedAddress($label, $number, $street, $postal, $insee, $city, new GeoPoint($lat, $lon), 0.9, 'housenumber');
             }

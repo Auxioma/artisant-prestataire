@@ -46,9 +46,14 @@ final readonly class BanAddressGeocoder implements AddressGeocoder
         return $this->search($address, 1, $parameters)[0] ?? null;
     }
 
-    public function suggest(string $query, int $limit): array
+    public function suggest(string $query, int $limit, ?string $inseeCode = null): array
     {
-        return $this->search($query, max(1, min($limit, self::SUGGESTIONS_MAX)), ['autocomplete' => 1]);
+        $filters = ['autocomplete' => 1];
+        if (null !== $inseeCode && 1 === preg_match('/^\d[\dAB]\d{3}$/', $inseeCode)) {
+            $filters['citycode'] = $inseeCode;
+        }
+
+        return $this->search($query, max(1, min($limit, self::SUGGESTIONS_MAX)), $filters);
     }
 
     /**

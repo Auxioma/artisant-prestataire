@@ -12,7 +12,10 @@ use App\Shared\Application\Bus\CommandHandler;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Domain\Time\Clock;
 
-/** Import des questionnaires (tous contrôlés avant écriture : un fichier invalide n'est pas importé à moitié). */
+/**
+ * Import des questionnaires (tous contrôlés avant écriture : un fichier invalide n'est pas importé à moitié). Questions
+ * du métier d'abord, questions communes ensuite (ordre de Figma P11 5:57).
+ */
 final readonly class QuestionnaireHandler implements CommandHandler
 {
     public function __construct(private QuestionnaireStore $store, private QueryBus $queries, private Clock $clock)
@@ -29,7 +32,7 @@ final readonly class QuestionnaireHandler implements CommandHandler
             }
             $specific = $command->jobs[$job->slug] ?? $command->categories[$job->categorySlug] ?? [];
             try {
-                $schemas[$job->id] = QuestionnaireSchema::fromArray(['fields' => [...$command->common, ...$specific]]);
+                $schemas[$job->id] = QuestionnaireSchema::fromArray(['fields' => [...$specific, ...$command->common]]);
             } catch (InvalidQuestionnaire $e) {
                 throw new InvalidQuestionnaire(\sprintf('Métier « %s » : %s', $job->slug, $e->getMessage()));
             }

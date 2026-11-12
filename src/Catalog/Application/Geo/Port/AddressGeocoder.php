@@ -23,11 +23,12 @@ interface AddressGeocoder
     public function geocode(string $address, ?string $inseeCode = null, ?string $postalCode = null): ?GeocodedAddress;
 
     /**
-     * Suggestions d'adresses pour l'autocomplétion (P11.5), meilleures correspondances d'abord.
+     * Suggestions d'adresses pour l'autocomplétion (P11.5), meilleures correspondances d'abord, éventuellement dans une
+     * seule commune (champ « Ville ou code postal », Figma 5:110).
      *
      * @return list<GeocodedAddress>
      *
      * @throws ExternalServiceUnavailable
      */
-    public function suggest(string $query, int $limit): array;
+    public function suggest(string $query, int $limit, ?string $inseeCode = null): array;
 }

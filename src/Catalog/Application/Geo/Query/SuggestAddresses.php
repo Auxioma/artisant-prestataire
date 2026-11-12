@@ -9,7 +9,7 @@ use App\Shared\Application\Bus\Query;
 /** P11.5 — suggestions d'adresses (BAN). Réponse : list<GeocodedAddress> ; ExternalServiceUnavailable si la BAN ne répond pas. */
 final readonly class SuggestAddresses implements Query
 {
-    public function __construct(public string $query, public int $limit)
+    public function __construct(public string $query, public int $limit, public ?string $inseeCode = null)
     {
     }
 }

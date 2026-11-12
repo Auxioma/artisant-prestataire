@@ -69,6 +69,8 @@ final readonly class QuestionnaireSchema
                 array_values(array_map(strval(...), array_filter(\is_array($showIf['in'] ?? null) ? $showIf['in'] : [], \is_scalar(...)))),
                 \is_int($row['min'] ?? null) ? $row['min'] : null,
                 \is_int($row['max'] ?? null) ? $row['max'] : null,
+                '' === self::string($row, 'widget') ? null : self::string($row, 'widget'),
+                true === ($row['half'] ?? false),
             );
         }
 

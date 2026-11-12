@@ -62,6 +62,9 @@ final readonly class SubmitQuoteRequestHandler implements CommandHandler
             self::date($command->desiredDate, $now),
             array_values(array_filter(array_map(PreferredSlot::tryFrom(...), $command->preferredSlots))),
             null === $command->occupantStatus ? null : (OccupantStatus::tryFrom($command->occupantStatus) ?? throw new RequestRuleViolation('Statut invalide.')),
+            $command->title,
+            $command->summary,
+            $command->workNature,
         );
         $this->assertJobAvailable($command->jobId);
         $this->assertCommune($command->cityInsee, $command->postalCode);

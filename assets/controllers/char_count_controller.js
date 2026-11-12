@@ -7,7 +7,8 @@ export default class extends Controller {
 
     update() {
         const length = this.inputTarget.value.length;
-        this.countTarget.textContent = `${length} / ${this.maxValue}`;
+        const format = new Intl.NumberFormat('fr-FR');
+        this.countTarget.textContent = `${format.format(length)} / ${format.format(this.maxValue)}`;
         this.countTarget.setAttribute('aria-live', length > this.maxValue - 20 ? 'polite' : 'off');
     }
 }

@@ -37,6 +37,9 @@ final readonly class SubmitQuoteRequest implements Command
         public ?string $occupantStatus = null,
         public string $contactPreference = 'messaging_only',
         public ?int $questionnaireVersion = null,
+        public ?string $title = null,
+        public ?string $summary = null,
+        public ?string $workNature = null,
     ) {
     }
 }

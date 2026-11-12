@@ -138,6 +138,9 @@ final readonly class RequestDraftEditor implements CommandHandler
         } elseif ($complete) {
             $errors['project_type'] = 'Choisissez le type de projet.';
         }
+        if (\array_key_exists('work_nature', $input)) {
+            $changes['work_nature'] = $this->optionalText($input, 'work_nature', RequestDetails::NATURE_MAX, $complete, $errors);
+        }
         if (null !== $draft->targetArtisanId && \array_key_exists('broadcast', $input)) {
             $changes['broadcast_to_others'] = '1' === $input['broadcast'];
         }
@@ -178,6 +181,8 @@ final readonly class RequestDraftEditor implements CommandHandler
         } elseif ($complete && [] !== ContactDetector::find($description)) {
             $errors['description'] = RequestDetails::CONTACT_MESSAGE;
         }
+        $title = $this->optionalText($input, 'title', RequestDetails::TITLE_MAX, $complete, $errors);
+        $summary = $this->optionalText($input, 'summary', RequestDetails::SUMMARY_MAX, $complete, $errors);
         $budget = self::text($input, 'budget_range');
         if (null !== $budget && null === BudgetRange::tryFrom($budget)) {
             $budget = null;
@@ -186,7 +191,7 @@ final readonly class RequestDraftEditor implements CommandHandler
             throw new DraftRejected('Certaines réponses sont incomplètes.', $errors);
         }
 
-        return ['answers' => $answers, 'questionnaire_version' => $questionnaire?->version, 'description' => $description, 'budget_range' => $budget];
+        return ['answers' => $answers, 'questionnaire_version' => $questionnaire?->version, 'description' => $description, 'budget_range' => $budget, 'title' => $title, 'summary' => $summary];
     }
 
     /**
@@ -218,11 +223,14 @@ final readonly class RequestDraftEditor implements CommandHandler
             $errors['address'] = self::ADDRESS_MESSAGE;
         } elseif (null === $draft->address || $typed !== $draft->address['label']) {
             try {
-                $found = $this->queries->ask(new GeocodeAddress($typed, self::text($input, 'address_insee'), self::text($input, 'address_postal')));
+                $found = $this->queries->ask(new GeocodeAddress($typed, self::text($input, 'city_insee') ?? self::text($input, 'address_insee'), self::text($input, 'address_postal')));
             } catch (ExternalServiceUnavailable) {
                 throw new DraftRejected('Le service de recherche d’adresses est momentanément indisponible : réessayez dans quelques minutes, votre brouillon est conservé.', ['address' => self::ADDRESS_MESSAGE]);
             }
-            if ($found instanceof GeocodedAddress) {
+            $city = self::text($input, 'city_insee');
+            if ($found instanceof GeocodedAddress && null !== $city && $found->inseeCode !== $city) {
+                $errors['address'] = 'Cette adresse n’est pas dans la ville choisie.';
+            } elseif ($found instanceof GeocodedAddress) {
                 $changes['address'] = ['label' => $found->label, 'city_insee' => $found->inseeCode, 'postal_code' => $found->postalCode, 'city' => $found->city, 'lat' => $found->point->latitude, 'lon' => $found->point->longitude];
             } else {
                 $errors['address'] = self::ADDRESS_MESSAGE;
@@ -262,6 +270,22 @@ final readonly class RequestDraftEditor implements CommandHandler
         }
 
         return null === $preference ? [] : ['contact_preference' => $preference->value];
+    }
+
+    /**
+     * Texte facultatif (Figma P11) : borné ; sans coordonnées à la validation de l'étape.
+     *
+     * @param array<array-key, mixed> $input
+     * @param array<string, string>   $errors
+     */
+    private function optionalText(array $input, string $key, int $max, bool $complete, array &$errors): ?string
+    {
+        $value = mb_substr(self::text($input, $key) ?? '', 0, $max);
+        if ($complete && [] !== ContactDetector::find($value)) {
+            $errors[$key] = RequestDetails::CONTACT_MESSAGE;
+        }
+
+        return '' === $value ? null : $value;
     }
 
     private function isAcceptableDate(?string $value): bool

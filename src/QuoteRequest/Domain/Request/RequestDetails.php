@@ -18,12 +18,19 @@ final readonly class RequestDetails
     public const int BUDGET_RANGE_MAX = 30;
     public const int ANSWERS_MAX = 40;
     public const int ANSWER_MAX = 500;
+    /** Figma P11 (5:2, 5:57) : « Nature des travaux », « Titre de votre demande », « Décrivez votre besoin ». */
+    public const int NATURE_MAX = 120;
+    public const int TITLE_MAX = 100;
+    public const int SUMMARY_MAX = 300;
     /** Messages d'erreur du CDC (P11, « Messages d'erreur et validations »). */
     public const string DESCRIPTION_MESSAGE = 'Décrivez votre projet en quelques phrases (30 caractères minimum).';
     public const string CONTACT_MESSAGE = 'Pour votre sécurité, n’indiquez pas vos coordonnées dans la description.';
 
     public string $description;
     public ?string $budgetRange;
+    public ?string $title;
+    public ?string $summary;
+    public ?string $workNature;
 
     /**
      * @param array<string, string|list<string>> $answers
@@ -38,7 +45,13 @@ final readonly class RequestDetails
         public ?\DateTimeImmutable $desiredDate,
         public array $preferredSlots = [],
         public ?OccupantStatus $occupantStatus = null,
+        ?string $title = null,
+        ?string $summary = null,
+        ?string $workNature = null,
     ) {
+        $this->title = self::optional($title, self::TITLE_MAX, 'Le titre');
+        $this->summary = self::optional($summary, self::SUMMARY_MAX, 'Le besoin');
+        $this->workNature = self::optional($workNature, self::NATURE_MAX, 'La nature des travaux');
         $description = trim($description);
         $length = mb_strlen($description);
         if ($length < self::DESCRIPTION_MIN || $length > self::DESCRIPTION_MAX) {
@@ -66,5 +79,19 @@ final readonly class RequestDetails
         }
         $this->description = $description;
         $this->budgetRange = '' === $budgetRange ? null : $budgetRange;
+    }
+
+    /** Texte facultatif : borné et sans coordonnées (même règle que la description). */
+    private static function optional(?string $value, int $max, string $label): ?string
+    {
+        $value = null === $value ? '' : trim($value);
+        if (mb_strlen($value) > $max) {
+            throw new RequestRuleViolation(\sprintf('%s ne doit pas dépasser %d caractères.', $label, $max));
+        }
+        if ([] !== ContactDetector::find($value)) {
+            throw new RequestRuleViolation(self::CONTACT_MESSAGE);
+        }
+
+        return '' === $value ? null : $value;
     }
 }

@@ -15,6 +15,9 @@
         <field name="duplicateKey" type="string" length="64" column="duplicate_key"/>
         <field name="status" type="string" length="20" enum-type="App\QuoteRequest\Domain\Request\RequestStatus"/>
         <field name="projectType" type="string" length="20" column="project_type" enum-type="App\QuoteRequest\Domain\Request\ProjectType"/>
+        <field name="title" type="string" length="100" nullable="true"/>
+        <field name="summary" type="string" length="300" nullable="true"/>
+        <field name="workNature" type="string" length="120" column="work_nature" nullable="true"/>
         <field name="description" type="text"/>
         <field name="answers" type="json"><options><option name="jsonb">true</option></options></field>
         <field name="budgetRange" type="string" length="30" column="budget_range" nullable="true"/>

@@ -15,6 +15,8 @@ final readonly class QuestionnaireField
     public const int OPTIONS_MAX = 20;
     public const int TEXT_MAX_DEFAULT = 200;
     public const int TEXT_MAX_LIMIT = 500;
+    /** Présentation d'une question à choix (Figma P11 5:57) : pastilles, boutons radio ou liste déroulante. */
+    public const array WIDGETS = ['chips', 'radio', 'select'];
     private const string KEY = '/^[a-z][a-z0-9_]{0,39}$/';
     private const string VALUE = '/^[a-z0-9][a-z0-9_-]{0,39}$/';
 
@@ -33,7 +35,12 @@ final readonly class QuestionnaireField
         public array $showIfValues = [],
         public ?int $min = null,
         public ?int $max = null,
+        public ?string $widget = null,
+        public bool $half = false,
     ) {
+        if (null !== $widget && (!\in_array($widget, self::WIDGETS, true) || !$type->hasOptions() && FieldType::YesNo !== $type || (FieldType::Multi === $type && 'chips' !== $widget))) {
+            throw new InvalidQuestionnaire(\sprintf('Question « %s » : présentation « %s » impossible pour ce type.', $key, $widget));
+        }
         if (1 !== preg_match(self::KEY, $key)) {
             throw new InvalidQuestionnaire(\sprintf('Clé de question « %s » invalide (minuscules, chiffres, « _ »).', $key));
         }
@@ -66,8 +73,14 @@ final readonly class QuestionnaireField
             'key' => $this->key, 'label' => $this->label, 'type' => $this->type->value, 'required' => $this->required,
             'options' => [] === $this->options ? null : array_map(static fn (string $v, string $l): array => ['value' => $v, 'label' => $l], array_keys($this->options), $this->options),
             'help' => $this->help, 'show_if' => null === $this->showIfField ? null : ['field' => $this->showIfField, 'in' => $this->showIfValues],
-            'min' => $this->min, 'max' => $this->max,
+            'min' => $this->min, 'max' => $this->max, 'widget' => $this->widget, 'half' => $this->half ? true : null,
         ], static fn (mixed $v): bool => null !== $v);
+    }
+
+    /** Présentation retenue : celle du schéma, sinon pastilles pour un choix, boutons radio pour oui / non. */
+    public function presentation(): string
+    {
+        return $this->widget ?? (FieldType::YesNo === $this->type ? 'radio' : 'chips');
     }
 
     /**

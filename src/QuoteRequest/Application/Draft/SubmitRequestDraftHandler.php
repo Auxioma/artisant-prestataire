@@ -51,12 +51,15 @@ final readonly class SubmitRequestDraftHandler implements CommandHandler
             $draft->timing,
             $draft->desiredDate,
             $draft->targetArtisanId,
-            $draft->broadcastToOthers,
+            null !== $draft->targetArtisanId && null !== $command->broadcastToOthers ? $command->broadcastToOthers : $draft->broadcastToOthers,
             $command->ipHash,
             $draft->preferredSlots,
             $draft->occupantStatus,
             $draft->contactPreference,
             $draft->questionnaireVersion,
+            $draft->title,
+            $draft->summary,
+            $draft->workNature,
         ));
 
         $this->content->saveAddress($command->requestId, $address['label'], $address['lat'], $address['lon'], $this->clock->now());

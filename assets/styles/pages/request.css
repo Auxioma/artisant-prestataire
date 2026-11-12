@@ -42,7 +42,7 @@
     }
     .tm-pill input:checked + span { border-color: var(--color-link); background: var(--color-info-bg); color: var(--color-link); }
     .tm-pill input:focus-visible + span { box-shadow: var(--focus-ring); }
-    .tm-pill input:checked + span::after { content: '✓'; }
+    .tm-pill input:checked + span::after { content: '✕'; } /* Figma 5:2 : pastille choisie marquée d'une croix */
 
     /* Métiers par catégorie (étape 1). */
     .tm-request-jobs { display: grid; gap: var(--space-2); }
@@ -87,12 +87,76 @@
     .tm-request__sent { padding-top: var(--space-8); }
     .tm-request__sent h1 { margin: 0; }
     .tm-request__sent-icon { color: var(--color-success-text); }
-    .tm-request__sent-icon .tm-icon { width: 40px; height: 40px; }
+    .tm-request__sent-icon .tm-icon { width: 24px; height: 24px; }
     .tm-request__sent-card { display: grid; gap: var(--space-1); padding: var(--space-4); border-radius: var(--radius-card); background: var(--color-info-bg); }
     .tm-request__sent-card p { margin: 0; }
 
     @media (min-width: 768px) {
         .tm-request__account { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .tm-request__summary > div { grid-template-columns: 200px minmax(0, 1fr); align-items: baseline; }
+    }
+}
+
+/* T-402c — alignement Figma P11 (194:8981). */
+@layer components {
+    .tm-request__intro .tm-overline { color: var(--color-link); }
+
+    /* Champ « libellé dans le cadre » (Figma 5:2, 5:57, 5:110). */
+    .tm-field--inset { gap: var(--space-1); padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
+    .tm-field--inset:focus-within { box-shadow: var(--focus-ring); }
+    .tm-field--inset .tm-field__label { color: var(--color-text-muted); font: var(--type-caption); }
+    .tm-request .tm-field--inset .tm-field__control, .tm-request .tm-field--inset .tm-select .tm-select__input { min-height: 0; padding-block: 0; padding-inline-start: 0; border: 0; background: transparent; box-shadow: none; }
+    .tm-request .tm-field--inset .tm-field__input { padding-inline: 0; }
+    .tm-request .tm-field--inset .tm-select { display: flex; min-height: 0; padding-inline: 0; border: 0; background: transparent; }
+    .tm-request .tm-field--inset .tm-select:focus-within { box-shadow: none; }
+    .tm-request .tm-field--inset .tm-select__input { width: 100%; font: var(--type-body); }
+    .tm-field--inset .tm-field__control:focus-within { box-shadow: none; }
+    .tm-field--inset.tm-field--error { border-color: var(--color-danger-text); }
+
+    /* Cartes radio des catégories (Figma 5:2). */
+    .tm-radio-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: var(--space-3); }
+    .tm-radio-card { position: relative; display: grid; align-content: space-between; gap: var(--space-6); min-height: 112px; padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); color: var(--color-heading); font: var(--type-label); cursor: pointer; }
+    .tm-radio-card input { width: 20px; height: 20px; margin: 0; accent-color: var(--color-link); }
+    .tm-radio-card:has(input:checked) { border-color: var(--color-link); background: var(--color-info-bg); }
+    .tm-radio-card:has(input:focus-visible) { box-shadow: var(--focus-ring); }
+    .tm-radio-card[hidden] { display: none; }
+
+    .tm-request__split { display: grid; gap: var(--space-3); }
+    .tm-request__split > * { min-width: 0; }
+    .tm-request__radios { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); }
+    .tm-request__privacy { display: grid; gap: var(--space-1); margin: 0; padding: var(--space-4); border-radius: var(--radius-card); background: var(--color-info-bg); color: var(--color-heading); }
+    .tm-request__privacy strong { font: var(--type-label); }
+    .tm-request__privacy span { color: var(--color-text-muted); font: var(--type-caption); }
+    .tm-request__heading { margin: 0; color: var(--color-heading); font: var(--type-label); }
+
+    /* Étape 3 : envoi avec progression (Figma 99:2230). */
+    .tm-request-file__progress { width: 100%; height: 6px; border: 0; border-radius: var(--radius-pill); background: var(--background-light); appearance: none; overflow: hidden; }
+    .tm-request-file__progress::-webkit-progress-bar { background: var(--background-light); }
+    .tm-request-file__progress::-webkit-progress-value { background: var(--color-link); }
+    .tm-request-file__progress::-moz-progress-bar { background: var(--color-link); }
+    .tm-request-file__state { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--color-success-text); font: var(--type-caption); }
+    .tm-request-file__state--pending { color: var(--color-text-muted); }
+    .tm-request-file__state--refused { color: var(--color-danger-text); }
+    .tm-request-file__remove { display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: var(--radius-pill); background: none; color: var(--color-text-muted); cursor: pointer; }
+    .tm-request-file__remove:focus-visible { box-shadow: var(--focus-ring); }
+    .tm-dropzone__or { margin: 0; color: var(--color-text-muted); font: var(--type-caption); }
+
+    /* Étape 6 : lignes compactes (Figma 5:219). */
+    .tm-recap-rows { display: grid; justify-items: start; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .tm-recap-rows a { display: inline-flex; flex-wrap: wrap; gap: var(--space-4); max-width: 100%; padding: var(--space-3) var(--space-3); border-radius: var(--radius-sm); background: var(--color-surface-section); color: var(--color-heading); font: var(--type-caption); text-decoration: none; }
+    .tm-recap-rows a:hover { background: var(--color-info-bg); }
+    .tm-recap-rows a:focus-visible { box-shadow: var(--focus-ring); }
+    .tm-recap-rows span:first-child { color: var(--color-text-muted); }
+    .tm-recap-rows span:last-child { overflow-wrap: anywhere; }
+
+    /* Confirmation (Figma 25:3). */
+    .tm-request__next { display: grid; gap: var(--space-3); padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-card); }
+    .tm-request__next h2 { margin: 0; }
+    .tm-request__next ul { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .tm-request__next li { display: flex; gap: var(--space-2); align-items: flex-start; font: var(--type-body-sm); }
+    .tm-request__next .tm-icon { color: var(--color-link); }
+
+    @media (min-width: 768px) {
+        .tm-request__split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 }

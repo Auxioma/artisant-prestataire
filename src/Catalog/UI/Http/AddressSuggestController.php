@@ -17,7 +17,7 @@ use Symfony\Component\RateLimiter\RateLimiterFactory;
 use Symfony\Component\Routing\Attribute\Route;
 
 /**
- * GET /api/adresses?q= — autocomplétion d'adresse (BAN) servie par la plateforme : la politique de sécurité du contenu
+ * GET /api/adresses?q=&insee= — autocomplétion d'adresse (BAN) servie par la plateforme : la politique de sécurité du contenu
  * n'autorise pas le navigateur à appeler l'API externe, et la saisie n'est jamais journalisée. Les coordonnées ne sont
  * pas renvoyées (seul le serveur s'en sert, au géocodage de l'adresse retenue).
  */
@@ -37,7 +37,8 @@ final class AddressSuggestController extends AbstractController
             return $this->noStore(new JsonResponse(['items' => [], 'error' => 'rate_limited'], Response::HTTP_TOO_MANY_REQUESTS));
         }
         try {
-            $addresses = $queries->ask(new SuggestAddresses($q, self::LIMIT));
+            $insee = $request->query->getString('insee');
+            $addresses = $queries->ask(new SuggestAddresses($q, self::LIMIT, 1 === preg_match('/^\d[\dAB]\d{3}$/', $insee) ? $insee : null));
         } catch (ExternalServiceUnavailable) {
             return $this->noStore(new JsonResponse(['items' => [], 'error' => 'unavailable'], Response::HTTP_SERVICE_UNAVAILABLE));
         }

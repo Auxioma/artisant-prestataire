@@ -35,6 +35,9 @@ final readonly class RequestDraftView
         public array $preferredSlots = [],
         public ?string $occupantStatus = null,
         public ?string $contactPreference = null,
+        public ?string $title = null,
+        public ?string $summary = null,
+        public ?string $workNature = null,
     ) {
     }
 
@@ -47,6 +50,7 @@ final readonly class RequestDraftView
             'answers' => $this->answers, 'description' => $this->description, 'budget_range' => $this->budgetRange,
             'address' => $this->address, 'timing' => $this->timing, 'desired_date' => $this->desiredDate,
             'preferred_slots' => $this->preferredSlots, 'occupant_status' => $this->occupantStatus, 'contact_preference' => $this->contactPreference,
+            'title' => $this->title, 'summary' => $this->summary, 'work_nature' => $this->workNature,
         ];
     }
 
@@ -85,6 +89,9 @@ final readonly class RequestDraftView
             array_values(array_filter(\is_array($payload['preferred_slots'] ?? null) ? $payload['preferred_slots'] : [], \is_string(...))),
             $string('occupant_status'),
             $string('contact_preference'),
+            $string('title'),
+            $string('summary'),
+            $string('work_nature'),
         );
     }
 

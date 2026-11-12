@@ -8,7 +8,7 @@ use App\Shared\Application\Bus\Command;
 
 /**
  * Questionnaires par métier en attendant le constructeur BO06 : `common` (questions posées pour tous les métiers,
- * placées en tête), `categories` (par slug de catégorie) et `jobs` (par slug de métier, remplace la catégorie).
+ * placées après celles du métier), `categories` (par slug de catégorie) et `jobs` (par slug de métier, remplace la catégorie).
  */
 final readonly class ImportQuestionnaires implements Command
 {

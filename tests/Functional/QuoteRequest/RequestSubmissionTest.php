@@ -62,13 +62,13 @@ final class RequestSubmissionTest extends WebTestCase
         self::assertSame('Choisissez une date à venir.', trim($crawler->filter('#desired_date_error')->text()));
         self::assertSame('Indiquez votre statut.', trim($crawler->filter('#occupant_status_error')->text()));
 
-        $this->client->request('POST', '/demande-de-devis/4', ['_token' => $this->token($crawler), 'action' => 'continue', 'address' => '12 rue fictive', 'timing' => 'week', 'preferred_slots' => ['morning', 'weekend', 'inconnu'], 'occupant_status' => 'owner']);
+        $this->client->request('POST', '/demande-de-devis/4', ['_token' => $this->token($crawler), 'action' => 'continue', 'address' => '12 rue fictive', 'timing' => 'week', 'preferred_slots' => ['morning', 'evening', 'inconnu'], 'occupant_status' => 'owner']);
         self::assertResponseRedirects('/demande-de-devis/5', 303);
         $stored = DbalValue::string($this->connection->fetchOne('SELECT payload::text FROM request.request_draft'));
         self::assertStringNotContainsString('Fictive', $stored, 'RG-022bis : adresse scellée au repos');
 
         $crawler = $this->client->followRedirect();
-        self::assertStringContainsString(self::EMAIL, $crawler->filter('.tm-request__summary')->text());
+        self::assertSame(self::EMAIL, $crawler->filter('#email')->attr('value'));
         $crawler = $this->client->request('POST', '/demande-de-devis/5', ['_token' => $this->token($crawler), 'action' => 'continue', 'contact_preference' => 'phone_after_acceptance']);
         self::assertResponseStatusCodeSame(422);
         self::assertStringContainsString('requis pour votre première demande', $crawler->filter('.tm-request__main')->text());
@@ -77,22 +77,25 @@ final class RequestSubmissionTest extends WebTestCase
 
         $crawler = $this->client->followRedirect();
         $recap = $crawler->filter('.tm-request__main')->text();
-        foreach (['Plombier', 'Dépannage', 'Fuite sous l’évier', '12 Rue Fictive 76600 Le Havre', 'Sous 1 semaine', 'Matin, Le week-end', 'Propriétaire', 'Téléphone autorisé', 'jusqu’à 3 devis gratuits', '1 fichier (evier.png)'] as $expected) {
+        foreach (['PrestationPlombier', 'ProjetDépannage', 'LocalisationLe Havre (76600)', 'BudgetNon précisé', 'PériodeSous 1 semaine', 'Photos1 fichier joint', 'jusqu’à 3 devis gratuits'] as $expected) {
             self::assertStringContainsString($expected, $recap);
         }
 
-        $crawler = $this->client->request('POST', '/demande-de-devis/6', ['_token' => $this->token($crawler), 'action' => 'send', 'cf-turnstile-response' => 'robot']);
+        $crawler = $this->client->request('POST', '/demande-de-devis/6', ['_token' => $this->token($crawler), 'action' => 'send', 'cf-turnstile-response' => AcceptingHumanVerification::HUMAN]);
+        self::assertResponseStatusCodeSame(422);
+        self::assertSame('Cochez cette case pour envoyer votre demande.', trim($crawler->filter('#confirm_error')->text()), 'Figma 5:219 : exactitude confirmée');
+        $crawler = $this->client->request('POST', '/demande-de-devis/6', ['_token' => $this->token($crawler), 'action' => 'send', 'confirm' => '1', 'cf-turnstile-response' => 'robot']);
         self::assertResponseStatusCodeSame(422);
         self::assertStringContainsString('vérification anti-robot a échoué', $crawler->filter('.tm-form-alert')->text());
 
-        $this->client->request('POST', '/demande-de-devis/6', ['_token' => $this->token($crawler), 'action' => 'send', 'cf-turnstile-response' => AcceptingHumanVerification::HUMAN]);
+        $this->client->request('POST', '/demande-de-devis/6', ['_token' => $this->token($crawler), 'action' => 'send', 'confirm' => '1', 'cf-turnstile-response' => AcceptingHumanVerification::HUMAN]);
         self::assertResponseRedirects();
         $location = (string) $this->client->getResponse()->headers->get('Location');
         self::assertSame(1, preg_match('~^/demande-de-devis/envoyee/([0-9a-f-]{36})$~', $location, $m));
         $requestId = $m[1];
 
         $row = $this->connection->fetchAssociative('SELECT status, client_id, contact_preference, occupant_status, preferred_slots::text AS slots, questionnaire_version, city_insee, postal_code FROM request.quote_request WHERE id = :id', ['id' => $requestId]);
-        self::assertSame(['status' => 'open', 'client_id' => self::CLIENT, 'contact_preference' => 'phone_after_acceptance', 'occupant_status' => 'owner', 'slots' => '["morning", "weekend"]', 'questionnaire_version' => null, 'city_insee' => '76351', 'postal_code' => '76600'], $row);
+        self::assertSame(['status' => 'open', 'client_id' => self::CLIENT, 'contact_preference' => 'phone_after_acceptance', 'occupant_status' => 'owner', 'slots' => '["morning", "evening"]', 'questionnaire_version' => null, 'city_insee' => '76351', 'postal_code' => '76600'], $row);
         self::assertStringNotContainsString('Fictive', DbalValue::string($this->connection->fetchOne('SELECT address_sealed FROM request.request_address WHERE request_id = :id', ['id' => $requestId])));
         self::assertTrue((bool) $this->connection->fetchOne('SELECT geocoded FROM request.request_address WHERE request_id = :id', ['id' => $requestId]));
         self::assertSame(1, DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM request.request_attachment WHERE request_id = :id', ['id' => $requestId])), 'photo reprise');
@@ -101,8 +104,8 @@ final class RequestSubmissionTest extends WebTestCase
 
         $crawler = $this->client->request('GET', $location);
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('h1', 'Votre demande a bien été envoyée');
-        self::assertMatchesRegularExpression('/Demande n° DM-\d{4}-\d{6} · Plombier/', $crawler->filter('.tm-request__sent-card')->text());
+        self::assertSelectorTextContains('h1', 'Votre demande a bien été envoyée.');
+        self::assertMatchesRegularExpression('/Demande : plombier Zone : Le Havre \(76600\) · Jusqu’à 3 devis possibles · Référence : DM-\d{4}-\d{6}/', $crawler->filter('.tm-request__sent-card')->text());
 
         $handler = self::getContainer()->get(SendRequestSubmitted::class);
         \assert($handler instanceof SendRequestSubmitted);
@@ -129,7 +132,7 @@ final class RequestSubmissionTest extends WebTestCase
         $this->login();
         $crawler = $this->client->request('GET', '/demande-de-devis/5');
         self::assertResponseIsSuccessful();
-        self::assertStringContainsString(self::EMAIL, $crawler->filter('.tm-request__summary')->text(), 'brouillon rattaché au compte');
+        self::assertSame(self::EMAIL, $crawler->filter('#email')->attr('value'), 'brouillon rattaché au compte');
         self::assertSame(self::CLIENT, DbalValue::string($this->connection->fetchOne('SELECT owner_user_id FROM request.request_draft')));
         self::assertNull($this->client->getCookieJar()->get(RequestTunnelController::COOKIE, '/demande-de-devis'), 'jeton du visiteur oublié');
     }
@@ -143,7 +146,7 @@ final class RequestSubmissionTest extends WebTestCase
         self::assertStringContainsString('Validez votre adresse e-mail', $crawler->filter('.tm-request__main')->text());
         $this->client->request('POST', '/demande-de-devis/5', ['_token' => $this->token($crawler), 'action' => 'continue', 'contact_preference' => 'messaging_only', 'phone' => '06 12 34 56 78']);
         $crawler = $this->client->followRedirect();
-        $crawler = $this->client->request('POST', '/demande-de-devis/6', ['_token' => $this->token($crawler), 'action' => 'send', 'cf-turnstile-response' => AcceptingHumanVerification::HUMAN]);
+        $crawler = $this->client->request('POST', '/demande-de-devis/6', ['_token' => $this->token($crawler), 'action' => 'send', 'confirm' => '1', 'cf-turnstile-response' => AcceptingHumanVerification::HUMAN]);
         self::assertResponseStatusCodeSame(422);
         self::assertStringContainsString('Validez d’abord votre adresse e-mail', $crawler->filter('.tm-form-alert')->text(), 'RG-040');
         self::assertSame(0, DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM request.quote_request')));

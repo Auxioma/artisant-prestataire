@@ -62,10 +62,10 @@ final class RequestTunnelTest extends WebTestCase
         self::assertResponseStatusCodeSame(422);
         self::assertSame(['Indiquez le type de professionnel recherché.', 'Choisissez le type de projet.'], $crawler->filter('.tm-field__error')->each(static fn (Crawler $n): string => trim($n->text())));
 
-        $this->client->request('POST', '/demande-de-devis/1', ['_token' => $this->token($crawler), 'action' => 'continue', 'job_id' => $this->jobId, 'project_type' => 'repair']);
+        $this->client->request('POST', '/demande-de-devis/1', ['_token' => $this->token($crawler), 'action' => 'continue', 'job_id' => $this->jobId, 'project_type' => 'repair', 'work_nature' => 'Réparation d’une fuite']);
         self::assertResponseRedirects('/demande-de-devis/2', 303);
         $crawler = $this->client->followRedirect();
-        self::assertStringContainsString('Questions spécifiques · Plombier', $crawler->filter('.tm-request__main')->text());
+        self::assertStringContainsString('Questions spécifiques · Plomberie', $crawler->filter('.tm-request__main')->text());
         self::assertCount(1, $crawler->filter('[data-key="etage"][hidden]'), 'étage masqué tant que « Appartement » n’est pas choisi');
 
         $form = ['_token' => $this->token($crawler), 'action' => 'continue', 'answers' => ['logement' => 'appartement', 'probleme' => 'fuite'], 'description' => 'Trop court'];
@@ -78,12 +78,15 @@ final class RequestTunnelTest extends WebTestCase
         $form['answers'] = ['logement' => 'maison', 'etage' => '3', 'probleme' => 'fuite'];
         $form['description'] = 'Fuite sous l’évier de la cuisine depuis ce matin (demande fictive).';
         $form['budget_range'] = '500_1000';
+        $form['title'] = 'Fuite sous l’évier (fictif)';
+        $form['summary'] = 'Remplacer le siphon et le joint.';
         $this->client->request('POST', '/demande-de-devis/2', $form);
         self::assertResponseRedirects('/demande-de-devis/3', 303);
         $draft = $this->draft();
         self::assertSame(3, $draft['step']);
         self::assertSame(['logement' => 'maison', 'probleme' => 'fuite'], $draft['payload']['answers'], 'étage d’une maison non conservé');
         self::assertSame(1, $draft['payload']['questionnaire_version']);
+        self::assertSame(['Réparation d’une fuite', 'Fuite sous l’évier (fictif)', 'Remplacer le siphon et le joint.'], [$draft['payload']['work_nature'], $draft['payload']['title'], $draft['payload']['summary']], 'champs Figma 5:2 et 5:57');
 
         $crawler = $this->client->request('GET', '/demande-de-devis/3');
         $this->client->request('POST', '/demande-de-devis/3', ['_token' => $this->token($crawler), 'action' => 'continue']);
@@ -103,7 +106,8 @@ final class RequestTunnelTest extends WebTestCase
 
         $this->client->request('GET', '/demande-de-devis/plombier');
         $crawler = $this->client->followRedirect();
-        self::assertSame($this->jobId, $crawler->filter('input[name="job_id"][checked]')->attr('value'), 'métier pré-rempli depuis l’URL');
+        self::assertSame($this->jobId, $crawler->filter('select[name="job_id"] option[selected]')->attr('value'), 'métier pré-rempli depuis l’URL');
+        self::assertSame('Plomberie', $crawler->filter('input[name="category"][checked]')->attr('value'), 'catégorie correspondante cochée (Figma 5:2)');
 
         $this->client->request('POST', '/demande-de-devis/brouillon', ['_token' => $this->token($crawler), 'step' => '1', 'project_type' => 'inconnu']);
         self::assertResponseIsSuccessful();

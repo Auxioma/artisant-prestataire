@@ -18,7 +18,7 @@ final readonly class AddressQueriesHandler implements QueryHandler
     public function __invoke(SuggestAddresses|GeocodeAddress $query): array|GeocodedAddress|null
     {
         return $query instanceof SuggestAddresses
-            ? $this->geocoder->suggest($query->query, $query->limit)
+            ? $this->geocoder->suggest($query->query, $query->limit, $query->inseeCode)
             : $this->geocoder->geocode($query->address, $query->inseeCode, $query->postalCode);
     }
 }

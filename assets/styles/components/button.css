@@ -34,6 +34,8 @@
 
     .tm-button--search { --_bg: var(--gradient-blue); --_bg-hover: var(--gradient-blue-hover); --_fg: var(--color-text-inverse); }
     .tm-button--secondary { --_bg: var(--color-surface); --_bg-hover: var(--color-info-bg); --_fg: var(--color-link); --_border: var(--secondary); }
+    /* Figma P11 « ← Étape précédente » : fond bleu clair, sans bordure. */
+    .tm-button--soft { --_bg: var(--color-info-bg); --_bg-hover: var(--background-light); --_fg: var(--color-link); }
     .tm-button--tertiary { --_bg: transparent; --_bg-hover: var(--color-info-bg); --_fg: var(--color-link); padding-inline: var(--space-3); }
     .tm-button--danger { --_bg: var(--tm-red); --_bg-hover: var(--tm-red-hover); --_fg: var(--color-text-inverse); }
     .tm-button--block { display: flex; width: 100%; }
