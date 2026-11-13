@@ -55,6 +55,7 @@ services:
             - '../src/Billing/Application/Port/VatNumberCheck.php'
             - '../src/Search/Application/Query/{Autocomplete,Suggestions}.php'
             - '../src/QuoteRequest/Application/Port/{RequestRiskInput,RequestRisk}.php'
+            - '../src/QuoteRequest/Application/Dispatch/{DispatchTarget,DispatchSummary,PendingDigest}.php'
             - '../src/QuoteRequest/Application/Admin/{AdminRequestRow,AdminRequestPage,AdminRequestView}.php'
             - '../src/QuoteRequest/Application/Moderation/ModerationRejected.php'
             - '../src/Shared/Application/Moderation/{ProfileReviewItem,ModerationDecisionRejected}.php'
@@ -139,6 +140,8 @@ services:
     App\QuoteRequest\Application\Port\RequestRiskAssessor: '@App\QuoteRequest\Application\Risk\RequestRiskScorer'
     App\QuoteRequest\Application\Admin\AdminRequestRows: '@App\QuoteRequest\Infrastructure\Admin\DbalAdminRequestRows'
     App\QuoteRequest\Application\Port\RequestRiskSignals: '@App\QuoteRequest\Infrastructure\Risk\DbalRequestRiskSignals'
+    App\QuoteRequest\Application\Port\DispatchTargets: '@App\QuoteRequest\Infrastructure\Dispatch\DbalDispatchTargets'
+    App\QuoteRequest\Application\Port\RequestDispatches: '@App\QuoteRequest\Infrastructure\Dispatch\DbalRequestDispatches'
 
     App\Catalog\Application\Questionnaire\QuestionnaireStore: '@App\Catalog\Infrastructure\Questionnaire\DbalQuestionnaireStore'
 

@@ -7,6 +7,9 @@
 {% macro status(value, statuses, variants) %}{% for s in statuses|filter(s => s.value == value) %}<twig:Badge variant="{{ variants[value] ?? 'neutral' }}">{{ s.adminLabel }}</twig:Badge>{% endfor %}{% endmacro %}
 {% macro risk(score, threshold) %}<span class="tm-risk{{ score >= threshold ? ' tm-risk--high' }}"><progress class="tm-risk__bar" max="100" value="{{ score }}" aria-hidden="true"></progress><strong>{{ score }}</strong><span class="tm-visually-hidden"> sur 100</span></span>{% endmacro %}
 
+{#- RG-062 : artisans ayant reçu la demande ; une demande publiée sans destinataire est signalée (zone non couverte). -#}
+{% macro dispatched(r) %}{% if r.status in ['draft', 'pending_moderation', 'rejected'] %}—{% elseif r.dispatched == 0 and r.status in ['open', 'full'] %}<twig:Badge variant="refused">Aucun artisan</twig:Badge>{% else %}{{ r.dispatched }}{% endif %}{% endmacro %}
+
 {% block body %}
     {% import _self as m %}
     {{ include('admin/requests/_head.html.twig', {tab: 'requests', total: page.kpis.all, quotes: page.kpis.quotes}) }}
@@ -62,7 +65,7 @@
                                 <th scope="row" class="tm-nowrap">{{ r.number }}</th>
                                 <td>{{ r.jobName }} · {{ r.cityName }}</td>
                                 <td>{{ m.status(r.status, statuses, status_variants) }}</td>
-                                <td title="Diffusion : lot 4 (T-404)">—</td>
+                                <td>{{ m.dispatched(r) }}</td>
                                 <td>{{ r.activeQuotes }}/{{ r.maxQuotes }}</td>
                                 <td>{{ m.risk(r.riskScore, threshold) }}</td>
                                 <td>{{ (sources|filter(s => s.value == r.source)|first).label ?? r.source }}</td>
@@ -97,6 +100,7 @@
                 <div><dt>Description</dt><dd class="tm-pre">{{ record.description }}</dd></div>
                 {% for a in record.answers %}<div><dt>{{ a.label }}</dt><dd>{{ a.value }}</dd></div>{% endfor %}
                 <div><dt>Photos</dt><dd>{{ record.attachments }}</dd></div>
+                <div><dt>Artisans notifiés</dt><dd>{{ m.dispatched(record.row) }}</dd></div>
                 {% if record.statusReason and record.row.status in ['rejected', 'cancelled'] %}<div><dt>Motif</dt><dd>{{ (reasons|filter(r => r.value == record.statusReason)|first).label ?? record.statusReason }}</dd></div>{% endif %}
             </dl>
             <h3 class="tm-card-title">Score de risque</h3>

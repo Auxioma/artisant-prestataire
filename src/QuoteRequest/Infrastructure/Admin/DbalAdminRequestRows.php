@@ -57,7 +57,7 @@ final readonly class DbalAdminRequestRows implements AdminRequestRows
         }
     }
 
-    private const array COLUMNS = ['r.id', 'r.number', 'j.name AS job_name', 'coalesce(c.name, r.postal_code) AS city_name', 'r.status', 'r.active_quotes_count', 'r.max_quotes', 'r.risk_score', 'r.source', 'r.submitted_at'];
+    private const array COLUMNS = ['r.id', 'r.number', 'j.name AS job_name', 'coalesce(c.name, r.postal_code) AS city_name', 'r.status', 'r.active_quotes_count', 'r.max_quotes', 'r.risk_score', 'r.source', 'r.submitted_at', '(SELECT count(*) FROM request.request_dispatch d WHERE d.request_id = r.id) AS dispatched'];
 
     private function base(): QueryBuilder
     {
@@ -123,6 +123,7 @@ final readonly class DbalAdminRequestRows implements AdminRequestRows
             DbalValue::int($row['risk_score']),
             DbalValue::string($row['source']),
             new \DateTimeImmutable(DbalValue::string($row['submitted_at'])),
+            DbalValue::int($row['dispatched']),
         );
     }
 }

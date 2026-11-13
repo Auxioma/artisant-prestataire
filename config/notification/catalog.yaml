@@ -143,10 +143,12 @@ notifications:
         label: "Nouvelle demande compatible (immédiat ou digest)"
         recipient: "Artisan"
         channels: [email, in_app, sms]
+        variables: [prenom, digest, numero, titre, metier, ville, delai, budget, nombre, liste, autres, lien]
     'E-31':
         label: "Demande directe reçue"
         recipient: "Artisan"
         channels: [email, in_app, sms]
+        variables: [prenom, digest, numero, titre, metier, ville, delai, budget, lien]
     'E-32':
         label: "Complément ajouté à une demande à laquelle il a répondu"
         recipient: "Artisan"

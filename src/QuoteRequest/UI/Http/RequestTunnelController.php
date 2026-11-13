@@ -28,6 +28,7 @@ use App\QuoteRequest\Application\Draft\RequestDraftView;
 use App\QuoteRequest\Application\Draft\SaveDraftStep;
 use App\QuoteRequest\Application\Draft\StartRequestDraft;
 use App\QuoteRequest\Application\Draft\SubmitRequestDraft;
+use App\QuoteRequest\Application\Port\DispatchTargets;
 use App\QuoteRequest\Domain\Request\BudgetRange;
 use App\QuoteRequest\Domain\Request\ContactPreference;
 use App\QuoteRequest\Domain\Request\OccupantStatus;
@@ -38,6 +39,7 @@ use App\QuoteRequest\Domain\Request\QuoteRequestRepository;
 use App\QuoteRequest\Domain\Request\RequestDetails;
 use App\QuoteRequest\Domain\Request\RequestRuleViolation;
 use App\QuoteRequest\Domain\Request\RequestSource;
+use App\QuoteRequest\Domain\Request\RequestStatus;
 use App\QuoteRequest\Domain\Request\Timing;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
@@ -191,7 +193,7 @@ final class RequestTunnelController extends AbstractController
 
     /** Confirmation d'envoi (P11.7) : n° de demande, prochaines étapes ; réservée au client propriétaire. */
     #[Route('/envoyee/{id}', name: 'request_sent', requirements: ['id' => self::UUID], methods: ['GET'], priority: 10)]
-    public function sent(string $id, QuoteRequestRepository $requests): Response
+    public function sent(string $id, QuoteRequestRepository $requests, DispatchTargets $targets): Response
     {
         $request = $requests->find(new QuoteRequestId($id));
         if (null === $request || $request->clientId() !== $this->currentUser->id()) {
@@ -211,6 +213,10 @@ final class RequestTunnelController extends AbstractController
             'average_response' => null,
             'job' => $this->job($request->jobId()),
             'target' => null === $request->targetArtisanId() ? null : $this->artisan($request->targetArtisanId()),
+            // CDC P11 « Zone non couverte » : envoi accepté, aucun artisan ne peut la recevoir (alerte BO04).
+            'low_coverage' => RequestStatus::Open === $request->status()
+                && (null === $request->targetArtisanId() || null === $targets->direct($request->targetArtisanId(), $request->clientId()))
+                && [] === $targets->eligible($request->jobId(), $request->cityInsee(), $request->clientId()),
         ]);
     }
 

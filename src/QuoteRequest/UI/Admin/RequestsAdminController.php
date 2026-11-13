@@ -113,9 +113,9 @@ final class RequestsAdminController extends AbstractController
                 return;
             }
             fwrite($out, "\u{FEFF}");
-            fputcsv($out, ['N°', 'Métier', 'Ville', 'Statut', 'Devis', 'Score anti-spam', 'Source', 'Envoyée le'], self::CSV_SEPARATOR, '"', '');
+            fputcsv($out, ['N°', 'Métier', 'Ville', 'Statut', 'Artisans notifiés', 'Devis', 'Score anti-spam', 'Source', 'Envoyée le'], self::CSV_SEPARATOR, '"', '');
             foreach ($rows->export($query) as $row) {
-                fputcsv($out, [$row->number, $row->jobName, $row->cityName, $statuses[$row->status] ?? $row->status, $row->activeQuotes.'/'.$row->maxQuotes, $row->riskScore, RequestSource::tryFrom($row->source)?->label() ?? $row->source, $row->submittedAt->setTimezone(new \DateTimeZone('Europe/Paris'))->format('d/m/Y H:i')], self::CSV_SEPARATOR, '"', '');
+                fputcsv($out, [$row->number, $row->jobName, $row->cityName, $statuses[$row->status] ?? $row->status, $row->dispatched, $row->activeQuotes.'/'.$row->maxQuotes, $row->riskScore, RequestSource::tryFrom($row->source)?->label() ?? $row->source, $row->submittedAt->setTimezone(new \DateTimeZone('Europe/Paris'))->format('d/m/Y H:i')], self::CSV_SEPARATOR, '"', '');
             }
             fclose($out);
         });

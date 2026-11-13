@@ -1,0 +1,12 @@
+<p>Bonjour {{ prenom }},</p>
+{% if digest %}
+<p>{{ nombre > 1 ? nombre ~ ' nouvelles demandes correspondent' : 'Une nouvelle demande correspond' }} à vos métiers et à votre zone d’intervention :</p>
+<p>{{ liste|nl2br }}</p>
+{% if autres > 0 %}<p class="muted">Et {{ autres }} autre{{ autres > 1 ? 's' }} dans votre espace.</p>{% endif %}
+{{ bouton(lien, 'Voir les demandes') }}
+{% else %}
+<p>Une nouvelle demande correspond à vos métiers et à votre zone d’intervention :</p>
+<p>{% if titre %}<strong>{{ titre }}</strong><br>{% endif %}{{ metier }} · {{ ville }}<br>Délai souhaité : {{ delai }}{% if budget %}<br>Budget indicatif : {{ budget }}{% endif %}</p>
+<p>Le nombre de devis par demande est limité : les premiers professionnels à répondre sont retenus.</p>
+{{ bouton(lien, 'Voir la demande') }}
+{% endif %}

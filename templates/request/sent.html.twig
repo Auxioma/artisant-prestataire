@@ -31,7 +31,7 @@
             <div class="tm-request__next">
                 <h2 class="tm-card-title">Demande n° {{ request.number }} · prochaines étapes</h2>
                 <ul>
-                    <li><twig:Icon name="check" size="xs" />Votre demande est diffusée aux artisans vérifiés de votre zone.</li>
+                    {% if low_coverage %}<li><twig:Icon name="info" size="xs" />Peu de professionnels couvrent votre zone : nous élargissons la recherche.</li>{% else %}<li><twig:Icon name="check" size="xs" />Votre demande est diffusée aux artisans vérifiés de votre zone.</li>{% endif %}
                     {% if average_response %}<li><twig:Icon name="clock" size="xs" />Délai moyen de première réponse : {{ average_response }}.</li>{% endif %}
                     <li><twig:Icon name="file" size="xs" />Vous recevez jusqu’à {{ request.maxQuotes }} devis : comparez-les dans votre espace.</li>
                     <li><twig:Icon name="upload" size="xs" />Ajoutez des photos manquantes pour des devis plus précis.</li>

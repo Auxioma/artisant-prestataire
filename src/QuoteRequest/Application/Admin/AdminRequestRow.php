@@ -17,6 +17,8 @@ final readonly class AdminRequestRow
         public int $riskScore,
         public string $source,
         public \DateTimeImmutable $submittedAt,
+        /** Artisans ayant reçu la demande (RG-062), alertes en attente de digest comprises. */
+        public int $dispatched = 0,
     ) {
     }
 }
