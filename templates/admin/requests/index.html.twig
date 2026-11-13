@@ -50,6 +50,11 @@
                             <select id="bulk_reason" name="reason" class="tm-admin-bulk__select"><option value="">Motif de refus…</option>{% for r in reasons %}<option value="{{ r.value }}">{{ r.label }}</option>{% endfor %}</select>
                             <button type="submit" class="tm-link-button tm-admin-danger" name="decision" value="reject">Refuser</button>
                         </span>
+                        <span class="tm-admin-bulk__reject">
+                            <label class="tm-visually-hidden" for="bulk_comment">Motif de la suppression (fraude)</label>
+                            <input id="bulk_comment" name="comment" class="tm-admin-bulk__select" maxlength="500" placeholder="Motif (fraude)…">
+                            <button type="submit" class="tm-link-button tm-admin-danger" name="decision" value="delete">Supprimer (restitution des crédits)</button>
+                        </span>
                     </div>
                 {% endif %}
                 <div class="tm-admin-table-wrap">
@@ -131,6 +136,15 @@
                     <input type="hidden" name="ids[]" value="{{ record.row.id }}">
                     <input type="hidden" name="back" value="{{ path('admin_requests', filters|merge({page: page.page})) }}">
                     <twig:Button type="submit" variant="secondary" name="decision" value="close">Clôturer la demande</twig:Button>
+                </form>
+                <form method="post" action="{{ path('admin_requests_decision') }}" class="tm-admin-decision" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <input type="hidden" name="ids[]" value="{{ record.row.id }}">
+                    <input type="hidden" name="back" value="{{ path('admin_requests', filters|merge({page: page.page})) }}">
+                    <h3 class="tm-card-title">Suppression pour fraude</h3>
+                    <p class="tm-caption">La demande est retirée, ses devis passent en « demande annulée » et le crédit de chaque artisan ayant répondu lui est restitué (Q2).</p>
+                    <div class="tm-field"><label class="tm-field__label" for="fraud_comment">Motif (obligatoire)</label><div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="fraud_comment" name="comment" rows="2" maxlength="500" required></textarea></div></div>
+                    <twig:Button type="submit" variant="danger" name="decision" value="delete">Supprimer (restitution des crédits)</twig:Button>
                 </form>
                 {% if record.row.status == 'open' %}
                 <form method="post" action="{{ path('admin_requests_dispatch', {id: record.row.id}) }}" class="tm-admin-dispatch" data-turbo="false">

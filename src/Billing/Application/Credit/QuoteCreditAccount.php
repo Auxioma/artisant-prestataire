@@ -22,4 +22,10 @@ interface QuoteCreditAccount
      * @param list<CreditBucket> $order
      */
     public function debitForQuote(string $entryId, string $artisanId, string $quoteId, array $order, \DateTimeImmutable $at): CreditBucket;
+
+    /**
+     * Q2 — restitue le crédit débité pour ce devis (demande supprimée pour fraude), dans le compartiment d'origine ;
+     * idempotent (index unique du registre). Renvoie false s'il n'y avait aucun débit ou si la restitution est déjà faite.
+     */
+    public function refundQuote(string $entryId, string $artisanId, string $quoteId, \DateTimeImmutable $at): bool;
 }

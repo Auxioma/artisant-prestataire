@@ -17,10 +17,14 @@ use App\Shared\Domain\Audit\AuditRecord;
 use App\Shared\Domain\Identifier\IdGenerator;
 use App\Shared\Domain\Time\Clock;
 
-/** BO04.1 — valider / refuser / clôturer, demande par demande (verrou `FOR UPDATE`), tout ou rien sur la sélection. */
+/**
+ * BO04.1 — valider / refuser / clôturer / supprimer pour fraude (motif obligatoire, Q2), demande par demande (verrou
+ * `FOR UPDATE`), tout ou rien sur la sélection.
+ */
 final readonly class ModerateQuoteRequestsHandler implements CommandHandler
 {
     private const string CLOSE_REASON = 'closed_by_admin';
+    public const string FRAUD_REASON = 'deleted_fraud';
     private const int COMMENT_MAX = 500;
     private const int SELECTION_MAX = 100;
 
@@ -44,6 +48,9 @@ final readonly class ModerateQuoteRequestsHandler implements CommandHandler
             $reason = RejectionReason::tryFrom($command->reason ?? '') ?? throw new ModerationRejected('Choisissez un motif de refus.');
         }
         $comment = mb_substr(trim($command->comment ?? ''), 0, self::COMMENT_MAX);
+        if (ModerateQuoteRequests::DELETE === $command->decision && '' === $comment) {
+            throw new ModerationRejected('Indiquez le motif de la suppression (fraude constatée).');
+        }
         $now = $this->clock->now();
 
         foreach (array_values(array_unique($command->requestIds)) as $id) {
@@ -56,6 +63,7 @@ final readonly class ModerateQuoteRequestsHandler implements CommandHandler
                     ModerateQuoteRequests::APPROVE => $request->approve($this->settings->int(SettingKey::RequestsExpiryDays), $now),
                     ModerateQuoteRequests::REJECT => $request->reject((string) $reason?->value, $now),
                     ModerateQuoteRequests::CLOSE => $request->cancel(self::CLOSE_REASON, $now),
+                    ModerateQuoteRequests::DELETE => $request->cancel(self::FRAUD_REASON, $now),
                     default => throw new ModerationRejected('Décision inconnue.'),
                 };
             } catch (RequestRuleViolation $e) {

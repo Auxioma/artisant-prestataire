@@ -15,6 +15,8 @@ final readonly class ModerateQuoteRequests implements Command
     public const string APPROVE = 'approve';
     public const string REJECT = 'reject';
     public const string CLOSE = 'close';
+    /** BO04 / Q2 — suppression pour fraude : demande retirée, devis annulés, crédits des artisans restitués (module Quote). */
+    public const string DELETE = 'delete';
 
     /** @param list<string> $requestIds */
     public function __construct(

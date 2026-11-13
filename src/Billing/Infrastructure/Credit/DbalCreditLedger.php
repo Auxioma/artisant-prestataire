@@ -113,4 +113,34 @@ final readonly class DbalCreditLedger implements CreditLedger, QuoteCreditAccoun
 
         throw new InsufficientCredits('Aucun crédit disponible.');
     }
+
+    public function refundQuote(string $entryId, string $artisanId, string $quoteId, \DateTimeImmutable $at): bool
+    {
+        $this->lockForQuote($artisanId);
+        $bucket = $this->connection->fetchOne(
+            "SELECT bucket FROM billing.credit_ledger_entry WHERE type = 'quote_debit' AND reference_type = 'quote' AND reference_id = :q AND artisan_id = :a",
+            ['q' => $quoteId, 'a' => $artisanId],
+        );
+        $bucket = false === $bucket ? null : CreditBucket::tryFrom(DbalValue::string($bucket));
+        if (null === $bucket) {
+            return false;
+        }
+        $inserted = (int) $this->connection->executeStatement(
+            <<<'SQL'
+                INSERT INTO billing.credit_ledger_entry (id, artisan_id, type, bucket, amount, reference_type, reference_id, created_at)
+                VALUES (:id, :artisan, :type, :bucket, 1, 'quote', :quote, :at)
+                ON CONFLICT (type, reference_type, reference_id) WHERE type IN ('quote_debit', 'refund', 'period_grant', 'expiry') DO NOTHING
+                SQL,
+            ['id' => $entryId, 'artisan' => $artisanId, 'type' => LedgerEntryType::Refund->value, 'bucket' => $bucket->value, 'quote' => $quoteId, 'at' => $at->format(\DATE_ATOM)],
+        );
+        if (1 !== $inserted) {
+            return false;
+        }
+        $this->connection->executeStatement(
+            \sprintf('UPDATE billing.credit_balance SET %1$s = %1$s + 1, updated_at = :at WHERE artisan_id = :artisan', $bucket->value),
+            ['artisan' => $artisanId, 'at' => $at->format(\DATE_ATOM)],
+        );
+
+        return true;
+    }
 }

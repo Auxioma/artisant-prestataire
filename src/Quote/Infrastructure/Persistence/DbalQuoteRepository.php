@@ -66,13 +66,14 @@ final readonly class DbalQuoteRepository implements QuoteRepository
         ));
     }
 
-    public function sentForRequest(string $requestId): array
+    public function sentForRequest(string $requestId, bool $withWithdrawn = false): array
     {
         if (1 !== preg_match(self::UUID, $requestId)) {
             return [];
         }
         $quotes = [];
-        foreach ($this->connection->fetchFirstColumn("SELECT id FROM quote.quote WHERE request_id = :r AND status NOT IN ('draft', 'withdrawn') ORDER BY sent_at, id", ['r' => $requestId]) as $id) {
+        $excluded = $withWithdrawn ? "('draft')" : "('draft', 'withdrawn')";
+        foreach ($this->connection->fetchFirstColumn('SELECT id FROM quote.quote WHERE request_id = :r AND status NOT IN '.$excluded.' ORDER BY sent_at, id', ['r' => $requestId]) as $id) {
             $quote = $this->find(new QuoteId(DbalValue::string($id)));
             if (null !== $quote) {
                 $quotes[] = $quote;

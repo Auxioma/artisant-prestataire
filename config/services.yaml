@@ -63,6 +63,7 @@ services:
             - '../src/Quote/Application/Pdf/QuotePdfDocument.php'
             - '../src/Quote/Application/Revision/RevisionPreview.php'
             - '../src/Quote/Application/Pro/{ProQuoteFilter,ProQuoteRow,ProQuotesPage,ProDashboardView}.php'
+            - '../src/Quote/Application/Admin/{AdminQuoteRow,AdminQuotesPage}.php'
             - '../src/Quote/Application/Client/{ClientQuoteCard,ClientQuotes}.php'
             - '../src/ArtisanProfile/Application/Account/ArtisanAccount.php'
             - '../src/ArtisanProfile/Application/Quote/QuoteIssuerView.php'
@@ -142,6 +143,7 @@ services:
     # Ports du module Billing
     App\Billing\Application\Credit\CreditLedger: '@App\Billing\Infrastructure\Credit\DbalCreditLedger'
     App\Billing\Application\Credit\QuoteCreditAccount: '@App\Billing\Infrastructure\Credit\DbalCreditLedger'
+    App\Quote\Application\Admin\AdminQuoteReader: '@App\Quote\Infrastructure\Admin\DbalAdminQuoteReader'
     App\Quote\Application\Pro\ProQuoteReader: '@App\Quote\Infrastructure\Pro\DbalProQuoteReader'
     App\Billing\Application\Alert\CreditAlertLog: '@App\Billing\Infrastructure\Alert\DbalCreditAlertLog'
     App\Billing\Application\Alert\CreditAlertMailer: '@App\Billing\Infrastructure\Alert\NotificationCreditAlertMailer'

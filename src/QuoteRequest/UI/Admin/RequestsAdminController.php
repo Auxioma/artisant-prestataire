@@ -93,6 +93,7 @@ final class RequestsAdminController extends AbstractController
             $this->addFlash('success', match ($decision) {
                 ModerateQuoteRequests::APPROVE => 1 === $count ? 'Demande validée : elle est publiée.' : \sprintf('%d demandes validées : elles sont publiées.', $count),
                 ModerateQuoteRequests::REJECT => 1 === $count ? 'Demande refusée : le client est prévenu (E-10b).' : \sprintf('%d demandes refusées : les clients sont prévenus (E-10b).', $count),
+                ModerateQuoteRequests::DELETE => 1 === $count ? 'Demande supprimée pour fraude : les crédits des artisans sont restitués.' : \sprintf('%d demandes supprimées pour fraude : les crédits des artisans sont restitués.', $count),
                 default => 1 === $count ? 'Demande clôturée.' : \sprintf('%d demandes clôturées.', $count),
             });
         } catch (ModerationRejected $e) {
@@ -153,17 +154,6 @@ final class RequestsAdminController extends AbstractController
         $response->headers->set('Content-Disposition', 'attachment; filename="demandes.csv"');
 
         return $response;
-    }
-
-    /** BO04.2 — devis : écran livré avec le lot Devis (lot 5) ; l'onglet en indique le nombre. */
-    #[Route('/devis', name: 'admin_quotes', methods: ['GET'])]
-    #[IsGranted('admin.requests.view')]
-    public function quotes(): Response
-    {
-        $page = $this->queries->ask(new AdminRequestList(perPage: 1));
-        \assert($page instanceof AdminRequestPage);
-
-        return $this->render('admin/requests/quotes.html.twig', ['page' => $page]);
     }
 
     /** @return array{q: string, statut: string, metier: string, departement: string, source: string, score: string} */
