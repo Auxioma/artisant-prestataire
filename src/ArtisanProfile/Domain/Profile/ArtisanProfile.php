@@ -530,6 +530,11 @@ final class ArtisanProfile extends AggregateRoot
         return $this->companyCreatedOn;
     }
 
+    public function hqStreet(): ?string
+    {
+        return $this->hqStreet;
+    }
+
     public function hqPostalCode(): ?string
     {
         return $this->hqPostalCode;

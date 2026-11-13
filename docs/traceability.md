@@ -36,6 +36,7 @@
 | RG-101 | Contrôle atomique à l'envoi | Quote / Billing | | concurrence | T-504 | ⬜ |
 | RG-104 | Ordre de consommation | Billing | | | T-504 | ⬜ |
 | RG-107 | Ledger append-only | Billing | | | T-211 | ⬜ |
+| RG-120 | Mentions obligatoires contrôlées avant envoi | Quote | `MandatoryMentionsChecker`, `MandatoryMention`, `IssuerFacts`, paramètre `quotes.mandatory_mentions`, `QuoteEditorHandler` | `QuoteFormAndMentionsTest`, `QuoteEditorTest` | T-502a | 🟨 (blocage à l'envoi : T-504 ; écran : T-502b) |
 | RG-121 | Cycle de statuts du devis | Quote | `QuoteStatus` (TRANSITIONS, ACTIVE), `Quote` (send, markViewed, accept, refuse, markNotSelected, expire, withdraw, cancelWithRequest), `QuoteTotals`, `DbalQuoteRepository` | `QuoteTest`, `QuoteTotalsTest`, `QuoteRepositoryTest` | T-501 | 🟨 (relance unique : T-506) |
 | RG-041 (partiel) | Format et clé de Luhn du SIRET | Shared | `Shared\Domain\ValueObject\Siret` | `SiretTest` | T-101 | 🟨 (unicité et Sirene : T-207) |
 | RG-022 (partiel) | Point géographique = centroïde de commune | Shared | `Shared\Domain\ValueObject\{GeoPoint, InseeCode}` | `GeoAndInseeTest` | T-101 | 🟨 (PostGIS : T-113) |

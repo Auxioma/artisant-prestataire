@@ -45,6 +45,7 @@ enum SettingKey: string
     case QuotesCancelAcceptanceMinHoursBeforeAppointment = 'quotes.cancel_acceptance_min_hours_before_appointment';
     case QuotesReminderAfterDays = 'quotes.reminder_after_days';
     case QuotesReminderMax = 'quotes.reminder_max';
+    case QuotesMandatoryMentions = 'quotes.mandatory_mentions';
 
     // Demandes
     case RequestsExpiryDays = 'requests.expiry_days';
@@ -211,6 +212,7 @@ enum SettingKey: string
             self::QuotesResendAfterWithdraw => $d(T::Boolean, false, 'Renvoi d\'un devis après retrait (P-08)', proposed: true),
             self::QuotesCancelAcceptanceMinHoursBeforeAppointment => $d(T::Integer, 48, 'Annulation d\'acceptation : délai minimum avant RDV (h)', 0, 720, proposed: true),
             self::QuotesReminderAfterDays => $d(T::Integer, 3, 'Relance possible après N jours sans consultation', 1, 60, proposed: true),
+            self::QuotesMandatoryMentions => $d(T::StringList, ['company_identity', 'date_validity', 'detailed_breakdown', 'insurance', 'travel_costs', 'free_quote'], 'Mentions obligatoires contrôlées avant envoi d\'un devis (RG-120)', choices: ['company_identity', 'date_validity', 'detailed_breakdown', 'insurance', 'travel_costs', 'free_quote']),
             self::QuotesReminderMax => $d(T::Integer, 1, 'Nombre de relances gratuites', 0, 5, proposed: true),
 
             self::RequestsExpiryDays => $d(T::Integer, 30, 'Expiration d\'une demande (j)', 1, 365),
