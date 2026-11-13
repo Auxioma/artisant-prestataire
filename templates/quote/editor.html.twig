@@ -7,7 +7,7 @@
     Écarts : P-79, P-82, P-84.
 -#}
 {% extends 'pro/_space.html.twig' %}
-{% set space_active = 'requests' %}
+{% set space_active = 'quotes' %}
 {% block title %}{{ sent ? 'Devis ' ~ view.number : (revising ? 'Modifier le devis ' ~ view.number : 'Créer un devis') }} — Espace pro — TrouveMoi{% endblock %}
 {% set c = view.content %}
 {% set p = posted %}

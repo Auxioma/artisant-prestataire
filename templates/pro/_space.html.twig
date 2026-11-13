@@ -9,7 +9,7 @@
 {% set space_items = [
     {route: 'pro_dashboard', label: 'Tableau de bord', icon: 'home'},
     {route: 'pro_requests', label: 'Mes demandes', icon: 'file', key: 'requests', count: tm_pro_unread_requests()},
-    {route: 'pro_quotes', label: 'Mes devis & chantiers', icon: 'fileEuro'},
+    {route: 'pro_quotes', label: 'Mes devis & chantiers', icon: 'fileEuro', key: 'quotes'},
     {route: 'pro_clients', label: 'Mes clients', icon: 'users'},
     {route: 'pro_invoices', label: 'Mes factures', icon: 'receipt'},
     {route: 'pro_appointments', label: 'Mes rendez-vous', icon: 'calendar'},
@@ -85,7 +85,7 @@
     {% set tabs = [
         {route: 'pro_dashboard', label: 'Accueil', icon: 'home'},
         {route: 'pro_requests', label: 'Demandes', icon: 'file', key: 'requests'},
-        {route: 'pro_quotes', label: 'Devis', icon: 'briefcase'},
+        {route: 'pro_quotes', label: 'Devis', icon: 'briefcase', key: 'quotes'},
         {route: 'pro_messages', label: 'Messages', icon: 'msg'},
     ] %}
     <nav class="tm-space__tabs" aria-label="Espace professionnel (raccourcis)">

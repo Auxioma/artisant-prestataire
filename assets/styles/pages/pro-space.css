@@ -132,6 +132,36 @@
         .tm-pro-request__actions { grid-column: 5; grid-row: 1; padding-left: 10px; border-left: 1px solid var(--tm-line); }
     }
 
+    /* PR05 — Mes devis & chantiers (Figma 167:1749) */
+    .tm-pro-tabsbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .tm-pro-tabs { display: flex; flex: 1 1 20rem; gap: 6px; }
+    .tm-pro-tabs a { display: inline-flex; flex: 1; align-items: center; justify-content: center; gap: 7px; height: 38px; padding-inline: 16px; border-radius: 10px; background: var(--tm-blue-soft); color: var(--tm-navy); font-size: 13px; line-height: 18px; font-weight: var(--font-weight-medium); text-decoration: none; }
+    .tm-pro-tabs a[aria-current="page"] { background: var(--tm-navy); color: var(--color-text-inverse); font-weight: var(--font-weight-semibold); }
+    .tm-pro-tabs span { font-weight: var(--font-weight-medium); }
+    .tm-pro-quote__head { justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .tm-pro-quote__job { display: inline-flex; align-items: center; gap: 5px; font-weight: var(--font-weight-semibold); }
+    .tm-pro-quote__amount { color: var(--tm-navy); }
+    .tm-pro-state.is-sent, .tm-pro-state.is-ok { background: var(--tm-mint); color: var(--tm-green); }
+    .tm-pro-steps { display: flex; margin: 2px 0 0; padding: 0; list-style: none; }
+    .tm-pro-steps li { display: flex; flex: 0 1 62px; flex-direction: column; align-items: center; gap: 3px; min-width: 0; font-size: 11px; line-height: 15px; color: var(--tm-muted); text-align: center; }
+    .tm-pro-steps li > span { display: grid; place-items: center; width: 16px; height: 16px; border: 1px solid color-mix(in srgb, var(--tm-muted) 50%, var(--color-surface)); border-radius: 8px; background: var(--color-surface); color: var(--color-text-inverse); }
+    .tm-pro-steps li > span svg { width: 10px; height: 10px; }
+    .tm-pro-steps li.is-done > span { border-color: var(--tm-success); background: var(--tm-success); }
+    .tm-pro-steps li.is-current { font-weight: var(--font-weight-bold); color: var(--tm-navy); }
+    .tm-pro-steps li.is-current > span { border: 3px solid var(--tm-success); }
+    .tm-pro-figure.is-pending { background: var(--tm-orange-ink); }
+    .tm-pro-figure.is-ok { background: var(--tm-green); }
+    .tm-pro-shortcuts { display: grid; gap: 16px; }
+    .tm-pro-shortcuts h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 18px; line-height: 26px; color: var(--tm-navy); }
+    .tm-pro-shortcuts h2 svg { color: var(--tm-blue); }
+    .tm-pro-shortcuts ul { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .tm-pro-shortcuts a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 10px; background: var(--tm-orange-soft); color: var(--tm-navy); font-size: 12px; line-height: 16px; font-weight: var(--font-weight-semibold); text-decoration: none; }
+    .tm-pro-shortcuts a svg { color: var(--tm-orange); }
+    @media (min-width: 768px) {
+        .tm-pro-quote { grid-template-columns: 96px 180px minmax(0, 1fr) 156px; }
+        .tm-pro-quote .tm-pro-request__actions { grid-column: 4; }
+    }
+
     /* Colonne de synthèse (334:17869, 334:17901) */
     .tm-pro-requests__side { display: grid; gap: 14px; }
     .tm-pro-card { display: grid; gap: 10px; padding: 18px; border: 1px solid var(--tm-line); border-radius: 14px; background: var(--color-surface); box-shadow: var(--shadow-card); }

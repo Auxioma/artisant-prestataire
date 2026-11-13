@@ -1,0 +1,181 @@
+{#-
+    PR05 — Mes devis & chantiers (Figma 167:1749) : en-tête, onglets Devis / Chantiers, « Créer un devis », recherche,
+    filtres (statut, date, métier), cartes (photo, demande, client et commune RG-112, date, métier, statut, montant,
+    avancement Demande reçue → Terminé, actions), « en chiffres », « Conseil TrouveMoi », accès rapides ; export CSV.
+    Écarts (agenda, équipe, messagerie, planification, factures : lots suivants) : P-89.
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'quotes' %}
+{% block title %}Mes devis & chantiers — Espace pro — TrouveMoi{% endblock %}
+{% set badges = {
+    draft: {icon: 'file', class: 'is-todo'},
+    sent: {icon: 'send', class: 'is-sent'},
+    viewed: {icon: 'eye', class: 'is-sent'},
+    accepted: {icon: 'check', class: 'is-ok'},
+    refused: {icon: 'x', class: 'is-muted'},
+    not_selected: {icon: 'x', class: 'is-muted'},
+    expired: {icon: 'hourglass', class: 'is-muted'},
+    request_cancelled: {icon: 'x', class: 'is-muted'},
+} %}
+{% set steps = ['Demande reçue', 'Devis envoyé', 'Devis accepté', 'Chantier en cours', 'Terminé'] %}
+{% macro pill(name, icon, label, options, value, all) %}
+    <label class="tm-pro-filter{{ value != '' ? ' is-set' }}">
+        <twig:Icon name="{{ icon }}" size="sm" class="tm-icon--inherit" />
+        <span class="tm-visually-hidden">{{ label }}</span>
+        <select name="{{ name }}" data-action="change->autosubmit#submit">
+            <option value="">{{ all }}</option>
+            {% for key, text in options %}<option value="{{ key }}"{{ value == key ? ' selected' }}>{{ text }}</option>{% endfor %}
+        </select>
+        <twig:Icon name="chevD" size="xs" class="tm-icon--inherit tm-pro-filter__chev" />
+    </label>
+{% endmacro %}
+{% import _self as m %}
+{% block space_content %}
+<div class="tm-pro-requests">
+    <section class="tm-pro-requests__main" aria-labelledby="pr05-title">
+        <header class="tm-pro-head">
+            <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="fileEuro" class="tm-icon--inherit" /></span>
+            <div>
+                <h1 id="pr05-title">Mes devis &amp; chantiers</h1>
+                <p>Gérez vos devis, vos interventions et le suivi de vos chantiers.</p>
+            </div>
+        </header>
+
+        {% if page is null %}
+            <twig:EmptyState title="Vos devis apparaîtront ici" text="Répondez aux demandes de votre zone depuis « Mes demandes » pour envoyer vos premiers devis." icon="fileEuro">
+                <twig:Button href="{{ path('pro_requests') }}" variant="secondary">Voir mes demandes</twig:Button>
+            </twig:EmptyState>
+        {% else %}
+            <div class="tm-pro-tabsbar">
+                <nav class="tm-pro-tabs" aria-label="Devis ou chantiers">
+                    <a href="{{ path('pro_quotes', active|filter((v, k) => k != 'onglet' and k != 'statut')) }}"{% if filter.tab == 'devis' %} aria-current="page"{% endif %}><twig:Icon name="file" size="sm" class="tm-icon--inherit" />Devis <span>({{ page.tabs.devis }})</span></a>
+                    <a href="{{ path('pro_quotes', active|filter((v, k) => k != 'statut')|merge({onglet: 'chantiers'})) }}"{% if filter.tab == 'chantiers' %} aria-current="page"{% endif %}><twig:Icon name="home" size="sm" class="tm-icon--inherit" />Chantiers <span>({{ page.tabs.chantiers }})</span></a>
+                </nav>
+                <twig:Button href="{{ path('pro_requests') }}" icon="plus" iconPosition="start">Créer un devis</twig:Button>
+            </div>
+
+            <form class="tm-pro-filters" method="get" action="{{ path('pro_quotes') }}" data-controller="autosubmit" role="search">
+                {% if filter.tab == 'chantiers' %}<input type="hidden" name="onglet" value="chantiers">{% endif %}
+                <div class="tm-pro-filters__search">
+                    <label class="tm-pro-search">
+                        <twig:Icon name="search" size="sm" class="tm-icon--inherit" />
+                        <span class="tm-visually-hidden">Rechercher un devis</span>
+                        <input type="search" name="q" value="{{ filter.q }}" maxlength="80" placeholder="Rechercher un devis, un chantier, un client, une ville…">
+                    </label>
+                    <button type="submit" class="tm-visually-hidden">Rechercher</button>
+                </div>
+                <div class="tm-pro-filters__pills">
+                    {% if filter.tab == 'devis' %}
+                        {% set status_options = {} %}{% for s in statuses %}{% set status_options = status_options|merge({(s.value): s.label()}) %}{% endfor %}
+                        {{ m.pill('statut', 'layers', 'Statut', status_options, filter.status ?? '', 'Statut') }}
+                    {% endif %}
+                    {{ m.pill('periode', 'calendar', 'Date', periods, filter.days ? filter.days ~ '' : '', 'Date') }}
+                    {% if page.jobs|length > 1 %}{{ m.pill('metier', 'tag', 'Type de prestation', page.jobs, filter.jobId ?? '', 'Type de prestation') }}{% endif %}
+                    {% if active|filter((v, k) => k != 'onglet') is not empty %}
+                        <a class="tm-pro-reset" href="{{ path('pro_quotes', filter.tab == 'chantiers' ? {onglet: 'chantiers'} : {}) }}"><twig:Icon name="refresh" size="xs" class="tm-icon--inherit" />Réinitialiser</a>
+                    {% endif %}
+                    {% if page.total > 0 %}
+                        <a class="tm-pro-reset" href="{{ path('pro_quotes_export', active) }}"><twig:Icon name="upload" size="xs" class="tm-icon--inherit" />Exporter (CSV)</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            {% if page.items is empty %}
+                {% if active|filter((v, k) => k != 'onglet') is not empty %}
+                    <twig:EmptyState title="Aucun devis ne correspond à ces critères" text="Modifiez ou réinitialisez les filtres." icon="search">
+                        <twig:Button href="{{ path('pro_quotes') }}" variant="secondary">Réinitialiser les filtres</twig:Button>
+                    </twig:EmptyState>
+                {% elseif filter.tab == 'chantiers' %}
+                    <twig:EmptyState title="Aucun chantier pour le moment" text="Vos devis acceptés par les clients apparaîtront ici." icon="home" />
+                {% else %}
+                    <twig:EmptyState title="Aucun devis pour le moment" text="Répondez aux demandes de votre zone pour envoyer vos premiers devis." icon="fileEuro">
+                        <twig:Button href="{{ path('pro_requests') }}" variant="secondary">Voir mes demandes</twig:Button>
+                    </twig:EmptyState>
+                {% endif %}
+            {% else %}
+                <ul class="tm-pro-request-list" aria-label="Devis ({{ page.total }})">
+                    {% for q in page.items %}
+                        {% set badge = badges[q.status.value] ?? {icon: 'info', class: 'is-muted'} %}
+                        {% set stage = q.stage() %}
+                        <li class="tm-pro-request tm-pro-quote{{ badge.class == 'is-muted' ? ' is-muted' }}">
+                            <div class="tm-pro-request__photo">
+                                {% if q.photoId %}
+                                    <img src="{{ path('pro_request_photo', {id: q.requestId, file: q.photoId}) }}" alt="" width="96" height="76" loading="lazy">
+                                {% else %}
+                                    <twig:Icon name="wrench" class="tm-icon--inherit" />
+                                {% endif %}
+                            </div>
+                            <div class="tm-pro-request__who">
+                                <h2 class="tm-pro-request__title"><a href="{{ path('pro_quote_new', {demande: q.requestId}) }}">{{ q.title }}</a></h2>
+                                {% if q.clientFirstName %}<p class="tm-pro-request__client"><twig:Icon name="user" size="xs" class="tm-icon--inherit" />{{ q.clientFirstName }}</p>{% endif %}
+                                <p><twig:Icon name="pin" size="xs" class="tm-icon--inherit" />{{ q.city }}</p>
+                                <p><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" /><time datetime="{{ (q.sentAt ?? q.updatedAt)|date('c') }}">{{ (q.sentAt ?? q.updatedAt)|date('d/m/Y', 'Europe/Paris') }}</time></p>
+                            </div>
+                            <div class="tm-pro-request__what">
+                                <p class="tm-pro-quote__head">
+                                    <span class="tm-pro-quote__job"><twig:Icon name="layers" size="xs" class="tm-icon--inherit" />{{ q.jobName }}</span>
+                                    <span class="tm-pro-state {{ badge.class }}"><twig:Icon name="{{ badge.icon }}" size="xs" class="tm-icon--inherit" />{{ q.status.label() }}</span>
+                                </p>
+                                <p class="tm-pro-quote__amount">{{ q.number ?? 'Brouillon' }} · {{ q.ttcCents|tm_money }} TTC{{ q.version > 1 ? ' · v' ~ q.version }}{{ q.budget ? ' · Budget estimé : ' ~ q.budget }}</p>
+                                <ol class="tm-pro-steps" aria-label="Avancement : {{ steps[stage - 1] }}">
+                                    {% for label in steps %}
+                                        {% set n = loop.index %}
+                                        <li class="{{ n < stage ? 'is-done' : (n == stage ? 'is-current' : '') }}"{% if n == stage %} aria-current="step"{% endif %}><span aria-hidden="true">{% if n < stage %}<twig:Icon name="check" size="xs" class="tm-icon--inherit" />{% endif %}</span>{{ label }}</li>
+                                    {% endfor %}
+                                </ol>
+                            </div>
+                            <div class="tm-pro-request__actions">
+                                <twig:Button href="{{ path('pro_quote_new', {demande: q.requestId}) }}" variant="secondary" icon="eye" iconPosition="start">Voir</twig:Button>
+                                {% if q.status.value == 'accepted' %}
+                                    <twig:Button href="{{ path('pro_request', {id: q.requestId}) }}#contact-title" variant="secondary" icon="phone" iconPosition="start">Contacter le client</twig:Button>
+                                {% endif %}
+                                {% if q.status.isRevisable() %}
+                                    <twig:Button href="{{ path('pro_quote_new', {demande: q.requestId, reviser: 1}) }}" variant="secondary" icon="file" iconPosition="start">Modifier le devis</twig:Button>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% if page.pages() > 1 %}
+                    <nav class="tm-directory__pagination" aria-label="Pagination">
+                        <ul>
+                            {% for n in 1..page.pages() %}
+                                <li>{% if n == page.page %}<span aria-current="page">{{ n }}</span>{% else %}<a href="{{ path('pro_quotes', active|merge({page: n})) }}">{{ n }}</a>{% endif %}</li>
+                            {% endfor %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% endif %}
+
+            <section class="tm-pro-shortcuts" aria-labelledby="raccourcis-title">
+                <h2 id="raccourcis-title"><twig:Icon name="rocket" class="tm-icon--inherit" />Accès rapides</h2>
+                <ul>
+                    <li><a href="{{ path('pro_requests') }}"><twig:Icon name="plus" size="sm" class="tm-icon--inherit" />Créer un devis</a></li>
+                    {% if tm_route_exists('pro_profile') %}<li><a href="{{ path('pro_profile') }}"><twig:Icon name="user" size="sm" class="tm-icon--inherit" />Mon profil pro</a></li>{% endif %}
+                </ul>
+            </section>
+        {% endif %}
+    </section>
+
+    {% if page %}
+    <aside class="tm-pro-requests__side" aria-label="Synthèse">
+        <section class="tm-pro-card" aria-labelledby="chiffres-title">
+            <h2 id="chiffres-title" class="tm-pro-card__title"><twig:Icon name="bars" class="tm-icon--inherit" />Mes devis &amp; chantiers en chiffres</h2>
+            <ul class="tm-pro-figures">
+                <li><twig:Icon name="file" size="sm" class="tm-icon--inherit" />Devis en attente<span class="tm-pro-figure is-pending">{{ page.stats.pending }}</span></li>
+                <li><twig:Icon name="check" size="sm" class="tm-icon--inherit" />Devis acceptés<span class="tm-pro-figure is-ok">{{ page.stats.accepted }}</span></li>
+                <li><twig:Icon name="home" size="sm" class="tm-icon--inherit" />Chantiers en cours<span class="tm-pro-figure is-new">{{ page.stats.works }}</span></li>
+                <li><twig:Icon name="check" size="sm" class="tm-icon--inherit" />Chantiers terminés<span class="tm-pro-figure is-ok">{{ page.stats.done }}</span></li>
+            </ul>
+        </section>
+        <section class="tm-pro-card" aria-labelledby="conseil-title">
+            <h2 id="conseil-title" class="tm-pro-card__title tm-pro-card__title--tip"><twig:Icon name="bulb" class="tm-icon--inherit" />Conseil TrouveMoi</h2>
+            <div class="tm-pro-tip">
+                <p>Pensez à mettre à jour régulièrement l’avancement de vos chantiers. Vos clients apprécient un suivi clair, étape par étape.</p>
+                <img src="{{ asset('images/pro/conseil-medaille.svg') }}" alt="" width="54" height="64">
+            </div>
+        </section>
+    </aside>
+    {% endif %}
+</div>
+{% endblock %}
