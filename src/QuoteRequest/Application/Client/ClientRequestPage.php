@@ -7,8 +7,8 @@ namespace App\QuoteRequest\Application\Client;
 final readonly class ClientRequestPage
 {
     /**
-     * @param list<ClientRequestRow>                                                    $items
-     * @param array{total: int, waiting: int, quoted: int, completed: int, active: int} $stats
+     * @param list<ClientRequestRow>                                                                   $items
+     * @param array{total: int, waiting: int, quoted: int, completed: int, active: int, received: int} $stats
      */
     public function __construct(public array $items, public int $total, public int $page, public int $perPage, public array $stats, public ?ClientDraft $draft)
     {

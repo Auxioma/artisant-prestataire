@@ -78,7 +78,7 @@ final class LegalPagesTest extends WebTestCase
         $this->client->setServerParameter('HTTP_ORIGIN', 'http://localhost');
         $crawler = $this->client->request('GET', '/connexion');
         $this->client->request('POST', '/connexion', ['_username' => 'dominique@exemple.test', '_password' => 'cheval agrafe batterie', '_csrf_token' => (string) $crawler->filter('input[name="_csrf_token"]')->attr('value')]);
-        self::assertResponseRedirects('/', 303);
+        self::assertResponseRedirects('/espace-client', 303);
         $this->client->request('GET', '/recherche');
         self::assertResponseRedirects('/conditions/mise-a-jour');
         $this->client->request('GET', '/cgu');

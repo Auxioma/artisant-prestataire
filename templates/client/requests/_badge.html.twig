@@ -1,0 +1,9 @@
+{#- Statut d'une demande vu du client (C01, C02). -#}
+{% if r.status == 'pending_moderation' %}<span class="tm-cstate is-waiting"><twig:Icon name="hourglass" size="xs" class="tm-icon--inherit" />En vérification</span>
+    {% elseif r.status == 'open' and r.receivedQuotes == 0 %}<span class="tm-cstate is-waiting"><twig:Icon name="hourglass" size="xs" class="tm-icon--inherit" />En attente de réponse</span>
+    {% elseif r.status in ['open', 'full'] %}<span class="tm-cstate is-ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Devis reçu{{ r.receivedQuotes > 1 ? 's' }}</span>
+    {% elseif r.status == 'awarded' %}<span class="tm-cstate is-progress"><twig:Icon name="refresh" size="xs" class="tm-icon--inherit" />En cours</span>
+    {% elseif r.status == 'completed' %}<span class="tm-cstate is-ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Terminée</span>
+    {% elseif r.status == 'expired' %}<span class="tm-cstate is-muted"><twig:Icon name="clock" size="xs" class="tm-icon--inherit" />Expirée</span>
+    {% elseif r.status == 'cancelled' %}<span class="tm-cstate is-muted"><twig:Icon name="x" size="xs" class="tm-icon--inherit" />Clôturée</span>
+    {% else %}<span class="tm-cstate is-refused"><twig:Icon name="x" size="xs" class="tm-icon--inherit" />Refusée</span>{% endif %}

@@ -60,12 +60,13 @@ final readonly class DbalClientRequestReader implements ClientRequestReader
                     count(*) FILTER (WHERE status = 'pending_moderation' OR (status = 'open' AND received_quotes_count = 0)) AS waiting,
                     count(*) FILTER (WHERE status IN ('open', 'full', 'awarded') AND received_quotes_count > 0) AS quoted,
                     count(*) FILTER (WHERE status = 'completed') AS completed,
-                    count(*) FILTER (WHERE status IN ('pending_moderation', 'open', 'full', 'awarded')) AS active
+                    count(*) FILTER (WHERE status IN ('pending_moderation', 'open', 'full', 'awarded')) AS active,
+                    coalesce(sum(received_quotes_count) FILTER (WHERE status IN ('open', 'full', 'awarded')), 0) AS received
              FROM request.quote_request WHERE client_id = :client",
             ['client' => $clientId],
         ) ?: [];
 
-        return ['total' => DbalValue::int($row['total'] ?? 0), 'waiting' => DbalValue::int($row['waiting'] ?? 0), 'quoted' => DbalValue::int($row['quoted'] ?? 0), 'completed' => DbalValue::int($row['completed'] ?? 0), 'active' => DbalValue::int($row['active'] ?? 0)];
+        return ['total' => DbalValue::int($row['total'] ?? 0), 'waiting' => DbalValue::int($row['waiting'] ?? 0), 'quoted' => DbalValue::int($row['quoted'] ?? 0), 'completed' => DbalValue::int($row['completed'] ?? 0), 'active' => DbalValue::int($row['active'] ?? 0), 'received' => DbalValue::int($row['received'] ?? 0)];
     }
 
     public function photos(string $clientId, string $requestId): array

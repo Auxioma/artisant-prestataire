@@ -134,6 +134,20 @@ final class ClientRequestsPageTest extends WebTestCase
         self::assertResponseStatusCodeSame(404, 'demande d’un autre client');
     }
 
+    public function testDashboardShowsLatestRequestsAndFigures(): void
+    {
+        $crawler = $this->client->request('GET', '/espace-client');
+        self::assertResponseIsSuccessful();
+        self::assertSame('Bonjour Camille !', $crawler->filter('h1')->text());
+        self::assertSame('1', $crawler->filter('.tm-cdash__kpi strong')->first()->text(), 'demandes en cours');
+        self::assertSame('0', $crawler->filter('.tm-cdash__kpi strong')->eq(1)->text(), 'devis reçus');
+        self::assertCount(2, $crawler->filter('.tm-cdash__list li'));
+        self::assertStringContainsString('En attente de réponse', $crawler->filter('.tm-cdash__list')->text());
+        self::assertStringContainsString('0/3 devis reçus', $crawler->filter('.tm-cdash__list')->text());
+        self::assertSame('page', $crawler->filter('.tm-cspace__menu .tm-cspace__link.is-active')->attr('aria-current'));
+        self::assertStringContainsString('Tableau de bord', $crawler->filter('.tm-cspace__menu .tm-cspace__link.is-active')->text());
+    }
+
     public function testVisitorIsSentToLogin(): void
     {
         $this->client->getCookieJar()->clear();

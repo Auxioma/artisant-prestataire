@@ -79,7 +79,7 @@ final class LoginTest extends WebTestCase
     {
         $this->login();
 
-        self::assertResponseRedirects('/', 303);
+        self::assertResponseRedirects('/espace-client', 303);
         self::assertTrue($this->client->getResponse()->headers->has('Set-Cookie'));
         $this->client->followRedirect();
         self::assertSelectorTextContains('.tm-dropdown__title', self::EMAIL, 'en-tête du compte connecté');
@@ -96,7 +96,7 @@ final class LoginTest extends WebTestCase
 
         $this->login();
 
-        self::assertResponseRedirects('/', 303);
+        self::assertResponseRedirects('/espace-client', 303);
         self::assertEmailCount(1);
         $email = self::getMailerMessage();
         self::assertNotNull($email);
@@ -146,7 +146,7 @@ final class LoginTest extends WebTestCase
 
         $this->login(extra: ['cf-turnstile-response' => AcceptingHumanVerification::HUMAN]);
 
-        self::assertResponseRedirects('/', 303);
+        self::assertResponseRedirects('/espace-client', 303);
     }
 
     public function testRedirectIsLimitedToInternalPages(): void
@@ -156,7 +156,7 @@ final class LoginTest extends WebTestCase
 
         $this->client->getCookieJar()->clear();
         $this->login(extra: ['_target_path' => 'https://evil.example/']);
-        self::assertResponseRedirects('/', 303);
+        self::assertResponseRedirects('/espace-client', 303);
 
         $this->client->getCookieJar()->clear();
         foreach (['//evil.example', '/\\evil.example', '/deconnexion', '/inexistant'] as $target) {

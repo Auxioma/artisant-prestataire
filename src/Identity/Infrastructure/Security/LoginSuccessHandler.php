@@ -43,7 +43,7 @@ final readonly class LoginSuccessHandler implements AuthenticationSuccessHandler
         return \is_string($path) ? $path.(\is_string($query) ? '?'.$query : '') : null;
     }
 
-    /** Tableaux de bord C01 / PR01 livrés aux lots 4 et 5 : accueil en attendant. */
+    /** Tableau de bord C01 (client, T-406c) ou PR01 (artisan, livré au lot 5 : accueil en attendant). */
     private function dashboard(TokenInterface $token): string
     {
         $route = \in_array(SecurityUser::ROLE_ARTISAN, $token->getRoleNames(), true) ? 'pro_dashboard' : 'client_dashboard';

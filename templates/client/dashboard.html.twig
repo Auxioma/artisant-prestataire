@@ -1,0 +1,74 @@
+{#-
+    C01 — Tableau de bord client (Figma 22:2) : « Bonjour {prénom} », date du jour, actions requises (C01.1), indicateurs,
+    accès rapide, « Mes dernières demandes » (C01.2 : 3 dernières, statut, jauge de devis). Blocs devis, rendez-vous,
+    favoris et messages : avec leurs lots (P-76).
+-#}
+{% extends 'client/_space.html.twig' %}
+{% set space_active = 'dashboard' %}
+{% set space_title = 'Tableau de bord' %}
+{% set space_subtitle = 'Espace client' %}
+{% set space_counts = {requests: page.stats.active} %}
+{% block title %}Tableau de bord — Espace client — TrouveMoi{% endblock %}
+{% set days = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'] %}
+{% set months_long = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] %}
+{% set months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'] %}
+{% block space_content %}
+<div class="tm-cdash">
+    <header class="tm-cdash__hello">
+        <span class="tm-cdash__avatar" aria-hidden="true">{{ initials }}</span>
+        <div>
+            <h1>Bonjour {{ first_name ?? '' }} !</h1>
+            <p>Bienvenue dans votre espace client TrouveMoi.com<br>Gérez vos demandes et suivez les devis des professionnels en toute simplicité.</p>
+        </div>
+        <p class="tm-cdash__date"><twig:Icon name="calendar" size="sm" class="tm-icon--inherit" /><time datetime="{{ today|date('Y-m-d') }}">{{ days[today|date('w')]|capitalize }} {{ today|date('j') }} {{ months_long[(today|date('n')) - 1] }} {{ today|date('Y') }}</time></p>
+    </header>
+
+    {% if page.draft %}
+        <p class="tm-pro-notice tm-cdash__todo" role="status"><twig:Icon name="info" size="sm" class="tm-icon--inherit" /><span>Votre demande{{ page.draft.jobName ? ' « ' ~ page.draft.jobName ~ ' »' }} n’est pas encore envoyée. <a href="{{ path('request_new') }}">Terminer ma demande</a></span></p>
+    {% endif %}
+
+    <ul class="tm-cdash__kpis" aria-label="Indicateurs">
+        <li><a class="tm-cdash__kpi" href="{{ path('client_requests', {statut: 'en-cours'}) }}">
+            <span class="tm-cdash__kpi-icon is-blue"><twig:Icon name="fileEuro" class="tm-icon--inherit" /></span>
+            <span class="tm-cdash__kpi-text"><strong>{{ page.stats.active }}</strong>Demande{{ page.stats.active > 1 ? 's' }} en cours</span>
+            <twig:Icon name="chevR" size="sm" class="tm-icon--inherit" />
+        </a></li>
+        <li>{% if tm_route_exists('client_quotes') %}<a class="tm-cdash__kpi" href="{{ path('client_quotes') }}">{% else %}<span class="tm-cdash__kpi">{% endif %}
+            <span class="tm-cdash__kpi-icon is-orange"><twig:Icon name="euro" class="tm-icon--inherit" /></span>
+            <span class="tm-cdash__kpi-text"><strong>{{ page.stats.received }}</strong>Devis reçu{{ page.stats.received > 1 ? 's' }}</span>
+            {% if tm_route_exists('client_quotes') %}<twig:Icon name="chevR" size="sm" class="tm-icon--inherit" /></a>{% else %}</span>{% endif %}
+        </li>
+    </ul>
+
+    <nav class="tm-cdash__quick" aria-label="Accès rapide">
+        <p class="tm-cdash__quick-title"><twig:Icon name="zap" class="tm-icon--inherit" />Accès rapide</p>
+        <a class="tm-cdash__quick-link is-blue" href="{{ path('public_search') }}"><twig:Icon name="search" size="sm" class="tm-icon--inherit" />Trouver un professionnel</a>
+        <a class="tm-cdash__quick-link is-orange" href="{{ path('request_new') }}"><twig:Icon name="file" size="sm" class="tm-icon--inherit" />Faire une demande</a>
+    </nav>
+
+    <section class="tm-cdash__block" aria-labelledby="latest-title">
+        <header class="tm-cdash__block-head">
+            <h2 id="latest-title"><twig:Icon name="file" class="tm-icon--inherit" />Mes dernières demandes</h2>
+            <a href="{{ path('client_requests') }}">Voir tout<twig:Icon name="chevR" size="xs" class="tm-icon--inherit" /></a>
+        </header>
+        {% if page.items is empty %}
+            <twig:EmptyState title="Vous n’avez pas encore de demande" text="Décrivez votre projet : les professionnels vérifiés de votre secteur vous envoient leurs devis gratuits." icon="file" headingLevel="3">
+                <twig:Button href="{{ path('request_new') }}">Faire une demande</twig:Button>
+            </twig:EmptyState>
+        {% else %}
+            <ul class="tm-cdash__list">
+                {% for r in page.items %}
+                    <li>
+                        <span class="tm-cdash__item-icon" aria-hidden="true"><twig:Icon name="wrench" class="tm-icon--inherit" /></span>
+                        <span class="tm-cdash__item-main"><strong>{{ r.title }}</strong><span>{{ r.jobName }} • {{ r.city }}</span>
+                            {% if r.status not in ['pending_moderation', 'rejected'] %}<span class="tm-cdash__gauge" aria-label="{{ r.receivedQuotes }} devis reçu{{ r.receivedQuotes > 1 ? 's' }} sur {{ r.maxQuotes }}">{% for i in 1..r.maxQuotes %}<i class="{{ i <= r.receivedQuotes ? 'is-on' }}"></i>{% endfor %}<em>{{ r.receivedQuotes }}/{{ r.maxQuotes }} devis reçus</em></span>{% endif %}
+                        </span>
+                        <time datetime="{{ r.submittedAt|date('c') }}">{{ r.submittedAt|date('j', 'Europe/Paris') }} {{ months[(r.submittedAt|date('n', 'Europe/Paris')) - 1] }} {{ r.submittedAt|date('Y', 'Europe/Paris') }}</time>
+                        {% include 'client/requests/_badge.html.twig' with {r: r} only %}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

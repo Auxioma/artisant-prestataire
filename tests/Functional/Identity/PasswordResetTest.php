@@ -182,7 +182,7 @@ final class PasswordResetTest extends WebTestCase
         $this->login(self::OLD);
         self::assertResponseRedirects('/connexion');
         $this->login(self::NEW);
-        self::assertResponseRedirects('/', 303);
+        self::assertResponseRedirects('/espace-client', 303);
 
         $connection = self::getContainer()->get(Connection::class);
         \assert($connection instanceof Connection);

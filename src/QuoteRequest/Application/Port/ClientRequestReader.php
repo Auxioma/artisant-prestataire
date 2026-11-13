@@ -13,7 +13,7 @@ interface ClientRequestReader
     /** @return array{items: list<ClientRequestRow>, total: int} */
     public function page(ClientRequests $query, \DateTimeImmutable $now): array;
 
-    /** @return array{total: int, waiting: int, quoted: int, completed: int, active: int} */
+    /** @return array{total: int, waiting: int, quoted: int, completed: int, active: int, received: int} */
     public function stats(string $clientId): array;
 
     /** @return list<string> photos analysées de la demande, si elle appartient au client */
