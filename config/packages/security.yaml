@@ -92,6 +92,7 @@ security:
         # A03 : étapes 2 à 7 du tunnel professionnel réservées au compte artisan connecté (l'étape 1 est publique)
         - { path: '^/inscription/pro/', roles: ROLE_ARTISAN }
         - { path: '^/espace-pro(/|$)', roles: ROLE_ARTISAN }
+        - { path: '^/espace-client(/|$)', roles: ROLE_CLIENT }
 
 when@test:
     security:

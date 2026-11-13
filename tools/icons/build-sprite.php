@@ -35,6 +35,8 @@ const ICONS = [
     'settings' => 'settings', 'help' => 'circle-help', 'power' => 'power', 'euro' => 'euro',
     'dots' => 'circle-ellipsis', 'hourglass' => 'hourglass', 'refresh' => 'refresh-cw', 'bars' => 'chart-no-axes-column',
     'bulb' => 'lightbulb',
+    // T-406a (espace client, C02)
+    'send' => 'send', 'more' => 'ellipsis-vertical',
 ];
 /** Variantes pleines (fill = currentColor), utilisées par la carte artisan (« icon/star-filled » dans Figma). */
 const FILLED_ICONS = ['starFilled' => 'star', 'heartFilled' => 'heart'];
