@@ -1,0 +1,5 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Vous avez accepté le devis <strong>{{ numero }}</strong> de <strong>{{ artisan }}</strong> ({{ montant }} TTC) pour votre demande n° {{ demande }}.</p>
+<p>Cette acceptation vaut <strong>intention de commande</strong> : le contrat se forme directement entre vous et le professionnel, qui vous contactera pour organiser l’intervention.</p>
+<p><strong>Coordonnées de {{ artisan }}</strong><br>{% if artisan_telephone %}Téléphone : {{ artisan_telephone }}<br>{% endif %}{% if artisan_email %}E-mail : {{ artisan_email }}{% endif %}</p>
+{{ bouton(lien, 'Voir ma demande') }}

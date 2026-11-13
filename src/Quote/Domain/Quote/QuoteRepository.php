@@ -21,5 +21,8 @@ interface QuoteRepository
     /** @return list<string> devis envoyés ou consultés dont la validité est dépassée (les plus anciens d'abord) */
     public function expiredIds(\DateTimeImmutable $now, int $limit): array;
 
+    /** @return list<Quote> devis envoyés d'une demande (ni brouillons ni retirés), du plus ancien au plus récent */
+    public function sentForRequest(string $requestId): array;
+
     public function save(Quote $quote): void;
 }

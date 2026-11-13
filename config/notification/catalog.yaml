@@ -74,6 +74,7 @@ notifications:
         label: "Récapitulatif d'acceptation de devis + coordonnées de l'artisan"
         recipient: "Client"
         channels: [email, in_app]
+        variables: [prenom, numero, demande, montant, artisan, artisan_email, artisan_telephone, lien]
     'E-14':
         label: "RDV proposé / confirmé / reporté / annulé par l'artisan"
         recipient: "Client"
@@ -167,14 +168,17 @@ notifications:
         label: "Devis accepté (+ coordonnées client)"
         recipient: "Artisan"
         channels: [email, in_app, sms]
+        variables: [prenom, numero, demande, montant, client, client_email, client_telephone, adresse, lien]
     'E-35':
         label: "Devis refusé (motif) / non retenu"
         recipient: "Artisan"
         channels: [email, in_app]
+        variables: [prenom, numero, demande, refuse, motif, lien]
     'E-35b':
         label: "Devis consulté par le client"
         recipient: "Artisan"
         channels: [in_app]
+        variables: [numero, demande]
     'E-36':
         label: "RDV proposé / confirmé / annulé par le client"
         recipient: "Artisan"

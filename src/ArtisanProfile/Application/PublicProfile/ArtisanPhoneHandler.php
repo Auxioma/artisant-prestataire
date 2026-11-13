@@ -49,7 +49,7 @@ final readonly class ArtisanPhoneHandler implements QueryHandler
     }
 
     /** +33612345678 → 06 12 34 56 78 ; numéros étrangers laissés au format international. */
-    private static function display(string $e164): string
+    public static function display(string $e164): string
     {
         if (!str_starts_with($e164, self::FRENCH_PREFIX) || self::FRENCH_LENGTH !== \strlen($e164)) {
             return $e164;
