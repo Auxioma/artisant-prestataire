@@ -12,6 +12,7 @@ final readonly class ClientQuoteCard
     /**
      * @param list<int>    $vatRatesBp taux de TVA appliqués (points de base)
      * @param list<string> $mainLines  principaux postes (désignations)
+     * @param list<string> $labels     qualifications vérifiées de l'artisan (RGE, Qualibat…)
      */
     public function __construct(
         public string $quoteId,
@@ -35,6 +36,8 @@ final readonly class ClientQuoteCard
         public ?\DateTimeImmutable $sentAt,
         public bool $decidable,
         public ?string $decisionReason,
+        public int $pricedLines = 0,
+        public array $labels = [],
     ) {
     }
 

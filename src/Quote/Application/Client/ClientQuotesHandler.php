@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Quote\Application\Client;
 
 use App\ArtisanProfile\Application\PublicProfile\PublicArtisanProfile;
+use App\ArtisanProfile\Application\PublicProfile\PublicCredential;
 use App\ArtisanProfile\Application\PublicProfile\PublicProfileView;
 use App\Quote\Application\Pdf\QuotePdfService;
 use App\Quote\Domain\Quote\Quote;
@@ -54,7 +55,7 @@ final readonly class ClientQuotesHandler implements QueryHandler
             $cards[] = $this->card($quote, $open && $quote->status()->isRevisable() && null !== $quote->validUntil() && $now < $quote->validUntil());
         }
 
-        return new ClientQuotes($cards, $accepted);
+        return new ClientQuotes($cards, $accepted, $query->requestId, $request->number(), $request->details()->title, $request->maxQuotes(), $open);
     }
 
     /** Demande du client connecté (null si elle n'existe pas ou appartient à un autre). */
@@ -96,9 +97,13 @@ final readonly class ClientQuotesHandler implements QueryHandler
         $totals = $content->totals;
         $artisan = $this->queries->ask(new PublicArtisanProfile($quote->artisanId()));
         $lines = [];
+        $priced = 0;
         foreach ($content->lines as $line) {
-            if (\count($lines) < self::MAIN_LINES && $line->type->isPriced()) {
-                $lines[] = $line->label;
+            if ($line->type->isPriced()) {
+                ++$priced;
+                if (\count($lines) < self::MAIN_LINES) {
+                    $lines[] = $line->label;
+                }
             }
         }
 
@@ -124,6 +129,8 @@ final readonly class ClientQuotesHandler implements QueryHandler
             $quote->current()->sentAt,
             $decidable,
             $quote->decisionReason(),
+            $priced,
+            $artisan instanceof PublicProfileView ? array_values(array_map(static fn (PublicCredential $c): string => $c->label, array_filter($artisan->qualifications, static fn (PublicCredential $c): bool => $c->verified))) : [],
         );
     }
 }
