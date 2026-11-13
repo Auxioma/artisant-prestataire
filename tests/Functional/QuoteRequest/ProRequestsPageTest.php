@@ -103,6 +103,30 @@ final class ProRequestsPageTest extends WebTestCase
         self::assertResponseStatusCodeSame(404, 'fichier hors de la demande');
     }
 
+    public function testDetailShowsTheRequestAndMarksItViewed(): void
+    {
+        $crawler = $this->client->request('GET', '/espace-pro/demandes/'.self::URGENT);
+        self::assertResponseIsSuccessful();
+        self::assertStringStartsWith('Demande #DM-', $crawler->filter('h1')->text());
+        self::assertStringContainsString('Plombier · Le Havre (76600)', $crawler->filter('.tm-pro-detail__head')->text());
+        self::assertSame('Fuite sous l’évier', $crawler->filter('#projet-title')->text());
+        $page = $crawler->filter('.tm-pro-detail')->text();
+        self::assertStringContainsString('Camille', $page, 'RG-112 : prénom');
+        self::assertStringNotContainsString('Discrète', $page);
+        self::assertStringNotContainsString('rue Fictive', $page);
+        self::assertStringContainsString('Urgent (sous 48 h)', $page);
+        self::assertStringContainsString('3 places restantes pour répondre.', $page);
+        self::assertStringContainsString('Vous intervenez sur cette commune.', $page);
+        self::assertSame('true', $this->dossierValue("SELECT viewed_at IS NOT NULL FROM request.request_dispatch WHERE request_id = '".self::URGENT."'"), 'consultée');
+
+        $crawler = $this->client->request('GET', '/espace-pro/demandes');
+        self::assertStringContainsString('À traiter', $crawler->filter('.tm-pro-request')->reduce(static fn ($c): bool => str_contains($c->text(), 'Fuite sous l’évier'))->text());
+        self::assertSame('/espace-pro/demandes/'.self::URGENT, $crawler->filter('.tm-pro-request__title a')->reduce(static fn ($a): bool => str_contains($a->text(), 'Fuite'))->attr('href'));
+
+        $this->client->request('GET', '/espace-pro/demandes/0190f5e4-0000-7000-8000-0000000e9699');
+        self::assertResponseStatusCodeSame(404, 'demande non reçue');
+    }
+
     public function testClientCannotOpenTheProSpace(): void
     {
         $this->client->getCookieJar()->clear();

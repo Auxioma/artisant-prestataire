@@ -31,6 +31,8 @@ final readonly class ProRequestCard
         public string $excerpt = '',
         /** Première photo disponible (vignette PR02, accès contrôlé). */
         public ?string $photoId = null,
+        /** Raison de la diffusion (`direct`, `eligible`, `extended`) ; null pour l'aperçu Q15. */
+        public ?string $dispatchReason = null,
     ) {
     }
 

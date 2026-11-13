@@ -27,7 +27,7 @@ final readonly class DbalProRequestReader implements ProRequestReader
         'r.id', 'r.number', 'j.name AS job_name', 'r.title', 'r.project_type', 'coalesce(c.name, r.postal_code) AS city_name', 'r.postal_code',
         'CASE WHEN ac.centroid IS NULL OR c.centroid IS NULL THEN NULL ELSE round(ST_Distance(ac.centroid, c.centroid) / 1000)::int END AS distance_km',
         'r.timing', 'r.budget_range', 'r.submitted_at', '(SELECT count(*) FROM request.request_attachment a WHERE a.request_id = r.id) AS photos',
-        'coalesce(r.target_artisan_id = :artisan, false) AS direct', 'r.active_quotes_count', 'r.max_quotes', 'r.status', 'd.viewed_at', 'd.ignored_at',
+        'coalesce(r.target_artisan_id = :artisan, false) AS direct', 'r.active_quotes_count', 'r.max_quotes', 'r.status', 'd.viewed_at', 'd.ignored_at', 'd.reason AS dispatch_reason',
         'u.first_name AS client_first_name', "coalesce(nullif(r.summary, ''), r.description) AS excerpt",
         "(SELECT a.file_id FROM request.request_attachment a JOIN shared.stored_file f ON f.id = a.file_id AND f.status = 'available' WHERE a.request_id = r.id ORDER BY a.position LIMIT 1) AS photo_id",
     ];
@@ -198,6 +198,7 @@ final readonly class DbalProRequestReader implements ProRequestReader
             DbalValue::nullableString($row['client_first_name']),
             self::excerpt(DbalValue::string($row['excerpt'])),
             DbalValue::nullableString($row['photo_id']),
+            DbalValue::nullableString($row['dispatch_reason']),
         );
     }
 

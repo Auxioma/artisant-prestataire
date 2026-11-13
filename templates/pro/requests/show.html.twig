@@ -1,0 +1,128 @@
+{#-
+    PR03 — Détail d'une demande (Figma 13:2) : titre et contexte, « Description du projet » (texte, caractéristiques,
+    réponses au questionnaire, photos, rappel vie privée), « Répondre à cette demande » (zone, devis reçus, places restantes,
+    actions, crédits), « État de cette demande ». RG-112 : prénom et commune seulement. Écarts : P-73.
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'requests' %}
+{% block title %}Demande {{ r.number }} — Espace pro — TrouveMoi{% endblock %}
+{% set months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] %}
+{% set received = r.submittedAt|date('j', 'Europe/Paris') ~ ' ' ~ months[(r.submittedAt|date('n', 'Europe/Paris')) - 1] ~ (r.submittedAt|date('Y', 'Europe/Paris') != 'now'|date('Y', 'Europe/Paris') ? ' ' ~ r.submittedAt|date('Y', 'Europe/Paris')) %}
+{% set left = r.placesLeft() %}
+{% block space_content %}
+<article class="tm-pro-detail" aria-labelledby="pr03-title">
+    <header class="tm-pro-detail__head">
+        <h1 id="pr03-title">Demande #{{ r.number }}</h1>
+        <p>{{ r.jobName }} · {{ r.city }}{% if r.distanceKm is not null %} · {{ r.distanceKm }} km{% endif %} · Reçue le {{ received }}</p>
+    </header>
+
+    {% if not verified %}
+        <p class="tm-pro-notice" role="status"><twig:Icon name="info" size="sm" class="tm-icon--inherit" />Aperçu : vous pourrez répondre dès la vérification de votre compte.</p>
+    {% endif %}
+
+    <div class="tm-pro-detail__grid">
+        <section class="tm-pro-detail__card tm-pro-detail__project" aria-labelledby="projet-title">
+            <h2 id="projet-title">{{ r.title }}</h2>
+            {% if view.summary %}<p class="tm-pro-detail__lead">{{ view.summary }}</p>{% endif %}
+            <p class="tm-pro-detail__text">{{ view.description|nl2br }}</p>
+            <dl class="tm-pro-facts">
+                <div><dt>Type de travaux</dt><dd>{{ view.projectType }}{% if view.workNature %} · {{ view.workNature }}{% endif %}</dd></div>
+                <div><dt>Délai souhaité</dt><dd>{{ r.timing }}{% if view.desiredDate %} · le {{ view.desiredDate|date('d/m/Y') }}{% endif %}</dd></div>
+                {% if view.preferredSlots is not empty %}<div><dt>Créneaux préférés</dt><dd>{{ view.preferredSlots|join(', ') }}</dd></div>{% endif %}
+                <div><dt>Budget indicatif</dt><dd>{{ r.budget ?? 'Non précisé' }}</dd></div>
+                <div><dt>Localisation</dt><dd>{{ r.city }}{% if r.distanceKm is not null %} · à {{ r.distanceKm }} km de votre commune de départ{% endif %}</dd></div>
+                <div><dt>Client</dt><dd>{{ view.clientFirstName ?? 'Particulier' }}{% if view.occupantStatus %} · {{ view.occupantStatus }}{% endif %}</dd></div>
+                {% for a in view.answers %}<div><dt>{{ a.label }}</dt><dd>{{ a.value }}</dd></div>{% endfor %}
+                <div>
+                    <dt>Documents</dt>
+                    <dd>{{ view.photos is empty ? 'Aucune photo' : view.photos|length ~ ' photo' ~ (view.photos|length > 1 ? 's') }}</dd>
+                    {% if view.photos is not empty %}
+                        <ul class="tm-pro-detail__photos">
+                            {% for file in view.photos %}
+                                <li><a href="{{ path('pro_request_photo', {id: r.id, file: file}) }}" target="_blank" rel="noopener"><img src="{{ path('pro_request_photo', {id: r.id, file: file}) }}" alt="Photo {{ loop.index }} de la demande" width="120" height="96" loading="lazy"><span class="tm-visually-hidden"> (ouvre dans un nouvel onglet)</span></a></li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+            </dl>
+            <p class="tm-pro-detail__privacy">Les coordonnées privées sont masquées avant acceptation du devis.</p>
+        </section>
+
+        <section class="tm-pro-detail__card tm-pro-detail__decide" aria-labelledby="decision-title">
+            <h2 id="decision-title">Répondre à cette demande</h2>
+            {% if r.dispatchReason == 'direct' %}
+                <p class="tm-pro-detail__ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Le client vous a choisi directement.</p>
+            {% elseif r.dispatchReason == 'extended' %}
+                <p class="tm-pro-detail__ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Demande proche de votre zone d’intervention.</p>
+            {% else %}
+                <p class="tm-pro-detail__ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Vous intervenez sur cette commune.</p>
+            {% endif %}
+            <p class="tm-pro-detail__count">{{ r.quotesSent }} devis reçu{{ r.quotesSent > 1 ? 's' }} sur {{ r.maxQuotes }} maximum</p>
+            <p class="tm-pro-detail__places">{{ left }} place{{ left > 1 ? 's' }} restante{{ left > 1 ? 's' }} pour répondre.</p>
+
+            {% if r.state.value == 'unavailable' %}
+                <p class="tm-pro-detail__closed">Cette demande n’est plus disponible.</p>
+            {% elseif left == 0 %}
+                <twig:Button variant="primary" disabled block>Cette demande a déjà reçu {{ r.maxQuotes }} devis</twig:Button>
+            {% elseif not verified %}
+                <twig:Button variant="primary" disabled block>Créer un devis</twig:Button>
+            {% else %}
+                {% if tm_route_exists('pro_quote_new') %}
+                    <twig:Button href="{{ path('pro_quote_new', {demande: r.id}) }}" block>Créer un devis</twig:Button>
+                {% else %}
+                    <twig:Button variant="primary" disabled block>Créer un devis</twig:Button>
+                    <p class="tm-caption">La rédaction des devis en ligne arrive très prochainement.</p>
+                {% endif %}
+                {% if tm_route_exists('pro_request_question') %}
+                    <twig:Button href="{{ path('pro_request_question', {id: r.id}) }}" variant="soft" block>Poser une question</twig:Button>
+                {% endif %}
+            {% endif %}
+
+            {% set credits = tm_artisan_credits() %}
+            {% if credits %}
+                <div class="tm-pro-detail__credits">
+                    <p class="tm-pro-detail__credits-count">{{ credits.remaining }} crédit{{ credits.remaining > 1 ? 's' }} disponible{{ credits.remaining > 1 ? 's' }}</p>
+                    <p>Aucun crédit consommé à la consultation. 1 crédit débité à l’envoi du devis.</p>
+                </div>
+            {% endif %}
+
+            {% if verified and r.state.value == 'ignored' %}
+                <form method="post" action="{{ path('pro_request_ignore', {id: r.id}) }}" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <input type="hidden" name="restore" value="1">
+                    <input type="hidden" name="back" value="{{ path('pro_request', {id: r.id}) }}">
+                    <twig:Button type="submit" variant="tertiary" icon="refresh" iconPosition="start" block>Remettre dans mes demandes</twig:Button>
+                </form>
+            {% elseif verified and r.state.value in ['unread', 'viewed'] %}
+                <details class="tm-pro-ignore">
+                    <summary class="tm-button tm-button--tertiary tm-button--block"><twig:Icon name="eyeOff" size="xs" class="tm-icon--inherit" /><span class="tm-button__label">Ignorer cette demande</span></summary>
+                    <form method="post" action="{{ path('pro_request_ignore', {id: r.id}) }}" data-turbo="false">
+                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                        <input type="hidden" name="back" value="{{ path('pro_requests') }}">
+                        <label class="tm-field__label" for="reason">Motif (facultatif)</label>
+                        <div class="tm-field__control"><select class="tm-field__input" id="reason" name="reason">
+                            <option value="">Sans motif</option>
+                            {% for reason in reasons %}<option value="{{ reason.value }}">{{ reason.label }}</option>{% endfor %}
+                        </select></div>
+                        <twig:Button type="submit" variant="secondary">Ignorer</twig:Button>
+                    </form>
+                </details>
+            {% endif %}
+        </section>
+    </div>
+
+    <section class="tm-pro-detail__card tm-pro-detail__status" aria-labelledby="etat-title">
+        <h2 id="etat-title">État de cette demande</h2>
+        <p>
+            {% if r.state.value == 'unavailable' %}
+                Demande close · Elle ne reçoit plus de devis
+            {% elseif left == 0 %}
+                Demande complète · Le nombre maximum de devis est atteint
+            {% else %}
+                Demande active · Diffusée aux artisans éligibles · En attente des propositions restantes
+            {% endif %}
+            {% if r.state.value == 'ignored' %} · Vous l’avez ignorée{% endif %}
+        </p>
+    </section>
+</article>
+{% endblock %}

@@ -8,9 +8,12 @@ use App\QuoteRequest\Application\Port\ProRequestReader;
 use App\QuoteRequest\Application\Pro\AvailableRequests;
 use App\QuoteRequest\Application\Pro\IgnoreReason;
 use App\QuoteRequest\Application\Pro\IgnoreRequest;
+use App\QuoteRequest\Application\Pro\MarkRequestViewed;
 use App\QuoteRequest\Application\Pro\ProRequestAccess;
+use App\QuoteRequest\Application\Pro\ProRequestDetail;
 use App\QuoteRequest\Application\Pro\ProRequestFilter;
 use App\QuoteRequest\Application\Pro\ProRequestPage;
+use App\QuoteRequest\Application\Pro\ProRequestView;
 use App\QuoteRequest\Application\Pro\RequestState;
 use App\QuoteRequest\Domain\Request\BudgetRange;
 use App\QuoteRequest\Domain\Request\RequestRuleViolation;
@@ -63,6 +66,25 @@ final class ProRequestsController extends AbstractController
             'sorts' => self::SORTS,
             'budgets' => array_filter(BudgetRange::cases(), static fn (BudgetRange $b): bool => BudgetRange::Unknown !== $b),
             'timings' => Timing::cases(),
+            'reasons' => IgnoreReason::cases(),
+            'csrf_id' => self::CSRF,
+        ]);
+    }
+
+    /** PR03 (Figma 13:2) — détail d'une demande ; l'ouvrir la passe en « consultée » (gratuit, RG-110). */
+    #[Route('/{id}', name: 'pro_request', requirements: ['id' => self::UUID], methods: ['GET'])]
+    public function show(string $id): Response
+    {
+        $view = $this->queries->ask(new ProRequestDetail($this->userId(), $id));
+        if (!$view instanceof ProRequestView) {
+            throw new NotFoundHttpException();
+        }
+        $this->commands->dispatch(new MarkRequestViewed($this->userId(), $id));
+
+        return $this->render('pro/requests/show.html.twig', [
+            'view' => $view,
+            'r' => $view->card,
+            'verified' => RequestState::Preview !== $view->card->state,
             'reasons' => IgnoreReason::cases(),
             'csrf_id' => self::CSRF,
         ]);
