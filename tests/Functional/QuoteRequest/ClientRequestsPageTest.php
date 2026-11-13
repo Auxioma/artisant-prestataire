@@ -99,6 +99,41 @@ final class ClientRequestsPageTest extends WebTestCase
         self::assertStringContainsString('Brouillon', $crawler->filter('.tm-crequest.is-draft')->text());
     }
 
+    public function testEditBeforeAnyQuoteThenAddendumOnly(): void
+    {
+        $crawler = $this->client->request('GET', '/espace-client/demandes/'.self::OPEN.'/modifier');
+        self::assertResponseIsSuccessful();
+        self::assertSame('Modifier ma demande', $crawler->filter('h1')->text());
+        $form = $crawler->filter('input[name="form"][value="edit"]')->closest('form')?->form();
+        self::assertNotNull($form);
+
+        $this->client->submit($form, ['description' => 'Appelez-moi au 06 12 34 56 78 pour la fuite (fictif).']);
+        self::assertResponseStatusCodeSame(422);
+        self::assertStringContainsString('n’indiquez pas vos coordonnées', $this->client->getCrawler()->filter('[role="alert"]')->text());
+
+        $this->client->submit($form, ['description' => 'Fuite sous l’évier et joint du siphon à changer, accès facile (fictif).', 'timing' => 'urgent', 'title' => 'Fuite et siphon']);
+        $crawler = $this->client->followRedirect();
+        self::assertStringContainsString('Demande modifiée', $crawler->filter('.tm-toasts')->text());
+        self::assertSame(['urgent', 'Fuite et siphon'], array_values((array) $this->connection->fetchAssociative('SELECT timing, title FROM request.quote_request WHERE id = :id', ['id' => self::OPEN])));
+
+        // Un devis reçu : la demande ne se modifie plus, seul un complément s'ajoute (RG-066).
+        $this->connection->executeStatement('UPDATE request.quote_request SET received_quotes_count = 1, active_quotes_count = 1 WHERE id = :id', ['id' => self::OPEN]);
+        self::getContainer()->get(EntityManagerInterface::class)->clear();
+        $crawler = $this->client->request('GET', '/espace-client/demandes/'.self::OPEN.'/modifier');
+        self::assertSame('Compléter ma demande', $crawler->filter('h1')->text());
+        self::assertCount(0, $crawler->filter('input[name="form"][value="edit"]'));
+        $form = $crawler->filter('input[name="form"][value="addendum"]')->closest('form')?->form();
+        self::assertNotNull($form);
+        $this->client->submit($form, ['body' => 'Le robinet d’arrêt est sous l’évier, à gauche (fictif).']);
+        $crawler = $this->client->followRedirect();
+        self::assertStringContainsString('Complément ajouté', $crawler->filter('.tm-toasts')->text());
+        self::assertStringContainsString('Le robinet d’arrêt est sous l’évier', $crawler->filter('.tm-cedit__addenda')->text());
+        self::assertSame(1, DbalValue::int($this->connection->fetchOne("SELECT count(*) FROM admin.audit_log WHERE action = 'request.addendum_added'")));
+
+        $this->client->request('GET', '/espace-client/demandes/'.self::FOREIGN.'/modifier');
+        self::assertResponseStatusCodeSame(404, 'demande d’un autre client');
+    }
+
     public function testVisitorIsSentToLogin(): void
     {
         $this->client->getCookieJar()->clear();

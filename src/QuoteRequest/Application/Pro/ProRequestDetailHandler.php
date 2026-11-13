@@ -6,6 +6,7 @@ namespace App\QuoteRequest\Application\Pro;
 
 use App\Catalog\Application\Questionnaire\QuestionnaireStore;
 use App\QuoteRequest\Application\Port\ProRequestReader;
+use App\QuoteRequest\Application\Port\RequestAddenda;
 use App\QuoteRequest\Domain\Request\PreferredSlot;
 use App\QuoteRequest\Domain\Request\QuoteRequestId;
 use App\QuoteRequest\Domain\Request\QuoteRequestRepository;
@@ -23,6 +24,7 @@ final readonly class ProRequestDetailHandler implements QueryHandler
         private QuoteRequestRepository $requests,
         private QuestionnaireStore $questionnaires,
         private QueryBus $queries,
+        private RequestAddenda $addenda,
     ) {
     }
 
@@ -51,6 +53,7 @@ final readonly class ProRequestDetailHandler implements QueryHandler
             array_map(static fn (PreferredSlot $slot): string => $slot->label(), $details->preferredSlots),
             $details->occupantStatus?->label(),
             RequestState::Ignored === $card->state,
+            $this->addenda->of($query->requestId),
         );
     }
 }

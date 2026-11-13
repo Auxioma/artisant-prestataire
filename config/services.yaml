@@ -148,6 +148,7 @@ services:
     App\QuoteRequest\Application\Port\ProRequestReader: '@App\QuoteRequest\Infrastructure\Pro\DbalProRequestReader'
     App\QuoteRequest\Application\Port\RequestMaintenanceStore: '@App\QuoteRequest\Infrastructure\Maintenance\DbalRequestMaintenanceStore'
     App\QuoteRequest\Application\Port\ClientRequestReader: '@App\QuoteRequest\Infrastructure\Client\DbalClientRequestReader'
+    App\QuoteRequest\Application\Port\RequestAddenda: '@App\QuoteRequest\Infrastructure\Persistence\DbalRequestAddenda'
 
     App\Catalog\Application\Questionnaire\QuestionnaireStore: '@App\Catalog\Infrastructure\Questionnaire\DbalQuestionnaireStore'
 

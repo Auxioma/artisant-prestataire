@@ -148,4 +148,25 @@
     @media (min-width: 1280px) {
         .tm-crequests { grid-template-columns: minmax(0, 842px) 280px; }
     }
+
+    /* C02 « Modifier » / « Ajouter un complément » */
+    .tm-cedit { display: grid; gap: var(--space-4); max-width: 842px; }
+    .tm-cedit__back { margin: 0; }
+    .tm-cedit__back a { display: inline-flex; align-items: center; gap: 4px; color: var(--color-link); font: var(--type-label); }
+    .tm-cedit__card { display: grid; gap: var(--space-3); }
+    .tm-cedit__card .tm-caption { margin: 0; }
+    .tm-cedit__form { display: grid; gap: var(--space-4); }
+    .tm-cedit__row { display: grid; gap: var(--space-4); }
+    .tm-cedit fieldset { margin: 0; padding: 0; border: 0; min-width: 0; }
+    .tm-cedit__slots { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+    .tm-cedit__slot { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 40px; padding: 0 var(--space-3); border: 1px solid var(--tm-line); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--tm-navy); font: var(--type-label); cursor: pointer; }
+    .tm-cedit__slot:has(input:checked) { border-color: var(--tm-blue); background: var(--tm-blue-soft); }
+    .tm-cedit__slot input { accent-color: var(--tm-blue); margin: 0; }
+    .tm-cedit__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+    .tm-cedit__addenda { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+    .tm-cedit__addenda li { display: grid; gap: var(--space-1); padding: var(--space-3); border-radius: 10px; background: var(--tm-ice); }
+    .tm-cedit__addenda p { margin: 0; }
+    @media (min-width: 768px) {
+        .tm-cedit__row { grid-template-columns: 1fr 1fr; }
+    }
 }

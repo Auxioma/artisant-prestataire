@@ -25,6 +25,8 @@ final readonly class ProRequestView
         public array $preferredSlots,
         public ?string $occupantStatus,
         public bool $ignoredByMe,
+        /** @var list<array{body: string, createdAt: \DateTimeImmutable}> compléments ajoutés par le client (C02) */
+        public array $addenda = [],
     ) {
     }
 }

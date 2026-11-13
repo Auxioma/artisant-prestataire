@@ -45,6 +45,12 @@
                     {% endif %}
                 </div>
             </dl>
+            {% if view.addenda is not empty %}
+                <div class="tm-pro-detail__addenda">
+                    <h3>Compléments ajoutés par le client</h3>
+                    <ol>{% for a in view.addenda %}<li><p class="tm-caption">Le {{ a.createdAt|date('d/m/Y à H:i', 'Europe/Paris') }}</p><p>{{ a.body|nl2br }}</p></li>{% endfor %}</ol>
+                </div>
+            {% endif %}
             <p class="tm-pro-detail__privacy">Les coordonnées privées sont masquées avant acceptation du devis.</p>
         </section>
 

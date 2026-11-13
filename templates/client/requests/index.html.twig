@@ -120,6 +120,9 @@
                             <details class="tm-crequest__more">
                                 <summary aria-label="Autres actions pour la demande {{ r.number }}"><twig:Icon name="more" class="tm-icon--inherit" /></summary>
                                 <div class="tm-crequest__menu">
+                                    {% if r.status in ['pending_moderation', 'open', 'full'] %}
+                                        <a class="tm-crequest__menu-item" href="{{ path('client_request_edit', {id: r.id}) }}"><twig:Icon name="file" size="xs" class="tm-icon--inherit" />{{ r.receivedQuotes == 0 and r.status != 'full' ? 'Modifier' : 'Ajouter un complément' }}</a>
+                                    {% endif %}
                                     <form method="post" action="{{ path('client_request_duplicate', {id: r.id}) }}" data-turbo="false">
                                         <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
                                         <button type="submit" class="tm-crequest__menu-item"><twig:Icon name="plus" size="xs" class="tm-icon--inherit" />Dupliquer{% if page.draft %}<small>remplace votre brouillon en cours</small>{% endif %}</button>
