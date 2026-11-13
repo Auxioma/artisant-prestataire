@@ -1,0 +1,19 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Quote\Domain\Quote;
+
+interface QuoteRepository
+{
+    public function find(QuoteId $id): ?Quote;
+
+    /** Verrou de ligne (`FOR UPDATE`) pour les transitions concurrentes. */
+    public function findForUpdate(QuoteId $id): ?Quote;
+
+    /** RG-101 d — le devis de cet artisan sur cette demande, s'il existe (unicité en base). */
+    public function findByRequestAndArtisan(string $requestId, string $artisanId): ?Quote;
+
+    /** Enregistre l'état complet (en-tête, versions, lignes) ; conflit de version optimiste → exception. */
+    public function save(Quote $quote): void;
+}

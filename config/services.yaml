@@ -150,6 +150,9 @@ services:
     App\QuoteRequest\Application\Port\ClientRequestReader: '@App\QuoteRequest\Infrastructure\Client\DbalClientRequestReader'
     App\QuoteRequest\Application\Port\RequestAddenda: '@App\QuoteRequest\Infrastructure\Persistence\DbalRequestAddenda'
 
+    # Module Quote
+    App\Quote\Domain\Quote\QuoteRepository: '@App\Quote\Infrastructure\Persistence\DbalQuoteRepository'
+
     App\Catalog\Application\Questionnaire\QuestionnaireStore: '@App\Catalog\Infrastructure\Questionnaire\DbalQuestionnaireStore'
 
     # Ports du module ArtisanProfile
@@ -210,6 +213,10 @@ when@test:
             public: true
         test.query_bus:
             alias: App\Shared\Application\Bus\QueryBus
+            public: true
+        # Dépôt des devis : sans consommateur avant les cas d'usage du lot 5 (T-502, T-504).
+        test.quote_repository:
+            alias: App\Quote\Domain\Quote\QuoteRepository
             public: true
         # Pipeline de fichiers : conservé dans le conteneur de test avant ses premiers usages (T-207, T-402).
         test.storage.uploader:
