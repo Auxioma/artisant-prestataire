@@ -30,7 +30,9 @@ final readonly class RecordLoginHandler implements CommandHandler
     {
         $now = $this->clock->now();
         $user = $this->users->get(new UserId($command->userId));
-        $user->recordLogin($now);
+        $user->assertCanLogIn();
+        // Sans contrôle de version : deux connexions simultanées du même compte ne doivent pas échouer.
+        $this->users->recordLogin(new UserId($command->userId), $now);
 
         $description = DeviceDescription::fromUserAgent($command->userAgent);
         $firstDevice = 0 === $this->devices->count($command->userId);

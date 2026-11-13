@@ -142,10 +142,16 @@ final class User extends AggregateRoot
 
     public function recordLogin(\DateTimeImmutable $now): void
     {
+        $this->assertCanLogIn();
+        $this->lastLoginAt = $now;
+    }
+
+    /** Le compte peut-il se connecter (statut) ? Levée sinon. */
+    public function assertCanLogIn(): void
+    {
         if (!$this->status->canLogIn()) {
             throw new IdentityRuleViolation('Connexion impossible pour ce compte.');
         }
-        $this->lastLoginAt = $now;
     }
 
     public function suspend(string $reason, \DateTimeImmutable $now): void

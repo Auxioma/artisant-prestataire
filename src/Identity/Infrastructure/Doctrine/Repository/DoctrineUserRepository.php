@@ -50,4 +50,12 @@ final readonly class DoctrineUserRepository implements UserRepository
     {
         $this->em->persist($user);
     }
+
+    public function recordLogin(UserId $id, \DateTimeImmutable $at): void
+    {
+        $this->em->getConnection()->executeStatement(
+            'UPDATE identity.user_account SET last_login_at = GREATEST(coalesce(last_login_at, :at), :at) WHERE id = :id',
+            ['at' => $at->format('Y-m-d H:i:sP'), 'id' => $id->value],
+        );
+    }
 }
