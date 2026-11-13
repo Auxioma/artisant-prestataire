@@ -8,7 +8,7 @@ import { Controller } from '@hotwired/stimulus';
 const AUTOSAVE_DELAY_MS = 1500;
 
 export default class extends Controller {
-    static targets = ['lines', 'row', 'template', 'lineTotal', 'ht', 'vat', 'ttc', 'mentions', 'blocked', 'certificate', 'status', 'error'];
+    static targets = ['lines', 'row', 'template', 'lineTotal', 'ht', 'vat', 'ttc', 'mentions', 'blocked', 'certificate', 'status', 'error', 'send'];
     static values = { url: String };
 
     disconnect() {
@@ -111,6 +111,7 @@ export default class extends Controller {
             return li;
         }));
         this.blockedTarget.hidden = data.complete !== false;
+        if (this.hasSendTarget) this.sendTarget.disabled = data.complete === false;
         this.certificateTarget.hidden = !data.certificate;
     }
 

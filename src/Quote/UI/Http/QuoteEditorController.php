@@ -9,11 +9,15 @@ use App\Quote\Application\Editor\QuoteEditorView;
 use App\Quote\Application\Editor\SaveQuoteDraft;
 use App\Quote\Application\Pdf\QuotePreviewPdf;
 use App\Quote\Application\Pdf\QuoteVersionPdf;
+use App\Quote\Application\Sending\SendQuote;
 use App\Quote\Domain\Mention\MentionCheck;
 use App\Quote\Domain\Quote\LineType;
 use App\Quote\Domain\Quote\QuoteLine;
 use App\Quote\Domain\Quote\QuoteRuleViolation;
+use App\Quote\Domain\Quote\QuoteStatus;
 use App\Quote\Domain\Quote\VatRate;
+use App\Quote\Domain\Sending\QuoteSendingRefused;
+use App\Quote\Domain\Sending\RefusalReason;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Security\CurrentUser;
@@ -30,7 +34,8 @@ use Symfony\Component\Routing\Attribute\Route;
 /**
  * PR04 (/espace-pro/devis/nouveau?demande={id}, Figma 22:229) — éditeur de devis : en-tête, lignes, récapitulatif,
  * conditions, contrôle RG-120. Brouillon enregistré à la demande ou automatiquement (JSON : totaux et contrôles mis à
- * jour) ; aucun crédit consommé (RG-100). Aperçu PDF du brouillon (PR04.4) ; envoi avec T-504.
+ * jour) ; aucun crédit consommé (RG-100). Aperçu PDF du brouillon (PR04.4). Envoi (PR04.5) après la modale de
+ * confirmation (Figma 74:121) : le formulaire est enregistré puis envoyé (RG-101) ; un devis envoyé s'affiche en lecture.
  */
 #[Route('/espace-pro/devis')]
 final class QuoteEditorController extends AbstractController
@@ -60,6 +65,41 @@ final class QuoteEditorController extends AbstractController
         }
         $view = $this->view($requestId);
 
+        return $this->renderEditor($view, $request, $error);
+    }
+
+    /**
+     * PR04.5 — « Envoyer le devis » (confirmé dans la modale) : enregistre le formulaire, puis envoi atomique RG-101.
+     * Refus : brouillon conservé, message RG-101 ; sans crédit, renvoi vers les forfaits (P13).
+     */
+    #[Route('/envoyer', name: 'pro_quote_send', methods: ['POST'])]
+    public function send(Request $request): Response
+    {
+        $requestId = $this->requestId($request);
+        $this->assertCsrf($request);
+        try {
+            $this->save($request, $requestId);
+        } catch (QuoteRuleViolation $e) {
+            return $this->renderEditor($this->view($requestId), $request, $e->getMessage());
+        }
+        try {
+            $this->commands->dispatch(new SendQuote($this->userId(), $requestId));
+        } catch (QuoteSendingRefused $e) {
+            $this->addFlash('error', $e->getMessage());
+            if (RefusalReason::NoCredit === $e->reason) {
+                return $this->redirectToRoute('content_pricing', [], Response::HTTP_SEE_OTHER);
+            }
+
+            return $this->redirectToRoute('pro_quote_new', ['demande' => $requestId], Response::HTTP_SEE_OTHER);
+        }
+        $view = $this->view($requestId);
+        $this->addFlash('success', \sprintf('Devis %s envoyé au client.', $view->number ?? ''));
+
+        return $this->redirectToRoute('pro_quote_new', ['demande' => $requestId], Response::HTTP_SEE_OTHER);
+    }
+
+    private function renderEditor(QuoteEditorView $view, Request $request, ?string $error): Response
+    {
         return $this->render('quote/editor.html.twig', [
             'view' => $view,
             'posted' => null === $error ? null : $request->request->all(),
@@ -68,6 +108,7 @@ final class QuoteEditorController extends AbstractController
             'vat_rates' => VatRate::cases(),
             'csrf_id' => self::CSRF,
             'quantity_scale' => 3,
+            'sent' => QuoteStatus::Draft !== $view->status,
         ], new Response(null, null === $error ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 

@@ -54,6 +54,8 @@ final readonly class QuoteEditorHandler implements QueryHandler
             $gauge instanceof CreditGauge ? $gauge->remaining : null,
             $this->settings->int(SettingKey::QuotesDefaultValidityDays),
             $quote?->updatedAt(),
+            $quote?->sentAt(),
+            $quote?->current()->number ?? 1,
         );
     }
 

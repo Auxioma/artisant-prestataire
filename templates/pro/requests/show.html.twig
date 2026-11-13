@@ -66,7 +66,11 @@
             <p class="tm-pro-detail__count">{{ r.quotesSent }} devis reçu{{ r.quotesSent > 1 ? 's' }} sur {{ r.maxQuotes }} maximum</p>
             <p class="tm-pro-detail__places">{{ left }} place{{ left > 1 ? 's' }} restante{{ left > 1 ? 's' }} pour répondre.</p>
 
-            {% if r.state.value == 'unavailable' %}
+            {% set sent_quote = tm_pro_sent_quote(r.id) %}
+            {% if sent_quote %}
+                <p class="tm-pro-detail__ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Devis {{ sent_quote }} envoyé au client.</p>
+                <twig:Button href="{{ path('pro_quote_new', {demande: r.id}) }}" block>Voir mon devis</twig:Button>
+            {% elseif r.state.value == 'unavailable' %}
                 <p class="tm-pro-detail__closed">Cette demande n’est plus disponible.</p>
             {% elseif left == 0 %}
                 <twig:Button variant="primary" disabled block>Cette demande a déjà reçu {{ r.maxQuotes }} devis</twig:Button>
@@ -99,7 +103,7 @@
                     <input type="hidden" name="back" value="{{ path('pro_request', {id: r.id}) }}">
                     <twig:Button type="submit" variant="tertiary" icon="refresh" iconPosition="start" block>Remettre dans mes demandes</twig:Button>
                 </form>
-            {% elseif verified and r.state.value in ['unread', 'viewed'] %}
+            {% elseif verified and not sent_quote and r.state.value in ['unread', 'viewed'] %}
                 <details class="tm-pro-ignore">
                     <summary class="tm-button tm-button--tertiary tm-button--block"><twig:Icon name="eyeOff" size="xs" class="tm-icon--inherit" /><span class="tm-button__label">Ignorer cette demande</span></summary>
                     <form method="post" action="{{ path('pro_request_ignore', {id: r.id}) }}" data-turbo="false">

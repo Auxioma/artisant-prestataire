@@ -10,7 +10,10 @@ use App\Quote\Domain\Quote\QuoteContent;
 use App\Quote\Domain\Quote\QuoteStatus;
 use App\QuoteRequest\Application\Pro\ProRequestCard;
 
-/** PR04 — tout ce qu'affiche l'éditeur : demande (RG-112), entreprise, brouillon et totaux, contrôle RG-120, crédits. */
+/**
+ * PR04 — tout ce qu'affiche l'éditeur : demande (RG-112), entreprise, brouillon et totaux, contrôle RG-120, crédits ;
+ * date d'envoi et version courante une fois le devis envoyé.
+ */
 final readonly class QuoteEditorView
 {
     /** @param list<MentionCheck> $mentions */
@@ -25,6 +28,8 @@ final readonly class QuoteEditorView
         public ?int $creditsRemaining,
         public int $defaultValidityDays,
         public ?\DateTimeImmutable $savedAt,
+        public ?\DateTimeImmutable $sentAt = null,
+        public int $version = 1,
     ) {
     }
 

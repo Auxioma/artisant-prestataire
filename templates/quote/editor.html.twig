@@ -2,11 +2,12 @@
     PR04 — Créer un devis (Figma 22:229) dans l'espace pro : fil d'Ariane, « Prestations et montants » (numéro, validité,
     synthèse des lignes, durée des travaux, modalités, actions), « Récapitulatif » (HT, TVA, TTC, crédits), « Lignes du
     devis » (type, désignation, quantité, unité, PU HT, remise, TVA, total HT), conditions PR04.3, contrôle RG-120.
-    Écarts : P-79.
+    Envoi : bouton « Envoyer le devis » (22:290) et modale de confirmation (74:121) ; devis envoyé en lecture seule.
+    Écarts : P-79, P-82.
 -#}
 {% extends 'pro/_space.html.twig' %}
 {% set space_active = 'requests' %}
-{% block title %}Créer un devis — Espace pro — TrouveMoi{% endblock %}
+{% block title %}{{ sent ? 'Devis ' ~ view.number : 'Créer un devis' }} — Espace pro — TrouveMoi{% endblock %}
 {% set c = view.content %}
 {% set p = posted %}
 {% macro field(p, key, current) %}{{ p is not null ? (p[key] ?? '') : current }}{% endmacro %}
@@ -49,9 +50,21 @@
     <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
     <nav class="tm-qedit__crumbs" aria-label="Fil d’Ariane"><a href="{{ path('pro_requests') }}">Demandes</a><span aria-hidden="true">/</span>{% if tm_route_exists('pro_request') %}<a href="{{ path('pro_request', {id: view.request.id}) }}">{{ view.request.title }}</a>{% else %}<span>{{ view.request.title }}</span>{% endif %}</nav>
     <header class="tm-qedit__head">
-        <h1>Créer un devis</h1>
-        <p>Établissez une proposition détaillée avant l’envoi au client.</p>
+        {% if sent %}
+            <h1>Devis {{ view.number }}</h1>
+            <p>Ce devis a été envoyé au client : il ne se modifie plus ici.</p>
+        {% else %}
+            <h1>Créer un devis</h1>
+            <p>Établissez une proposition détaillée avant l’envoi au client.</p>
+        {% endif %}
     </header>
+    {% if sent %}
+        <p class="tm-qedit__sent" role="status"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />
+            <span>Envoyé{{ view.sentAt ? ' le ' ~ view.sentAt|date('d/m/Y à H:i', 'Europe/Paris') }}.</span>
+            <a href="{{ path('pro_quote_pdf', {id: view.quoteId, version: view.version}) }}" target="_blank" rel="noopener">Voir le PDF envoyé<span class="tm-visually-hidden"> (nouvel onglet)</span></a></p>
+    {% endif %}
+    <fieldset class="tm-qedit__frame"{{ sent ? ' disabled' }}>
+    <legend class="tm-visually-hidden">{{ sent ? 'Contenu du devis envoyé' : 'Contenu du devis' }}</legend>
     {% if error %}<p class="tm-field__error tm-qedit__error" role="alert"><twig:Icon name="alert" size="xs" />{{ error }}</p>{% endif %}
     <p class="tm-qedit__error" role="alert" data-quote-editor-target="error" hidden></p>
 
@@ -71,12 +84,15 @@
                 <div class="tm-field tm-qedit__box"><label for="payment_terms">Modalités</label>
                     <input id="payment_terms" name="payment_terms" maxlength="2000" placeholder="Ex. : à convenir" value="{{ m.field(p, 'payment_terms', c.conditions.paymentTerms ?? '') }}"></div>
             </div>
+            {% if not sent %}
             <p class="tm-caption">Un crédit sera déduit uniquement lors de l’envoi effectif.</p>
             <div class="tm-qedit__actions">
                 <twig:Button type="submit" variant="soft">Enregistrer brouillon</twig:Button>
                 {% if view.quoteId %}<twig:Button href="{{ path('pro_quote_preview', {demande: view.request.id}) }}" variant="soft" target="_blank" rel="noopener">Aperçu PDF<span class="tm-visually-hidden"> (nouvel onglet)</span></twig:Button>{% endif %}
+                <twig:Button data-controller="modal-opener" data-modal-opener-dialog-value="envoi-devis" data-action="modal-opener#open" data-quote-editor-target="send" :disabled="view.mentions is not empty and not view.complete()">Envoyer le devis</twig:Button>
                 <p class="tm-caption tm-qedit__saved" data-quote-editor-target="status" aria-live="polite">{{ view.savedAt ? 'Brouillon enregistré à ' ~ view.savedAt|date('H:i', 'Europe/Paris') : '' }}</p>
             </div>
+            {% endif %}
         </section>
 
         <aside class="tm-qedit__card tm-qedit__recap" aria-labelledby="recap-title">
@@ -152,5 +168,30 @@
         <p class="tm-qedit__blocked" role="status" data-quote-editor-target="blocked"{{ view.mentions is not empty and not view.complete() ? '' : ' hidden' }}><twig:Icon name="alert" size="xs" class="tm-icon--inherit" />Il manque des informations obligatoires. L’envoi est bloqué tant qu’elles ne sont pas complétées.</p>
         <p class="tm-caption" data-quote-editor-target="certificate"{{ c and c.needsClientCertificate() ? '' : ' hidden' }}>TVA à taux réduit (10 % / 5,5 %) : l’attestation du client est requise (information).</p>
     </section>
+    </fieldset>
+
+    {% if not sent %}
+        {% set credits = view.creditsRemaining %}
+        <twig:Modal id="envoi-devis" title="{{ credits is same as(0) ? 'Crédit de devis épuisé' : 'Envoyer ce devis ?' }}">
+            <twig:block name="content">
+                {% if credits is same as(0) %}
+                    <p>Vous n’avez plus de devis disponible sur votre crédit. Choisissez un forfait pour envoyer ce devis.</p>
+                {% elseif credits is null %}
+                    <p>Cet envoi consommera 1 devis de votre crédit.</p>
+                {% else %}
+                    <p>Cet envoi consommera 1 devis de votre crédit. Il vous restera {{ credits - 1 }} devis.</p>
+                {% endif %}
+                <p class="tm-callout"><twig:Icon name="info" size="xs" class="tm-icon--inherit" />Le brouillon reste enregistré si vous annulez.</p>
+            </twig:block>
+            <twig:block name="actions">
+                <twig:Button variant="secondary" data-action="modal#close">Annuler</twig:Button>
+                {% if credits is same as(0) %}
+                    <twig:Button href="{{ path('content_pricing') }}">Voir les forfaits</twig:Button>
+                {% else %}
+                    <twig:Button type="submit" formaction="{{ path('pro_quote_send', {demande: view.request.id}) }}">Envoyer le devis</twig:Button>
+                {% endif %}
+            </twig:block>
+        </twig:Modal>
+    {% endif %}
 </form>
 {% endblock %}

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Quote;
 
 use App\ArtisanProfile\Application\Verification\ApproveArtisan;
+use App\Billing\Application\Credit\CreditLedger;
 use App\Identity\Application\Command\RegisterUser;
 use App\QuoteRequest\Application\Dispatch\DispatchQuoteRequest;
 use App\QuoteRequest\Application\Submission\SubmitQuoteRequest;
@@ -15,7 +16,10 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-/** PR04 (Figma 22:229) : éditeur, enregistrement automatique (totaux et RG-120), saisie refusée, droits, lien depuis PR03. */
+/**
+ * PR04 (Figma 22:229) : éditeur, enregistrement automatique (totaux et RG-120), saisie refusée, droits, lien depuis PR03 ;
+ * envoi confirmé dans la modale (Figma 74:121), refus sans crédit, devis envoyé en lecture seule.
+ */
 final class QuoteEditorPageTest extends WebTestCase
 {
     use ArtisanDossier;
@@ -26,6 +30,7 @@ final class QuoteEditorPageTest extends WebTestCase
     private const string OUTSIDE = '0190f5e4-0000-7000-8000-0000000f2102';
 
     private KernelBrowser $client;
+    private string $artisan;
 
     protected function setUp(): void
     {
@@ -34,7 +39,7 @@ final class QuoteEditorPageTest extends WebTestCase
         $connection = self::getContainer()->get(Connection::class);
         \assert($connection instanceof Connection);
         $this->prepareReferentials();
-        $artisan = $this->submittedDossier(200);
+        $artisan = $this->artisan = $this->submittedDossier(200);
         $this->uploadPiece('kbis');
         $this->uploadPiece('insurance_rc');
         $this->dossierDispatch(new ApproveArtisan($artisan, self::ADMIN));
@@ -108,6 +113,50 @@ final class QuoteEditorPageTest extends WebTestCase
         $this->client->submit($form, ['lines[2][unit_price]' => '15,00']);
         self::assertResponseRedirects('/espace-pro/devis/nouveau?demande='.self::REQUEST);
         self::assertStringContainsString('Brouillon enregistré', $this->client->followRedirect()->filter('.tm-toasts')->text());
+    }
+
+    public function testSendConfirmedInModal(): void
+    {
+        $crawler = $this->client->request('GET', '/espace-pro/devis/nouveau?demande='.self::REQUEST);
+        $lines = [
+            'subject' => 'Réparation de la fuite', 'validity_days' => '30',
+            'lines' => [
+                ['type' => 'labour', 'label' => 'Recherche de fuite', 'quantity' => '1', 'unit' => 'forfait', 'unit_price' => '90,00', 'vat' => '1000'],
+                ['type' => 'travel', 'label' => 'Déplacement', 'quantity' => '1', 'unit' => 'forfait', 'unit_price' => '0,00', 'vat' => '2000'],
+            ],
+        ];
+        $token = (string) $crawler->filter('input[name="_token"]')->attr('value');
+
+        // (f) sans crédit : brouillon enregistré, rien n'est débité, renvoi vers les forfaits.
+        $this->client->request('POST', '/espace-pro/devis/envoyer?demande='.self::REQUEST, ['_token' => $token] + $lines);
+        self::assertResponseRedirects('/tarifs-professionnels');
+        self::assertSame('draft', $this->dossierValue("SELECT status FROM quote.quote WHERE request_id = '".self::REQUEST."'"));
+
+        $ledger = self::getContainer()->get(CreditLedger::class);
+        \assert($ledger instanceof CreditLedger);
+        $ledger->grantFree('0190f5e4-0000-7000-8000-0000000f2301', $this->artisan, self::DOSSIER_USER, 2, null, new \DateTimeImmutable());
+
+        $crawler = $this->client->request('GET', '/espace-pro/devis/nouveau?demande='.self::REQUEST);
+        $opener = $crawler->filter('.tm-qedit__actions button[data-modal-opener-dialog-value="envoi-devis"]');
+        self::assertSame('Envoyer le devis', trim($opener->text()));
+        self::assertNull($opener->attr('disabled'), 'mentions complètes : envoi possible');
+        self::assertSame('Envoyer ce devis ?', $crawler->filter('#envoi-devis_title')->text());
+        self::assertStringContainsString('Cet envoi consommera 1 devis de votre crédit. Il vous restera 1 devis.', $crawler->filter('#envoi-devis')->text());
+
+        $this->client->submit($crawler->filter('#envoi-devis button[type="submit"]')->form());
+        self::assertResponseRedirects('/espace-pro/devis/nouveau?demande='.self::REQUEST);
+        $crawler = $this->client->followRedirect();
+        $number = 'DEV-'.new \DateTimeImmutable('now', new \DateTimeZone('Europe/Paris'))->format('Y').'-0001';
+        self::assertStringContainsString('Devis '.$number.' envoyé au client.', $crawler->filter('.tm-toasts')->text());
+        self::assertSame('Devis '.$number, $crawler->filter('h1')->text());
+        self::assertNotNull($crawler->filter('fieldset.tm-qedit__frame')->attr('disabled'), 'lecture seule');
+        self::assertCount(0, $crawler->filter('#envoi-devis'));
+        self::assertStringEndsWith('/pdf/1', (string) $crawler->filter('.tm-qedit__sent a')->attr('href'));
+        self::assertSame('1', $this->dossierValue("SELECT count(*)::text FROM billing.credit_ledger_entry WHERE type = 'quote_debit'"));
+
+        $crawler = $this->client->request('GET', '/espace-pro/demandes/'.self::REQUEST);
+        self::assertStringContainsString('Devis '.$number.' envoyé au client.', $crawler->filter('.tm-pro-detail__decide')->text());
+        self::assertSame('Voir mon devis', trim($crawler->filter('.tm-pro-detail__decide a.tm-button')->first()->text()));
     }
 
     public function testEditorIsReservedToReceivedRequests(): void
