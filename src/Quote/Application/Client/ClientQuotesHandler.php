@@ -7,6 +7,8 @@ namespace App\Quote\Application\Client;
 use App\ArtisanProfile\Application\PublicProfile\PublicArtisanProfile;
 use App\ArtisanProfile\Application\PublicProfile\PublicCredential;
 use App\ArtisanProfile\Application\PublicProfile\PublicProfileView;
+use App\Catalog\Application\Geo\Query\CommunesByInsee;
+use App\Catalog\Application\Geo\Query\CommuneSummary;
 use App\Quote\Application\Pdf\QuotePdfService;
 use App\Quote\Domain\Quote\Quote;
 use App\Quote\Domain\Quote\QuoteId;
@@ -30,7 +32,7 @@ final readonly class ClientQuotesHandler implements QueryHandler
     private const string UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
     private const int MAIN_LINES = 3;
 
-    public function __construct(private QuoteRepository $quotes, private QuoteRequestRepository $requests, private QuotePdfService $pdf, private QueryBus $queries, private Clock $clock)
+    public function __construct(private QuoteRepository $quotes, private QuoteRequestRepository $requests, private QuotePdfService $pdf, private QueryBus $queries, private Clock $clock, private PartyContacts $contacts)
     {
     }
 
@@ -55,7 +57,23 @@ final readonly class ClientQuotesHandler implements QueryHandler
             $cards[] = $this->card($quote, $open && $quote->status()->isRevisable() && null !== $quote->validUntil() && $now < $quote->validUntil());
         }
 
-        return new ClientQuotes($cards, $accepted, $query->requestId, $request->number(), $request->details()->title, $request->maxQuotes(), $open);
+        $communes = $this->queries->ask(new CommunesByInsee([$request->cityInsee()]));
+        $commune = \is_array($communes) ? ($communes[0] ?? null) : null;
+        $city = ($commune instanceof CommuneSummary ? $commune->name.' ' : '').'('.$request->postalCode().')';
+
+        return new ClientQuotes($cards, $accepted, $query->requestId, $request->number(), $request->details()->title, $request->maxQuotes(), $open, $city, null === $accepted ? null : $this->contacts->artisan($this->acceptedArtisan($cards, $accepted)));
+    }
+
+    /** @param list<ClientQuoteCard> $cards */
+    private function acceptedArtisan(array $cards, string $quoteId): string
+    {
+        foreach ($cards as $card) {
+            if ($card->quoteId === $quoteId) {
+                return $card->artisanId;
+            }
+        }
+
+        return '';
     }
 
     /** Demande du client connecté (null si elle n'existe pas ou appartient à un autre). */

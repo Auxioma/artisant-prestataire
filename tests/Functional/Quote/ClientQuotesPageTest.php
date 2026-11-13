@@ -10,6 +10,7 @@ use App\Identity\Application\Command\RegisterUser;
 use App\Quote\Application\Editor\SaveQuoteDraft;
 use App\Quote\Application\Sending\SendQuote;
 use App\QuoteRequest\Application\Dispatch\DispatchQuoteRequest;
+use App\QuoteRequest\Application\Port\RequestContentStore;
 use App\QuoteRequest\Application\Submission\SubmitQuoteRequest;
 use App\Tests\Support\ArtisanDossier;
 use App\Tests\Support\StorageSamples;
@@ -49,6 +50,9 @@ final class ClientQuotesPageTest extends WebTestCase
         self::getContainer()->get(EntityManagerInterface::class)->clear();
         $job = $this->dossierValue("SELECT id FROM catalog.job WHERE slug = 'plombier'");
         $this->dossierDispatch(new SubmitQuoteRequest(self::REQUEST, self::CLIENT, $job, '76351', '76600', '1 rue Fictive', 'repair', 'Fuite sous l’évier de la cuisine depuis ce matin (fictif).', [], null, 'week', null, title: 'Fuite sous l’évier'));
+        $store = self::getContainer()->get(RequestContentStore::class);
+        \assert($store instanceof RequestContentStore);
+        $store->saveAddress(self::REQUEST, '1 rue Fictive', null, null, new \DateTimeImmutable());
         $this->dossierDispatch(new DispatchQuoteRequest(self::REQUEST));
         $this->dossierDispatch(new SaveQuoteDraft(self::DOSSIER_USER, self::REQUEST, self::QUOTE, ['subject' => 'Réparation de la fuite', 'execution_delay' => '2 semaines', 'deposit_type' => 'percent', 'deposit_value' => '30', 'lines' => [
             ['type' => 'labour', 'label' => 'Recherche de fuite', 'quantity' => '1', 'unit' => 'forfait', 'unit_price' => '90', 'vat' => '1000'],
@@ -93,8 +97,19 @@ final class ClientQuotesPageTest extends WebTestCase
         $crawler = $this->client->followRedirect();
         self::assertStringContainsString('Devis accepté', $crawler->filter('.tm-toasts')->text());
         self::assertSame('accepted', $this->dossierValue("SELECT status FROM quote.quote WHERE id = '".self::QUOTE."'"));
-        self::assertCount(0, $crawler->filter('.tm-qcard__choose'), 'plus de choix possible');
-        self::assertSame('Accepté', $crawler->filter('.tm-qcard__badge')->text());
+        self::assertSame('Votre choix est confirmé !', $crawler->filter('h1')->text(), 'C03B');
+        self::assertSame('Mes devis', $crawler->filter('.tm-cspace__banner-title')->text());
+        self::assertSame(["99,00\u{a0}€ TTC", '2 semaines', 'Le Havre (76600)'], $crawler->filter('.tm-accepted__facts')->first()->filter('strong')->each(static fn ($n): string => $n->text()));
+        self::assertStringContainsString('dominique.verif@exemple.test', $crawler->filter('.tm-accepted__contact')->text(), 'RG-022bis : coordonnées de l’artisan');
+        self::assertCount(0, $crawler->filter('.tm-qcard__choose[data-modal-opener-dialog-value]'), 'plus de choix possible');
+
+        // Côté artisan (PR03) : coordonnées du client et adresse complète, après acceptation seulement.
+        $this->client->getCookieJar()->clear();
+        $this->login('dominique.verif@exemple.test');
+        $crawler = $this->client->request('GET', '/espace-pro/demandes/'.self::REQUEST);
+        self::assertStringContainsString('accepté par le client', $crawler->filter('.tm-pro-detail__decide')->text());
+        self::assertStringContainsString('1 rue Fictive, 76600', $crawler->filter('.tm-pro-contact')->text());
+        self::assertStringContainsString('camille.compare@exemple.test', $crawler->filter('.tm-pro-contact')->text());
     }
 
     public function testRefuseWithReason(): void
@@ -106,6 +121,16 @@ final class ClientQuotesPageTest extends WebTestCase
         self::assertStringContainsString('Devis refusé', $crawler->filter('.tm-toasts')->text());
         self::assertSame('Délai — Trop tard pour nous (fictif).', $this->dossierValue("SELECT decision_reason FROM quote.quote WHERE id = '".self::QUOTE."'"));
         self::assertStringContainsString('Motif : Délai', $crawler->filter('.tm-qcard')->text());
+    }
+
+    public function testArtisanSeesNoClientContactBeforeAcceptance(): void
+    {
+        $this->client->getCookieJar()->clear();
+        $this->login('dominique.verif@exemple.test');
+        $crawler = $this->client->request('GET', '/espace-pro/demandes/'.self::REQUEST);
+        self::assertResponseIsSuccessful();
+        self::assertCount(0, $crawler->filter('.tm-pro-contact'));
+        self::assertStringNotContainsString('1 rue Fictive', (string) $this->client->getResponse()->getContent());
     }
 
     public function testOtherClientsCannotSeeOrDecide(): void

@@ -270,4 +270,23 @@
         .tm-compare__table tbody th, .tm-compare__table thead td { position: sticky; left: 0; z-index: 1; background: var(--color-surface); }
         .tm-compare__table thead td { background: var(--tm-bg); }
     }
+
+    /* C03B — Devis accepté (Figma 12:2). */
+    .tm-accepted { display: grid; gap: 24px; }
+    .tm-accepted > p, .tm-accepted > h1 { margin: 0; }
+    .tm-accepted__status { display: flex; align-items: center; gap: 6px; padding: 12px; border-radius: 20px; background: var(--tm-mint); color: var(--tm-green); font-size: 12px; line-height: 18px; font-weight: var(--font-weight-medium); }
+    .tm-accepted h1 { font-size: 32px; line-height: 40px; font-weight: var(--font-weight-bold); letter-spacing: -0.16px; color: var(--tm-navy); }
+    .tm-accepted__lead { font-size: 14px; line-height: 21px; color: var(--tm-muted); }
+    .tm-accepted__card { display: grid; gap: 16px; padding: 27px; border-radius: 13px; background: var(--color-surface); }
+    .tm-accepted__card h2 { margin: 0; font-size: 18px; line-height: 26px; font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
+    .tm-accepted__facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 16px 27px; padding: 14px; background: var(--tm-bg); }
+    .tm-accepted__facts div { display: grid; gap: 6px; min-width: 0; }
+    .tm-accepted__facts span { font-size: 12px; line-height: 18px; font-weight: var(--font-weight-medium); color: var(--tm-muted); }
+    .tm-accepted__facts strong { font-size: 16px; line-height: 24px; font-weight: var(--font-weight-semibold); color: var(--tm-navy); overflow-wrap: anywhere; }
+    .tm-accepted__facts a { color: var(--tm-blue); }
+    .tm-accepted__steps { display: grid; gap: 17px; margin: 0; padding: 0; list-style: none; }
+    .tm-accepted__steps li { display: flex; align-items: flex-start; gap: 12px; padding: 14px; background: var(--tm-bg); font-size: 14px; line-height: 21px; color: var(--tm-ink); }
+    .tm-accepted__steps span { font-size: 16px; line-height: 24px; font-weight: var(--font-weight-semibold); color: var(--tm-orange-ink); }
+    .tm-accepted__actions { display: flex; flex-wrap: wrap; gap: 14px; background: var(--tm-bg); }
+    .tm-accepted__legal { padding: 19px; border-radius: 10px; background: var(--tm-ice); font-size: 12px; line-height: 18px; font-weight: var(--font-weight-medium); color: var(--tm-muted); }
 }

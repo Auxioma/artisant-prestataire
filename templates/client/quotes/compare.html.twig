@@ -2,12 +2,14 @@
     C03 — Comparateur de devis (Figma 22:80) : fil d'Ariane, « n devis disponibles sur max », cartes (badge, artisan,
     TTC, HT / TVA, validité et durée, principaux postes, « Voir le devis détaillé », « Choisir ce professionnel »,
     « Refuser »), « Comparatif détaillé » (Imprimer / PDF), « Avant de confirmer votre choix ». Modales : acceptation
-    (195:9075, RG-071) et refus motivé (C03.5). Écarts : P-87.
+    (195:9075, RG-071) et refus motivé (C03.5). Devis accepté : C03B (12:2) — confirmation, devis retenu, coordonnées de
+    l'artisan (RG-022bis), prochaines étapes. Écarts : P-87, P-88.
 -#}
 {% extends 'client/_space.html.twig' %}
 {% set space_active = 'requests' %}
-{% set space_title = 'Comparateur de devis' %}
-{% set space_subtitle = 'Comparez les devis reçus et choisissez votre professionnel.' %}
+{% set retained = view.accepted() %}
+{% set space_title = retained ? 'Mes devis' : 'Comparateur de devis' %}
+{% set space_subtitle = retained ? 'Votre devis est accepté : retrouvez les prochaines étapes.' : 'Comparez les devis reçus et choisissez votre professionnel.' %}
 {% set title = view.requestTitle ?? ('Demande ' ~ view.requestNumber) %}
 {% block title %}Devis reçus — {{ title }} — Espace client — TrouveMoi{% endblock %}
 {% macro money(cents) %}{{ cents|tm_money }}{% endmacro %}
@@ -17,6 +19,41 @@
 {% block space_content %}
 {% set cheapest = view.cheapestId() %}
 {% set detailed = view.mostDetailedId() %}
+{% if retained %}
+<div class="tm-accepted">
+    <p class="tm-accepted__status"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Devis accepté</p>
+    <h1>Votre choix est confirmé !</h1>
+    <p class="tm-accepted__lead">{{ retained.artisanName }} a été informé de votre décision concernant « {{ title }} ».</p>
+    <section class="tm-accepted__card" aria-labelledby="retenu-title">
+        <h2 id="retenu-title">Devis retenu : {{ retained.artisanName }}</h2>
+        <div class="tm-accepted__facts">
+            <div><span>Montant du devis</span><strong>{{ retained.ttcCents|tm_money }} TTC</strong></div>
+            <div><span>Délai annoncé</span><strong>{{ retained.executionDelay ?? '—' }}</strong></div>
+            <div><span>Localisation</span><strong>{{ view.requestCity }}</strong></div>
+        </div>
+        {% set contact = view.acceptedContact %}
+        {% if contact and (contact.phone or contact.email) %}
+            <div class="tm-accepted__facts tm-accepted__contact">
+                {% if contact.phone %}<div><span>Téléphone</span><strong><a href="tel:{{ contact.phone|replace({' ': ''}) }}">{{ contact.phone }}</a></strong></div>{% endif %}
+                {% if contact.email %}<div><span>E-mail</span><strong><a href="mailto:{{ contact.email }}">{{ contact.email }}</a></strong></div>{% endif %}
+            </div>
+        {% endif %}
+    </section>
+    <section class="tm-accepted__card" aria-labelledby="next-title">
+        <h2 id="next-title">Et maintenant ?</h2>
+        <ol class="tm-accepted__steps">
+            <li><span>1</span>L’artisan reçoit la confirmation et les coordonnées nécessaires.</li>
+            <li><span>2</span>Vous planifiez ensemble l’intervention en le contactant directement.</li>
+            <li><span>3</span>Après la prestation, vous pourrez laisser un avis certifié.</li>
+        </ol>
+    </section>
+    <div class="tm-accepted__actions">
+        <a class="tm-qcard__choose" href="{{ path('client_quote_pdf', {quote: retained.quoteId}) }}" target="_blank" rel="noopener">Voir le devis<span class="tm-visually-hidden"> (PDF, nouvel onglet)</span></a>
+        <a class="tm-qcard__view" href="{{ path('client_requests') }}">Retour à mes demandes</a>
+    </div>
+    <p class="tm-accepted__legal">L’acceptation exprime votre choix du professionnel. Les modalités contractuelles et le paiement des travaux sont convenus directement avec lui.</p>
+</div>
+{% else %}
 <div class="tm-compare">
     <nav class="tm-compare__crumbs" aria-label="Fil d’Ariane"><a href="{{ path('client_requests') }}">Mes demandes</a><span aria-hidden="true">/</span><span aria-current="page">{{ title }}</span></nav>
     <h1 class="tm-visually-hidden">Devis reçus pour « {{ title }} »</h1>
@@ -89,6 +126,7 @@
         <p>L’acceptation d’un devis constitue une intention de commande : le contrat se forme directement entre vous et le professionnel. La signature électronique et le paiement des travaux ne sont pas inclus à ce stade.</p>
     </section>
 </div>
+{% endif %}
 
 {% for card in view.cards|filter(c => c.decidable) %}
     <form method="post" action="{{ path('client_quote_accept', {quote: card.quoteId}) }}" data-turbo="false">

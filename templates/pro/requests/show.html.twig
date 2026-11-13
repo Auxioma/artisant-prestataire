@@ -64,16 +64,31 @@
                 <p class="tm-pro-detail__ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Vous intervenez sur cette commune.</p>
             {% endif %}
             <p class="tm-pro-detail__count">{{ r.quotesSent }} devis reçu{{ r.quotesSent > 1 ? 's' }} sur {{ r.maxQuotes }} maximum</p>
-            <p class="tm-pro-detail__places">{{ left }} place{{ left > 1 ? 's' }} restante{{ left > 1 ? 's' }} pour répondre.</p>
-
             {% set sent_quote = tm_pro_sent_quote(r.id) %}
+            {% if not sent_quote or sent_quote.status in ['sent', 'viewed'] %}
+                <p class="tm-pro-detail__places">{{ left }} place{{ left > 1 ? 's' }} restante{{ left > 1 ? 's' }} pour répondre.</p>
+            {% endif %}
+
             {% if sent_quote %}
                 {% if sent_quote.status == 'withdrawn' %}
                     <p class="tm-pro-detail__closed">Vous avez retiré votre devis {{ sent_quote.number }} : vous ne pouvez plus répondre à cette demande.</p>
                 {% else %}
-                    <p class="tm-pro-detail__ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Devis {{ sent_quote.number }} {{ {sent: 'envoyé au client', viewed: 'consulté par le client'}[sent_quote.status] ?? sent_quote.label|lower }}.</p>
+                    <p class="tm-pro-detail__ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Devis {{ sent_quote.number }} {{ {sent: 'envoyé au client', viewed: 'consulté par le client', accepted: 'accepté par le client'}[sent_quote.status] ?? sent_quote.label|lower }}.</p>
                 {% endif %}
                 <twig:Button href="{{ path('pro_quote_new', {demande: r.id}) }}" block>Voir mon devis</twig:Button>
+                {% set contact = sent_quote.status == 'accepted' ? tm_pro_client_contact(r.id) : null %}
+                {% if contact %}
+                    <section class="tm-pro-contact" aria-labelledby="contact-title">
+                        <h3 id="contact-title">Coordonnées du client</h3>
+                        <p>Le client a accepté votre devis : contactez-le pour organiser l’intervention.</p>
+                        <dl>
+                            <div><dt>Nom</dt><dd>{{ contact.name }}</dd></div>
+                            {% if contact.phone %}<div><dt>Téléphone</dt><dd><a href="tel:{{ contact.phone|replace({' ': ''}) }}">{{ contact.phone }}</a></dd></div>{% endif %}
+                            {% if contact.email %}<div><dt>E-mail</dt><dd><a href="mailto:{{ contact.email }}">{{ contact.email }}</a></dd></div>{% endif %}
+                            {% if contact.address %}<div><dt>Adresse d’intervention</dt><dd>{{ contact.address }}</dd></div>{% endif %}
+                        </dl>
+                    </section>
+                {% endif %}
             {% elseif r.state.value == 'unavailable' %}
                 <p class="tm-pro-detail__closed">Cette demande n’est plus disponible.</p>
             {% elseif left == 0 %}

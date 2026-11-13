@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Quote\UI\Twig;
 
+use App\Quote\Application\Client\AcceptedClientContact;
 use App\Quote\Application\Editor\QuoteEditor;
 use App\Quote\Application\Editor\QuoteEditorView;
 use App\Quote\Domain\Quote\QuoteStatus;
@@ -21,7 +22,7 @@ final class ProQuoteExtension extends AbstractExtension
 
     public function getFunctions(): array
     {
-        return [new TwigFunction('tm_pro_sent_quote', $this->sentQuote(...))];
+        return [new TwigFunction('tm_pro_sent_quote', $this->sentQuote(...)), new TwigFunction('tm_pro_client_contact', $this->clientContact(...))];
     }
 
     /**
@@ -37,5 +38,25 @@ final class ProQuoteExtension extends AbstractExtension
         return $view instanceof QuoteEditorView && QuoteStatus::Draft !== $view->status
             ? ['number' => $view->number, 'status' => $view->status->value, 'label' => $view->status->label()]
             : null;
+    }
+
+    /**
+     * RG-022bis — coordonnées du client révélées à l'artisan retenu (devis accepté), sinon null.
+     *
+     * @return array<string, string|null>|null clés name, email, phone, address
+     */
+    public function clientContact(string $requestId): ?array
+    {
+        $userId = $this->user->id();
+        $contact = null === $userId ? null : $this->queries->ask(new AcceptedClientContact($userId, $requestId));
+        if (!\is_array($contact)) {
+            return null;
+        }
+        $values = [];
+        foreach (['name', 'email', 'phone', 'address'] as $key) {
+            $values[$key] = \is_string($contact[$key] ?? null) ? $contact[$key] : null;
+        }
+
+        return $values;
     }
 }

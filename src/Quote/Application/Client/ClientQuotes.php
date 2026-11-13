@@ -15,7 +15,21 @@ final readonly class ClientQuotes
         public ?string $requestTitle = null,
         public int $maxQuotes = 0,
         public bool $requestOpen = false,
+        public ?string $requestCity = null,
+        /** @var array{name: string, email: ?string, phone: ?string}|null coordonnées de l'artisan retenu (RG-022bis) */
+        public ?array $acceptedContact = null,
     ) {
+    }
+
+    public function accepted(): ?ClientQuoteCard
+    {
+        foreach ($this->cards as $card) {
+            if ($card->quoteId === $this->acceptedQuoteId) {
+                return $card;
+            }
+        }
+
+        return null;
     }
 
     /** C03.3 — « Réponse détaillée » : le devis à décider qui détaille le plus de postes (s'il se distingue). */
