@@ -1,0 +1,4 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Vous avez utilisé vos <strong>{{ total }} devis gratuits</strong>. {% if restants > 0 %}Il vous reste {{ restants }} devis sur vos autres crédits.{% else %}Vous ne pouvez plus envoyer de devis pour le moment.{% endif %}</p>
+<p>Souscrivez un forfait pour continuer à envoyer des devis. Le reste de votre espace professionnel (demandes, messages, profil) reste accessible.</p>
+{{ bouton(lien, 'Choisir un forfait') }}

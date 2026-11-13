@@ -9,17 +9,20 @@ use App\Billing\Application\Credit\CreditLedger;
 use App\Billing\Application\Credit\InsufficientCredits;
 use App\Billing\Application\Credit\QuoteCreditAccount;
 use App\Billing\Domain\Credit\CreditBucket;
+use App\Billing\Domain\Credit\Event\CreditsDebited;
 use App\Billing\Domain\Credit\LedgerEntryType;
+use App\Shared\Application\Bus\EventBus;
 use App\Shared\Infrastructure\Persistence\DbalValue;
 use Doctrine\DBAL\Connection;
 
 /**
  * ADR-0006 : écriture du registre et mise à jour du solde dans la même transaction (celle du bus d'événements) ; ancre
- * `credit_account` verrouillée (FOR UPDATE) avant toute écriture, dans un ordre fixe.
+ * `credit_account` verrouillée (FOR UPDATE) avant toute écriture, dans un ordre fixe. Chaque débit publie
+ * `CreditsDebited` dans la même transaction (outbox) : alertes de seuil RG-105.
  */
 final readonly class DbalCreditLedger implements CreditLedger, QuoteCreditAccount
 {
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private EventBus $events)
     {
     }
 
@@ -102,6 +105,8 @@ final readonly class DbalCreditLedger implements CreditLedger, QuoteCreditAccoun
                 \sprintf('UPDATE billing.credit_balance SET %1$s = %1$s - 1, updated_at = :at WHERE artisan_id = :artisan', $bucket->value),
                 ['artisan' => $artisanId, 'at' => $at->format(\DATE_ATOM)],
             );
+            $userId = DbalValue::string($this->connection->fetchOne('SELECT user_id FROM billing.credit_account WHERE artisan_id = :artisan', ['artisan' => $artisanId]));
+            $this->events->publish(new CreditsDebited($artisanId, $userId, $bucket->value, $available, $available - 1, $balance->freeGranted, $balance->total() - 1, $at));
 
             return $bucket;
         }

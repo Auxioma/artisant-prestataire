@@ -184,7 +184,7 @@
     .tm-pro-detail__closed { padding: 12px 16px; border-radius: 10px; background: var(--color-surface-alt); font-size: 14px; line-height: 21px; font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
     .tm-pro-detail__credits { display: grid; gap: 11px; padding: 16px; border-radius: 10px; background: var(--tm-ice); }
     .tm-pro-detail__credits-count { font-size: 14px; line-height: 21px; font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
-    .tm-pro-detail__credits p:not(.tm-pro-detail__credits-count) { font-size: 12px; line-height: 18px; font-weight: var(--font-weight-medium); color: var(--tm-muted); }
+    .tm-pro-detail__credits p:not(.tm-pro-detail__credits-count, .tm-credit-out) { font-size: 12px; line-height: 18px; font-weight: var(--font-weight-medium); color: var(--tm-muted); }
     .tm-pro-detail__decide .tm-pro-ignore form { display: grid; gap: var(--space-2); margin-top: var(--space-2); }
 
     @media (min-width: 768px) {

@@ -103,6 +103,7 @@
                 {% if view.issuer.vatExempt %}<small>TVA non applicable, art. 293 B du CGI</small>{% endif %}</div>
             <div class="tm-qedit__box"><span>Montant TTC</span><strong data-quote-editor-target="ttc">{{ t ? t.ttc.amount|tm_money : '0,00 €' }}</strong></div>
             {% if view.creditsRemaining is not null %}<div class="tm-qedit__box"><span>Crédits disponibles</span><strong>{{ view.creditsRemaining }}</strong></div>{% endif %}
+            {% if view.creditsRemaining is same as(0) and not sent %}<p class="tm-credit-out" role="alert"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" /><span>Crédit épuisé : souscrivez un forfait pour continuer à envoyer des devis. <a href="{{ path('content_pricing') }}">Voir les forfaits</a></span></p>{% endif %}
             <p class="tm-caption">Coordonnées client protégées avant l’acceptation du devis.</p>
         </aside>
     </div>

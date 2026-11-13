@@ -27,3 +27,10 @@
     .tm-credit-gauge__count { font: var(--type-number); letter-spacing: var(--type-number-tracking); color: var(--color-heading); }
     .tm-credit-gauge__status { font: var(--type-caption); color: var(--_text); }
 }
+
+/* RG-106 — crédit épuisé : message bloquant là où l'envoi est proposé (PR03, PR04). */
+@layer components {
+    .tm-credit-out { display: flex; align-items: flex-start; gap: var(--space-2); margin: 0; padding: 12px 16px; border-radius: 10px; background: var(--color-danger-bg); color: var(--color-danger-text); font-size: 14px; line-height: 21px; }
+    .tm-credit-out a { color: inherit; font-weight: var(--font-weight-semibold); }
+    .tm-credit-out .tm-icon { flex: none; margin-top: 2px; }
+}

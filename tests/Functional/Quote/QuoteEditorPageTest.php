@@ -134,14 +134,14 @@ final class QuoteEditorPageTest extends WebTestCase
 
         $ledger = self::getContainer()->get(CreditLedger::class);
         \assert($ledger instanceof CreditLedger);
-        $ledger->grantFree('0190f5e4-0000-7000-8000-0000000f2301', $this->artisan, self::DOSSIER_USER, 2, null, new \DateTimeImmutable());
+        $ledger->grantFree('0190f5e4-0000-7000-8000-0000000f2301', $this->artisan, self::DOSSIER_USER, 1, null, new \DateTimeImmutable());
 
         $crawler = $this->client->request('GET', '/espace-pro/devis/nouveau?demande='.self::REQUEST);
         $opener = $crawler->filter('.tm-qedit__actions button[data-modal-opener-dialog-value="envoi-devis"]');
         self::assertSame('Envoyer le devis', trim($opener->text()));
         self::assertNull($opener->attr('disabled'), 'mentions complètes : envoi possible');
         self::assertSame('Envoyer ce devis ?', $crawler->filter('#envoi-devis_title')->text());
-        self::assertStringContainsString('Cet envoi consommera 1 devis de votre crédit. Il vous restera 1 devis.', $crawler->filter('#envoi-devis')->text());
+        self::assertStringContainsString('Cet envoi consommera 1 devis de votre crédit. Il vous restera 0 devis.', $crawler->filter('#envoi-devis')->text());
 
         $this->client->submit($crawler->filter('#envoi-devis button[type="submit"]')->form());
         self::assertResponseRedirects('/espace-pro/devis/nouveau?demande='.self::REQUEST);
@@ -157,6 +157,8 @@ final class QuoteEditorPageTest extends WebTestCase
         $crawler = $this->client->request('GET', '/espace-pro/demandes/'.self::REQUEST);
         self::assertStringContainsString('Devis '.$number.' envoyé au client.', $crawler->filter('.tm-pro-detail__decide')->text());
         self::assertSame('Voir mon devis', trim($crawler->filter('.tm-pro-detail__decide a.tm-button')->first()->text()));
+        self::assertStringContainsString('Crédit épuisé : souscrivez un forfait', $crawler->filter('.tm-pro-detail__credits [role="alert"]')->text(), 'RG-106');
+        self::assertSame('exhausted', str_replace('tm-credit-pill tm-credit-pill--', '', (string) $crawler->filter('.tm-credit-pill')->attr('class')), 'jauge de l’en-tête');
     }
 
     public function testEditorIsReservedToReceivedRequests(): void

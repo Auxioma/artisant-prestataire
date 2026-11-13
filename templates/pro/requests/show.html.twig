@@ -92,7 +92,11 @@
             {% if credits %}
                 <div class="tm-pro-detail__credits">
                     <p class="tm-pro-detail__credits-count">{{ credits.remaining }} crédit{{ credits.remaining > 1 ? 's' }} disponible{{ credits.remaining > 1 ? 's' }}</p>
-                    <p>Aucun crédit consommé à la consultation. 1 crédit débité à l’envoi du devis.</p>
+                    {% if credits.state == 'exhausted' %}
+                        <p class="tm-credit-out" role="alert"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" /><span>Crédit épuisé : souscrivez un forfait pour continuer à envoyer des devis. <a href="{{ path('content_pricing') }}">Voir les forfaits</a></span></p>
+                    {% else %}
+                        <p>Aucun crédit consommé à la consultation. 1 crédit débité à l’envoi du devis.</p>
+                    {% endif %}
                 </div>
             {% endif %}
 

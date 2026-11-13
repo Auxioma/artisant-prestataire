@@ -181,7 +181,7 @@ final class SendQuoteConcurrencyTest extends TestCase
     {
         $env = array_filter(getenv(), \is_string(...));
 
-        return ['APP_ENV' => 'test', 'APP_DEBUG' => '0', 'TEST_TOKEN' => self::TOKEN] + array_diff_key($env, ['APP_ENV' => 1, 'APP_DEBUG' => 1, 'TEST_TOKEN' => 1]);
+        return ['APP_ENV' => 'test', 'TEST_TOKEN' => self::TOKEN] + array_diff_key($env, ['APP_ENV' => 1, 'APP_DEBUG' => 1, 'TEST_TOKEN' => 1]);
     }
 
     private static function root(): string

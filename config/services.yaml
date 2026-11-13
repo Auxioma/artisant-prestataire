@@ -138,6 +138,9 @@ services:
     # Ports du module Billing
     App\Billing\Application\Credit\CreditLedger: '@App\Billing\Infrastructure\Credit\DbalCreditLedger'
     App\Billing\Application\Credit\QuoteCreditAccount: '@App\Billing\Infrastructure\Credit\DbalCreditLedger'
+    App\Billing\Application\Alert\CreditAlertLog: '@App\Billing\Infrastructure\Alert\DbalCreditAlertLog'
+    App\Billing\Application\Alert\CreditAlertMailer: '@App\Billing\Infrastructure\Alert\NotificationCreditAlertMailer'
+    App\Billing\Domain\Credit\CreditAlertPolicy: ~
 
     # Ports du module QuoteRequest
     App\QuoteRequest\Domain\Request\QuoteRequestRepository: '@App\QuoteRequest\Infrastructure\Doctrine\Repository\DoctrineQuoteRequestRepository'

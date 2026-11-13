@@ -202,10 +202,12 @@ notifications:
         label: "Alerte crédits : seuils consommés"
         recipient: "Artisan"
         channels: [email, in_app]
+        variables: [prenom, seuil, restants, total, lien]
     'E-42b':
         label: "Crédit gratuit épuisé : invitation à souscrire"
         recipient: "Artisan"
         channels: [email, in_app]
+        variables: [prenom, total, restants, lien]
     'E-43':
         label: "Changement de forfait / résiliation programmée / annulation de résiliation"
         recipient: "Artisan"

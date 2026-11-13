@@ -10,7 +10,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 require dirname(__DIR__, 2).'/bootstrap.php';
 
-$kernel = new Kernel('test', false);
+$kernel = new Kernel('test', true); // debug : conteneur recompilé si le code a changé (sinon conteneur périmé)
 $kernel->boot();
 $container = $kernel->getContainer()->get('test.service_container');
 assert($container instanceof ContainerInterface);
