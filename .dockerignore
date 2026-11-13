@@ -7,3 +7,6 @@ docs/
 WhatsApp Image *.jpeg
 *.pdf
 .phpunit.cache
+# Fichiers et dossiers cachés (outils locaux, IDE, caches) : hors de l'image, sauf la configuration par défaut
+.*
+!.env
