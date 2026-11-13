@@ -11,6 +11,7 @@ use App\Quote\Domain\Quote\QuoteConditions;
 use App\Quote\Domain\Quote\QuoteContent;
 use App\Quote\Domain\Quote\QuoteId;
 use App\Quote\Domain\Quote\QuoteLine;
+use App\Quote\Domain\Quote\QuotePdf;
 use App\Quote\Domain\Quote\QuoteRepository;
 use App\Quote\Domain\Quote\QuoteStatus;
 use App\Quote\Domain\Quote\QuoteVersion;
@@ -132,6 +133,8 @@ final readonly class DbalQuoteRepository implements QuoteRepository
                 'client_note' => $conditions->clientNote,
             ], \JSON_THROW_ON_ERROR),
             'created_at' => self::date($version->createdAt),
+            'pdf_key' => $version->pdf?->key,
+            'pdf_sha256' => $version->pdf?->sha256,
         ]);
         foreach ($content->lines as $i => $line) {
             $this->connection->insert('quote.quote_line', [
@@ -199,6 +202,7 @@ final readonly class DbalQuoteRepository implements QuoteRepository
                 ),
                 new \DateTimeImmutable(DbalValue::string($version['created_at'])),
                 null === $version['sent_at'] ? null : new \DateTimeImmutable(DbalValue::string($version['sent_at'])),
+                null === $version['pdf_key'] ? null : new QuotePdf(DbalValue::string($version['pdf_key']), DbalValue::string($version['pdf_sha256'])),
             );
         }
         if ([] === $versions) {

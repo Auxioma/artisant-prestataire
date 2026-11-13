@@ -39,6 +39,7 @@ final readonly class QuoteIssuerHandler implements QueryHandler
             $required->any,
             $required->decennial,
             $profile->isPublic() && null !== $profile->logoFileId(),
+            $profile->isPublic() ? $profile->logoFileId() : null,
         );
     }
 }

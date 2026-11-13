@@ -74,6 +74,7 @@
             <p class="tm-caption">Un crédit sera déduit uniquement lors de l’envoi effectif.</p>
             <div class="tm-qedit__actions">
                 <twig:Button type="submit" variant="soft">Enregistrer brouillon</twig:Button>
+                {% if view.quoteId %}<twig:Button href="{{ path('pro_quote_preview', {demande: view.request.id}) }}" variant="soft" target="_blank" rel="noopener">Aperçu PDF<span class="tm-visually-hidden"> (nouvel onglet)</span></twig:Button>{% endif %}
                 <p class="tm-caption tm-qedit__saved" data-quote-editor-target="status" aria-live="polite">{{ view.savedAt ? 'Brouillon enregistré à ' ~ view.savedAt|date('H:i', 'Europe/Paris') : '' }}</p>
             </div>
         </section>

@@ -7,6 +7,8 @@ namespace App\Quote\UI\Http;
 use App\Quote\Application\Editor\QuoteEditor;
 use App\Quote\Application\Editor\QuoteEditorView;
 use App\Quote\Application\Editor\SaveQuoteDraft;
+use App\Quote\Application\Pdf\QuotePreviewPdf;
+use App\Quote\Application\Pdf\QuoteVersionPdf;
 use App\Quote\Domain\Mention\MentionCheck;
 use App\Quote\Domain\Quote\LineType;
 use App\Quote\Domain\Quote\QuoteLine;
@@ -28,7 +30,7 @@ use Symfony\Component\Routing\Attribute\Route;
 /**
  * PR04 (/espace-pro/devis/nouveau?demande={id}, Figma 22:229) — éditeur de devis : en-tête, lignes, récapitulatif,
  * conditions, contrôle RG-120. Brouillon enregistré à la demande ou automatiquement (JSON : totaux et contrôles mis à
- * jour) ; aucun crédit consommé (RG-100). Aperçu PDF (T-503) et envoi (T-504) avec leurs tickets.
+ * jour) ; aucun crédit consommé (RG-100). Aperçu PDF du brouillon (PR04.4) ; envoi avec T-504.
  */
 #[Route('/espace-pro/devis')]
 final class QuoteEditorController extends AbstractController
@@ -99,6 +101,44 @@ final class QuoteEditorController extends AbstractController
             'mentions' => array_map(static fn (MentionCheck $c): array => ['label' => $c->label, 'ok' => $c->ok], $view->mentions),
             'complete' => $view->complete(),
             'certificate' => true === $content?->needsClientCertificate(),
+        ]);
+    }
+
+    /** PR04.4 — aperçu du brouillon enregistré (filigrane, sans numéro), ouvert dans le navigateur. */
+    #[Route('/apercu', name: 'pro_quote_preview', methods: ['GET'])]
+    public function preview(Request $request): Response
+    {
+        $bytes = $this->queries->ask(new QuotePreviewPdf($this->userId(), $this->requestId($request)));
+        if (!\is_string($bytes)) {
+            throw new NotFoundHttpException('Enregistrez d’abord le brouillon.');
+        }
+
+        return self::pdf($bytes, 'apercu-devis.pdf');
+    }
+
+    /** PDF figé d'une version envoyée (empreinte vérifiée), pour l'artisan auteur. */
+    #[Route('/{id}/pdf/{version}', name: 'pro_quote_pdf', requirements: ['id' => '[0-9a-f-]{36}', 'version' => '\d{1,3}'], methods: ['GET'])]
+    public function versionPdf(string $id, int $version): Response
+    {
+        try {
+            $bytes = $this->queries->ask(new QuoteVersionPdf($this->userId(), $id, $version));
+        } catch (QuoteRuleViolation $e) {
+            throw new NotFoundHttpException($e->getMessage(), $e);
+        }
+        if (!\is_string($bytes)) {
+            throw new NotFoundHttpException();
+        }
+
+        return self::pdf($bytes, \sprintf('devis-v%d.pdf', $version));
+    }
+
+    private static function pdf(string $bytes, string $name): Response
+    {
+        return new Response($bytes, Response::HTTP_OK, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => \sprintf('inline; filename="%s"', $name),
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 

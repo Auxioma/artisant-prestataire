@@ -99,6 +99,11 @@ final class QuoteEditorPageTest extends WebTestCase
         self::assertSame("123,75\u{a0}€", $crawler->filter('[data-quote-editor-target="ttc"]')->text());
         self::assertStringContainsString('Frais de déplacement', $crawler->filter('.tm-qedit__mentions .is-missing')->text());
 
+        $this->client->request('GET', '/espace-pro/devis/apercu?demande='.self::REQUEST);
+        self::assertResponseIsSuccessful();
+        self::assertResponseHeaderSame('Content-Type', 'application/pdf');
+        self::assertStringStartsWith('%PDF-', (string) $this->client->getResponse()->getContent());
+
         $form = $crawler->filter('form.tm-qedit')->form();
         $this->client->submit($form, ['lines[2][unit_price]' => '15,00']);
         self::assertResponseRedirects('/espace-pro/devis/nouveau?demande='.self::REQUEST);

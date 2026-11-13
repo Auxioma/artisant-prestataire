@@ -24,6 +24,8 @@ final readonly class QuoteIssuerView
         public bool $insuranceRequired,
         public bool $decennialRequired,
         public bool $hasPublicLogo,
+        /** Logo public (fichier analysé), repris en tête du PDF (PR04.4). */
+        public ?string $logoFileId = null,
     ) {
     }
 

@@ -19,3 +19,4 @@ Tous les ADR sont **Proposés** tant que l'Étape 0 n'est pas validée.
 | [0012](0012-front-twig-symfony-ux.md) | Front Twig SSR + Symfony UX + tokens CSS | Proposé |
 | [0013](0013-back-office-roles-permissions.md) | Back-office isolé, 2FA, permissions fines | Proposé |
 | [0014](0014-masquage-coordonnees.md) | Détection et masquage des coordonnées | Proposé |
+| [0015](0015-pdf-devis-dompdf.md) | PDF des devis : gabarit Twig rendu par dompdf | Proposé |

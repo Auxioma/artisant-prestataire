@@ -60,6 +60,7 @@ services:
             - '../src/QuoteRequest/Application/Maintenance/{ExpiryNotice,DraftReminder,ExpiredDraft}.php'
             - '../src/QuoteRequest/Application/Client/{ClientRequestRow,ClientDraft,ClientRequestPage}.php'
             - '../src/Quote/Application/Editor/{QuoteEditorView,QuoteForm}.php'
+            - '../src/Quote/Application/Pdf/QuotePdfDocument.php'
             - '../src/ArtisanProfile/Application/Quote/QuoteIssuerView.php'
             - '../src/QuoteRequest/Application/Admin/{AdminRequestRow,AdminRequestPage,AdminRequestView}.php'
             - '../src/QuoteRequest/Application/Moderation/ModerationRejected.php'
@@ -155,6 +156,11 @@ services:
     # Module Quote
     App\Quote\Domain\Quote\QuoteRepository: '@App\Quote\Infrastructure\Persistence\DbalQuoteRepository'
     App\Quote\Domain\Mention\MandatoryMentionsChecker: ~
+    App\Quote\Application\Port\QuotePdfRenderer: '@App\Quote\Infrastructure\Pdf\DompdfQuotePdfRenderer'
+    App\Quote\Application\Port\QuotePdfStore: '@App\Quote\Infrastructure\Pdf\ObjectStorageQuotePdfStore'
+    App\Quote\Infrastructure\Pdf\DompdfQuotePdfRenderer:
+        arguments:
+            $cacheDir: '%kernel.cache_dir%/dompdf'
 
     App\Catalog\Application\Questionnaire\QuestionnaireStore: '@App\Catalog\Infrastructure\Questionnaire\DbalQuestionnaireStore'
 

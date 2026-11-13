@@ -86,28 +86,31 @@ final class Quote extends AggregateRoot
         $this->updatedAt = $now;
     }
 
-    /** Envoi de la v1 : numéro attribué, validité démarrée. Appelé par la politique d'envoi atomique (RG-101, T-504). */
-    public function send(string $number, \DateTimeImmutable $now): void
+    /**
+     * Envoi de la v1 : numéro attribué, validité démarrée, PDF figé (PR04.4). Appelé par la politique d'envoi atomique
+     * (RG-101, T-504).
+     */
+    public function send(string $number, \DateTimeImmutable $now, ?QuotePdf $pdf = null): void
     {
         $this->guard(QuoteStatus::Draft, 'Ce devis est déjà envoyé.');
         $content = $this->current()->content;
         $content->assertSendable();
         $this->number = $number;
-        $this->versions = [$this->versions[0]->sent($now)];
+        $this->versions = [$this->versions[0]->sent($now, $pdf)];
         $this->sentAt = $now;
         $this->validUntil = $now->modify(\sprintf('+%d days', $content->conditions->validityDays));
         $this->transition(QuoteStatus::Sent, null, $now);
     }
 
     /** RG-102 — révision : nouvelle version envoyée, gratuite, sans place supplémentaire ; la validité repart. */
-    public function revise(QuoteContent $content, \DateTimeImmutable $now): void
+    public function revise(QuoteContent $content, \DateTimeImmutable $now, ?QuotePdf $pdf = null): void
     {
         if (!$this->status->isRevisable()) {
             throw new QuoteRuleViolation('Ce devis ne peut plus être révisé.');
         }
         $content->assertSendable();
         $version = \count($this->versions) + 1;
-        $this->versions[] = new QuoteVersion($version, $content, $now, $now);
+        $this->versions[] = new QuoteVersion($version, $content, $now, $now, $pdf);
         $this->validUntil = $now->modify(\sprintf('+%d days', $content->conditions->validityDays));
         $this->updatedAt = $now;
         $this->recordEvent(new QuoteRevised($this->id->value, $this->requestId, $this->artisanId, $version, $now));
@@ -191,6 +194,23 @@ final class Quote extends AggregateRoot
     public function number(): ?string
     {
         return $this->number;
+    }
+
+    /** Prochain numéro de version (révision RG-102), pour figer son PDF avant l'enregistrement. */
+    public function nextVersionNumber(): int
+    {
+        return QuoteStatus::Draft === $this->status ? 1 : \count($this->versions) + 1;
+    }
+
+    public function version(int $number): ?QuoteVersion
+    {
+        foreach ($this->versions as $version) {
+            if ($version->number === $number) {
+                return $version;
+            }
+        }
+
+        return null;
     }
 
     public function current(): QuoteVersion
