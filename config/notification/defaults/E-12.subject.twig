@@ -1,1 +1,1 @@
-Nouveau devis de {{ artisan }} pour votre demande {{ numero }}
+{% if rappel|default(false) %}Rappel : le devis de {{ artisan }} vous attend (demande {{ numero }}){% else %}Nouveau devis de {{ artisan }} pour votre demande {{ numero }}{% endif %}

@@ -12,7 +12,7 @@ use App\QuoteRequest\Application\Pro\ProRequestCard;
 
 /**
  * PR04 — tout ce qu'affiche l'éditeur : demande (RG-112), entreprise, brouillon et totaux, contrôle RG-120, crédits ;
- * date d'envoi et version courante une fois le devis envoyé.
+ * date d'envoi et version courante une fois le devis envoyé ; relance du client (P-11 : date possible, dernière relance).
  */
 final readonly class QuoteEditorView
 {
@@ -30,6 +30,8 @@ final readonly class QuoteEditorView
         public ?\DateTimeImmutable $savedAt,
         public ?\DateTimeImmutable $sentAt = null,
         public int $version = 1,
+        public ?\DateTimeImmutable $reminderAvailableAt = null,
+        public ?\DateTimeImmutable $remindedAt = null,
     ) {
     }
 

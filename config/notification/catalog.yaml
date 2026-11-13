@@ -64,7 +64,7 @@ notifications:
         label: "Nouveau devis reçu"
         recipient: "Client"
         channels: [email, in_app, sms]
-        variables: [prenom, artisan, numero, metier, montant, validite, lien]
+        variables: [prenom, artisan, numero, metier, montant, validite, lien, rappel]
     'E-12b':
         label: "Devis révisé par l'artisan"
         recipient: "Client"

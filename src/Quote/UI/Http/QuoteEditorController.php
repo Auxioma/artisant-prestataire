@@ -10,6 +10,7 @@ use App\Quote\Application\Editor\SaveQuoteDraft;
 use App\Quote\Application\Pdf\QuotePreviewPdf;
 use App\Quote\Application\Pdf\QuoteVersionPdf;
 use App\Quote\Application\Revision\PreviewRevision;
+use App\Quote\Application\Revision\RemindClient;
 use App\Quote\Application\Revision\ReviseQuote;
 use App\Quote\Application\Revision\RevisionPreview;
 use App\Quote\Application\Revision\WithdrawQuote;
@@ -138,6 +139,22 @@ final class QuoteEditorController extends AbstractController
      * PR04.5 — « Envoyer le devis » (confirmé dans la modale) : enregistre le formulaire, puis envoi atomique RG-101.
      * Refus : brouillon conservé, message RG-101 ; sans crédit, renvoi vers les forfaits (P13).
      */
+    /** P-11 — « Relancer le client » : une fois, N jours après l'envoi, tant qu'il n'a pas consulté le devis (gratuit). */
+    #[Route('/relancer', name: 'pro_quote_remind', methods: ['POST'])]
+    public function remind(Request $request): Response
+    {
+        $requestId = $this->requestId($request);
+        $this->assertCsrf($request);
+        try {
+            $this->commands->dispatch(new RemindClient($this->userId(), $requestId));
+            $this->addFlash('success', 'Client relancé : il reçoit un rappel de votre devis par e-mail.');
+        } catch (QuoteRuleViolation $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('pro_quote_new', ['demande' => $requestId], Response::HTTP_SEE_OTHER);
+    }
+
     #[Route('/envoyer', name: 'pro_quote_send', methods: ['POST'])]
     public function send(Request $request): Response
     {

@@ -58,6 +58,28 @@ final class QuoteTest extends TestCase
         $quote->revise($this->content(1), $this->now);
     }
 
+    public function testClientRemindedOnceAfterTheDelayUntilViewed(): void
+    {
+        $quote = $this->sent();
+        self::assertEquals($this->now->modify('+3 days'), $quote->reminderAvailableAt(3, 1));
+        try {
+            $quote->remind($this->now->modify('+2 days'), 3, 1);
+            self::fail('trop tôt');
+        } catch (QuoteRuleViolation $e) {
+            self::assertStringContainsString('à partir du 23/11/2026', $e->getMessage());
+        }
+        $quote->remind($this->now->modify('+3 days'), 3, 1);
+        self::assertSame(1, $quote->reminderCount());
+        self::assertCount(1, $quote->releaseEvents());
+        self::assertNull($quote->reminderAvailableAt(3, 1), 'relance unique');
+
+        $viewed = $this->sent();
+        $viewed->markViewed($this->now);
+        self::assertNull($viewed->reminderAvailableAt(3, 1), 'consulté : plus de relance');
+        $this->expectExceptionMessage('déjà consulté');
+        $viewed->remind($this->now->modify('+5 days'), 3, 1);
+    }
+
     public function testWithdrawOnlyBeforeTheClientViewsIt(): void
     {
         $quote = $this->sent();

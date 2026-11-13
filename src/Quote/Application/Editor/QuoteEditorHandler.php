@@ -56,6 +56,8 @@ final readonly class QuoteEditorHandler implements QueryHandler
             $quote?->updatedAt(),
             $quote?->sentAt(),
             $quote?->current()->number ?? 1,
+            $quote?->reminderAvailableAt($this->settings->int(SettingKey::QuotesReminderAfterDays), $this->settings->int(SettingKey::QuotesReminderMax)),
+            $quote?->remindedAt(),
         );
     }
 

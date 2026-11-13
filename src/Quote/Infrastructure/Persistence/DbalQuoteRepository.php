@@ -66,6 +66,14 @@ final readonly class DbalQuoteRepository implements QuoteRepository
         ));
     }
 
+    public function expiredIds(\DateTimeImmutable $now, int $limit): array
+    {
+        return array_map(DbalValue::string(...), $this->connection->fetchFirstColumn(
+            "SELECT id FROM quote.quote WHERE status IN ('sent', 'viewed') AND valid_until <= :now ORDER BY valid_until LIMIT ".max(1, $limit),
+            ['now' => self::date($now)],
+        ));
+    }
+
     public function save(Quote $quote): void
     {
         $row = [
@@ -78,10 +86,13 @@ final readonly class DbalQuoteRepository implements QuoteRepository
             'decision_reason' => $quote->decisionReason(),
             'valid_until' => self::date($quote->validUntil()),
             'updated_at' => self::date($quote->updatedAt()),
+            'reminder_count' => $quote->reminderCount(),
+            'reminded_at' => self::date($quote->remindedAt()),
         ];
         $updated = $this->connection->executeStatement(
             'UPDATE quote.quote SET number = :number, status = :status, current_version = :current_version, sent_at = :sent_at, viewed_at = :viewed_at,
-                decided_at = :decided_at, decision_reason = :decision_reason, valid_until = :valid_until, updated_at = :updated_at, version = version + 1
+                decided_at = :decided_at, decision_reason = :decision_reason, valid_until = :valid_until, updated_at = :updated_at,
+                reminder_count = :reminder_count, reminded_at = :reminded_at, version = version + 1
              WHERE id = :id',
             $row + ['id' => $quote->id()->value],
         );
@@ -238,6 +249,8 @@ final readonly class DbalQuoteRepository implements QuoteRepository
             $date($row['decided_at']),
             DbalValue::nullableString($row['decision_reason']),
             $date($row['valid_until']),
+            DbalValue::int($row['reminder_count']),
+            $date($row['reminded_at']),
         );
     }
 

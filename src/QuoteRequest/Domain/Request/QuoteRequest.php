@@ -174,15 +174,18 @@ final class QuoteRequest extends AggregateRoot
         }
     }
 
-    /** RG-103 — devis retiré avant consultation : la place est libérée, « complète » redevient « ouverte ». */
-    public function releaseQuote(\DateTimeImmutable $now): void
+    /**
+     * RG-103 — devis retiré avant consultation (ou expiré sans décision) : la place est libérée, « complète » redevient
+     * « ouverte ».
+     */
+    public function releaseQuote(\DateTimeImmutable $now, string $reason = 'quote_withdrawn'): void
     {
         if (!\in_array($this->status, [RequestStatus::Open, RequestStatus::Full], true) || 0 === $this->activeQuotesCount) {
             throw new RequestRuleViolation('Aucune place de devis à libérer sur cette demande.');
         }
         --$this->activeQuotesCount;
         if (RequestStatus::Full === $this->status) {
-            $this->transition(RequestStatus::Open, 'quote_withdrawn', $now);
+            $this->transition(RequestStatus::Open, $reason, $now);
         } else {
             $this->touch($now);
         }

@@ -70,10 +70,18 @@
             {% if view.status.isRevisable() %}
                 <div class="tm-qedit__actions">
                     <twig:Button href="{{ path('pro_quote_new', {demande: view.request.id, reviser: 1}) }}" variant="secondary">Modifier le devis</twig:Button>
+                    {% if view.reminderAvailableAt and date(view.reminderAvailableAt) <= date() %}
+                        <twig:Button type="submit" variant="soft" formaction="{{ path('pro_quote_remind', {demande: view.request.id}) }}">Relancer le client</twig:Button>
+                    {% endif %}
                     {% if view.status.value == 'sent' %}
                         <twig:Button variant="tertiary" data-controller="modal-opener" data-modal-opener-dialog-value="retrait-devis" data-action="modal-opener#open">Retirer le devis</twig:Button>
                     {% endif %}
                 </div>
+                {% if view.remindedAt %}
+                    <p class="tm-caption">Client relancé le {{ view.remindedAt|date('d/m/Y à H:i', 'Europe/Paris') }}.</p>
+                {% elseif view.reminderAvailableAt and date(view.reminderAvailableAt) > date() %}
+                    <p class="tm-caption">Sans consultation du client, vous pourrez le relancer gratuitement à partir du {{ view.reminderAvailableAt|date('d/m/Y à H:i', 'Europe/Paris') }}.</p>
+                {% endif %}
             {% endif %}
         </div>
     {% endif %}

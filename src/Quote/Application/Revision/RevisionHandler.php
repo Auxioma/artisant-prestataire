@@ -32,7 +32,8 @@ use App\Shared\Domain\Time\Clock;
 
 /**
  * RG-102 / RG-103 — vie d'un devis envoyé : révision (nouvelle version figée, PDF et E-12b, sans crédit ni place),
- * aperçu de la révision (sans enregistrement) et retrait avant consultation (place libérée, crédit non restitué).
+ * aperçu de la révision (sans enregistrement), retrait avant consultation (place libérée, crédit non restitué) et
+ * relance du client (P-11 : gratuite, `quotes.reminder_max` fois, `quotes.reminder_after_days` jours après l'envoi).
  * Verrous dans l'ordre de l'envoi (ADR-0006) : demande, puis devis.
  */
 final readonly class RevisionHandler implements CommandHandler
@@ -94,14 +95,23 @@ final readonly class RevisionHandler implements CommandHandler
         return new RevisionPreview($content, $this->check($issuer, $content));
     }
 
-    public function __invoke(ReviseQuote|WithdrawQuote $command): void
+    public function __invoke(ReviseQuote|WithdrawQuote|RemindClient $command): void
     {
-        if ($command instanceof ReviseQuote) {
-            $this->revise($command);
+        match (true) {
+            $command instanceof ReviseQuote => $this->revise($command),
+            $command instanceof WithdrawQuote => $this->withdraw($command),
+            default => $this->remind($command),
+        };
+    }
 
-            return;
-        }
-        $this->withdraw($command);
+    private function remind(RemindClient $command): void
+    {
+        [, $quote] = $this->sentQuote($command->userId, $command->requestId, true);
+        $now = $this->clock->now();
+        $quote->remind($now, $this->settings->int(SettingKey::QuotesReminderAfterDays), $this->settings->int(SettingKey::QuotesReminderMax));
+        $this->quotes->save($quote);
+        $this->events->publish(...$quote->releaseEvents());
+        $this->record($command->userId, 'quote.reminded', $quote, ['reminder' => $quote->reminderCount()], $now);
     }
 
     private function issuer(string $userId): QuoteIssuerView

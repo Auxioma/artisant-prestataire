@@ -10,14 +10,14 @@ use App\Quote\Application\Port\QuoteMailer;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
-/** E-12 / E-12b / E-33 confiés au socle Notification ; liens vers C03 (T-507) ou, en attendant, « Mes demandes ». */
+/** E-12 (et sa relance P-11) / E-12b / E-33 confiés au socle Notification ; liens vers C03 (T-507) ou, en attendant, « Mes demandes ». */
 final readonly class NotificationQuoteMailer implements QuoteMailer
 {
     public function __construct(private Notifier $notifier, private UrlGeneratorInterface $urls)
     {
     }
 
-    public function sendNewQuote(string $email, string $firstName, string $userId, string $requestId, string $artisan, string $requestNumber, ?string $jobName, string $amountTtc, \DateTimeImmutable $validUntil): void
+    public function sendNewQuote(string $email, string $firstName, string $userId, string $requestId, string $artisan, string $requestNumber, ?string $jobName, string $amountTtc, \DateTimeImmutable $validUntil, bool $reminder = false): void
     {
         $link = $this->link('client_request', ['id' => $requestId], 'client_requests');
         $this->notifier->notify(new Notification('E-12', $email, $userId, [
@@ -28,6 +28,7 @@ final readonly class NotificationQuoteMailer implements QuoteMailer
             'montant' => $amountTtc,
             'validite' => $validUntil,
             'lien' => $link,
+            'rappel' => $reminder,
         ], $link));
     }
 

@@ -11,10 +11,14 @@ use App\Billing\Application\Credit\CreditLedger;
 use App\Identity\Application\Command\RegisterUser;
 use App\Quote\Application\Editor\SaveQuoteDraft;
 use App\Quote\Application\EventHandler\NotifyQuoteRevised;
+use App\Quote\Application\EventHandler\NotifyQuoteSent;
 use App\Quote\Application\EventHandler\RenotifyFreedSlot;
+use App\Quote\Application\Expiry\ExpireQuotes;
+use App\Quote\Application\Revision\RemindClient;
 use App\Quote\Application\Revision\ReviseQuote;
 use App\Quote\Application\Revision\WithdrawQuote;
 use App\Quote\Application\Sending\SendQuote;
+use App\Quote\Domain\Quote\Event\QuoteReminded;
 use App\Quote\Domain\Quote\Event\QuoteRevised;
 use App\Quote\Domain\Quote\Event\QuoteStatusChanged;
 use App\Quote\Domain\Quote\QuoteRuleViolation;
@@ -31,7 +35,8 @@ use Symfony\Contracts\Cache\CacheInterface;
 
 /**
  * RG-102 révision (nouvelle version figée, sans crédit ni place, E-12b) ; RG-103 retrait avant consultation (place
- * libérée, demande complète rouverte, crédit non restitué) ; P-09 relance des destinataires (hors exclus).
+ * libérée, demande complète rouverte, crédit non restitué) ; P-09 relance des destinataires (hors exclus) ; relance du
+ * client (P-11, E-12 en rappel) et expiration de la validité (RG-121, place libérée).
  */
 final class QuoteRevisionTest extends KernelTestCase
 {
@@ -148,5 +153,33 @@ final class QuoteRevisionTest extends KernelTestCase
             self::assertSame('Un devis consulté par le client ne peut plus être retiré.', $e->getMessage());
         }
         self::assertSame('viewed', $this->dossierValue("SELECT status FROM quote.quote WHERE id = '".self::QUOTE."'"));
+    }
+
+    public function testReminderWaitsForTheDelayAndUsesE12AsAReminder(): void
+    {
+        try {
+            $this->dossierDispatch(new RemindClient(self::DOSSIER_USER, self::REQUEST));
+            self::fail('relance avant le délai');
+        } catch (QuoteRuleViolation $e) {
+            self::assertStringContainsString('Vous pourrez relancer le client à partir du', $e->getMessage());
+        }
+        self::assertSame('0', $this->dossierValue("SELECT reminder_count::text FROM quote.quote WHERE id = '".self::QUOTE."'"));
+
+        $notify = self::getContainer()->get(NotifyQuoteSent::class);
+        \assert($notify instanceof NotifyQuoteSent);
+        $notify(new QuoteReminded(self::QUOTE, self::REQUEST, $this->artisan, 1, new \DateTimeImmutable()));
+        self::assertStringStartsWith('Rappel : Nouveau devis de Atelier Fictif', $this->dossierValue("SELECT body FROM notification.in_app WHERE code = 'E-12'"));
+    }
+
+    public function testExpiredQuoteFreesThePlace(): void
+    {
+        $this->connection->executeStatement("UPDATE quote.quote SET valid_until = date_trunc('second', now()) - interval '1 hour' WHERE id = :q", ['q' => self::QUOTE]);
+        $this->dossierDispatch(new ExpireQuotes());
+        self::getContainer()->get(EntityManagerInterface::class)->flush();
+        self::assertSame('expired', $this->dossierValue("SELECT status FROM quote.quote WHERE id = '".self::QUOTE."'"));
+        self::assertSame(['open', 0, 'quote_expired'], array_values((array) $this->connection->fetchAssociative('SELECT status, active_quotes_count, status_reason FROM request.quote_request WHERE id = :id', ['id' => self::REQUEST])));
+        self::assertSame('1', $this->dossierValue("SELECT count(*)::text FROM admin.audit_log WHERE action = 'quote.expired'"));
+        $this->dossierDispatch(new ExpireQuotes());
+        self::assertSame('1', $this->dossierValue("SELECT count(*)::text FROM admin.audit_log WHERE action = 'quote.expired'"), 'rejouable sans effet');
     }
 }

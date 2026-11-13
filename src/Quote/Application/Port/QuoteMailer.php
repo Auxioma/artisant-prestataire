@@ -7,7 +7,7 @@ namespace App\Quote\Application\Port;
 interface QuoteMailer
 {
     /** E-12 — nouveau devis reçu (client). */
-    public function sendNewQuote(string $email, string $firstName, string $userId, string $requestId, string $artisan, string $requestNumber, ?string $jobName, string $amountTtc, \DateTimeImmutable $validUntil): void;
+    public function sendNewQuote(string $email, string $firstName, string $userId, string $requestId, string $artisan, string $requestNumber, ?string $jobName, string $amountTtc, \DateTimeImmutable $validUntil, bool $reminder = false): void;
 
     /** E-33 — demande devenue complète alors que l'artisan avait un brouillon (in-app). */
     /** E-12b — devis révisé (RG-102). */

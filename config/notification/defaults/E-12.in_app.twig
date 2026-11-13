@@ -1,1 +1,1 @@
-Nouveau devis de {{ artisan }} : {{ montant }} TTC (demande {{ numero }}).
+{% if rappel|default(false) %}Rappel : {% endif %}Nouveau devis de {{ artisan }} : {{ montant }} TTC (demande {{ numero }}).

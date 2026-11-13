@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Quote\Domain\Quote;
 
+use App\Quote\Domain\Quote\Event\QuoteReminded;
 use App\Quote\Domain\Quote\Event\QuoteRevised;
 use App\Quote\Domain\Quote\Event\QuoteStatusChanged;
 use App\Shared\Domain\AggregateRoot;
@@ -27,6 +28,8 @@ final class Quote extends AggregateRoot
     private ?string $decisionReason = null;
     private ?\DateTimeImmutable $validUntil = null;
     private \DateTimeImmutable $updatedAt;
+    private int $reminderCount = 0;
+    private ?\DateTimeImmutable $remindedAt = null;
 
     private function __construct(
         private readonly QuoteId $id,
@@ -63,6 +66,8 @@ final class Quote extends AggregateRoot
         ?\DateTimeImmutable $decidedAt,
         ?string $decisionReason,
         ?\DateTimeImmutable $validUntil,
+        int $reminderCount = 0,
+        ?\DateTimeImmutable $remindedAt = null,
     ): self {
         $quote = new self($id, $requestId, $artisanId, $versions[0], $createdAt);
         $quote->versions = $versions;
@@ -74,6 +79,8 @@ final class Quote extends AggregateRoot
         $quote->decidedAt = $decidedAt;
         $quote->decisionReason = $decisionReason;
         $quote->validUntil = $validUntil;
+        $quote->reminderCount = $reminderCount;
+        $quote->remindedAt = $remindedAt;
 
         return $quote;
     }
@@ -124,6 +131,45 @@ final class Quote extends AggregateRoot
         }
         $this->viewedAt = $now;
         $this->transition(QuoteStatus::Viewed, null, $now);
+    }
+
+    /**
+     * RG-121 / P-11 — date à partir de laquelle l'artisan peut relancer le client (gratuit) : devis envoyé et pas encore
+     * consulté, `$afterDays` jours après l'envoi de la version courante, dans la limite de `$max` relances ; sinon null.
+     */
+    public function reminderAvailableAt(int $afterDays, int $max): ?\DateTimeImmutable
+    {
+        $sentAt = $this->current()->sentAt;
+        if (QuoteStatus::Sent !== $this->status || null === $sentAt || $this->reminderCount >= $max) {
+            return null;
+        }
+
+        return $sentAt->modify(\sprintf('+%d days', $afterDays));
+    }
+
+    public function remind(\DateTimeImmutable $now, int $afterDays, int $max): void
+    {
+        if (QuoteStatus::Sent !== $this->status) {
+            throw new QuoteRuleViolation('Le client a déjà consulté ce devis : la relance n’est plus proposée.');
+        }
+        $availableAt = $this->reminderAvailableAt($afterDays, $max) ?? throw new QuoteRuleViolation('Vous avez déjà relancé le client pour ce devis.');
+        if ($now < $availableAt) {
+            throw new QuoteRuleViolation(\sprintf('Vous pourrez relancer le client à partir du %s.', $availableAt->setTimezone(new \DateTimeZone('Europe/Paris'))->format('d/m/Y à H:i')));
+        }
+        ++$this->reminderCount;
+        $this->remindedAt = $now;
+        $this->updatedAt = $now;
+        $this->recordEvent(new QuoteReminded($this->id->value, $this->requestId, $this->artisanId, $this->reminderCount, $now));
+    }
+
+    public function reminderCount(): int
+    {
+        return $this->reminderCount;
+    }
+
+    public function remindedAt(): ?\DateTimeImmutable
+    {
+        return $this->remindedAt;
     }
 
     public function accept(\DateTimeImmutable $now): void

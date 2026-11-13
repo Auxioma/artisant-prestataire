@@ -176,6 +176,8 @@ final class QuoteEditorPageTest extends WebTestCase
         $crawler = $this->client->followRedirect();
         self::assertSame('/espace-pro/devis/nouveau?demande='.self::REQUEST.'&reviser=1', $crawler->filter('.tm-qedit__state a.tm-button')->first()->attr('href'), '« Modifier le devis »');
         self::assertCount(1, $crawler->filter('button[data-modal-opener-dialog-value="retrait-devis"]'), '« Retirer le devis » avant consultation');
+        self::assertCount(0, $crawler->filter('button[formaction*="/relancer"]'), 'relance pas avant 3 jours (P-11)');
+        self::assertStringContainsString('vous pourrez le relancer gratuitement à partir du', $crawler->filter('.tm-qedit__state')->text());
 
         $crawler = $this->client->request('GET', '/espace-pro/devis/nouveau?demande='.self::REQUEST.'&reviser=1');
         self::assertStringStartsWith('Modifier le devis DEV-', $crawler->filter('h1')->text());

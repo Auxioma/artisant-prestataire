@@ -9,6 +9,7 @@ use App\ArtisanProfile\Application\PublicProfile\PublicProfileView;
 use App\Catalog\Application\Query\JobIndexEntries;
 use App\Catalog\Application\Query\JobIndexEntry;
 use App\Quote\Application\Port\QuoteMailer;
+use App\Quote\Domain\Quote\Event\QuoteReminded;
 use App\Quote\Domain\Quote\Event\QuoteStatusChanged;
 use App\Quote\Domain\Quote\QuoteId;
 use App\Quote\Domain\Quote\QuoteRepository;
@@ -21,16 +22,17 @@ use App\Shared\Application\Identity\UserContact;
 use App\Shared\Application\Identity\UserContactDetails;
 use App\Shared\Domain\Text\FrenchNumber;
 
-/** E-12 — un devis vient d'être envoyé : le client est prévenu (e-mail et in-app). */
+/** E-12 — un devis vient d'être envoyé (ou l'artisan relance le client, P-11) : le client est prévenu (e-mail et in-app). */
 final readonly class NotifyQuoteSent implements EventHandler
 {
     public function __construct(private QuoteRepository $quotes, private QuoteRequestRepository $requests, private QueryBus $queries, private QuoteMailer $mailer)
     {
     }
 
-    public function __invoke(QuoteStatusChanged $event): void
+    public function __invoke(QuoteStatusChanged|QuoteReminded $event): void
     {
-        if (QuoteStatus::Sent->value !== $event->to || QuoteStatus::Draft->value !== $event->from) {
+        $reminder = $event instanceof QuoteReminded;
+        if (!$reminder && (QuoteStatus::Sent->value !== $event->to || QuoteStatus::Draft->value !== $event->from)) {
             return;
         }
         $quote = $this->quotes->find(new QuoteId($event->quoteId));
@@ -55,6 +57,7 @@ final readonly class NotifyQuoteSent implements EventHandler
             $jobName,
             FrenchNumber::money($quote->current()->content->totals->ttc->amount),
             $quote->validUntil(),
+            $reminder,
         );
     }
 }
