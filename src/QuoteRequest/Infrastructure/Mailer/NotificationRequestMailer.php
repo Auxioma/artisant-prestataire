@@ -7,6 +7,7 @@ namespace App\QuoteRequest\Infrastructure\Mailer;
 use App\Notification\Application\Notification;
 use App\Notification\Application\Notifier;
 use App\QuoteRequest\Application\Dispatch\DispatchSummary;
+use App\QuoteRequest\Application\Maintenance\ExpiryNotice;
 use App\QuoteRequest\Application\Port\RequestMailer;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -74,6 +75,42 @@ final readonly class NotificationRequestMailer implements RequestMailer
             'autres' => \count($requests) - \count($listed),
             'lien' => $link,
         ], $link));
+    }
+
+    public function sendExpiry(string $email, string $firstName, ExpiryNotice $request, bool $expired, bool $canRelaunch): void
+    {
+        $link = $this->clientLink($request->requestId);
+        $this->notifier->notify(new Notification('E-19', $email, $request->clientId, [
+            'prenom' => $firstName,
+            'expiree' => $expired,
+            'relance_possible' => $canRelaunch,
+            'numero' => $request->number,
+            'metier' => $request->jobName,
+            'ville' => $request->city,
+            'date_expiration' => $request->expiresAt,
+            'devis' => $request->receivedQuotes,
+            'lien' => $link,
+        ], $link));
+    }
+
+    public function sendDraftReminder(string $email, string $firstName, string $userId, ?string $jobName, int $retentionDays): void
+    {
+        $this->notifier->notify(new Notification('E-19c', $email, $userId, [
+            'prenom' => $firstName,
+            'metier' => $jobName,
+            'conservation_jours' => $retentionDays,
+            'lien' => $this->urls->generate('request_new', [], UrlGeneratorInterface::ABSOLUTE_URL),
+        ]));
+    }
+
+    /** C02 « Mes demandes » (T-406) ; tant qu'il n'est pas livré, la page de la demande envoyée. */
+    private function clientLink(string $requestId): string
+    {
+        try {
+            return $this->urls->generate('client_request', ['id' => $requestId], UrlGeneratorInterface::ABSOLUTE_URL);
+        } catch (RouteNotFoundException) {
+            return $this->urls->generate('request_sent', ['id' => $requestId], UrlGeneratorInterface::ABSOLUTE_URL);
+        }
     }
 
     /**

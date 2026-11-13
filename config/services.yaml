@@ -57,6 +57,7 @@ services:
             - '../src/QuoteRequest/Application/Port/{RequestRiskInput,RequestRisk}.php'
             - '../src/QuoteRequest/Application/Dispatch/{DispatchTarget,DispatchSummary,PendingDigest}.php'
             - '../src/QuoteRequest/Application/Pro/{ProArtisan,ProRequestCard,ProRequestPage,ProRequestView,ProRequestFilter}.php'
+            - '../src/QuoteRequest/Application/Maintenance/{ExpiryNotice,DraftReminder,ExpiredDraft}.php'
             - '../src/QuoteRequest/Application/Admin/{AdminRequestRow,AdminRequestPage,AdminRequestView}.php'
             - '../src/QuoteRequest/Application/Moderation/ModerationRejected.php'
             - '../src/Shared/Application/Moderation/{ProfileReviewItem,ModerationDecisionRejected}.php'
@@ -144,6 +145,7 @@ services:
     App\QuoteRequest\Application\Port\DispatchTargets: '@App\QuoteRequest\Infrastructure\Dispatch\DbalDispatchTargets'
     App\QuoteRequest\Application\Port\RequestDispatches: '@App\QuoteRequest\Infrastructure\Dispatch\DbalRequestDispatches'
     App\QuoteRequest\Application\Port\ProRequestReader: '@App\QuoteRequest\Infrastructure\Pro\DbalProRequestReader'
+    App\QuoteRequest\Application\Port\RequestMaintenanceStore: '@App\QuoteRequest\Infrastructure\Maintenance\DbalRequestMaintenanceStore'
 
     App\Catalog\Application\Questionnaire\QuestionnaireStore: '@App\Catalog\Infrastructure\Questionnaire\DbalQuestionnaireStore'
 

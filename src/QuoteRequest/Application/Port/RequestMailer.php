@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\QuoteRequest\Application\Port;
 
 use App\QuoteRequest\Application\Dispatch\DispatchSummary;
+use App\QuoteRequest\Application\Maintenance\ExpiryNotice;
 
 interface RequestMailer
 {
@@ -23,4 +24,10 @@ interface RequestMailer
      * @param non-empty-list<DispatchSummary> $requests
      */
     public function sendDigest(string $email, string $firstName, string $userId, array $requests): void;
+
+    /** E-19 — demande bientôt expirée (`$expired` faux) ou expirée ; `$canRelaunch` : relance unique encore possible (RG-064). */
+    public function sendExpiry(string $email, string $firstName, ExpiryNotice $request, bool $expired, bool $canRelaunch): void;
+
+    /** E-19c — brouillon de demande non finalisé (RG-060). */
+    public function sendDraftReminder(string $email, string $firstName, string $userId, ?string $jobName, int $retentionDays): void;
 }

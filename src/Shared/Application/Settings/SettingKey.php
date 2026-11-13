@@ -61,6 +61,8 @@ enum SettingKey: string
     case RequestsRenotifyOnSlotFreed = 'requests.renotify_on_slot_freed';
     case RequestsRetentionYears = 'requests.retention_years';
     case RequestsExtendRadiusKm = 'requests.extend_radius_km';
+    case RequestsExpiryWarningDays = 'requests.expiry_warning_days';
+    case RequestsDraftReminderHours = 'requests.draft_reminder_hours';
 
     // Professionnels, agenda, avis, classement
     case ProMaxJobs = 'pro.max_jobs';
@@ -224,6 +226,8 @@ enum SettingKey: string
             self::RequestsWaveAlertPct => $d(T::Integer, 30, 'Alerte KPI « complète avant réponse » (%)', 1, 100, proposed: true),
             self::RequestsRenotifyOnSlotFreed => $d(T::Boolean, true, 'Notifier à nouveau quand une place se libère (P-09)', proposed: true),
             self::RequestsRetentionYears => $d(T::Integer, 3, 'Conservation des demandes et devis (années)', 1, 10, proposed: true),
+            self::RequestsExpiryWarningDays => $d(T::Integer, 3, 'Prévenance avant expiration d\'une demande (E-19, j)', 1, 15),
+            self::RequestsDraftReminderHours => $d(T::Integer, 24, 'Relance d\'un brouillon de demande (E-19c, h ; 0 = désactivée)', 0, 168, proposed: true),
             self::RequestsExtendRadiusKm => $d(T::Integer, 20, 'BO04 « Étendre la zone » : rayon autour de la commune (km)', 1, 150, proposed: true),
 
             self::ProMaxJobs => $d(T::Integer, 5, 'Métiers maximum par artisan', 1, 20),
