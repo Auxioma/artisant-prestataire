@@ -35,8 +35,8 @@ use App\Shared\Domain\Identifier\IdGenerator;
 use App\Shared\Domain\Time\Clock;
 
 /**
- * RG-101 / ADR-0006 — envoi atomique, une transaction (bus de commandes) : verrou de la demande puis du compte de
- * crédits (ordre fixe), politique (a)–(f), numéro, PDF figé (PR04.4), envoi de la v1, débit d'un crédit (RG-104),
+ * RG-101 / ADR-0006 — envoi atomique, une transaction (bus de commandes) : verrous de la demande, du devis (relu) puis du
+ * compte de crédits (ordre fixe), politique (a)–(f), numéro, PDF figé (PR04.4), envoi de la v1, débit d'un crédit (RG-104),
  * place occupée sur la demande (« complète » à la dernière, RG-070). Tout refus annule la transaction : aucun débit,
  * brouillon conservé.
  */
@@ -71,8 +71,10 @@ final readonly class SendQuoteHandler implements CommandHandler
         }
         $now = $this->clock->now();
 
-        // 1. Verrou de la demande, 2. verrou du compte de crédits (ordre fixe : pas d'interblocage).
+        // 1. Verrou de la demande, 2. du devis (relu : un envoi concurrent a pu l'envoyer entre-temps), 3. du compte de
+        // crédits — ordre fixe pour tous les envois : pas d'interblocage (ADR-0006).
         $request = $this->requests->findForUpdate(new QuoteRequestId($command->requestId)) ?? throw new QuoteSendingRefused(RefusalReason::RequestClosed, 'Cette demande n’accepte plus de devis.');
+        $quote = $this->quotes->findForUpdate($quote->id()) ?? throw new QuoteSendingRefused(RefusalReason::AlreadySent, 'Enregistrez d’abord votre devis.');
         $balance = $this->credits->lockForQuote($issuer->artisanId);
         $content = $quote->current()->content;
 

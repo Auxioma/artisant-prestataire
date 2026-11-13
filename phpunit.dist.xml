@@ -20,6 +20,9 @@
         <testsuite name="Functional">
             <directory>tests/Functional</directory>
         </testsuite>
+        <testsuite name="Concurrency">
+            <directory>tests/Concurrency</directory>
+        </testsuite>
     </testsuites>
 
     <source ignoreSuppressionOfDeprecations="true"
