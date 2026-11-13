@@ -2,12 +2,13 @@
     PR04 — Créer un devis (Figma 22:229) dans l'espace pro : fil d'Ariane, « Prestations et montants » (numéro, validité,
     synthèse des lignes, durée des travaux, modalités, actions), « Récapitulatif » (HT, TVA, TTC, crédits), « Lignes du
     devis » (type, désignation, quantité, unité, PU HT, remise, TVA, total HT), conditions PR04.3, contrôle RG-120.
-    Envoi : bouton « Envoyer le devis » (22:290) et modale de confirmation (74:121) ; devis envoyé en lecture seule.
-    Écarts : P-79, P-82.
+    Envoi : bouton « Envoyer le devis » (22:290) et modale de confirmation (74:121) ; devis envoyé en lecture seule, avec
+    « Modifier le devis » (PR05 167:1749 ; révision RG-102) et « Retirer le devis » (RG-103, avant consultation).
+    Écarts : P-79, P-82, P-84.
 -#}
 {% extends 'pro/_space.html.twig' %}
 {% set space_active = 'requests' %}
-{% block title %}{{ sent ? 'Devis ' ~ view.number : 'Créer un devis' }} — Espace pro — TrouveMoi{% endblock %}
+{% block title %}{{ sent ? 'Devis ' ~ view.number : (revising ? 'Modifier le devis ' ~ view.number : 'Créer un devis') }} — Espace pro — TrouveMoi{% endblock %}
 {% set c = view.content %}
 {% set p = posted %}
 {% macro field(p, key, current) %}{{ p is not null ? (p[key] ?? '') : current }}{% endmacro %}
@@ -45,23 +46,36 @@
 {% endmacro %}
 {% import _self as m %}
 {% block space_content %}
-<form class="tm-qedit" method="post" action="{{ path('pro_quote_new', {demande: view.request.id}) }}" data-turbo="false"
-      data-controller="quote-editor" data-quote-editor-url-value="{{ path('pro_quote_autosave', {demande: view.request.id}) }}" data-action="input->quote-editor#changed change->quote-editor#changed">
+<form class="tm-qedit" method="post" action="{{ path(revising ? 'pro_quote_revise' : 'pro_quote_new', {demande: view.request.id}) }}" data-turbo="false"
+      data-controller="quote-editor" data-quote-editor-url-value="{{ path(revising ? 'pro_quote_revise_preview' : 'pro_quote_autosave', {demande: view.request.id}) }}"{% if revising %} data-quote-editor-revision-value="true"{% endif %} data-action="input->quote-editor#changed change->quote-editor#changed">
     <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
     <nav class="tm-qedit__crumbs" aria-label="Fil d’Ariane"><a href="{{ path('pro_requests') }}">Demandes</a><span aria-hidden="true">/</span>{% if tm_route_exists('pro_request') %}<a href="{{ path('pro_request', {id: view.request.id}) }}">{{ view.request.title }}</a>{% else %}<span>{{ view.request.title }}</span>{% endif %}</nav>
     <header class="tm-qedit__head">
         {% if sent %}
             <h1>Devis {{ view.number }}</h1>
-            <p>Ce devis a été envoyé au client : il ne se modifie plus ici.</p>
+            <p>{{ view.status.isRevisable() ? 'Ce devis a été envoyé au client. Pour le corriger, envoyez-lui une nouvelle version.' : 'Ce devis ne se modifie plus.' }}</p>
+        {% elseif revising %}
+            <h1>Modifier le devis {{ view.number }}</h1>
+            <p>Une nouvelle version (v{{ view.version + 1 }}) sera envoyée au client. La révision est gratuite : elle ne consomme ni crédit ni place.</p>
         {% else %}
             <h1>Créer un devis</h1>
             <p>Établissez une proposition détaillée avant l’envoi au client.</p>
         {% endif %}
     </header>
     {% if sent %}
-        <p class="tm-qedit__sent" role="status"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />
-            <span>Envoyé{{ view.sentAt ? ' le ' ~ view.sentAt|date('d/m/Y à H:i', 'Europe/Paris') }}.</span>
-            <a href="{{ path('pro_quote_pdf', {id: view.quoteId, version: view.version}) }}" target="_blank" rel="noopener">Voir le PDF envoyé<span class="tm-visually-hidden"> (nouvel onglet)</span></a></p>
+        <div class="tm-qedit__state">
+            <p class="tm-qedit__sent{{ view.status.isRevisable() ? '' : ' is-closed' }}" role="status"><twig:Icon name="{{ view.status.isRevisable() ? 'check' : 'info' }}" size="xs" class="tm-icon--inherit" />
+                <span>{{ view.status.label() }}{{ view.version > 1 ? ' · version ' ~ view.version }}{{ view.sentAt ? ' · envoyé le ' ~ view.sentAt|date('d/m/Y à H:i', 'Europe/Paris') }}.</span>
+                <a href="{{ path('pro_quote_pdf', {id: view.quoteId, version: view.version}) }}" target="_blank" rel="noopener">Voir le PDF envoyé<span class="tm-visually-hidden"> (nouvel onglet)</span></a></p>
+            {% if view.status.isRevisable() %}
+                <div class="tm-qedit__actions">
+                    <twig:Button href="{{ path('pro_quote_new', {demande: view.request.id, reviser: 1}) }}" variant="secondary">Modifier le devis</twig:Button>
+                    {% if view.status.value == 'sent' %}
+                        <twig:Button variant="tertiary" data-controller="modal-opener" data-modal-opener-dialog-value="retrait-devis" data-action="modal-opener#open">Retirer le devis</twig:Button>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
     {% endif %}
     <fieldset class="tm-qedit__frame"{{ sent ? ' disabled' }}>
     <legend class="tm-visually-hidden">{{ sent ? 'Contenu du devis envoyé' : 'Contenu du devis' }}</legend>
@@ -84,7 +98,14 @@
                 <div class="tm-field tm-qedit__box"><label for="payment_terms">Modalités</label>
                     <input id="payment_terms" name="payment_terms" maxlength="2000" placeholder="Ex. : à convenir" value="{{ m.field(p, 'payment_terms', c.conditions.paymentTerms ?? '') }}"></div>
             </div>
-            {% if not sent %}
+            {% if revising %}
+            <p class="tm-caption">Les modifications ne sont envoyées qu’à la confirmation : la version actuelle reste valable jusque-là.</p>
+            <div class="tm-qedit__actions">
+                <twig:Button href="{{ path('pro_quote_new', {demande: view.request.id}) }}" variant="soft">Annuler</twig:Button>
+                <twig:Button data-controller="modal-opener" data-modal-opener-dialog-value="revision-devis" data-action="modal-opener#open" data-quote-editor-target="send" :disabled="view.mentions is not empty and not view.complete()">Envoyer la révision</twig:Button>
+                <p class="tm-caption tm-qedit__saved" data-quote-editor-target="status" aria-live="polite"></p>
+            </div>
+            {% elseif not sent %}
             <p class="tm-caption">Un crédit sera déduit uniquement lors de l’envoi effectif.</p>
             <div class="tm-qedit__actions">
                 <twig:Button type="submit" variant="soft">Enregistrer brouillon</twig:Button>
@@ -171,7 +192,18 @@
     </section>
     </fieldset>
 
-    {% if not sent %}
+    {% if revising %}
+        <twig:Modal id="revision-devis" title="Envoyer la version {{ view.version + 1 }} ?">
+            <twig:block name="content">
+                <p>Le client recevra la version {{ view.version + 1 }} du devis {{ view.number }}, qui remplace la précédente. La validité repart à la date d’envoi.</p>
+                <p class="tm-callout"><twig:Icon name="info" size="xs" class="tm-icon--inherit" />Révision gratuite : aucun crédit ni place supplémentaire.</p>
+            </twig:block>
+            <twig:block name="actions">
+                <twig:Button variant="secondary" data-action="modal#close">Annuler</twig:Button>
+                <twig:Button type="submit">Envoyer la révision</twig:Button>
+            </twig:block>
+        </twig:Modal>
+    {% elseif not sent %}
         {% set credits = view.creditsRemaining %}
         <twig:Modal id="envoi-devis" title="{{ credits is same as(0) ? 'Crédit de devis épuisé' : 'Envoyer ce devis ?' }}">
             <twig:block name="content">
@@ -195,4 +227,18 @@
         </twig:Modal>
     {% endif %}
 </form>
+{% if sent and view.status.value == 'sent' %}
+    <form method="post" action="{{ path('pro_quote_withdraw', {demande: view.request.id}) }}" data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+        <twig:Modal id="retrait-devis" title="Retirer ce devis ?">
+            <twig:block name="content">
+                <p>Le client ne verra plus ce devis et la place se libère sur sa demande. Le crédit utilisé n’est pas restitué, et vous ne pourrez pas envoyer un autre devis sur cette demande.</p>
+            </twig:block>
+            <twig:block name="actions">
+                <twig:Button variant="secondary" data-action="modal#close">Annuler</twig:Button>
+                <twig:Button type="submit" variant="danger">Retirer le devis</twig:Button>
+            </twig:block>
+        </twig:Modal>
+    </form>
+{% endif %}
 {% endblock %}

@@ -24,6 +24,15 @@ interface RequestDispatches
     /** @return list<PendingDigest> alertes en attente, par artisan, pour les demandes encore ouvertes */
     public function pendingDigests(): array;
 
+    /**
+     * P-09 — remet la demande dans le prochain digest de ses destinataires (sauf exclus et artisans l'ayant ignorée).
+     *
+     * @param list<string> $excludeArtisanIds
+     *
+     * @return int nombre d'artisans concernés
+     */
+    public function renotify(string $requestId, array $excludeArtisanIds): int;
+
     /** @param list<string> $requestIds */
     public function markNotified(string $artisanId, array $requestIds, \DateTimeImmutable $at): void;
 }

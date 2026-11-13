@@ -3,13 +3,14 @@ import { Controller } from '@hotwired/stimulus';
 /*
  * PR04 — éditeur de devis : brouillon enregistré automatiquement après une pause de saisie (aucun crédit consommé),
  * totaux, totaux de ligne et contrôle RG-120 recalculés par le serveur ; ajout (ligne, section), suppression et
- * réordonnancement des lignes. Sans JavaScript, « Enregistrer brouillon » soumet le formulaire.
+ * réordonnancement des lignes. Sans JavaScript, « Enregistrer brouillon » soumet le formulaire. En révision (RG-102,
+ * `revision` vrai), rien n'est enregistré : le serveur recalcule seulement les totaux et le contrôle RG-120.
  */
 const AUTOSAVE_DELAY_MS = 1500;
 
 export default class extends Controller {
     static targets = ['lines', 'row', 'template', 'lineTotal', 'ht', 'vat', 'ttc', 'mentions', 'blocked', 'certificate', 'status', 'error', 'send'];
-    static values = { url: String };
+    static values = { url: String, revision: Boolean };
 
     disconnect() {
         window.clearTimeout(this.timer);
@@ -72,23 +73,23 @@ export default class extends Controller {
     }
 
     async save() {
-        this.statusTarget.textContent = 'Enregistrement…';
+        this.statusTarget.textContent = this.revisionValue ? 'Calcul…' : 'Enregistrement…';
         let response;
         try {
             response = await fetch(this.urlValue, { method: 'POST', body: new FormData(this.element), headers: { Accept: 'application/json' } });
         } catch {
-            this.statusTarget.textContent = 'Enregistrement impossible (connexion) : réessai à la prochaine modification.';
+            this.statusTarget.textContent = this.revisionValue ? 'Calcul impossible (connexion) : réessai à la prochaine modification.' : 'Enregistrement impossible (connexion) : réessai à la prochaine modification.';
             return;
         }
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-            this.errorTarget.textContent = data.error || 'Le brouillon n’a pas pu être enregistré.';
+            this.errorTarget.textContent = data.error || (this.revisionValue ? 'Les totaux n’ont pas pu être recalculés.' : 'Le brouillon n’a pas pu être enregistré.');
             this.errorTarget.hidden = false;
             this.statusTarget.textContent = '';
             return;
         }
         this.errorTarget.hidden = true;
-        this.statusTarget.textContent = data.saved_at ? `Brouillon enregistré à ${data.saved_at}` : 'Brouillon enregistré';
+        this.statusTarget.textContent = this.revisionValue ? 'Totaux à jour (non envoyé)' : (data.saved_at ? `Brouillon enregistré à ${data.saved_at}` : 'Brouillon enregistré');
         if (data.totals) {
             this.htTarget.textContent = data.totals.ht;
             this.vatTarget.textContent = data.totals.vat;

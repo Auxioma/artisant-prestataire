@@ -46,4 +46,13 @@ final readonly class ProRequestAccess
     {
         return true === $this->card($userId, $requestId)?->answerable();
     }
+
+    /**
+     * Rédiger un devis vaut consultation : la demande reste visible de l'artisan une fois complète ou close (la liste
+     * PR02 ne montre une demande non ouverte qu'à ceux qui l'ont consultée).
+     */
+    public function recordConsultation(string $artisanId, string $requestId, \DateTimeImmutable $at): void
+    {
+        $this->reader->markViewed($artisanId, $requestId, $at);
+    }
 }

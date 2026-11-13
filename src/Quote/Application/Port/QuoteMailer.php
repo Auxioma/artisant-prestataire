@@ -10,5 +10,8 @@ interface QuoteMailer
     public function sendNewQuote(string $email, string $firstName, string $userId, string $requestId, string $artisan, string $requestNumber, ?string $jobName, string $amountTtc, \DateTimeImmutable $validUntil): void;
 
     /** E-33 — demande devenue complète alors que l'artisan avait un brouillon (in-app). */
+    /** E-12b — devis révisé (RG-102). */
+    public function sendRevisedQuote(string $email, string $firstName, string $userId, string $requestId, string $artisan, string $requestNumber, int $version, string $amountTtc, \DateTimeImmutable $validUntil): void;
+
     public function notifyDraftHolder(string $userId, string $requestId, string $requestNumber, string $jobName, string $city): void;
 }

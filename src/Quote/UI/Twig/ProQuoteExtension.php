@@ -12,7 +12,7 @@ use App\Shared\Application\Security\CurrentUser;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
-/** PR03 — devis de l'artisan connecté sur une demande : « Voir mon devis » une fois envoyé (PR04.5). */
+/** PR03 — devis de l'artisan connecté sur une demande : « Voir mon devis » une fois envoyé (PR04.5), même retiré. */
 final class ProQuoteExtension extends AbstractExtension
 {
     public function __construct(private readonly QueryBus $queries, private readonly CurrentUser $user)
@@ -24,12 +24,18 @@ final class ProQuoteExtension extends AbstractExtension
         return [new TwigFunction('tm_pro_sent_quote', $this->sentQuote(...))];
     }
 
-    /** Numéro du devis envoyé par l'artisan connecté sur cette demande, sinon null (aucun devis ou brouillon). */
-    public function sentQuote(string $requestId): ?string
+    /**
+     * Devis envoyé par l'artisan connecté sur cette demande (numéro, statut RG-121), sinon null (aucun devis ou brouillon).
+     *
+     * @return array{number: ?string, status: string, label: string}|null
+     */
+    public function sentQuote(string $requestId): ?array
     {
         $userId = $this->user->id();
         $view = null === $userId ? null : $this->queries->ask(new QuoteEditor($userId, $requestId));
 
-        return $view instanceof QuoteEditorView && QuoteStatus::Draft !== $view->status ? $view->number : null;
+        return $view instanceof QuoteEditorView && QuoteStatus::Draft !== $view->status
+            ? ['number' => $view->number, 'status' => $view->status->value, 'label' => $view->status->label()]
+            : null;
     }
 }

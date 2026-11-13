@@ -84,6 +84,14 @@ final readonly class DbalRequestDispatches implements RequestDispatches
         return $digests;
     }
 
+    public function renotify(string $requestId, array $excludeArtisanIds): int
+    {
+        return (int) $this->connection->executeStatement(
+            'UPDATE request.request_dispatch SET notified_at = NULL WHERE request_id = :r AND ignored_at IS NULL AND notified_at IS NOT NULL AND NOT (artisan_id = ANY(CAST(:exclude AS uuid[])))',
+            ['r' => $requestId, 'exclude' => '{'.implode(',', $excludeArtisanIds).'}'],
+        );
+    }
+
     public function markNotified(string $artisanId, array $requestIds, \DateTimeImmutable $at): void
     {
         if ([] === $requestIds) {

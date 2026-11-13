@@ -15,5 +15,8 @@ interface QuoteRepository
     public function findByRequestAndArtisan(string $requestId, string $artisanId): ?Quote;
 
     /** Enregistre l'état complet (en-tête, versions, lignes) ; conflit de version optimiste → exception. */
+    /** @return list<string> artisans ayant un devis actif (envoyé, consulté, accepté) sur la demande */
+    public function artisansWithActiveQuote(string $requestId): array;
+
     public function save(Quote $quote): void;
 }

@@ -18,6 +18,7 @@ use App\Quote\Domain\Quote\QuoteVersion;
 use App\Quote\Domain\Quote\VatRate;
 use App\Shared\Domain\Identifier\IdGenerator;
 use App\Shared\Infrastructure\Persistence\DbalValue;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 
 /**
@@ -50,6 +51,19 @@ final readonly class DbalQuoteRepository implements QuoteRepository
         }
 
         return $this->load('SELECT * FROM quote.quote WHERE request_id = :r AND artisan_id = :a', ['r' => $requestId, 'a' => $artisanId]);
+    }
+
+    public function artisansWithActiveQuote(string $requestId): array
+    {
+        if (1 !== preg_match(self::UUID, $requestId)) {
+            return [];
+        }
+
+        return array_map(DbalValue::string(...), $this->connection->fetchFirstColumn(
+            'SELECT artisan_id FROM quote.quote WHERE request_id = :r AND status IN (:active)',
+            ['r' => $requestId, 'active' => array_map(static fn (QuoteStatus $s): string => $s->value, QuoteStatus::ACTIVE)],
+            ['active' => ArrayParameterType::STRING],
+        ));
     }
 
     public function save(Quote $quote): void

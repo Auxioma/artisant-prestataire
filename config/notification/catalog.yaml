@@ -69,6 +69,7 @@ notifications:
         label: "Devis révisé par l'artisan"
         recipient: "Client"
         channels: [email, in_app]
+        variables: [prenom, artisan, numero, version, montant, validite, lien]
     'E-13':
         label: "Récapitulatif d'acceptation de devis + coordonnées de l'artisan"
         recipient: "Client"

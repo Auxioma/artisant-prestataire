@@ -68,7 +68,11 @@
 
             {% set sent_quote = tm_pro_sent_quote(r.id) %}
             {% if sent_quote %}
-                <p class="tm-pro-detail__ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Devis {{ sent_quote }} envoyé au client.</p>
+                {% if sent_quote.status == 'withdrawn' %}
+                    <p class="tm-pro-detail__closed">Vous avez retiré votre devis {{ sent_quote.number }} : vous ne pouvez plus répondre à cette demande.</p>
+                {% else %}
+                    <p class="tm-pro-detail__ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Devis {{ sent_quote.number }} {{ {sent: 'envoyé au client', viewed: 'consulté par le client'}[sent_quote.status] ?? sent_quote.label|lower }}.</p>
+                {% endif %}
                 <twig:Button href="{{ path('pro_quote_new', {demande: r.id}) }}" block>Voir mon devis</twig:Button>
             {% elseif r.state.value == 'unavailable' %}
                 <p class="tm-pro-detail__closed">Cette demande n’est plus disponible.</p>

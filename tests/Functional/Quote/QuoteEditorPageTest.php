@@ -161,6 +161,56 @@ final class QuoteEditorPageTest extends WebTestCase
         self::assertSame('exhausted', str_replace('tm-credit-pill tm-credit-pill--', '', (string) $crawler->filter('.tm-credit-pill')->attr('class')), 'jauge de l’en-tête');
     }
 
+    public function testReviseThenWithdraw(): void
+    {
+        $crawler = $this->client->request('GET', '/espace-pro/devis/nouveau?demande='.self::REQUEST);
+        $token = (string) $crawler->filter('input[name="_token"]')->attr('value');
+        $lines = [
+            ['type' => 'labour', 'label' => 'Recherche de fuite', 'quantity' => '1', 'unit' => 'forfait', 'unit_price' => '90,00', 'vat' => '1000'],
+            ['type' => 'travel', 'label' => 'Déplacement', 'quantity' => '1', 'unit' => 'forfait', 'unit_price' => '0,00', 'vat' => '2000'],
+        ];
+        $ledger = self::getContainer()->get(CreditLedger::class);
+        \assert($ledger instanceof CreditLedger);
+        $ledger->grantFree('0190f5e4-0000-7000-8000-0000000f2302', $this->artisan, self::DOSSIER_USER, 2, null, new \DateTimeImmutable());
+        $this->client->request('POST', '/espace-pro/devis/envoyer?demande='.self::REQUEST, ['_token' => $token, 'subject' => 'Réparation de la fuite', 'validity_days' => '30', 'lines' => $lines]);
+        $crawler = $this->client->followRedirect();
+        self::assertSame('/espace-pro/devis/nouveau?demande='.self::REQUEST.'&reviser=1', $crawler->filter('.tm-qedit__state a.tm-button')->first()->attr('href'), '« Modifier le devis »');
+        self::assertCount(1, $crawler->filter('button[data-modal-opener-dialog-value="retrait-devis"]'), '« Retirer le devis » avant consultation');
+
+        $crawler = $this->client->request('GET', '/espace-pro/devis/nouveau?demande='.self::REQUEST.'&reviser=1');
+        self::assertStringStartsWith('Modifier le devis DEV-', $crawler->filter('h1')->text());
+        self::assertNull($crawler->filter('fieldset.tm-qedit__frame')->attr('disabled'), 'formulaire modifiable');
+        self::assertStringEndsWith('/reviser?demande='.self::REQUEST, (string) $crawler->filter('form.tm-qedit')->attr('action'));
+        self::assertSame('Envoyer la version 2 ?', $crawler->filter('#revision-devis_title')->text());
+
+        $lines[0]['unit_price'] = '120,00';
+        $this->client->request('POST', '/espace-pro/devis/reviser/apercu?demande='.self::REQUEST, ['_token' => $token, 'subject' => 'Réparation', 'validity_days' => '30', 'lines' => $lines]);
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertIsArray($data);
+        $totals = $data['totals'] ?? null;
+        self::assertIsArray($totals);
+        self::assertSame("132,00\u{a0}€", $totals['ttc'] ?? null, 'aperçu recalculé');
+        self::assertSame('1', $this->dossierValue("SELECT count(*)::text FROM quote.quote_version v JOIN quote.quote q ON q.id = v.quote_id WHERE q.request_id = '".self::REQUEST."'"), 'rien n’est enregistré');
+
+        $this->client->submit($crawler->filter('#revision-devis button[type="submit"]')->form(), ['lines[0][unit_price]' => '120,00']);
+        $crawler = $this->client->followRedirect();
+        self::assertMatchesRegularExpression('/Version 2 du devis DEV-\d{4}-0001 envoyée au client\./', $crawler->filter('.tm-toasts')->text());
+        self::assertStringContainsString('version 2', $crawler->filter('.tm-qedit__sent')->text());
+        self::assertStringEndsWith('/pdf/2', (string) $crawler->filter('.tm-qedit__sent a')->attr('href'));
+        self::assertSame('1', $this->dossierValue("SELECT count(*)::text FROM billing.credit_ledger_entry WHERE type = 'quote_debit'"), 'révision gratuite');
+
+        $this->client->submit($crawler->filter('#retrait-devis button[type="submit"]')->form());
+        self::assertResponseRedirects('/espace-pro/demandes/'.self::REQUEST);
+        $crawler = $this->client->followRedirect();
+        self::assertStringContainsString('Devis retiré : la place est libérée', $crawler->filter('.tm-toasts')->text());
+        self::assertStringContainsString('Vous avez retiré votre devis', $crawler->filter('.tm-pro-detail__decide')->text());
+        self::assertSame('withdrawn', $this->dossierValue("SELECT status FROM quote.quote WHERE request_id = '".self::REQUEST."'"));
+
+        $crawler = $this->client->request('GET', '/espace-pro/devis/nouveau?demande='.self::REQUEST);
+        self::assertCount(0, $crawler->filter('.tm-qedit__state a.tm-button'), 'ni révision ni retrait');
+        self::assertStringContainsString('Retiré', $crawler->filter('.tm-qedit__sent')->text());
+    }
+
     public function testEditorIsReservedToReceivedRequests(): void
     {
         $this->client->request('GET', '/espace-pro/devis/nouveau?demande='.self::OUTSIDE);

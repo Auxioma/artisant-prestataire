@@ -9,9 +9,14 @@ use App\Quote\Application\Editor\QuoteEditorView;
 use App\Quote\Application\Editor\SaveQuoteDraft;
 use App\Quote\Application\Pdf\QuotePreviewPdf;
 use App\Quote\Application\Pdf\QuoteVersionPdf;
+use App\Quote\Application\Revision\PreviewRevision;
+use App\Quote\Application\Revision\ReviseQuote;
+use App\Quote\Application\Revision\RevisionPreview;
+use App\Quote\Application\Revision\WithdrawQuote;
 use App\Quote\Application\Sending\SendQuote;
 use App\Quote\Domain\Mention\MentionCheck;
 use App\Quote\Domain\Quote\LineType;
+use App\Quote\Domain\Quote\QuoteContent;
 use App\Quote\Domain\Quote\QuoteLine;
 use App\Quote\Domain\Quote\QuoteRuleViolation;
 use App\Quote\Domain\Quote\QuoteStatus;
@@ -36,6 +41,8 @@ use Symfony\Component\Routing\Attribute\Route;
  * conditions, contrôle RG-120. Brouillon enregistré à la demande ou automatiquement (JSON : totaux et contrôles mis à
  * jour) ; aucun crédit consommé (RG-100). Aperçu PDF du brouillon (PR04.4). Envoi (PR04.5) après la modale de
  * confirmation (Figma 74:121) : le formulaire est enregistré puis envoyé (RG-101) ; un devis envoyé s'affiche en lecture.
+ * « Modifier le devis » (PR05, Figma 167:1749) : révision v2, v3… (RG-102) ; « Retirer le devis » avant consultation
+ * (RG-103).
  */
 #[Route('/espace-pro/devis')]
 final class QuoteEditorController extends AbstractController
@@ -65,7 +72,66 @@ final class QuoteEditorController extends AbstractController
         }
         $view = $this->view($requestId);
 
-        return $this->renderEditor($view, $request, $error);
+        return $this->renderEditor($view, $request, $error, $request->query->getBoolean('reviser') && $view->status->isRevisable());
+    }
+
+    /** RG-102 — « Envoyer la révision » (confirmée) : nouvelle version figée, envoyée au client (E-12b), sans crédit. */
+    #[Route('/reviser', name: 'pro_quote_revise', methods: ['POST'])]
+    public function revise(Request $request): Response
+    {
+        $requestId = $this->requestId($request);
+        $this->assertCsrf($request);
+        $input = $request->request->all();
+        unset($input['_token']);
+        try {
+            $this->commands->dispatch(new ReviseQuote($this->userId(), $requestId, $input));
+        } catch (QuoteRuleViolation $e) {
+            return $this->renderEditor($this->view($requestId), $request, $e->getMessage(), true);
+        }
+        $view = $this->view($requestId);
+        $this->addFlash('success', \sprintf('Version %d du devis %s envoyée au client.', $view->version, $view->number ?? ''));
+
+        return $this->redirectToRoute('pro_quote_new', ['demande' => $requestId], Response::HTTP_SEE_OTHER);
+    }
+
+    /** Révision en cours : totaux et contrôle RG-120 recalculés sans rien enregistrer. */
+    #[Route('/reviser/apercu', name: 'pro_quote_revise_preview', methods: ['POST'])]
+    public function revisePreview(Request $request): JsonResponse
+    {
+        $requestId = $this->requestId($request);
+        if (!$this->isCsrfTokenValid(self::CSRF, $request->request->getString('_token'))) {
+            return new JsonResponse(['error' => 'Session expirée : rechargez la page.'], Response::HTTP_FORBIDDEN);
+        }
+        $input = $request->request->all();
+        unset($input['_token']);
+        try {
+            $preview = $this->queries->ask(new PreviewRevision($this->userId(), $requestId, $input));
+        } catch (QuoteRuleViolation $e) {
+            return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        if (!$preview instanceof RevisionPreview) {
+            throw new NotFoundHttpException();
+        }
+
+        return new JsonResponse(['saved_at' => null] + self::recomputed($preview->content, $preview->mentions, $preview->complete()));
+    }
+
+    /** RG-103 — « Retirer le devis » (confirmé) : avant consultation ; la place se libère, le crédit n'est pas restitué. */
+    #[Route('/retirer', name: 'pro_quote_withdraw', methods: ['POST'])]
+    public function withdraw(Request $request): Response
+    {
+        $requestId = $this->requestId($request);
+        $this->assertCsrf($request);
+        try {
+            $this->commands->dispatch(new WithdrawQuote($this->userId(), $requestId));
+        } catch (QuoteRuleViolation $e) {
+            $this->addFlash('error', $e->getMessage());
+
+            return $this->redirectToRoute('pro_quote_new', ['demande' => $requestId], Response::HTTP_SEE_OTHER);
+        }
+        $this->addFlash('success', 'Devis retiré : la place est libérée sur la demande. Le crédit utilisé n’est pas restitué.');
+
+        return $this->redirectToRoute('pro_request', ['id' => $requestId], Response::HTTP_SEE_OTHER);
     }
 
     /**
@@ -98,7 +164,7 @@ final class QuoteEditorController extends AbstractController
         return $this->redirectToRoute('pro_quote_new', ['demande' => $requestId], Response::HTTP_SEE_OTHER);
     }
 
-    private function renderEditor(QuoteEditorView $view, Request $request, ?string $error): Response
+    private function renderEditor(QuoteEditorView $view, Request $request, ?string $error, bool $revising = false): Response
     {
         return $this->render('quote/editor.html.twig', [
             'view' => $view,
@@ -108,7 +174,8 @@ final class QuoteEditorController extends AbstractController
             'vat_rates' => VatRate::cases(),
             'csrf_id' => self::CSRF,
             'quantity_scale' => 3,
-            'sent' => QuoteStatus::Draft !== $view->status,
+            'sent' => QuoteStatus::Draft !== $view->status && !$revising,
+            'revising' => $revising,
         ], new Response(null, null === $error ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
     }
 
@@ -126,11 +193,24 @@ final class QuoteEditorController extends AbstractController
             return new JsonResponse(['error' => $e->getMessage()], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
         $view = $this->view($requestId);
-        $content = $view->content;
-        $totals = $content?->totals;
 
         return new JsonResponse([
             'saved_at' => $view->savedAt?->setTimezone(new \DateTimeZone('Europe/Paris'))->format('H:i'),
+        ] + self::recomputed($view->content, $view->mentions, $view->complete()));
+    }
+
+    /**
+     * Totaux, totaux de ligne et contrôle RG-120 pour l'éditeur (brouillon ou révision).
+     *
+     * @param list<MentionCheck> $mentions
+     *
+     * @return array<string, mixed>
+     */
+    private static function recomputed(?QuoteContent $content, array $mentions, bool $complete): array
+    {
+        $totals = $content?->totals;
+
+        return [
             'totals' => null === $totals ? null : [
                 'ht' => MoneyExtension::money($totals->ht->amount),
                 'vat' => $content->vatExempt ? 'Non applicable' : MoneyExtension::money($totals->vat->amount),
@@ -139,10 +219,10 @@ final class QuoteEditorController extends AbstractController
                 'deposit' => null === $totals->deposit ? null : MoneyExtension::money($totals->deposit->amount),
             ],
             'lines' => null === $content ? [] : array_map(static fn (QuoteLine $l): string => $l->type->isPriced() ? MoneyExtension::money($l->totalHt()->amount) : '', $content->lines),
-            'mentions' => array_map(static fn (MentionCheck $c): array => ['label' => $c->label, 'ok' => $c->ok], $view->mentions),
-            'complete' => $view->complete(),
+            'mentions' => array_map(static fn (MentionCheck $c): array => ['label' => $c->label, 'ok' => $c->ok], $mentions),
+            'complete' => $complete,
             'certificate' => true === $content?->needsClientCertificate(),
-        ]);
+        ];
     }
 
     /** PR04.4 — aperçu du brouillon enregistré (filigrane, sans numéro), ouvert dans le navigateur. */

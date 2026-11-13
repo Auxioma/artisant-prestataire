@@ -44,6 +44,7 @@ final readonly class SaveQuoteDraftHandler implements CommandHandler
         $quote = $this->quotes->findByRequestAndArtisan($command->requestId, $issuer->artisanId);
         if (null === $quote) {
             $quote = Quote::draft(new QuoteId($command->quoteId), $command->requestId, $issuer->artisanId, $content, $now);
+            $this->access->recordConsultation($issuer->artisanId, $command->requestId, $now);
         } elseif (QuoteStatus::Draft === $quote->status()) {
             $quote->updateDraft($content, $now);
         } else {
