@@ -29,6 +29,8 @@
 | BO04.1 | Demandes : liste, filtres, modération, export | QuoteRequest | `RequestsAdminController`, `AdminRequestList`, `DbalAdminRequestRows`, `ModerateQuoteRequests` | `RequestModerationTest` | T-403a | 🟨 (re-diffuser, étendre la zone : T-404 ; supprimer avec restitution : lot 5) |
 | BO05 / RG-031 | Modération : contenus de profils (relecture humaine), règles automatiques éditables | Moderation / ArtisanProfile | `ModerationController`, `PendingProfileReviews` / `DecideProfileReview` (Shared) → `ProfileReviewQueueHandler`, `DecideProfileReviewHandler` | `ProfileModerationQueueTest` | T-403b | 🟨 (avis, messages, signalements, offres : lots correspondants) |
 | RG-070 | Max atteint → complète, réouverture unique | QuoteRequest | `QuoteRequest::{recordQuote,releaseQuote,reopen,remainingSlots}`, `max_quotes` figé, contrainte `quote_request_slots_ck` | `QuoteRequestTest`, `SubmitQuoteRequestTest` | T-401 (envoi de devis : T-504) | 🟨 |
+| RG-111 | Demande complète / attribuée / expirée retirée des listes (lecture seule si déjà ouverte) | QuoteRequest | `DbalProRequestReader` (source et statut `Unavailable`), `ProRequestAccess::canAnswer` | `ProRequestsTest` | T-405a | 🟨 (écran PR02 : T-405b) |
+| RG-112 | Identité masquée avant acceptation (prénom + commune) | QuoteRequest | `ProRequestDetailHandler`, `ProRequestCard`, alertes E-30 / E-31 | `ProRequestsTest`, `RequestDispatchTest` | T-404a, T-405a | 🟨 (révélation à l'acceptation : T-507) |
 | RG-080 | Masquage des coordonnées | Messaging | | | T-701 | ⬜ |
 | RG-100 | Seul l'envoi v1 consomme 1 crédit | Quote / Billing | | | T-504 | ⬜ |
 | RG-101 | Contrôle atomique à l'envoi | Quote / Billing | | concurrence | T-504 | ⬜ |
@@ -78,6 +80,7 @@
 | Écran | Nœud Figma (page 10) | Contrôleur / composant | Voter | Tests fonctionnels | Breakpoints validés | Ticket | Statut |
 |---|---|---|---|---|---|---|---|
 | A04 Connexion | | | — | | ☐ 390 ☐ 768 ☐ 1440 | T-204 | ⬜ |
+| PR02 Demandes disponibles / PR03 Détail | à relever (T-405b) | `AvailableRequests`, `ProRequestDetail`, `IgnoreRequest`, `MarkRequestViewed` (écrans : T-405b) | `QuoteRequestVoter` (`QUOTE_REQUEST_VIEW`, `QUOTE_REQUEST_ANSWER`) | `ProRequestsTest` | ☐ 390 ☐ 768 ☐ 1440 | T-405a/b | 🟨 |
 | PR04 Éditeur de devis | | | `QuoteVoter` | | ☐ 390 ☐ 768 ☐ 1440 | T-502 | ⬜ |
 | … | | | | | | | |
 | Back-office : accès, 2FA, rôles | ADR-0013, BO01 (socle), BO14, P-06, P-48, ASVS 2.8 / 3.7.1 / 4.3.1, I-02 | `AdminUser`, `AdminRole`, `AdminModule`, `TeamHandler`, `TeamQueriesHandler`, `AdminSecurityUser`, `AdminUserProvider`, `AdminPermissionVoter`, `AdminRecentAuthVoter`, `AdminReauthentication`, `AdminAccessSubscriber`, `AdminBackupCodeManager`, `OtphpTotp`, `SecretBox` (`SodiumEnvelopeEncryption`), `AdminSecurityController`, `AdminInvitationController`, `AdminDashboardController`, `AdminTeamController`, `AdminNavigationExtension`, `app:admin:invite`, `templates/admin/*`, `admin_nav_controller.js` | `AdminTeamTest` (13), `BackOfficeAccessTest` (6), parcours navigateur (invitation, QR, codes de secours, connexion 2FA) | T-209 | ✅ (écrans BO02–BO16 : tickets suivants) |
