@@ -14,6 +14,10 @@ use App\Shared\Application\Settings\SettingsProvider;
  */
 final readonly class ProRequestAccess
 {
+    /** Attributs du Voter (sujet : identifiant de la demande). */
+    public const string VIEW = 'QUOTE_REQUEST_VIEW';
+    public const string ANSWER = 'QUOTE_REQUEST_ANSWER';
+
     public function __construct(private ProRequestReader $reader, private SettingsProvider $settings)
     {
     }

@@ -22,6 +22,9 @@ interface ProRequestReader
     /** @return array{items: list<ProRequestCard>, total: int} */
     public function page(ProArtisan $artisan, ProRequestFilter $filter, int $page, int $perPage, \DateTimeImmutable $now): array;
 
+    /** @return array{unread: int, urgent: int} non lues, urgentes encore ouvertes (hors ignorées) */
+    public function stats(ProArtisan $artisan): array;
+
     /** Carte d'une demande accessible à l'artisan ; null s'il n'y a pas accès. */
     public function card(ProArtisan $artisan, string $requestId): ?ProRequestCard;
 

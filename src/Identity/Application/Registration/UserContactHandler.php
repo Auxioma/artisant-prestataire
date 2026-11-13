@@ -27,6 +27,6 @@ final readonly class UserContactHandler implements QueryHandler
             return null;
         }
 
-        return new UserContactDetails($user->email()->value, $user->firstName());
+        return new UserContactDetails($user->email()->value, $user->firstName(), $user->lastName());
     }
 }

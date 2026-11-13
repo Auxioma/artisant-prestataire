@@ -22,6 +22,8 @@ final readonly class ProRequestFilter
         /** null : non lues et consultées ; sinon un `RequestState` (non lue, consultée, ignorée). */
         public ?RequestState $state = null,
         public string $sort = self::SORT_RECENT,
+        /** Recherche libre : titre, métier, commune, code postal, numéro. */
+        public string $search = '',
     ) {
     }
 }

@@ -18,8 +18,8 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  */
 final class QuoteRequestVoter extends Voter
 {
-    public const string VIEW = 'QUOTE_REQUEST_VIEW';
-    public const string ANSWER = 'QUOTE_REQUEST_ANSWER';
+    public const string VIEW = ProRequestAccess::VIEW;
+    public const string ANSWER = ProRequestAccess::ANSWER;
 
     public function __construct(private readonly ProRequestAccess $access, private readonly CurrentUser $user)
     {

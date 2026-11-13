@@ -80,7 +80,8 @@
 | Écran | Nœud Figma (page 10) | Contrôleur / composant | Voter | Tests fonctionnels | Breakpoints validés | Ticket | Statut |
 |---|---|---|---|---|---|---|---|
 | A04 Connexion | | | — | | ☐ 390 ☐ 768 ☐ 1440 | T-204 | ⬜ |
-| PR02 Demandes disponibles / PR03 Détail | à relever (T-405b) | `AvailableRequests`, `ProRequestDetail`, `IgnoreRequest`, `MarkRequestViewed` (écrans : T-405b) | `QuoteRequestVoter` (`QUOTE_REQUEST_VIEW`, `QUOTE_REQUEST_ANSWER`) | `ProRequestsTest` | ☐ 390 ☐ 768 ☐ 1440 | T-405a/b | 🟨 |
+| PR02 Demandes disponibles | 159:3176 (mobile 239:15264) | `ProRequestsController` (`pro_requests`, `pro_request_ignore`, `pro_request_photo`), `templates/pro/_space.html.twig`, `templates/pro/requests/index.html.twig` | `QuoteRequestVoter` (`QUOTE_REQUEST_VIEW`) | `ProRequestsTest`, `ProRequestsPageTest` | ☑ 375 ☐ 768 ☑ 1440 | T-405a, T-405b | ✅ |
+| PR03 Détail d'une demande | 13:2 | `ProRequestDetail` (écran : T-405c) | `QuoteRequestVoter` (`QUOTE_REQUEST_VIEW`, `QUOTE_REQUEST_ANSWER`) | `ProRequestsTest` | ☐ 390 ☐ 768 ☐ 1440 | T-405a, T-405c | 🟨 |
 | PR04 Éditeur de devis | | | `QuoteVoter` | | ☐ 390 ☐ 768 ☐ 1440 | T-502 | ⬜ |
 | … | | | | | | | |
 | Back-office : accès, 2FA, rôles | ADR-0013, BO01 (socle), BO14, P-06, P-48, ASVS 2.8 / 3.7.1 / 4.3.1, I-02 | `AdminUser`, `AdminRole`, `AdminModule`, `TeamHandler`, `TeamQueriesHandler`, `AdminSecurityUser`, `AdminUserProvider`, `AdminPermissionVoter`, `AdminRecentAuthVoter`, `AdminReauthentication`, `AdminAccessSubscriber`, `AdminBackupCodeManager`, `OtphpTotp`, `SecretBox` (`SodiumEnvelopeEncryption`), `AdminSecurityController`, `AdminInvitationController`, `AdminDashboardController`, `AdminTeamController`, `AdminNavigationExtension`, `app:admin:invite`, `templates/admin/*`, `admin_nav_controller.js` | `AdminTeamTest` (13), `BackOfficeAccessTest` (6), parcours navigateur (invitation, QR, codes de secours, connexion 2FA) | T-209 | ✅ (écrans BO02–BO16 : tickets suivants) |

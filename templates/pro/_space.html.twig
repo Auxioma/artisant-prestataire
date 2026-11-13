@@ -1,0 +1,108 @@
+{#-
+    Espace professionnel (Figma 159:3176 « Corps espace ») : bannière « Espace Professionnel », menu latéral (carte profil,
+    rubriques, déconnexion) et zone de contenu. Les rubriques non encore livrées sont signalées « Bientôt » (non cliquables).
+    Pied de page : celui du site (variante marine hors palette non retenue, P-29).
+-#}
+{% extends 'base.html.twig' %}
+{% set header_variant = 'artisan' %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% set space_items = [
+    {route: 'pro_dashboard', label: 'Tableau de bord', icon: 'home'},
+    {route: 'pro_requests', label: 'Mes demandes', icon: 'file', key: 'requests', count: tm_pro_unread_requests()},
+    {route: 'pro_quotes', label: 'Mes devis & chantiers', icon: 'fileEuro'},
+    {route: 'pro_clients', label: 'Mes clients', icon: 'users'},
+    {route: 'pro_invoices', label: 'Mes factures', icon: 'receipt'},
+    {route: 'pro_appointments', label: 'Mes rendez-vous', icon: 'calendar'},
+    {route: 'pro_messages', label: 'Mes messages', icon: 'msg'},
+    {route: 'pro_profile', label: 'Mon profil pro', icon: 'user', key: 'profile'},
+    {route: 'pro_offers', label: 'Mes services / Offres', icon: 'layers'},
+    {route: 'pro_availability', label: 'Mes disponibilités', icon: 'calCheck'},
+    {route: 'pro_leave', label: 'Mes congés', icon: 'umbrella'},
+    {route: 'pro_statistics', label: 'Mes statistiques', icon: 'chart'},
+    {route: 'pro_subscription', label: 'Mes abonnements', icon: 'crown'},
+    {route: 'pro_team', label: 'Gestion de l’équipe', icon: 'users'},
+    {route: 'pro_settings', label: 'Mes paramètres', icon: 'settings'},
+    {route: 'content_faq', label: 'Aide / FAQ', icon: 'help'},
+] %}
+{% macro nav(items, active, identity) %}
+    {% if identity %}
+        <div class="tm-space__profile">
+            {% if identity.logoProfileId %}
+                <img class="tm-space__avatar" src="{{ path('public_artisan_logo', {id: identity.logoProfileId}) }}" alt="" width="54" height="54">
+            {% else %}
+                <span class="tm-space__avatar tm-space__avatar--initials" aria-hidden="true">{{ identity.initials }}</span>
+            {% endif %}
+            <div>
+                <p class="tm-space__name">{{ identity.name }}</p>
+                <p class="tm-space__company">{{ identity.company }}</p>
+                <span class="tm-space__role">Professionnel</span>
+            </div>
+        </div>
+    {% endif %}
+    <ul>
+        {% for item in items %}
+            {% set current = item.key is defined and item.key == active %}
+            <li>
+                {% if tm_route_exists(item.route) %}
+                    <a class="tm-space__link{{ current ? ' is-active' }}" href="{{ path(item.route) }}"{% if current %} aria-current="page"{% endif %}>
+                        <twig:Icon name="{{ item.icon }}" size="sm" class="tm-icon--inherit" /><span>{{ item.label }}</span>
+                        {% if (item.count ?? 0) > 0 %}<span class="tm-space__count">{{ item.count }}<span class="tm-visually-hidden"> non lue{{ item.count > 1 ? 's' }}</span></span>{% endif %}
+                    </a>
+                {% else %}
+                    <span class="tm-space__link is-soon" aria-disabled="true" title="Bientôt disponible">
+                        <twig:Icon name="{{ item.icon }}" size="sm" class="tm-icon--inherit" /><span>{{ item.label }}<span class="tm-visually-hidden"> (bientôt disponible)</span></span>
+                    </span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% endmacro %}
+{% block body %}
+{% set identity = tm_pro_identity() %}
+<div class="tm-space">
+    <div class="tm-space__banner">
+        <picture class="tm-space__banner-photo">
+            <source srcset="{{ asset('images/pro/banniere-espace@1x.webp') }} 1x, {{ asset('images/pro/banniere-espace@2x.webp') }} 2x" type="image/webp">
+            <img src="{{ asset('images/pro/banniere-espace@1x.webp') }}" alt="" width="807" height="98">
+        </picture>
+        <div class="tm-space__banner-text">
+            <p class="tm-space__banner-title">Espace Professionnel</p>
+            <p>Développez votre activité, recevez des demandes et gérez vos clients sur TrouveMoi.com !</p>
+            <img src="{{ asset('images/pro/trait-orange.svg') }}" alt="" width="190" height="12">
+        </div>
+    </div>
+    <div class="tm-space__body">
+        {% import _self as space %}
+        <aside class="tm-space__aside">
+            <nav class="tm-space__menu" aria-label="Espace professionnel">{{ space.nav(space_items, space_active ?? null, identity) }}</nav>
+            <a class="tm-space__logout" href="{{ logout_path('main') }}"><twig:Icon name="power" size="xs" class="tm-icon--inherit" />Se déconnecter</a>
+        </aside>
+        <div class="tm-space__content">
+            {% block space_content %}{% endblock %}
+        </div>
+    </div>
+    {# Mobile (Figma 239:15264) : barre d'onglets en bas d'écran ; « Plus » ouvre le menu complet de l'espace. #}
+    {% set tabs = [
+        {route: 'pro_dashboard', label: 'Accueil', icon: 'home'},
+        {route: 'pro_requests', label: 'Demandes', icon: 'file', key: 'requests'},
+        {route: 'pro_quotes', label: 'Devis', icon: 'briefcase'},
+        {route: 'pro_messages', label: 'Messages', icon: 'msg'},
+    ] %}
+    <nav class="tm-space__tabs" aria-label="Espace professionnel (raccourcis)">
+        {% for tab in tabs %}
+            {% if tm_route_exists(tab.route) %}
+                <a class="tm-space__tab{{ (tab.key ?? null) == (space_active ?? null) ? ' is-active' }}" href="{{ path(tab.route) }}"{% if (tab.key ?? null) == (space_active ?? null) %} aria-current="page"{% endif %}><twig:Icon name="{{ tab.icon }}" class="tm-icon--inherit" />{{ tab.label }}</a>
+            {% else %}
+                <span class="tm-space__tab is-soon" aria-disabled="true"><twig:Icon name="{{ tab.icon }}" class="tm-icon--inherit" />{{ tab.label }}<span class="tm-visually-hidden"> (bientôt disponible)</span></span>
+            {% endif %}
+        {% endfor %}
+        <details class="tm-space__more">
+            <summary class="tm-space__tab"><twig:Icon name="menu" class="tm-icon--inherit" />Plus</summary>
+            <div class="tm-space__sheet">
+                <nav aria-label="Espace professionnel">{{ space.nav(space_items, space_active ?? null, identity) }}</nav>
+                <a class="tm-space__logout" href="{{ logout_path('main') }}"><twig:Icon name="power" size="xs" class="tm-icon--inherit" />Se déconnecter</a>
+            </div>
+        </details>
+    </nav>
+</div>
+{% endblock %}

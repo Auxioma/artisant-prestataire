@@ -28,7 +28,11 @@ final readonly class DbalProRequestReader implements ProRequestReader
         'CASE WHEN ac.centroid IS NULL OR c.centroid IS NULL THEN NULL ELSE round(ST_Distance(ac.centroid, c.centroid) / 1000)::int END AS distance_km',
         'r.timing', 'r.budget_range', 'r.submitted_at', '(SELECT count(*) FROM request.request_attachment a WHERE a.request_id = r.id) AS photos',
         'coalesce(r.target_artisan_id = :artisan, false) AS direct', 'r.active_quotes_count', 'r.max_quotes', 'r.status', 'd.viewed_at', 'd.ignored_at',
+        'u.first_name AS client_first_name', "coalesce(nullif(r.summary, ''), r.description) AS excerpt",
+        "(SELECT a.file_id FROM request.request_attachment a JOIN shared.stored_file f ON f.id = a.file_id AND f.status = 'available' WHERE a.request_id = r.id ORDER BY a.position LIMIT 1) AS photo_id",
     ];
+    private const int SEARCH_MAX = 80;
+    private const int EXCERPT_MAX = 160;
 
     public function __construct(private Connection $connection)
     {
@@ -54,6 +58,10 @@ final readonly class DbalProRequestReader implements ProRequestReader
     public function page(ProArtisan $artisan, ProRequestFilter $filter, int $page, int $perPage, \DateTimeImmutable $now): array
     {
         $qb = $this->source($artisan);
+        $search = trim(mb_substr($filter->search, 0, self::SEARCH_MAX));
+        if ('' !== $search) {
+            $qb->andWhere('(r.title ILIKE :q OR j.name ILIKE :q OR c.name ILIKE :q OR r.postal_code LIKE :q OR r.number ILIKE :q)')->setParameter('q', '%'.addcslashes($search, '%_\\').'%');
+        }
         if (null !== $filter->jobId && isset($artisan->jobs[$filter->jobId])) {
             $qb->andWhere('r.job_id = :job')->setParameter('job', $filter->jobId);
         }
@@ -88,6 +96,16 @@ final readonly class DbalProRequestReader implements ProRequestReader
             ->setFirstResult((max(1, $page) - 1) * $perPage)->setMaxResults($perPage)->executeQuery()->fetchAllAssociative();
 
         return ['items' => array_map(fn (array $row): ProRequestCard => $this->hydrate($row, $artisan), $rows), 'total' => $total];
+    }
+
+    public function stats(ProArtisan $artisan): array
+    {
+        $row = $this->source($artisan)->select(
+            "count(*) FILTER (WHERE d.viewed_at IS NULL AND d.ignored_at IS NULL AND r.status = 'open') AS unread",
+            "count(*) FILTER (WHERE r.timing = 'urgent' AND d.ignored_at IS NULL AND r.status = 'open') AS urgent",
+        )->executeQuery()->fetchAssociative() ?: [];
+
+        return ['unread' => DbalValue::int($row['unread'] ?? 0), 'urgent' => DbalValue::int($row['urgent'] ?? 0)];
     }
 
     public function card(ProArtisan $artisan, string $requestId): ?ProRequestCard
@@ -139,6 +157,7 @@ final readonly class DbalProRequestReader implements ProRequestReader
         }
 
         return $qb->join('r', 'catalog.job', 'j', 'j.id = r.job_id')
+            ->join('r', 'identity.user_account', 'u', 'u.id = r.client_id')
             ->leftJoin('r', 'catalog.commune', 'c', 'c.insee = r.city_insee')
             ->leftJoin('r', 'catalog.commune', 'ac', 'ac.insee = :center')
             ->setParameter('artisan', $artisan->artisanId)
@@ -176,6 +195,16 @@ final readonly class DbalProRequestReader implements ProRequestReader
             DbalValue::int($row['active_quotes_count']),
             DbalValue::int($row['max_quotes']),
             $state,
+            DbalValue::nullableString($row['client_first_name']),
+            self::excerpt(DbalValue::string($row['excerpt'])),
+            DbalValue::nullableString($row['photo_id']),
         );
+    }
+
+    private static function excerpt(string $text): string
+    {
+        $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+
+        return mb_strlen($text) > self::EXCERPT_MAX ? rtrim(mb_substr($text, 0, self::EXCERPT_MAX - 1)).'…' : $text;
     }
 }

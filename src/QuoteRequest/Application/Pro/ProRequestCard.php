@@ -26,6 +26,11 @@ final readonly class ProRequestCard
         public int $quotesSent,
         public int $maxQuotes,
         public RequestState $state,
+        /** RG-112 : prénom seul. */
+        public ?string $clientFirstName = null,
+        public string $excerpt = '',
+        /** Première photo disponible (vignette PR02, accès contrôlé). */
+        public ?string $photoId = null,
     ) {
     }
 

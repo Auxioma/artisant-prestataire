@@ -30,6 +30,11 @@ const ICONS = [
     'rocket' => 'rocket', 'handshake' => 'handshake', 'building' => 'building-2',
     // T-204 (A04)
     'logIn' => 'log-in',
+    // T-405b (espace pro : menu, PR02)
+    'receipt' => 'receipt', 'layers' => 'layers', 'umbrella' => 'umbrella', 'chart' => 'chart-column',
+    'settings' => 'settings', 'help' => 'circle-help', 'power' => 'power', 'euro' => 'euro',
+    'dots' => 'circle-ellipsis', 'hourglass' => 'hourglass', 'refresh' => 'refresh-cw', 'bars' => 'chart-no-axes-column',
+    'bulb' => 'lightbulb',
 ];
 /** Variantes pleines (fill = currentColor), utilisées par la carte artisan (« icon/star-filled » dans Figma). */
 const FILLED_ICONS = ['starFilled' => 'star', 'heartFilled' => 'heart'];
@@ -58,6 +63,19 @@ foreach (ICONS + FILLED_ICONS as $id => $lucide) {
     // Attributs portés par chaque symbole : un <use> n'hérite pas des attributs de la racine du sprite.
     $fill = array_key_exists($id, FILLED_ICONS) ? 'currentColor' : 'none';
     $symbols[] = sprintf('  <symbol id="%s" viewBox="0 0 24 24" fill="%s" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">%s</symbol>', $id, $fill, $inner);
+}
+
+// Icônes propres à la maquette, sans équivalent Lucide (tools/icons/custom/*.svg, viewBox et trait d'origine, currentColor).
+foreach (glob(__DIR__.'/custom/*.svg') ?: [] as $file) {
+    $doc = new DOMDocument();
+    $doc->loadXML((string) file_get_contents($file), \LIBXML_NONET);
+    $inner = '';
+    foreach ($doc->documentElement?->childNodes ?? [] as $child) {
+        if (\XML_ELEMENT_NODE === $child->nodeType) {
+            $inner .= $doc->saveXML($child);
+        }
+    }
+    $symbols[] = sprintf('  <symbol id="%s" viewBox="%s" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">%s</symbol>', basename($file, '.svg'), $doc->documentElement?->getAttribute('viewBox') ?? '0 0 24 24', $inner);
 }
 
 // Icônes de marque locales (tools/icons/brands/*.svg) : tracés déjà nettoyés, couleur currentColor.

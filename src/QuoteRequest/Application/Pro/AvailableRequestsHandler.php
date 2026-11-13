@@ -23,6 +23,6 @@ final readonly class AvailableRequestsHandler implements QueryHandler
         $page = max(1, $query->page);
         $result = $this->reader->page($artisan, $query->filter, $page, $query->perPage, $this->clock->now());
 
-        return new ProRequestPage($artisan, $result['items'], $result['total'], $page, $query->perPage);
+        return new ProRequestPage($artisan, $result['items'], $result['total'], $page, $query->perPage, $this->reader->stats($artisan));
     }
 }
