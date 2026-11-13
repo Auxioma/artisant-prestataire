@@ -32,9 +32,9 @@
 | RG-111 | Demande complète / attribuée / expirée retirée des listes (lecture seule si déjà ouverte) | QuoteRequest | `DbalProRequestReader` (source et statut `Unavailable`), `ProRequestAccess::canAnswer` | `ProRequestsTest` | T-405a | 🟨 (écran PR02 : T-405b) |
 | RG-112 | Identité masquée avant acceptation (prénom + commune) | QuoteRequest | `ProRequestDetailHandler`, `ProRequestCard`, alertes E-30 / E-31 | `ProRequestsTest`, `RequestDispatchTest` | T-404a, T-405a | 🟨 (révélation à l'acceptation : T-507) |
 | RG-080 | Masquage des coordonnées | Messaging | | | T-701 | ⬜ |
-| RG-100 | Seul l'envoi v1 consomme 1 crédit | Quote / Billing | | | T-504 | ⬜ |
-| RG-101 | Contrôle atomique à l'envoi | Quote / Billing | | concurrence | T-504 | ⬜ |
-| RG-104 | Ordre de consommation | Billing | | | T-504 | ⬜ |
+| RG-100 | Seul l'envoi v1 consomme 1 crédit | Quote / Billing | `SendQuoteHandler`, `QuoteCreditAccount::debitForQuote` (révisions sans débit : `Quote::revise`) | `SendQuoteTest` | T-504a | 🟨 (révisions : T-506) |
+| RG-101 | Contrôle atomique à l'envoi | Quote / Billing | `SendQuoteHandler` (verrous demande puis compte), `QuoteSendingPolicy` (a)–(f), `QuoteSendingRefused` | `QuoteSendingPolicyTest`, `SendQuoteTest` | T-504a | 🟨 (concurrence à deux connexions : T-504c ; écran : T-504b) |
+| RG-104 | Ordre de consommation | Billing | `DbalCreditLedger::debitForQuote` selon `credits.consumption_order` | `SendQuoteTest` | T-504a | ✅ |
 | RG-107 | Ledger append-only | Billing | | | T-211 | ⬜ |
 | RG-120 | Mentions obligatoires contrôlées avant envoi | Quote | `MandatoryMentionsChecker`, `MandatoryMention`, `IssuerFacts`, paramètre `quotes.mandatory_mentions`, `QuoteEditorHandler` | `QuoteFormAndMentionsTest`, `QuoteEditorTest` | T-502a | 🟨 (blocage à l'envoi : T-504 ; écran : T-502b) |
 | RG-121 | Cycle de statuts du devis | Quote | `QuoteStatus` (TRANSITIONS, ACTIVE), `Quote` (send, markViewed, accept, refuse, markNotSelected, expire, withdraw, cancelWithRequest), `QuoteTotals`, `DbalQuoteRepository` | `QuoteTest`, `QuoteTotalsTest`, `QuoteRepositoryTest` | T-501 | 🟨 (relance unique : T-506) |

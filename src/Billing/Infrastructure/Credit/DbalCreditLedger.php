@@ -6,6 +6,8 @@ namespace App\Billing\Infrastructure\Credit;
 
 use App\Billing\Application\Credit\CreditBalance;
 use App\Billing\Application\Credit\CreditLedger;
+use App\Billing\Application\Credit\InsufficientCredits;
+use App\Billing\Application\Credit\QuoteCreditAccount;
 use App\Billing\Domain\Credit\CreditBucket;
 use App\Billing\Domain\Credit\LedgerEntryType;
 use App\Shared\Infrastructure\Persistence\DbalValue;
@@ -15,7 +17,7 @@ use Doctrine\DBAL\Connection;
  * ADR-0006 : écriture du registre et mise à jour du solde dans la même transaction (celle du bus d'événements) ; ancre
  * `credit_account` verrouillée (FOR UPDATE) avant toute écriture, dans un ordre fixe.
  */
-final readonly class DbalCreditLedger implements CreditLedger
+final readonly class DbalCreditLedger implements CreditLedger, QuoteCreditAccount
 {
     public function __construct(private Connection $connection)
     {
@@ -65,5 +67,45 @@ final readonly class DbalCreditLedger implements CreditLedger
         );
 
         return false === $row ? null : new CreditBalance(DbalValue::int($row['free']), DbalValue::int($row['plan']), DbalValue::int($row['extra']), DbalValue::int($row['free_granted']));
+    }
+
+    public function lockForQuote(string $artisanId): ?CreditBalance
+    {
+        $row = $this->connection->fetchAssociative(
+            'SELECT b.free, b.plan, b.extra, b.free_granted FROM billing.credit_account a JOIN billing.credit_balance b ON b.artisan_id = a.artisan_id WHERE a.artisan_id = :artisan FOR UPDATE OF a',
+            ['artisan' => $artisanId],
+        );
+
+        return false === $row ? null : new CreditBalance(DbalValue::int($row['free']), DbalValue::int($row['plan']), DbalValue::int($row['extra']), DbalValue::int($row['free_granted']));
+    }
+
+    public function debitForQuote(string $entryId, string $artisanId, string $quoteId, array $order, \DateTimeImmutable $at): CreditBucket
+    {
+        $balance = $this->lockForQuote($artisanId) ?? throw new InsufficientCredits('Aucun crédit disponible.');
+        foreach ($order as $bucket) {
+            $available = match ($bucket) {
+                CreditBucket::Free => $balance->free,
+                CreditBucket::Plan => $balance->plan,
+                CreditBucket::Extra => $balance->extra,
+            };
+            if ($available <= 0) {
+                continue;
+            }
+            $this->connection->executeStatement(
+                <<<'SQL'
+                    INSERT INTO billing.credit_ledger_entry (id, artisan_id, type, bucket, amount, reference_type, reference_id, created_at)
+                    VALUES (:id, :artisan, :type, :bucket, -1, 'quote', :quote, :at)
+                    SQL,
+                ['id' => $entryId, 'artisan' => $artisanId, 'type' => LedgerEntryType::QuoteDebit->value, 'bucket' => $bucket->value, 'quote' => $quoteId, 'at' => $at->format(\DATE_ATOM)],
+            );
+            $this->connection->executeStatement(
+                \sprintf('UPDATE billing.credit_balance SET %1$s = %1$s - 1, updated_at = :at WHERE artisan_id = :artisan', $bucket->value),
+                ['artisan' => $artisanId, 'at' => $at->format(\DATE_ATOM)],
+            );
+
+            return $bucket;
+        }
+
+        throw new InsufficientCredits('Aucun crédit disponible.');
     }
 }

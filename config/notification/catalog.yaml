@@ -64,6 +64,7 @@ notifications:
         label: "Nouveau devis reçu"
         recipient: "Client"
         channels: [email, in_app, sms]
+        variables: [prenom, artisan, numero, metier, montant, validite, lien]
     'E-12b':
         label: "Devis révisé par l'artisan"
         recipient: "Client"
@@ -101,6 +102,7 @@ notifications:
         label: "Demande complète (max devis atteint)"
         recipient: "Client"
         channels: [in_app]
+        variables: [numero, max_devis]
     'E-19c':
         label: "Brouillon de demande non finalisé (J+1)"
         recipient: "Visiteur ayant consenti"
@@ -159,6 +161,7 @@ notifications:
         label: "Demande devenue complète (brouillon en cours)"
         recipient: "Artisan"
         channels: [in_app]
+        variables: [numero, metier, ville]
     'E-34':
         label: "Devis accepté (+ coordonnées client)"
         recipient: "Artisan"

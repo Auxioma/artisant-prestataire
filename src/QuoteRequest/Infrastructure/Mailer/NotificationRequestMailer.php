@@ -103,6 +103,11 @@ final readonly class NotificationRequestMailer implements RequestMailer
         ]));
     }
 
+    public function notifyRequestFull(string $userId, string $requestId, string $number, int $maxQuotes): void
+    {
+        $this->notifier->notify(new Notification('E-19b', null, $userId, ['numero' => $number, 'max_devis' => $maxQuotes], $this->clientLink($requestId)));
+    }
+
     /** C02 « Mes demandes » (T-406) ; tant qu'il n'est pas livré, la page de la demande envoyée. */
     private function clientLink(string $requestId): string
     {

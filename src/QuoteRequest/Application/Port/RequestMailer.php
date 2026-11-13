@@ -30,4 +30,7 @@ interface RequestMailer
 
     /** E-19c — brouillon de demande non finalisé (RG-060). */
     public function sendDraftReminder(string $email, string $firstName, string $userId, ?string $jobName, int $retentionDays): void;
+
+    /** E-19b — demande complète (max devis atteint) : in-app au client. */
+    public function notifyRequestFull(string $userId, string $requestId, string $number, int $maxQuotes): void;
 }
