@@ -60,6 +60,7 @@ enum SettingKey: string
     case RequestsWaveAlertPct = 'requests.wave_alert_pct';
     case RequestsRenotifyOnSlotFreed = 'requests.renotify_on_slot_freed';
     case RequestsRetentionYears = 'requests.retention_years';
+    case RequestsExtendRadiusKm = 'requests.extend_radius_km';
 
     // Professionnels, agenda, avis, classement
     case ProMaxJobs = 'pro.max_jobs';
@@ -223,6 +224,7 @@ enum SettingKey: string
             self::RequestsWaveAlertPct => $d(T::Integer, 30, 'Alerte KPI « complète avant réponse » (%)', 1, 100, proposed: true),
             self::RequestsRenotifyOnSlotFreed => $d(T::Boolean, true, 'Notifier à nouveau quand une place se libère (P-09)', proposed: true),
             self::RequestsRetentionYears => $d(T::Integer, 3, 'Conservation des demandes et devis (années)', 1, 10, proposed: true),
+            self::RequestsExtendRadiusKm => $d(T::Integer, 20, 'BO04 « Étendre la zone » : rayon autour de la commune (km)', 1, 150, proposed: true),
 
             self::ProMaxJobs => $d(T::Integer, 5, 'Métiers maximum par artisan', 1, 20),
             self::ProMinCompletionFeatured => $d(T::Integer, 80, 'Complétude minimale pour la mise en avant (%)', 0, 100),

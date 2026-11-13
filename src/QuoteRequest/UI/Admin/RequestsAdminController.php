@@ -12,9 +12,11 @@ use App\QuoteRequest\Application\Admin\AdminRequestList;
 use App\QuoteRequest\Application\Admin\AdminRequestPage;
 use App\QuoteRequest\Application\Admin\AdminRequestRows;
 use App\QuoteRequest\Application\Admin\AdminRequestView;
+use App\QuoteRequest\Application\Dispatch\DispatchQuoteRequest;
 use App\QuoteRequest\Application\Moderation\ModerateQuoteRequests;
 use App\QuoteRequest\Application\Moderation\ModerationRejected;
 use App\QuoteRequest\Domain\Request\RejectionReason;
+use App\QuoteRequest\Domain\Request\RequestRuleViolation;
 use App\QuoteRequest\Domain\Request\RequestSource;
 use App\QuoteRequest\Domain\Request\RequestStatus;
 use App\Shared\Application\Bus\CommandBus;
@@ -70,6 +72,7 @@ final class RequestsAdminController extends AbstractController
             'jobs' => $this->jobs(),
             'departments' => $this->departments(),
             'threshold' => $this->settings->int(SettingKey::ModerationRequestRiskThreshold),
+            'extend_km' => $this->settings->int(SettingKey::RequestsExtendRadiusKm),
             'csrf_id' => self::CSRF,
         ]);
     }
@@ -98,6 +101,33 @@ final class RequestsAdminController extends AbstractController
         $back = $request->request->getString('back');
 
         return $this->redirect(str_starts_with($back, '/admin/demandes') ? $back : $this->generateUrl('admin_requests'), Response::HTTP_SEE_OTHER);
+    }
+
+    /** RG-062 — « Re-diffuser » (nouveaux éligibles) ou « Étendre la zone » (artisans du métier proches de la commune). */
+    #[Route('/demandes/{id}/diffusion', name: 'admin_requests_dispatch', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
+    #[IsGranted('admin.requests.edit')]
+    public function dispatch(Request $request, string $id, AdminRequestRows $rows): Response
+    {
+        if (!$this->isCsrfTokenValid(self::CSRF, $request->request->getString('_token'))) {
+            throw new AccessDeniedHttpException('Jeton CSRF invalide.');
+        }
+        $extend = 'extend' === $request->request->getString('action');
+        $km = $this->settings->int(SettingKey::RequestsExtendRadiusKm);
+        $before = $rows->row($id)->dispatched ?? 0;
+        try {
+            $this->commands->dispatch(new DispatchQuoteRequest($id, $this->admin->id() ?? throw new AccessDeniedHttpException(), $extend ? $km : null));
+            $added = ($rows->row($id)->dispatched ?? 0) - $before;
+            $this->addFlash(0 === $added ? 'info' : 'success', match (true) {
+                0 === $added => $extend ? \sprintf('Aucun autre artisan du métier à moins de %d km.', $km) : 'Aucun nouvel artisan éligible : la demande a déjà été diffusée à tous.',
+                1 === $added => 'Demande diffusée à 1 artisan de plus.',
+                default => \sprintf('Demande diffusée à %d artisans de plus.', $added),
+            });
+        } catch (RequestRuleViolation $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+        $back = $request->request->getString('back');
+
+        return $this->redirect(str_starts_with($back, '/admin/demandes') ? $back : $this->generateUrl('admin_requests', ['demande' => $id]), Response::HTTP_SEE_OTHER);
     }
 
     /** Export CSV des demandes filtrées (Figma « Exporter CSV ») ; aucune donnée personnelle du client. */

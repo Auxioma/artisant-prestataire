@@ -132,6 +132,18 @@
                     <input type="hidden" name="back" value="{{ path('admin_requests', filters|merge({page: page.page})) }}">
                     <twig:Button type="submit" variant="secondary" name="decision" value="close">Clôturer la demande</twig:Button>
                 </form>
+                {% if record.row.status == 'open' %}
+                <form method="post" action="{{ path('admin_requests_dispatch', {id: record.row.id}) }}" class="tm-admin-dispatch" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <input type="hidden" name="back" value="{{ path('admin_requests', filters|merge({page: page.page, demande: record.row.id})) }}">
+                    <h3 class="tm-card-title">Diffusion</h3>
+                    <p class="tm-caption">Re-diffuser : prévient les artisans devenus éligibles depuis l’envoi. Étendre : ajoute les artisans du métier dont la commune de départ est à moins de {{ extend_km }} km, même hors de leur zone déclarée.</p>
+                    <div class="tm-admin-actions">
+                        <twig:Button type="submit" variant="soft" name="action" value="redispatch">Re-diffuser</twig:Button>
+                        <twig:Button type="submit" variant="soft" name="action" value="extend">Étendre la zone ({{ extend_km }} km)</twig:Button>
+                    </div>
+                </form>
+                {% endif %}
             {% endif %}
         </aside>
         {% endif %}

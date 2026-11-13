@@ -17,4 +17,12 @@ interface DispatchTargets
 
     /** Artisan choisi par le client (demande directe), s'il peut la recevoir ; sa zone n'est pas exigée. */
     public function direct(string $artisanId, string $clientId): ?DispatchTarget;
+
+    /**
+     * Diffusion étendue (BO04) : artisans du métier dont la commune de départ est à moins de `$km` de la commune de la
+     * demande, même si leur zone déclarée ne la couvre pas.
+     *
+     * @return list<DispatchTarget>
+     */
+    public function extended(string $jobId, string $cityInsee, string $clientId, int $km): array;
 }

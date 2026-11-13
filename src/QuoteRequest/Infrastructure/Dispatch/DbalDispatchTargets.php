@@ -16,6 +16,7 @@ use Doctrine\DBAL\Connection;
  */
 final readonly class DbalDispatchTargets implements DispatchTargets
 {
+    private const int METERS_PER_KM = 1000;
     /** Profil vérifié et visible (RG-043, RG-130), compte actif, réception non mise en pause, non bloqué par le client. */
     private const string RECEIVABLE = <<<'SQL'
         SELECT p.id AS artisan_id, p.user_id, coalesce(rp.alert_frequency, 'immediate') AS frequency
@@ -40,6 +41,24 @@ final readonly class DbalDispatchTargets implements DispatchTargets
                 ORDER BY p.verified_at, p.id
                 SQL,
             ['client' => $clientId, 'job' => $jobId, 'insee' => $cityInsee],
+        );
+
+        return array_map(self::hydrate(...), $rows);
+    }
+
+    public function extended(string $jobId, string $cityInsee, string $clientId, int $km): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            self::RECEIVABLE.<<<'SQL'
+
+                  AND EXISTS (SELECT 1 FROM artisan.artisan_job j WHERE j.artisan_id = p.id AND j.job_id = :job)
+                  AND EXISTS (
+                      SELECT 1 FROM catalog.commune o JOIN catalog.commune a ON a.insee = p.area_center_insee
+                      WHERE o.insee = :insee AND ST_DWithin(a.centroid, o.centroid, :meters)
+                  )
+                ORDER BY p.verified_at, p.id
+                SQL,
+            ['client' => $clientId, 'job' => $jobId, 'insee' => $cityInsee, 'meters' => self::METERS_PER_KM * $km],
         );
 
         return array_map(self::hydrate(...), $rows);

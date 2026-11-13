@@ -406,7 +406,7 @@
     .tm-admin-filters > .tm-select { flex: 0 1 auto; min-width: 0; max-width: 100%; }
     .tm-admin-filters > .tm-select .tm-select__input { max-width: 220px; }
     .tm-admin-note { display: flex; gap: var(--space-2); align-items: flex-start; margin-top: var(--space-5); padding: var(--space-3) var(--space-4); border-radius: var(--radius-card); background: var(--color-info-bg); color: var(--color-heading); font: var(--type-caption); }
-    .tm-admin-decision { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
+    .tm-admin-decision, .tm-admin-dispatch { display: grid; gap: var(--space-3); margin-top: var(--space-4); }
     .tm-admin-decision fieldset { margin: 0; padding: 0; border: 0; }
     .tm-admin-decision legend { margin-bottom: var(--space-2); font: var(--type-label); color: var(--color-heading); }
     .tm-admin-decision .tm-admin-chip { position: relative; cursor: pointer; }

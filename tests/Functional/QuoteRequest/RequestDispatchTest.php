@@ -157,6 +157,36 @@ final class RequestDispatchTest extends WebTestCase
         self::assertSame(['reason' => 'eligible', 'notified' => true], $this->dispatch(self::FIRST), 'diffusée à la validation');
     }
 
+    public function testTeamRedispatchesAndExtendsTheArea(): void
+    {
+        // Caen : hors de la zone de l'artisan (30 km autour d'Harfleur), à 55 km de sa commune de départ.
+        $this->dossierDispatch(new SubmitQuoteRequest(self::FIRST, self::CLIENT, $this->job, '14118', '14000', '1 rue Fictive', 'repair', 'Fuite sous l’évier de la cuisine depuis ce matin (fictif).', [], null, 'week', null));
+        $this->dossierDispatch(new DispatchQuoteRequest(self::FIRST));
+        self::assertNull($this->dispatch(self::FIRST), 'hors zone');
+
+        $this->adminSession($this->client, self::ADMIN, 'moderator');
+        $crawler = $this->client->request('GET', '/admin/demandes?demande='.self::FIRST);
+        self::assertResponseIsSuccessful();
+        $form = $crawler->filter('.tm-admin-dispatch');
+        self::assertStringContainsString('Étendre la zone (20 km)', $form->text());
+        $token = (string) $form->filter('input[name="_token"]')->attr('value');
+
+        $this->client->request('POST', '/admin/demandes/'.self::FIRST.'/diffusion', ['_token' => $token, 'action' => 'redispatch']);
+        self::assertStringContainsString('Aucun nouvel artisan éligible', $this->client->followRedirect()->filter('.tm-toasts')->text());
+        $this->client->request('POST', '/admin/demandes/'.self::FIRST.'/diffusion', ['_token' => $token, 'action' => 'extend']);
+        self::assertStringContainsString('Aucun autre artisan du métier à moins de 20 km', $this->client->followRedirect()->filter('.tm-toasts')->text());
+        self::assertSame(1, DbalValue::int($this->connection->fetchOne("SELECT count(*) FROM admin.audit_log WHERE action = 'request.dispatch_extended' AND actor_type = 'admin'")));
+
+        $this->dossierDispatch(new DispatchQuoteRequest(self::FIRST, self::ADMIN, 60));
+        self::assertSame(['reason' => 'extended', 'notified' => true], $this->dispatch(self::FIRST), 'artisan du métier à moins de 60 km');
+        self::assertSame('Nouvelle demande : Plombier à Caen (14000)', $this->lastEmail()->getSubject());
+
+        $this->connection->executeStatement("UPDATE request.quote_request SET status = 'cancelled', status_reason = 'admin_closed' WHERE id = :id", ['id' => self::FIRST]);
+        self::getContainer()->get(EntityManagerInterface::class)->clear();
+        $this->client->request('POST', '/admin/demandes/'.self::FIRST.'/diffusion', ['_token' => $token, 'action' => 'redispatch']);
+        self::assertStringContainsString('Seule une demande ouverte peut être diffusée', $this->client->followRedirect()->filter('.tm-toasts')->text());
+    }
+
     private function submit(string $id, string $address, string $description, ?string $target = null, ?bool $broadcast = null, ?string $title = null): void
     {
         $this->dossierDispatch(new SubmitQuoteRequest($id, self::CLIENT, $this->job, '76351', '76600', $address, 'repair', $description, [], null, 'week', null, targetArtisanId: $target, broadcastToOthers: $broadcast, title: $title));
