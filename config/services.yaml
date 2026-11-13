@@ -62,7 +62,7 @@ services:
             - '../src/Quote/Application/Editor/{QuoteEditorView,QuoteForm}.php'
             - '../src/Quote/Application/Pdf/QuotePdfDocument.php'
             - '../src/Quote/Application/Revision/RevisionPreview.php'
-            - '../src/Quote/Application/Pro/{ProQuoteFilter,ProQuoteRow,ProQuotesPage}.php'
+            - '../src/Quote/Application/Pro/{ProQuoteFilter,ProQuoteRow,ProQuotesPage,ProDashboardView}.php'
             - '../src/Quote/Application/Client/{ClientQuoteCard,ClientQuotes}.php'
             - '../src/ArtisanProfile/Application/Account/ArtisanAccount.php'
             - '../src/ArtisanProfile/Application/Quote/QuoteIssuerView.php'

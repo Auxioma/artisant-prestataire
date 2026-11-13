@@ -23,7 +23,7 @@ final class CreditExtension extends AbstractExtension
         return [new TwigFunction('tm_artisan_credits', $this->credits(...))];
     }
 
-    /** @return array{remaining: int, state: string}|null */
+    /** @return array{remaining: int, total: int, state: string}|null */
     public function credits(): ?array
     {
         $userId = $this->currentUser->id();
@@ -32,6 +32,6 @@ final class CreditExtension extends AbstractExtension
         }
         $gauge = $this->queries->ask(new CreditGaugeOf($userId));
 
-        return $gauge instanceof CreditGauge ? ['remaining' => $gauge->remaining, 'state' => $gauge->state] : null;
+        return $gauge instanceof CreditGauge ? ['remaining' => $gauge->remaining, 'total' => $gauge->granted, 'state' => $gauge->state] : null;
     }
 }

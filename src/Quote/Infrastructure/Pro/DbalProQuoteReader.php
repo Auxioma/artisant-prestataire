@@ -95,6 +95,33 @@ final readonly class DbalProQuoteReader implements ProQuoteReader
         return $jobs;
     }
 
+    public function activity(string $artisanId, int $days): array
+    {
+        $row = $this->connection->fetchAssociative(
+            <<<'SQL'
+                SELECT (SELECT count(*) FROM request.request_dispatch d WHERE d.artisan_id = :a AND d.dispatched_at >= now() - make_interval(days => :days)) AS requests,
+                       count(*) FILTER (WHERE q.sent_at >= now() - make_interval(days => :days)) AS sent,
+                       count(*) FILTER (WHERE q.status = 'accepted' AND q.decided_at >= now() - make_interval(days => :days)) AS accepted,
+                       coalesce(sum(v.total_ttc_cents) FILTER (WHERE q.status = 'accepted' AND q.decided_at >= now() - make_interval(days => :days)), 0) AS revenue
+                FROM quote.quote q JOIN quote.quote_version v ON v.quote_id = q.id AND v.version = q.current_version
+                WHERE q.artisan_id = :a
+                SQL,
+            ['a' => $artisanId, 'days' => $days],
+        ) ?: [];
+
+        return [
+            'requests' => DbalValue::int($row['requests'] ?? 0),
+            'sent' => DbalValue::int($row['sent'] ?? 0),
+            'accepted' => DbalValue::int($row['accepted'] ?? 0),
+            'revenue' => DbalValue::int($row['revenue'] ?? 0),
+        ];
+    }
+
+    public function clients(string $artisanId): int
+    {
+        return DbalValue::int($this->connection->fetchOne("SELECT count(DISTINCT r.client_id) FROM quote.quote q JOIN request.quote_request r ON r.id = q.request_id WHERE q.artisan_id = :a AND q.status = 'accepted'", ['a' => $artisanId]));
+    }
+
     private function source(string $artisanId): QueryBuilder
     {
         return $this->connection->createQueryBuilder()

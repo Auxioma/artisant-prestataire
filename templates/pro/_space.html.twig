@@ -7,7 +7,7 @@
 {% set header_variant = 'artisan' %}
 {% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% set space_items = [
-    {route: 'pro_dashboard', label: 'Tableau de bord', icon: 'home'},
+    {route: 'pro_dashboard', label: 'Tableau de bord', icon: 'home', key: 'dashboard'},
     {route: 'pro_requests', label: 'Mes demandes', icon: 'file', key: 'requests', count: tm_pro_unread_requests()},
     {route: 'pro_quotes', label: 'Mes devis & chantiers', icon: 'fileEuro', key: 'quotes'},
     {route: 'pro_clients', label: 'Mes clients', icon: 'users'},
@@ -60,16 +60,25 @@
 {% block body %}
 {% set identity = tm_pro_identity() %}
 <div class="tm-space">
-    <div class="tm-space__banner">
+    <div class="tm-space__banner{{ (space_banner_hint ?? null) ? ' tm-space__banner--hint' }}">
         <picture class="tm-space__banner-photo">
             <source srcset="{{ asset('images/pro/banniere-espace@1x.webp') }} 1x, {{ asset('images/pro/banniere-espace@2x.webp') }} 2x" type="image/webp">
             <img src="{{ asset('images/pro/banniere-espace@1x.webp') }}" alt="" width="807" height="98">
         </picture>
         <div class="tm-space__banner-text">
-            <p class="tm-space__banner-title">Espace Professionnel</p>
-            <p>Développez votre activité, recevez des demandes et gérez vos clients sur TrouveMoi.com !</p>
+            <p class="tm-space__banner-title">{{ space_banner_title ?? 'Espace Professionnel' }}</p>
+            <p{% if space_banner_title ?? null %} class="tm-space__banner-sub"{% endif %}>{{ space_banner_text ?? 'Développez votre activité, recevez des demandes et gérez vos clients sur TrouveMoi.com !' }}</p>
             <img src="{{ asset('images/pro/trait-orange.svg') }}" alt="" width="190" height="12">
         </div>
+        {% if space_banner_hint ?? null %}
+            <div class="tm-space__banner-hint">
+                <img src="{{ asset('images/client/repere.svg') }}" alt="" width="34" height="40">
+                <div>
+                    <p>{{ space_banner_hint }}</p>
+                    <img src="{{ asset('images/pro/trait-orange.svg') }}" alt="" width="190" height="12">
+                </div>
+            </div>
+        {% endif %}
     </div>
     <div class="tm-space__body">
         {% import _self as space %}
@@ -83,7 +92,7 @@
     </div>
     {# Mobile (Figma 239:15264) : barre d'onglets en bas d'écran ; « Plus » ouvre le menu complet de l'espace. #}
     {% set tabs = [
-        {route: 'pro_dashboard', label: 'Accueil', icon: 'home'},
+        {route: 'pro_dashboard', label: 'Accueil', icon: 'home', key: 'dashboard'},
         {route: 'pro_requests', label: 'Demandes', icon: 'file', key: 'requests'},
         {route: 'pro_quotes', label: 'Devis', icon: 'briefcase', key: 'quotes'},
         {route: 'pro_messages', label: 'Messages', icon: 'msg'},

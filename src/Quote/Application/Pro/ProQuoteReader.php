@@ -14,4 +14,10 @@ interface ProQuoteReader
 
     /** @return array<string, string> métiers des demandes auxquelles l'artisan a répondu */
     public function jobs(string $artisanId): array;
+
+    /** @return array{requests: int, sent: int, accepted: int, revenue: int} PR01.3 — sur les `$days` derniers jours */
+    public function activity(string $artisanId, int $days): array;
+
+    /** PR01 — clients distincts ayant accepté un devis de l'artisan. */
+    public function clients(string $artisanId): int;
 }

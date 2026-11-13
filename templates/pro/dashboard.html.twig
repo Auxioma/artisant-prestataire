@@ -1,0 +1,118 @@
+{#-
+    PR01 — Tableau de bord artisan (Figma 22:150) : bannière « Tableau de bord », indicateurs, « Dernières demandes »,
+    crédit de devis (PR01.1, composant 74:235, RG-105/RG-106), « Mon activité » (30 jours / 12 mois), profil et
+    visibilité, accès rapides. Écarts (agenda, rendez-vous, avis, équipe : lots suivants) : P-90.
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'dashboard' %}
+{% set space_banner_title = 'Tableau de bord' %}
+{% set space_banner_text = 'Espace Professionnel' %}
+{% set space_banner_hint = 'Développez votre activité, recevez des demandes et gérez vos clients sur TrouveMoi.com !' %}
+{% block title %}Tableau de bord — Espace pro — TrouveMoi{% endblock %}
+{% set state_badges = {
+    unread: {label: 'Nouvelle', icon: 'dots', class: 'is-new'},
+    viewed: {label: 'À traiter', icon: 'clock', class: 'is-todo'},
+    ignored: {label: 'Ignorée', icon: 'eyeOff', class: 'is-muted'},
+    unavailable: {label: 'Plus disponible', icon: 'hourglass', class: 'is-muted'},
+    preview: {label: 'Aperçu', icon: 'eye', class: 'is-todo'},
+} %}
+{% block space_content %}
+<h1 class="tm-visually-hidden">Tableau de bord</h1>
+{% if view is null %}
+    <twig:EmptyState title="Votre tableau de bord s’ouvre avec votre dossier professionnel" text="Complétez votre inscription pour recevoir des demandes et envoyer des devis." icon="shield">
+        {% if tm_route_exists('artisan_signup_submitted') %}<twig:Button href="{{ path('artisan_signup_submitted') }}" variant="secondary">Suivre mon dossier</twig:Button>{% endif %}
+    </twig:EmptyState>
+{% else %}
+<div class="tm-pdash">
+    <ul class="tm-pdash__kpis">
+        <li class="is-blue"><twig:Icon name="fileEuro" class="tm-icon--inherit" /><div><strong>{{ view.newRequests }}</strong><span>Nouvelles demandes</span></div></li>
+        <li class="is-orange"><twig:Icon name="fileEuro" class="tm-icon--inherit" /><div><strong>{{ view.quotes.pending }}</strong><span>Devis en cours</span></div></li>
+        <li class="is-green"><twig:Icon name="check" class="tm-icon--inherit" /><div><strong>{{ view.quotes.accepted }}</strong><span>Devis acceptés</span></div></li>
+        <li class="is-violet"><twig:Icon name="users" class="tm-icon--inherit" /><div><strong>{{ view.clients }}</strong><span>Clients au total</span></div></li>
+    </ul>
+
+    <div class="tm-pdash__row">
+        <section class="tm-pro-card tm-pdash__latest" aria-labelledby="latest-title">
+            <header class="tm-pdash__head">
+                <h2 id="latest-title" class="tm-pro-card__title"><twig:Icon name="fileEuro" class="tm-icon--inherit" />Dernières demandes</h2>
+                <a href="{{ path('pro_requests') }}">Voir toutes<twig:Icon name="arrowR" size="xs" class="tm-icon--inherit" /></a>
+            </header>
+            {% if view.latest is empty %}
+                <p class="tm-pdash__empty">Aucune demande pour le moment dans votre zone.</p>
+            {% else %}
+                <ul class="tm-pdash__requests">
+                    {% for r in view.latest %}
+                        {% set mine = tm_pro_sent_quote(r.id) %}
+                        {% set badge = mine ? {label: mine.label, icon: mine.status == 'accepted' ? 'check' : 'send', class: mine.status in ['sent', 'viewed', 'accepted'] ? 'is-sent' : 'is-muted'} : state_badges[r.state.value] %}
+                        <li>
+                            <span class="tm-pdash__thumb">{% if r.photoId %}<img src="{{ path('pro_request_photo', {id: r.id, file: r.photoId}) }}" alt="" width="58" height="40" loading="lazy">{% else %}<twig:Icon name="wrench" size="sm" class="tm-icon--inherit" />{% endif %}</span>
+                            <div class="tm-pdash__what">
+                                <a href="{{ path('pro_request', {id: r.id}) }}">{{ r.title }}</a>
+                                <span><twig:Icon name="pin" size="xs" class="tm-icon--inherit" />{{ r.city }}</span>
+                            </div>
+                            <span class="tm-pdash__date"><twig:Icon name="calendar" size="sm" class="tm-icon--inherit" /><time datetime="{{ r.submittedAt|date('c') }}">{{ r.submittedAt|date('d/m/Y', 'Europe/Paris') }}<br>à {{ r.submittedAt|date('H:i', 'Europe/Paris') }}</time></span>
+                            <span class="tm-pdash__state"><span class="tm-pro-state {{ badge.class }}"><twig:Icon name="{{ badge.icon }}" size="xs" class="tm-icon--inherit" />{{ badge.label }}</span></span>
+                            <twig:Button href="{{ path('pro_request', {id: r.id}) }}" variant="secondary" icon="eye" iconPosition="start" class="tm-pdash__see">Voir<span class="tm-visually-hidden"> la demande {{ r.title }}</span></twig:Button>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+
+        {% set credits = tm_artisan_credits() %}
+        <section class="tm-pdash__credits" aria-label="Crédit de devis">
+            {% if credits %}
+                {% set statuses = {normal: 'devis restants sur ' ~ credits.total ~ ' gratuits', alert: 'devis restants — pensez à choisir un forfait', critical: 'devis restants — votre crédit est presque épuisé', exhausted: 'Crédit épuisé : souscrivez un forfait pour continuer à envoyer des devis.'} %}
+                <twig:CreditGauge :remaining="credits.remaining" :total="credits.total" state="{{ credits.state }}" status="{{ statuses[credits.state] }}" ctaHref="{{ path('content_pricing') }}" />
+            {% else %}
+                <div class="tm-pro-card"><p class="tm-pdash__empty">Votre crédit de devis gratuits sera disponible dès la vérification de votre compte.</p></div>
+            {% endif %}
+        </section>
+    </div>
+
+    <div class="tm-pdash__row">
+        <section class="tm-pro-card" aria-labelledby="activity-title">
+            <header class="tm-pdash__head">
+                <h2 id="activity-title" class="tm-pro-card__title"><twig:Icon name="bars" class="tm-icon--inherit" />Mon activité</h2>
+                <form method="get" action="{{ path('pro_dashboard') }}" data-controller="autosubmit">
+                    <label class="tm-visually-hidden" for="periode">Période</label>
+                    <select class="tm-pdash__period" id="periode" name="periode" data-action="change->autosubmit#submit">
+                        {% for key, label in periods %}<option value="{{ key }}"{{ key == view.days ~ '' ? ' selected' }}>{{ label }}</option>{% endfor %}
+                    </select>
+                    <noscript><button type="submit">Afficher</button></noscript>
+                </form>
+            </header>
+            <ul class="tm-pdash__activity">
+                <li class="is-green"><twig:Icon name="fileEuro" class="tm-icon--inherit" /><strong>{{ view.activity.requests }}</strong><span>Demandes reçues</span></li>
+                <li class="is-blue"><twig:Icon name="euro" class="tm-icon--inherit" /><strong>{{ view.activity.sent }}</strong><span>Devis envoyés</span></li>
+                <li class="is-orange"><twig:Icon name="check" class="tm-icon--inherit" /><strong>{{ view.activity.accepted }}</strong><span>Devis acceptés</span></li>
+                <li class="is-violet"><twig:Icon name="euro" class="tm-icon--inherit" /><strong>{{ (view.activity.revenue // 100)|number_format(0, ',', ' ') }} €</strong><span>Chiffre d’affaires estimé</span></li>
+            </ul>
+        </section>
+
+        <section class="tm-pro-card" aria-labelledby="visibility-title">
+            <h2 id="visibility-title" class="tm-pro-card__title"><twig:Icon name="star" class="tm-icon--inherit" />Ma visibilité</h2>
+            <div class="tm-pdash__visibility">
+                {% if view.completion is not null %}
+                    <div class="tm-pdash__score"><strong>{{ view.completion }} %</strong><span>Profil complété</span></div>
+                {% endif %}
+                <ul>
+                    <li><twig:Icon name="checkC" size="sm" class="tm-icon--inherit" />{{ view.verified ? 'Profil vérifié' : 'Vérification en cours' }}</li>
+                    <li><twig:Icon name="star" size="sm" class="tm-icon--inherit" />Avis clients : bientôt</li>
+                    {% if tm_route_exists('pro_profile') %}<li><a href="{{ path('pro_profile') }}">Compléter mon profil<twig:Icon name="arrowR" size="xs" class="tm-icon--inherit" /></a></li>{% endif %}
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <section class="tm-pro-shortcuts" aria-labelledby="raccourcis-title">
+        <h2 id="raccourcis-title"><twig:Icon name="rocket" class="tm-icon--inherit" />Accès rapides</h2>
+        <ul>
+            <li><a href="{{ path('pro_requests') }}"><twig:Icon name="fileEuro" size="sm" class="tm-icon--inherit" />Créer un devis</a></li>
+            <li><a href="{{ path('pro_quotes') }}"><twig:Icon name="layers" size="sm" class="tm-icon--inherit" />Suivre mes devis</a></li>
+            {% if tm_route_exists('pro_profile') %}<li><a href="{{ path('pro_profile') }}"><twig:Icon name="bell" size="sm" class="tm-icon--inherit" />Mettre à jour mon profil</a></li>{% endif %}
+        </ul>
+    </section>
+</div>
+{% endif %}
+{% endblock %}
