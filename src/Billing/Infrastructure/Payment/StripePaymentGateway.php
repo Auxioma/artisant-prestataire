@@ -9,6 +9,7 @@ use App\Billing\Application\Port\CheckoutRequest;
 use App\Billing\Application\Port\CheckoutSession;
 use App\Billing\Application\Port\PaymentGateway;
 use App\Billing\Application\Port\PromotionCode;
+use App\Billing\Application\Port\SubscriptionState;
 use App\Billing\Domain\Plan\BillingInterval;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
 use Psr\Log\LoggerInterface;
@@ -162,6 +163,32 @@ final class StripePaymentGateway implements PaymentGateway
             $session = $c->checkout->sessions->create($params, ['idempotency_key' => $request->idempotencyKey]);
 
             return new CheckoutSession((string) $session->id, (string) $session->url);
+        });
+    }
+
+    public function retrieveSubscription(string $subscriptionId): SubscriptionState
+    {
+        return $this->call('subscription', static function (StripeClient $c) use ($subscriptionId): SubscriptionState {
+            $s = $c->subscriptions->retrieve($subscriptionId);
+            // Depuis l'API « basil », la période en cours est portée par la ligne d'abonnement (items).
+            $item = $s->items->data[0] ?? null;
+            $date = static fn (mixed $ts): ?\DateTimeImmutable => \is_int($ts) ? new \DateTimeImmutable('@'.$ts) : null;
+            $metadata = [];
+            foreach ($s->metadata->toArray() as $key => $value) {
+                if (\is_scalar($value)) {
+                    $metadata[(string) $key] = (string) $value;
+                }
+            }
+
+            return new SubscriptionState(
+                (string) $s->id,
+                (string) $s->status,
+                null === $item ? null : (string) $item->price->id,
+                $date($item?->current_period_start),
+                $date($item?->current_period_end),
+                (bool) $s->cancel_at_period_end,
+                $metadata,
+            );
         });
     }
 

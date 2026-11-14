@@ -57,4 +57,7 @@ interface PaymentGateway
     public function findPromotionCode(string $code): ?PromotionCode;
 
     public function createSubscriptionCheckout(CheckoutRequest $request): CheckoutSession;
+
+    /** État courant d'une Subscription (statut, prix, période, résiliation programmée, métadonnées). */
+    public function retrieveSubscription(string $subscriptionId): SubscriptionState;
 }

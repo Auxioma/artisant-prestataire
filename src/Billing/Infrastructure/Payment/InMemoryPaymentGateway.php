@@ -9,6 +9,7 @@ use App\Billing\Application\Port\CheckoutRequest;
 use App\Billing\Application\Port\CheckoutSession;
 use App\Billing\Application\Port\PaymentGateway;
 use App\Billing\Application\Port\PromotionCode;
+use App\Billing\Application\Port\SubscriptionState;
 use App\Billing\Domain\Plan\BillingInterval;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
 
@@ -82,9 +83,21 @@ final class InMemoryPaymentGateway implements PaymentGateway
         return new CheckoutSession($id, 'https://checkout.stripe.test/'.$id);
     }
 
+    /** @var array<string, SubscriptionState> abonnements Stripe simulés, par identifiant */
+    public array $subscriptions = [];
+
+    public function retrieveSubscription(string $subscriptionId): SubscriptionState
+    {
+        if ($this->failing) {
+            throw new ExternalServiceUnavailable('stripe', 'panne simulée');
+        }
+
+        return $this->subscriptions[$subscriptionId] ?? throw new ExternalServiceUnavailable('stripe', 'abonnement inconnu');
+    }
+
     public function reset(): void
     {
-        [$this->responses, $this->calls, $this->configured, $this->failing, $this->promotionCodes] = [[], [], true, false, []];
+        [$this->responses, $this->calls, $this->configured, $this->failing, $this->promotionCodes, $this->subscriptions] = [[], [], true, false, [], []];
     }
 
     /** @param array<string, mixed> $params */

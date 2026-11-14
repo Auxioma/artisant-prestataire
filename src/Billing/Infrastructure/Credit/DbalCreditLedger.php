@@ -72,6 +72,37 @@ final readonly class DbalCreditLedger implements CreditLedger, QuoteCreditAccoun
         return false === $row ? null : new CreditBalance(DbalValue::int($row['free']), DbalValue::int($row['plan']), DbalValue::int($row['extra']), DbalValue::int($row['free_granted']));
     }
 
+    public function grantPeriod(string $entryId, string $artisanId, string $periodId, int $amount, ?\DateTimeImmutable $expiresAt, ?string $expirePreviousPeriodId, string $expiryEntryId, \DateTimeImmutable $at): bool
+    {
+        $balance = $this->lockForQuote($artisanId);
+        if (null === $balance) {
+            $this->connection->executeStatement('INSERT INTO billing.credit_balance (artisan_id, free, plan, extra, free_granted, updated_at) VALUES (:a, 0, 0, 0, 0, :at) ON CONFLICT (artisan_id) DO NOTHING', ['a' => $artisanId, 'at' => $at->format(\DATE_ATOM)]);
+            $balance = $this->lockForQuote($artisanId) ?? throw new \LogicException('Compte crédits introuvable.');
+        }
+        $reference = static fn (string $id, string $type, int $value, string $period): array => ['id' => $id, 'artisan' => $artisanId, 'type' => $type, 'amount' => $value, 'period' => $period, 'at' => $at->format(\DATE_ATOM)];
+        $insert = <<<'SQL'
+            INSERT INTO billing.credit_ledger_entry (id, artisan_id, type, bucket, amount, expires_at, period_id, reference_type, reference_id, created_at)
+            VALUES (:id, :artisan, :type, 'plan', :amount, :expires, :period, 'subscription_period', :period, :at)
+            ON CONFLICT (type, reference_type, reference_id) WHERE type IN ('quote_debit', 'refund', 'period_grant', 'expiry') DO NOTHING
+            SQL;
+        if (null !== $expirePreviousPeriodId && $balance->plan > 0) {
+            $expired = (int) $this->connection->executeStatement($insert, $reference($expiryEntryId, LedgerEntryType::Expiry->value, -$balance->plan, $expirePreviousPeriodId) + ['expires' => null]);
+            if (1 === $expired) {
+                $this->connection->executeStatement('UPDATE billing.credit_balance SET plan = 0, updated_at = :at WHERE artisan_id = :a', ['a' => $artisanId, 'at' => $at->format(\DATE_ATOM)]);
+            }
+        }
+        if ($amount <= 0) {
+            return false;
+        }
+        $granted = (int) $this->connection->executeStatement($insert, $reference($entryId, LedgerEntryType::PeriodGrant->value, $amount, $periodId) + ['expires' => $expiresAt?->format(\DATE_ATOM)]);
+        if (1 !== $granted) {
+            return false;
+        }
+        $this->connection->executeStatement('UPDATE billing.credit_balance SET plan = plan + :n, updated_at = :at WHERE artisan_id = :a', ['n' => $amount, 'a' => $artisanId, 'at' => $at->format(\DATE_ATOM)]);
+
+        return true;
+    }
+
     public function lockForQuote(string $artisanId): ?CreditBalance
     {
         $row = $this->connection->fetchAssociative(

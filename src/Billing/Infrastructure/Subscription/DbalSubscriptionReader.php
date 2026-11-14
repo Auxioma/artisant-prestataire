@@ -33,6 +33,20 @@ final readonly class DbalSubscriptionReader implements SubscriptionReader
         return false === $cents ? null : DbalValue::int($cents);
     }
 
+    public function userOfArtisan(string $artisanId): ?string
+    {
+        $id = $this->connection->fetchOne('SELECT user_id FROM billing.credit_account WHERE artisan_id = :a', ['a' => $artisanId]);
+
+        return false === $id ? null : DbalValue::string($id);
+    }
+
+    public function priceByStripeId(string $stripePriceId): ?array
+    {
+        $row = $this->connection->fetchAssociative('SELECT plan_id, id, interval FROM billing.plan_price WHERE stripe_price_id = :s', ['s' => $stripePriceId]);
+
+        return false === $row ? null : ['plan_id' => DbalValue::string($row['plan_id']), 'price_id' => DbalValue::string($row['id']), 'interval' => DbalValue::string($row['interval'])];
+    }
+
     public function history(string $artisanId, int $limit): array
     {
         $rows = $this->connection->fetchAllAssociative(

@@ -55,6 +55,8 @@ framework:
         routing:
             # Événements de domaine : toujours traités de façon asynchrone (relayés depuis l'outbox).
             'App\Shared\Domain\Event\DomainEvent': async
+            # ADR-0010 : événements Stripe traités hors requête, reprises exponentielles puis transport « failed ».
+            'App\Billing\Application\Webhook\HandleStripeEvent': stripe_webhooks
 
 when@test:
     framework:

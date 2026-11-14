@@ -199,10 +199,12 @@ notifications:
         label: "Abonnement activé + facture"
         recipient: "Artisan"
         channels: [email, in_app]
+        variables: [prenom, forfait, credits, fin_periode, montant, facture, lien]
     'E-41':
         label: "Renouvellement réussi + facture"
         recipient: "Artisan"
         channels: [email]
+        variables: [prenom, forfait, credits, fin_periode, montant, facture, lien]
     'E-42':
         label: "Alerte crédits : seuils consommés"
         recipient: "Artisan"

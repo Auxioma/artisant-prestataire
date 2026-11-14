@@ -1,0 +1,50 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Billing\Infrastructure\Subscription;
+
+use App\Billing\Application\Subscription\SubscriptionMailer;
+use App\Notification\Application\Notification;
+use App\Notification\Application\Notifier;
+use App\Shared\Application\Bus\QueryBus;
+use App\Shared\Application\Identity\UserContact;
+use App\Shared\Application\Identity\UserContactDetails;
+use App\Shared\Domain\Text\FrenchNumber;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+
+/** E-40 / E-41 confiés au socle Notification ; lien vers « Mes abonnements » (PR11) et vers la facture. */
+final readonly class NotificationSubscriptionMailer implements SubscriptionMailer
+{
+    public function __construct(private Notifier $notifier, private QueryBus $queries, private UrlGeneratorInterface $urls)
+    {
+    }
+
+    public function activated(string $userId, string $planName, int $credits, \DateTimeImmutable $periodEnd, int $amountPaidCents, ?string $invoiceUrl): void
+    {
+        $this->send('E-40', $userId, $planName, $credits, $periodEnd, $amountPaidCents, $invoiceUrl);
+    }
+
+    public function renewed(string $userId, string $planName, int $credits, \DateTimeImmutable $periodEnd, int $amountPaidCents, ?string $invoiceUrl): void
+    {
+        $this->send('E-41', $userId, $planName, $credits, $periodEnd, $amountPaidCents, $invoiceUrl);
+    }
+
+    private function send(string $code, string $userId, string $planName, int $credits, \DateTimeImmutable $periodEnd, int $amountPaidCents, ?string $invoiceUrl): void
+    {
+        $contact = $this->queries->ask(new UserContact($userId));
+        if (!$contact instanceof UserContactDetails) {
+            return;
+        }
+        $link = $this->urls->generate('pro_subscription', [], UrlGeneratorInterface::ABSOLUTE_URL);
+        $this->notifier->notify(new Notification($code, $contact->email, $userId, [
+            'prenom' => $contact->firstName,
+            'forfait' => $planName,
+            'credits' => $credits,
+            'fin_periode' => $periodEnd->setTimezone(new \DateTimeZone('Europe/Paris'))->format('d/m/Y'),
+            'montant' => FrenchNumber::money($amountPaidCents),
+            'facture' => $invoiceUrl ?? $link,
+            'lien' => $link,
+        ], $link));
+    }
+}

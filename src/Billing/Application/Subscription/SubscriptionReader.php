@@ -11,6 +11,15 @@ interface SubscriptionReader
 
     public function priceCents(string $planPriceId): ?int;
 
+    public function userOfArtisan(string $artisanId): ?string;
+
+    /**
+     * Prix de forfait correspondant à un prix Stripe.
+     *
+     * @return array{plan_id: string, price_id: string, interval: string}|null
+     */
+    public function priceByStripeId(string $stripePriceId): ?array;
+
     /** @return list<LedgerLine> plus récentes d'abord */
     public function history(string $artisanId, int $limit): array;
 }
