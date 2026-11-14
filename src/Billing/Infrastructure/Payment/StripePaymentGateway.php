@@ -7,6 +7,8 @@ namespace App\Billing\Infrastructure\Payment;
 use App\Billing\Application\Port\BillingAddress;
 use App\Billing\Application\Port\CheckoutRequest;
 use App\Billing\Application\Port\CheckoutSession;
+use App\Billing\Application\Port\CreditNoteRequest;
+use App\Billing\Application\Port\CreditNoteResult;
 use App\Billing\Application\Port\PaymentGateway;
 use App\Billing\Application\Port\PaymentMethodSummary;
 use App\Billing\Application\Port\PromotionCode;
@@ -294,6 +296,30 @@ final class StripePaymentGateway implements PaymentGateway
         }
 
         return $bytes;
+    }
+
+    public function refundInvoice(CreditNoteRequest $request): CreditNoteResult
+    {
+        return $this->call('credit_note', static function (StripeClient $c) use ($request): CreditNoteResult {
+            if ($request->full) {
+                $lines = [];
+                foreach ($c->invoices->allLines($request->stripeInvoiceId, ['limit' => 100])->data as $line) {
+                    $lines[] = ['type' => 'invoice_line_item', 'invoice_line_item' => $line->id, 'quantity' => $line->quantity ?? 1];
+                }
+            } else {
+                $lines = [['type' => 'custom_line_item', 'description' => $request->memo, 'quantity' => 1, 'unit_amount' => $request->amountCents]];
+            }
+            $note = $c->creditNotes->create([
+                'invoice' => $request->stripeInvoiceId,
+                'lines' => $lines,
+                'refund_amount' => $request->amountCents,
+                'reason' => $request->reason,
+                'memo' => $request->memo,
+                'metadata' => $request->metadata,
+            ], ['idempotency_key' => $request->idempotencyKey]);
+
+            return new CreditNoteResult((string) $note->id, null === $note->number ? null : (string) $note->number, (int) $note->total, $request->amountCents, null === $note->pdf ? null : (string) $note->pdf);
+        });
     }
 
     public function changeSubscriptionPrice(string $subscriptionId, string $priceId, string $prorationBehavior, string $idempotencyKey): void

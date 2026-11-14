@@ -19,11 +19,23 @@ final readonly class InvoiceView
         public ?\DateTimeImmutable $periodEnd,
         public bool $archived,
         public ?string $hostedUrl,
+        public int $amountPaidCents = 0,
+        public int $refundedCents = 0,
     ) {
+    }
+
+    /** Montant encore remboursable (payé moins les avoirs remboursés). */
+    public function refundableCents(): int
+    {
+        return 'paid' === $this->status ? max(0, $this->amountPaidCents - $this->refundedCents) : 0;
     }
 
     public function statusLabel(): string
     {
+        if ('paid' === $this->status && $this->refundedCents > 0) {
+            return $this->refundedCents >= $this->amountPaidCents ? 'Remboursée' : 'Remboursée en partie';
+        }
+
         return match ($this->status) {
             'paid' => 'Payée',
             'open' => 'En attente',

@@ -6,7 +6,7 @@ namespace App\Billing\Application\Subscription;
 
 /**
  * E-40 (abonnement activé), E-41 (renouvellement réussi), E-43 (changement de forfait, résiliation programmée ou
- * annulée), E-44 (échec de paiement, à chaque tentative), E-45 (suspension), E-46 (carte bientôt expirée).
+ * annulée), E-44 (échec de paiement, à chaque tentative), E-45 (suspension), E-46 (carte bientôt expirée), E-48 (remboursement / avoir).
  */
 interface SubscriptionMailer
 {
@@ -26,6 +26,9 @@ interface SubscriptionMailer
 
     /** E-46 — carte par défaut bientôt expirée : invitation à la mettre à jour (portail Stripe). */
     public function cardExpiring(string $userId, ?string $brand, string $last4, int $expMonth, int $expYear): void;
+
+    /** E-48 — remboursement effectué / avoir. */
+    public function refunded(string $userId, ?string $invoiceNumber, ?string $creditNoteNumber, int $amountCents, ?string $creditNoteUrl): void;
 
     public function renewed(string $userId, string $planName, int $credits, \DateTimeImmutable $periodEnd, int $amountPaidCents, ?string $invoiceUrl): void;
 }

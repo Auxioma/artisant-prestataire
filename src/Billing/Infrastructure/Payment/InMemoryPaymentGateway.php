@@ -7,6 +7,8 @@ namespace App\Billing\Infrastructure\Payment;
 use App\Billing\Application\Port\BillingAddress;
 use App\Billing\Application\Port\CheckoutRequest;
 use App\Billing\Application\Port\CheckoutSession;
+use App\Billing\Application\Port\CreditNoteRequest;
+use App\Billing\Application\Port\CreditNoteResult;
 use App\Billing\Application\Port\PaymentGateway;
 use App\Billing\Application\Port\PaymentMethodSummary;
 use App\Billing\Application\Port\PromotionCode;
@@ -153,6 +155,16 @@ final class InMemoryPaymentGateway implements PaymentGateway
     public function downloadInvoicePdf(string $url): string
     {
         return $this->pdfs[$url] ?? throw new ExternalServiceUnavailable('stripe', 'PDF indisponible');
+    }
+
+    public function refundInvoice(CreditNoteRequest $request): CreditNoteResult
+    {
+        if (!$this->configured) {
+            throw new ExternalServiceUnavailable('stripe', 'clé secrète non configurée');
+        }
+        $id = $this->respond('credit_note', $request->idempotencyKey, ['invoice' => $request->stripeInvoiceId, 'amount' => $request->amountCents, 'full' => $request->full, 'reason' => $request->reason, 'metadata' => $request->metadata]);
+
+        return new CreditNoteResult($id, 'AV-'.strtoupper(substr($id, -6)), $request->amountCents, $request->amountCents, 'https://pay.stripe.test/credit_note/'.$id);
     }
 
     public function reset(): void

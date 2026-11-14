@@ -466,4 +466,7 @@
     .tm-promo-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
     .tm-admin-table .tm-link-button { padding: 0; border: 0; background: none; color: var(--color-danger-text); font: inherit; font-weight: var(--font-weight-semibold); text-decoration: underline; cursor: pointer; }
     .tm-admin-table .tm-link-button:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+
+    /* Facturation d'un artisan (T-606b). */
+    .tm-billing-actions { display: flex; flex-wrap: wrap; gap: 12px; white-space: nowrap; }
 }

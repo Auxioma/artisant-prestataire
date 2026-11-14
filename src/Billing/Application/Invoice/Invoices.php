@@ -26,6 +26,20 @@ interface Invoices
     /** @return array{view: InvoiceView, pdf_key: ?string, pdf_sha256: ?string}|null */
     public function find(string $artisanId, string $invoiceId): ?array;
 
+    /** Facture d'un artisan quelconque (back-office) : vue et identifiant Stripe. */
+    public function findAny(string $invoiceId): ?InvoiceAdminRow;
+
+    public function invoiceIdByStripeId(string $stripeInvoiceId): ?string;
+
+    /** Vrai si l'avoir vient d'être enregistré (faux : déjà connu). */
+    public function recordCreditNote(string $id, string $invoiceId, CreditNoteRecord $note, \DateTimeImmutable $at): bool;
+
+    /** Marque l'avoir notifié (E-48) ; vrai si c'est la première fois. */
+    public function markCreditNoteNotified(string $stripeCreditNoteId, \DateTimeImmutable $at): bool;
+
+    /** @return list<CreditNoteRecord> */
+    public function creditNotesOf(string $artisanId): array;
+
     public function savePaymentMethod(string $artisanId, ?PaymentMethodSummary $method, \DateTimeImmutable $at): void;
 
     public function paymentMethod(string $artisanId): ?PaymentMethodSummary;

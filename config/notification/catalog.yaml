@@ -243,6 +243,7 @@ notifications:
         label: "Remboursement effectué / avoir"
         recipient: "Artisan"
         channels: [email]
+        variables: [prenom, montant, facture, avoir, document, lien]
     'E-90':
         label: "Accusé de réception du formulaire de contact"
         recipient: "Tous"

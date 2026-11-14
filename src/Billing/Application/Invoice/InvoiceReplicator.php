@@ -23,6 +23,7 @@ final readonly class InvoiceReplicator
         private PaymentGateway $gateway,
         private IdGenerator $ids,
         private Clock $clock,
+        private CreditNoteNotifier $creditNotes,
     ) {
     }
 
@@ -42,6 +43,25 @@ final readonly class InvoiceReplicator
             $this->archive->put($invoiceId, $bytes);
             $this->invoices->markArchived($invoiceId, $invoiceId, hash('sha256', $bytes), $now);
         }
+
+        return true;
+    }
+
+    /** `credit_note.created` : avoir émis depuis Stripe ou depuis le back-office (déjà connu : rien de nouveau). */
+    public function creditNote(StripeEvent $event): bool
+    {
+        $id = $event->string('id');
+        $invoice = $event->string('invoice');
+        $invoiceId = null === $invoice ? null : $this->invoices->invoiceIdByStripeId($invoice);
+        $row = null === $invoiceId ? null : $this->invoices->findAny($invoiceId);
+        $total = $event->int('total') ?? 0;
+        if (null === $id || null === $row || $total <= 0) {
+            return false;
+        }
+        $now = $this->clock->now();
+        $note = new CreditNoteRecord($id, $row->artisanId, $event->string('number'), $total, $event->int('refund_amount') ?? $total, $event->string('reason'), $event->string('memo'), null, $event->string('pdf'), $row->view->number);
+        $this->invoices->recordCreditNote($this->ids->next(), $row->view->id, $note, $now);
+        $this->creditNotes->notify($note, $now);
 
         return true;
     }

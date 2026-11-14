@@ -95,6 +95,23 @@ final readonly class NotificationSubscriptionMailer implements SubscriptionMaile
         ], $link));
     }
 
+    public function refunded(string $userId, ?string $invoiceNumber, ?string $creditNoteNumber, int $amountCents, ?string $creditNoteUrl): void
+    {
+        $contact = $this->contact($userId);
+        if (null === $contact) {
+            return;
+        }
+        $link = $this->link().'?onglet=factures';
+        $this->notifier->notify(new Notification('E-48', $contact->email, $userId, [
+            'prenom' => $contact->firstName,
+            'montant' => FrenchNumber::money($amountCents),
+            'facture' => $invoiceNumber ?? '',
+            'avoir' => $creditNoteNumber ?? '',
+            'document' => $creditNoteUrl ?? $link,
+            'lien' => $link,
+        ], $link));
+    }
+
     private function contact(string $userId): ?UserContactDetails
     {
         $contact = $this->queries->ask(new UserContact($userId));

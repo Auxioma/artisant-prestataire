@@ -1,0 +1,82 @@
+{#-
+    Facturation d'un artisan (back-office, depuis BO03.3) : abonnement en vigueur, factures (montants HT / TVA / TTC,
+    payé, remboursé, statut, PDF Stripe), « Rembourser » (rôle Finance, ré-authentification), avoirs émis. Pas de
+    maquette dédiée (BO15 186:6608 montre la trace « Remboursement partiel … (avoir …) » au journal). P-103.
+-#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'artisans' %}
+{% set intervals = {month: 'mois', year: 'an'} %}
+{% block title %}Facturation — {{ view.name ?? 'Artisan' }}{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Facturation — ' ~ (view.name ?? 'Artisan'), crumbs: ['Utilisateurs', 'Artisans'], subtitle: view.email ?? ''}) }}
+    <section class="tm-admin-panel" aria-labelledby="abo-titre">
+        <h2 id="abo-titre" class="tm-card-title">Abonnement</h2>
+        {% set sub = view.subscription %}
+        {% if sub %}
+            <dl class="tm-facts">
+                <div><dt>Forfait</dt><dd>{{ sub.planName }} — {{ sub.priceCents|tm_money }} HT / {{ intervals[sub.interval.value] }}</dd></div>
+                <div><dt>Statut</dt><dd>{{ sub.cancelAtPeriodEnd ? 'Résiliation programmée' : sub.status.label() }}</dd></div>
+                <div><dt>Période en cours</dt><dd>{{ sub.periodStart ? sub.periodStart|date('d/m/Y', 'Europe/Paris') : '—' }} → {{ sub.periodEnd ? sub.periodEnd|date('d/m/Y', 'Europe/Paris') : '—' }}</dd></div>
+            </dl>
+        {% else %}
+            <p class="tm-caption">Aucun abonnement en vigueur (offre de lancement ou abonnement terminé).</p>
+        {% endif %}
+    </section>
+
+    <section class="tm-admin-panel" aria-labelledby="factures-titre">
+        <h2 id="factures-titre" class="tm-card-title">Factures</h2>
+        {% if view.invoices is empty %}
+            <p class="tm-caption">Aucune facture.</p>
+        {% else %}
+            <div class="tm-admin-table-wrap">
+                <table class="tm-admin-table">
+                    <thead><tr><th scope="col">N°</th><th scope="col">Date</th><th scope="col">HT</th><th scope="col">TVA</th><th scope="col">TTC</th><th scope="col">Payé</th><th scope="col">Remboursé</th><th scope="col">Statut</th><th scope="col"><span class="tm-visually-hidden">Actions</span></th></tr></thead>
+                    <tbody>
+                        {% for i in view.invoices %}
+                            <tr>
+                                <td><strong>{{ i.number ?? '—' }}</strong></td>
+                                <td>{{ i.issuedAt|date('d/m/Y', 'Europe/Paris') }}</td>
+                                <td>{{ i.amountHtCents|tm_money }}</td>
+                                <td>{{ i.vatCents|tm_money }}</td>
+                                <td>{{ i.amountTtcCents|tm_money }}</td>
+                                <td>{{ i.amountPaidCents|tm_money }}</td>
+                                <td>{{ i.refundedCents > 0 ? i.refundedCents|tm_money : '—' }}</td>
+                                <td>{{ i.statusLabel() }}</td>
+                                <td><div class="tm-billing-actions">
+                                    {% if i.hostedUrl %}<a href="{{ i.hostedUrl }}" target="_blank" rel="noopener noreferrer">Voir<span class="tm-visually-hidden"> la facture {{ i.number }} chez Stripe (nouvel onglet)</span></a>{% endif %}
+                                    {% if i.refundableCents() > 0 and is_granted('admin.plans.create') %}<a href="{{ path('admin_invoice_refund', {id: i.id}) }}">Rembourser<span class="tm-visually-hidden"> la facture {{ i.number }}</span></a>{% endif %}
+                                </div></td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+
+    <section class="tm-admin-panel" aria-labelledby="avoirs-titre">
+        <h2 id="avoirs-titre" class="tm-card-title">Avoirs</h2>
+        {% if view.creditNotes is empty %}
+            <p class="tm-caption">Aucun avoir.</p>
+        {% else %}
+            <div class="tm-admin-table-wrap">
+                <table class="tm-admin-table">
+                    <thead><tr><th scope="col">Avoir</th><th scope="col">Facture</th><th scope="col">Date</th><th scope="col">Montant</th><th scope="col">Remboursé</th><th scope="col">Motif</th><th scope="col">Origine</th></tr></thead>
+                    <tbody>
+                        {% for n in view.creditNotes %}
+                            <tr>
+                                <td>{% if n.pdfUrl %}<a href="{{ n.pdfUrl }}" target="_blank" rel="noopener noreferrer">{{ n.number ?? 'Avoir' }}<span class="tm-visually-hidden"> (nouvel onglet)</span></a>{% else %}{{ n.number ?? '—' }}{% endif %}</td>
+                                <td>{{ n.invoiceNumber ?? '—' }}</td>
+                                <td>{{ n.createdAt ? n.createdAt|date('d/m/Y', 'Europe/Paris') : '—' }}</td>
+                                <td>{{ n.amountCents|tm_money }}</td>
+                                <td>{{ n.refundedCents|tm_money }}</td>
+                                <td>{{ reasons[n.reason] ?? n.reason ?? '—' }}{% if n.comment %}<span class="tm-caption"> · {{ n.comment }}</span>{% endif %}</td>
+                                <td>{{ n.adminId ? 'Back-office' : 'Stripe' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

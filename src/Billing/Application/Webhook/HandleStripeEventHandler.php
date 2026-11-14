@@ -76,6 +76,7 @@ final readonly class HandleStripeEventHandler implements CommandHandler
             'invoice.paid' => self::either($this->invoices->replicate($event), $this->invoicePaid($event)),
             'invoice.payment_failed' => self::either($this->invoices->replicate($event), $this->paymentFailed($event)),
             'invoice.finalized', 'invoice.voided', 'invoice.marked_uncollectible', 'invoice.updated' => $this->invoices->replicate($event),
+            'credit_note.created' => $this->invoices->creditNote($event),
             'customer.updated' => $this->invoices->refreshPaymentMethod($event->string('id')),
             'payment_method.attached', 'payment_method.detached', 'setup_intent.succeeded' => $this->invoices->refreshPaymentMethod($event->string('customer')),
             'charge.dispute.created' => $this->dispute($event),

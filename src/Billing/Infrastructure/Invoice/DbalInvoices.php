@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Billing\Infrastructure\Invoice;
 
+use App\Billing\Application\Invoice\CreditNoteRecord;
+use App\Billing\Application\Invoice\InvoiceAdminRow;
 use App\Billing\Application\Invoice\InvoiceRecord;
 use App\Billing\Application\Invoice\Invoices;
 use App\Billing\Application\Invoice\InvoiceView;
@@ -15,6 +17,7 @@ use Doctrine\DBAL\ParameterType;
 final readonly class DbalInvoices implements Invoices
 {
     private const string UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
+    private const string SELECT = 'SELECT i.*, (SELECT coalesce(sum(n.refunded_cents), 0) FROM billing.credit_note n WHERE n.invoice_id = i.id) AS refunded_cents FROM billing.invoice i';
 
     public function __construct(private Connection $connection)
     {
@@ -70,7 +73,7 @@ final readonly class DbalInvoices implements Invoices
     public function ofArtisan(string $artisanId, int $limit): array
     {
         $rows = $this->connection->fetchAllAssociative(
-            "SELECT * FROM billing.invoice WHERE artisan_id = :a AND status <> 'draft' ORDER BY issued_at DESC LIMIT :limit",
+            self::SELECT." WHERE i.artisan_id = :a AND i.status <> 'draft' ORDER BY i.issued_at DESC LIMIT :limit",
             ['a' => $artisanId, 'limit' => max(1, $limit)],
             ['limit' => ParameterType::INTEGER],
         );
@@ -83,9 +86,61 @@ final readonly class DbalInvoices implements Invoices
         if (1 !== preg_match(self::UUID, $invoiceId)) {
             return null;
         }
-        $row = $this->connection->fetchAssociative('SELECT * FROM billing.invoice WHERE id = :id AND artisan_id = :a', ['id' => $invoiceId, 'a' => $artisanId]);
+        $row = $this->connection->fetchAssociative(self::SELECT.' WHERE i.id = :id AND i.artisan_id = :a', ['id' => $invoiceId, 'a' => $artisanId]);
 
         return false === $row ? null : ['view' => self::view($row), 'pdf_key' => DbalValue::nullableString($row['pdf_key']), 'pdf_sha256' => DbalValue::nullableString($row['pdf_sha256'])];
+    }
+
+    public function findAny(string $invoiceId): ?InvoiceAdminRow
+    {
+        if (1 !== preg_match(self::UUID, $invoiceId)) {
+            return null;
+        }
+        $row = $this->connection->fetchAssociative(self::SELECT.' WHERE i.id = :id', ['id' => $invoiceId]);
+
+        return false === $row ? null : new InvoiceAdminRow(DbalValue::string($row['artisan_id']), DbalValue::string($row['stripe_invoice_id']), self::view($row));
+    }
+
+    public function invoiceIdByStripeId(string $stripeInvoiceId): ?string
+    {
+        $id = $this->connection->fetchOne('SELECT id FROM billing.invoice WHERE stripe_invoice_id = :s', ['s' => $stripeInvoiceId]);
+
+        return false === $id ? null : DbalValue::string($id);
+    }
+
+    public function recordCreditNote(string $id, string $invoiceId, CreditNoteRecord $note, \DateTimeImmutable $at): bool
+    {
+        return 1 === (int) $this->connection->executeStatement(
+            <<<'SQL'
+                INSERT INTO billing.credit_note (id, invoice_id, artisan_id, stripe_credit_note_id, number, amount_cents, refunded_cents, reason, comment, admin_id, pdf_url, created_at)
+                VALUES (:id, :invoice, :artisan, :stripe, :number, :amount, :refunded, :reason, :comment, :admin, :pdf, :at) ON CONFLICT (stripe_credit_note_id) DO NOTHING
+                SQL,
+            ['id' => $id, 'invoice' => $invoiceId, 'artisan' => $note->artisanId, 'stripe' => $note->stripeCreditNoteId, 'number' => $note->number, 'amount' => $note->amountCents, 'refunded' => $note->refundedCents, 'reason' => $note->reason, 'comment' => $note->comment, 'admin' => $note->adminId, 'pdf' => $note->pdfUrl, 'at' => $at->format(\DATE_ATOM)],
+        );
+    }
+
+    public function markCreditNoteNotified(string $stripeCreditNoteId, \DateTimeImmutable $at): bool
+    {
+        return 1 === (int) $this->connection->executeStatement('UPDATE billing.credit_note SET notified_at = :at WHERE stripe_credit_note_id = :s AND notified_at IS NULL', ['s' => $stripeCreditNoteId, 'at' => $at->format(\DATE_ATOM)]);
+    }
+
+    public function creditNotesOf(string $artisanId): array
+    {
+        $rows = $this->connection->fetchAllAssociative('SELECT n.*, i.number AS invoice_number FROM billing.credit_note n JOIN billing.invoice i ON i.id = n.invoice_id WHERE n.artisan_id = :a ORDER BY n.created_at DESC', ['a' => $artisanId]);
+
+        return array_map(static fn (array $r): CreditNoteRecord => new CreditNoteRecord(
+            DbalValue::string($r['stripe_credit_note_id']),
+            DbalValue::string($r['artisan_id']),
+            DbalValue::nullableString($r['number']),
+            DbalValue::int($r['amount_cents']),
+            DbalValue::int($r['refunded_cents']),
+            DbalValue::nullableString($r['reason']),
+            DbalValue::nullableString($r['comment']),
+            DbalValue::nullableString($r['admin_id']),
+            DbalValue::nullableString($r['pdf_url']),
+            DbalValue::nullableString($r['invoice_number']),
+            new \DateTimeImmutable(DbalValue::string($r['created_at'])),
+        ), $rows);
     }
 
     public function savePaymentMethod(string $artisanId, ?PaymentMethodSummary $method, \DateTimeImmutable $at): void
@@ -159,6 +214,8 @@ final readonly class DbalInvoices implements Invoices
             $date($row['period_end']),
             null !== $row['pdf_key'],
             DbalValue::nullableString($row['hosted_url']),
+            DbalValue::int($row['amount_paid_cents']),
+            \array_key_exists('refunded_cents', $row) ? DbalValue::int($row['refunded_cents']) : 0,
         );
     }
 }

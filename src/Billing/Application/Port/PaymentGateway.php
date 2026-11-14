@@ -96,6 +96,12 @@ interface PaymentGateway
      */
     public function downloadInvoicePdf(string $url): string;
 
+    /**
+     * Remboursement total ou partiel d'une facture payée, sous forme d'avoir (Credit Note) remboursé sur le moyen de
+     * paiement d'origine. Total : lignes de la facture reprises à l'identique ; partiel : une ligne du montant TTC.
+     */
+    public function refundInvoice(CreditNoteRequest $request): CreditNoteResult;
+
     /** Résiliation en fin de période payée (vrai) ou annulation de cette résiliation (faux). */
     public function setCancelAtPeriodEnd(string $subscriptionId, bool $cancel, string $idempotencyKey): void;
 }

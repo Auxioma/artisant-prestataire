@@ -1,0 +1,7 @@
+Bonjour {{ prenom }},
+
+Nous avons procédé au remboursement de {{ montant }}{% if facture %} sur votre facture {{ facture }}{% endif %}. Le montant est recrédité sur le moyen de paiement utilisé, sous quelques jours selon votre banque.
+
+L’avoir correspondant{% if avoir %} ({{ avoir }}){% endif %} : {{ document }}
+
+Voir mes factures : {{ lien }}

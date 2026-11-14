@@ -16,7 +16,7 @@
                 <div><dt>Métiers</dt><dd>{{ dossier.jobs|join(', ') }}</dd></div>
                 <div><dt>Zone</dt><dd>{{ dossier.area }}</dd></div>
                 <div><dt>Complétude</dt><dd>{{ dossier.completion }} %</dd></div>
-                <div><dt>Crédits restants</dt><dd>{{ credits is null ? 'Aucun (compte non vérifié)' : credits|number_format(0, ',', ' ') ~ ' devis' }}</dd></div>
+                <div><dt>Crédits restants</dt><dd>{{ credits is null ? 'Aucun (compte non vérifié)' : credits|number_format(0, ',', ' ') ~ ' devis' }}{% if credits is not null and tm_route_exists('admin_billing_artisan') and is_granted('admin.plans.view') %} · <a href="{{ path('admin_billing_artisan', {id: dossier.profileId}) }}">Abonnement et factures</a>{% endif %}</dd></div>
                 <div><dt>Dossier déposé</dt><dd>{{ dossier.submittedAt ? dossier.submittedAt|date('d/m/Y à H:i', 'Europe/Paris') : 'Non envoyé' }}</dd></div>
             </dl>
         </section>
