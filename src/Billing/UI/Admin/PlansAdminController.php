@@ -10,6 +10,8 @@ use App\Billing\Application\Plan\PlanAction;
 use App\Billing\Application\Plan\PlanView;
 use App\Billing\Application\Plan\SavePlan;
 use App\Billing\Application\Promo\AdminPromoCodes;
+use App\Billing\Application\Reconciliation\ReconciliationStore;
+use App\Billing\Application\Reconciliation\ResolveReconciliationIssue;
 use App\Billing\Domain\Plan\PlanRuleViolation;
 use App\Billing\Domain\Plan\PlanVisibility;
 use App\Shared\Application\Bus\CommandBus;
@@ -38,7 +40,7 @@ final class PlansAdminController extends AbstractController
     private const string SETTINGS_REASON = 'BO08.2 : paramètres de crédits';
     private const array ORDERS = ['free,plan,extra' => 'Gratuit → forfait → additionnel', 'plan,free,extra' => 'Forfait → gratuit → additionnel'];
 
-    public function __construct(private readonly QueryBus $queries, private readonly CommandBus $commands, private readonly CurrentAdministrator $admin, private readonly SettingsProvider $settings)
+    public function __construct(private readonly QueryBus $queries, private readonly CommandBus $commands, private readonly CurrentAdministrator $admin, private readonly SettingsProvider $settings, private readonly ReconciliationStore $reconciliation)
     {
     }
 
@@ -52,6 +54,7 @@ final class PlansAdminController extends AbstractController
             'plans' => $this->plans(),
             'promo_codes' => PromoCodesAdminController::codes($this->queries->ask(new AdminPromoCodes($promoFilters['code'], PromoCodesAdminController::state($request)))),
             'promo_filters' => $promoFilters,
+            'reconciliation' => ['run' => $this->reconciliation->lastRun(), 'issues' => $this->reconciliation->openIssues()],
             'credits' => [
                 'free' => $this->settings->int(SettingKey::CreditsFreeOnSignup),
                 'grace' => $this->settings->int(SettingKey::BillingGraceDays),
@@ -104,6 +107,18 @@ final class PlansAdminController extends AbstractController
     }
 
     /** BO08.2 — chaque valeur modifiée est journalisée (avant / après) par ChangeSetting. */
+    /** ADR-0010 — écart de rapprochement traité par l'équipe (correction faite dans Stripe ou en base). */
+    #[Route('/rapprochement/{id}/resoudre', name: 'admin_reconciliation_resolve', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
+    #[IsGranted('admin.plans.edit')]
+    public function resolveIssue(Request $request, string $id): Response
+    {
+        $this->assertCsrf($request);
+        $this->commands->dispatch(new ResolveReconciliationIssue($this->adminId(), $id));
+        $this->addFlash('success', 'Écart marqué comme résolu.');
+
+        return $this->redirect($this->generateUrl('admin_plans').'#rapprochement', Response::HTTP_SEE_OTHER);
+    }
+
     #[Route('/parametres', name: 'admin_plans_settings', methods: ['POST'])]
     #[IsGranted('admin.plans.edit')]
     public function settings(Request $request): Response

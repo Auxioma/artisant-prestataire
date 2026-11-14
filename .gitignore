@@ -32,7 +32,8 @@
 /.php-cs-fixer.cache
 /var/deptrac/
 /var/phpstan/
-.env.local
 .env.*.local
 /config/secrets/*/*.decrypt.private.php
 ###< trouvemoi ###
+config.bat
+node_modules

@@ -9,6 +9,7 @@ use App\Billing\Application\Port\CheckoutRequest;
 use App\Billing\Application\Port\CheckoutSession;
 use App\Billing\Application\Port\CreditNoteRequest;
 use App\Billing\Application\Port\CreditNoteResult;
+use App\Billing\Application\Port\InvoiceSnapshot;
 use App\Billing\Application\Port\PaymentGateway;
 use App\Billing\Application\Port\PaymentMethodSummary;
 use App\Billing\Application\Port\PromotionCode;
@@ -167,9 +168,30 @@ final class InMemoryPaymentGateway implements PaymentGateway
         return new CreditNoteResult($id, 'AV-'.strtoupper(substr($id, -6)), $request->amountCents, $request->amountCents, 'https://pay.stripe.test/credit_note/'.$id);
     }
 
+    /** @var list<InvoiceSnapshot> factures Stripe simulées (rapprochement) */
+    public array $invoices = [];
+
+    public function allSubscriptions(): iterable
+    {
+        if (!$this->configured) {
+            throw new ExternalServiceUnavailable('stripe', 'clé secrète non configurée');
+        }
+
+        return array_values($this->subscriptions);
+    }
+
+    public function invoicesSince(\DateTimeImmutable $since): iterable
+    {
+        if (!$this->configured) {
+            throw new ExternalServiceUnavailable('stripe', 'clé secrète non configurée');
+        }
+
+        return $this->invoices;
+    }
+
     public function reset(): void
     {
-        [$this->responses, $this->calls, $this->configured, $this->failing, $this->promotionCodes, $this->subscriptions, $this->paymentMethods, $this->pdfs] = [[], [], true, false, [], [], [], []];
+        [$this->responses, $this->calls, $this->configured, $this->failing, $this->promotionCodes, $this->subscriptions, $this->paymentMethods, $this->pdfs, $this->invoices] = [[], [], true, false, [], [], [], [], []];
     }
 
     /** @param array<string, mixed> $params */

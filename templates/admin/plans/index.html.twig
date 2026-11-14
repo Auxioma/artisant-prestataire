@@ -18,6 +18,30 @@
         </div>
         {% if is_granted('admin.plans.create') %}<twig:Button href="{{ path('admin_plan_new') }}">Nouveau forfait</twig:Button>{% endif %}
     </div>
+    {% set run = reconciliation.run %}
+    {% set open_issues = reconciliation.issues %}
+    <section id="rapprochement" class="tm-reconcile{{ open_issues is empty ? ' is-ok' : ' is-ko' }}" aria-label="Rapprochement Stripe">
+        <p><twig:Icon name="{{ open_issues is empty ? 'checkC' : 'alert' }}" size="sm" class="tm-icon--inherit" />
+            {% if run %}Rapprochement du {{ run.finishedAt|date('d/m/Y H:i', 'Europe/Paris') }} : {{ run.checked|number_format(0, ',', ' ') }} élément{{ run.checked > 1 ? 's' }} vérifié{{ run.checked > 1 ? 's' }}{{ run.stripeChecked ? '' : ' (Stripe non interrogé : clé absente ou injoignable)' }} · {{ open_issues|length }} écart{{ open_issues|length > 1 ? 's' }} ouvert{{ open_issues|length > 1 ? 's' }}{% else %}Rapprochement Stripe ↔ base : premier passage cette nuit à 3 h{% endif %}</p>
+        {% if open_issues is not empty %}
+            <div class="tm-admin-table-wrap">
+                <table class="tm-admin-table">
+                    <thead><tr><th scope="col">Écart</th><th scope="col">Référence</th><th scope="col">Détail</th><th scope="col">Constaté le</th><th scope="col"><span class="tm-visually-hidden">Actions</span></th></tr></thead>
+                    <tbody>
+                        {% for issue in open_issues %}
+                            <tr>
+                                <td><strong>{{ issue.label() }}</strong></td>
+                                <td><code>{{ issue.reference }}</code></td>
+                                <td>{{ issue.details }}</td>
+                                <td>{{ issue.detectedAt|date('d/m/Y', 'Europe/Paris') }}</td>
+                                <td>{% if is_granted('admin.plans.edit') %}<form method="post" action="{{ path('admin_reconciliation_resolve', {id: issue.id}) }}"><input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><button type="submit" class="tm-link-button">Marquer résolu<span class="tm-visually-hidden"> : {{ issue.label() }} {{ issue.reference }}</span></button></form>{% endif %}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
     <nav class="tm-admin-tabs" aria-label="Monétisation">
         <a class="tm-admin-tab is-active" href="#forfaits" aria-current="true">Forfaits</a>
         <a class="tm-admin-tab" href="#credits">Paramètres de crédits</a>

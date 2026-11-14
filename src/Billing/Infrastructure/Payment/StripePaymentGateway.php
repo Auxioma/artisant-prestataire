@@ -9,6 +9,7 @@ use App\Billing\Application\Port\CheckoutRequest;
 use App\Billing\Application\Port\CheckoutSession;
 use App\Billing\Application\Port\CreditNoteRequest;
 use App\Billing\Application\Port\CreditNoteResult;
+use App\Billing\Application\Port\InvoiceSnapshot;
 use App\Billing\Application\Port\PaymentGateway;
 use App\Billing\Application\Port\PaymentMethodSummary;
 use App\Billing\Application\Port\PromotionCode;
@@ -211,30 +212,64 @@ final class StripePaymentGateway implements PaymentGateway
         });
     }
 
-    public function retrieveSubscription(string $subscriptionId): SubscriptionState
+    public function allSubscriptions(): iterable
     {
-        return $this->call('subscription', static function (StripeClient $c) use ($subscriptionId): SubscriptionState {
-            $s = $c->subscriptions->retrieve($subscriptionId);
-            // Depuis l'API « basil », la période en cours est portée par la ligne d'abonnement (items).
-            $item = $s->items->data[0] ?? null;
-            $date = static fn (mixed $ts): ?\DateTimeImmutable => \is_int($ts) ? new \DateTimeImmutable('@'.$ts) : null;
-            $metadata = [];
-            foreach ($s->metadata->toArray() as $key => $value) {
-                if (\is_scalar($value)) {
-                    $metadata[(string) $key] = (string) $value;
-                }
+        return $this->call('subscription', static function (StripeClient $c): array {
+            $states = [];
+            foreach ($c->subscriptions->all(['status' => 'all', 'limit' => 100])->autoPagingIterator() as $s) {
+                $states[] = self::state($s);
             }
 
-            return new SubscriptionState(
-                (string) $s->id,
-                (string) $s->status,
-                null === $item ? null : (string) $item->price->id,
-                $date($item?->current_period_start),
-                $date($item?->current_period_end),
-                (bool) $s->cancel_at_period_end,
-                $metadata,
-            );
+            return $states;
         });
+    }
+
+    public function invoicesSince(\DateTimeImmutable $since): iterable
+    {
+        return $this->call('invoice', static function (StripeClient $c) use ($since): array {
+            $invoices = [];
+            foreach ($c->invoices->all(['created' => ['gte' => $since->getTimestamp()], 'limit' => 100])->autoPagingIterator() as $i) {
+                $subscription = $i->parent->subscription_details->subscription ?? null;
+                $invoices[] = new InvoiceSnapshot(
+                    (string) $i->id,
+                    \is_string($i->customer) ? $i->customer : (string) ($i->customer->id ?? ''),
+                    (string) $i->status,
+                    (int) $i->amount_paid,
+                    null === $i->billing_reason ? null : (string) $i->billing_reason,
+                    \is_string($subscription) ? $subscription : null,
+                );
+            }
+
+            return $invoices;
+        });
+    }
+
+    public function retrieveSubscription(string $subscriptionId): SubscriptionState
+    {
+        return $this->call('subscription', static fn (StripeClient $c): SubscriptionState => self::state($c->subscriptions->retrieve($subscriptionId)));
+    }
+
+    private static function state(\Stripe\Subscription $s): SubscriptionState
+    {
+        // Depuis l'API « basil », la période en cours est portée par la ligne d'abonnement (items).
+        $item = $s->items->data[0] ?? null;
+        $date = static fn (mixed $ts): ?\DateTimeImmutable => \is_int($ts) ? new \DateTimeImmutable('@'.$ts) : null;
+        $metadata = [];
+        foreach ($s->metadata->toArray() as $key => $value) {
+            if (\is_scalar($value)) {
+                $metadata[(string) $key] = (string) $value;
+            }
+        }
+
+        return new SubscriptionState(
+            (string) $s->id,
+            (string) $s->status,
+            null === $item ? null : (string) $item->price->id,
+            $date($item?->current_period_start),
+            $date($item?->current_period_end),
+            (bool) $s->cancel_at_period_end,
+            $metadata,
+        );
     }
 
     public function cancelSubscription(string $subscriptionId, string $idempotencyKey): void

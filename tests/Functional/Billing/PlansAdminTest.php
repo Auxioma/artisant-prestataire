@@ -73,4 +73,23 @@ final class PlansAdminTest extends WebTestCase
         $this->client->request('GET', '/admin/forfaits');
         self::assertResponseStatusCodeSame(403);
     }
+
+    public function testReconciliationIssuesAreShownAndResolvable(): void
+    {
+        $connection = self::getContainer()->get(Connection::class);
+        \assert($connection instanceof Connection);
+        $connection->executeStatement("INSERT INTO billing.reconciliation_issue (id, kind, reference, details, detected_at, last_seen_at) VALUES ('0190f5e4-0000-7000-8000-00000001f617', 'invoice_missing', 'in_FICTIF', 'Facture « paid » de 3480 centimes payés.', now(), now())");
+        $connection->executeStatement("INSERT INTO billing.reconciliation_run (id, started_at, finished_at, stripe_checked, checked, issues) VALUES ('0190f5e4-0000-7000-8000-00000001f618', now(), now(), true, 42, 1)");
+
+        $this->adminSession($this->client, self::ADMIN, 'finance');
+        $page = $this->client->request('GET', '/admin/forfaits');
+        $banner = $page->filter('#rapprochement')->text();
+        self::assertStringContainsString('42 éléments vérifiés', $banner);
+        self::assertStringContainsString('1 écart ouvert', $banner);
+        self::assertStringContainsString('Facture Stripe non répliquée', $banner);
+
+        $this->client->submit($page->selectButton('Marquer résolu : Facture Stripe non répliquée in_FICTIF')->form());
+        self::assertResponseRedirects('/admin/forfaits#rapprochement');
+        self::assertStringContainsString('0 écart ouvert', $this->client->request('GET', '/admin/forfaits')->filter('#rapprochement')->text());
+    }
 }
