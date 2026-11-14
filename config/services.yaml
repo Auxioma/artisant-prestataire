@@ -151,6 +151,8 @@ services:
     App\Billing\Application\Alert\CreditAlertMailer: '@App\Billing\Infrastructure\Alert\NotificationCreditAlertMailer'
     App\Billing\Domain\Credit\CreditAlertPolicy: ~
     App\Billing\Application\Port\PaymentGateway: '@App\Billing\Infrastructure\Payment\StripePaymentGateway'
+    App\Billing\Domain\Subscription\SubscriptionRepository: '@App\Billing\Infrastructure\Subscription\DbalSubscriptionRepository'
+    App\Billing\Application\Subscription\SubscriptionReader: '@App\Billing\Infrastructure\Subscription\DbalSubscriptionReader'
     App\Billing\Application\Payment\StripePriceLinks: '@App\Billing\Infrastructure\Payment\DbalStripeLinks'
     App\Billing\Application\Payment\StripeCustomerAccounts: '@App\Billing\Infrastructure\Payment\DbalStripeLinks'
 

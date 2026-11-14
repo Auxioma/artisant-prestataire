@@ -43,7 +43,7 @@ final readonly class DbalPlanRepository implements PlanRepository
 
     public function subscribers(PlanId $id): int
     {
-        return 0;
+        return DbalValue::int($this->connection->fetchOne("SELECT count(*) FROM billing.subscription WHERE plan_id = :p AND status IN ('active', 'past_due', 'suspended')", ['p' => $id->value]));
     }
 
     public function save(Plan $plan): void

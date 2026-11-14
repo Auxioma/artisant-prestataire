@@ -13,7 +13,7 @@ interface PlanRepository
     /** @return list<Plan> par ordre d'affichage */
     public function all(): array;
 
-    /** Abonnés actifs au forfait (0 tant que les abonnements n'existent pas, T-603). */
+    /** Abonnés en vigueur au forfait (actifs, en retard ou suspendus). */
     public function subscribers(PlanId $id): int;
 
     public function save(Plan $plan): void;
