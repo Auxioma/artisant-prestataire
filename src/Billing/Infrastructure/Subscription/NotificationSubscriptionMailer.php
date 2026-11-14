@@ -30,6 +30,57 @@ final readonly class NotificationSubscriptionMailer implements SubscriptionMaile
         $this->send('E-41', $userId, $planName, $credits, $periodEnd, $amountPaidCents, $invoiceUrl);
     }
 
+    public function changed(string $userId, string $kind, string $planName, ?\DateTimeImmutable $effectiveOn): void
+    {
+        $contact = $this->contact($userId);
+        if (null === $contact) {
+            return;
+        }
+        $link = $this->link();
+        $this->notifier->notify(new Notification('E-43', $contact->email, $userId, [
+            'prenom' => $contact->firstName,
+            'forfait' => $planName,
+            'changement' => $kind,
+            'date' => null === $effectiveOn ? '' : self::day($effectiveOn),
+            'lien' => $link,
+        ], $link));
+    }
+
+    public function paymentFailed(string $userId, string $planName, int $amountDueCents, int $attempt, ?\DateTimeImmutable $nextAttemptAt, ?string $invoiceUrl): void
+    {
+        $contact = $this->contact($userId);
+        if (null === $contact) {
+            return;
+        }
+        $link = $this->link();
+        $this->notifier->notify(new Notification('E-44', $contact->email, $userId, [
+            'prenom' => $contact->firstName,
+            'forfait' => $planName,
+            'montant' => FrenchNumber::money($amountDueCents),
+            'tentative' => $attempt,
+            'prochaine_tentative' => null === $nextAttemptAt ? '' : self::day($nextAttemptAt),
+            'paiement' => $invoiceUrl ?? $link,
+            'lien' => $link,
+        ], $link));
+    }
+
+    private function contact(string $userId): ?UserContactDetails
+    {
+        $contact = $this->queries->ask(new UserContact($userId));
+
+        return $contact instanceof UserContactDetails ? $contact : null;
+    }
+
+    private function link(): string
+    {
+        return $this->urls->generate('pro_subscription', [], UrlGeneratorInterface::ABSOLUTE_URL);
+    }
+
+    private static function day(\DateTimeImmutable $at): string
+    {
+        return $at->setTimezone(new \DateTimeZone('Europe/Paris'))->format('d/m/Y');
+    }
+
     private function send(string $code, string $userId, string $planName, int $credits, \DateTimeImmutable $periodEnd, int $amountPaidCents, ?string $invoiceUrl): void
     {
         $contact = $this->queries->ask(new UserContact($userId));

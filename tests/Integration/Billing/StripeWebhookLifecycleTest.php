@@ -128,6 +128,7 @@ final class StripeWebhookLifecycleTest extends KernelTestCase
         $this->stripe('active', '2026-11-14', '2026-12-14', cancelAtPeriodEnd: true);
         $this->receive('evt_4', 'customer.subscription.updated', ['id' => 'sub_FICTIF']);
         self::assertSame('active|true', $this->value("SELECT status || '|' || cancel_at_period_end FROM billing.subscription WHERE id = :s"));
+        self::assertSame('1', $this->value("SELECT count(*) FROM notification.delivery WHERE code = 'E-43' AND channel = 'email'"), 'résiliation programmée annoncée');
 
         $this->stripe('past_due', '2026-11-14', '2026-12-14');
         $this->receive('evt_5', 'customer.subscription.updated', ['id' => 'sub_FICTIF']);
@@ -136,6 +137,48 @@ final class StripeWebhookLifecycleTest extends KernelTestCase
         $this->stripe('canceled', '2026-11-14', '2026-12-14');
         $this->receive('evt_6', 'customer.subscription.deleted', ['id' => 'sub_FICTIF']);
         self::assertSame('cancelled', $this->value('SELECT status FROM billing.subscription WHERE id = :s'));
+    }
+
+    public function testPaymentFailureStartsGraceAndRecoveryEndsIt(): void
+    {
+        $this->stripe('active', '2026-11-14', '2026-12-14');
+        $this->receive('evt_1', 'invoice.paid', self::invoice('in_1', 'subscription_create', '2026-11-14', '2026-12-14'));
+
+        $this->stripe('active', '2026-11-14', '2026-12-14');
+        $this->receive('evt_f1', 'invoice.payment_failed', ['id' => 'in_2', 'amount_due' => 3480, 'attempt_count' => 1, 'next_payment_attempt' => new \DateTimeImmutable('2026-12-17')->getTimestamp(), 'hosted_invoice_url' => 'https://invoice.stripe.test/in_2', 'parent' => ['subscription_details' => ['subscription' => 'sub_FICTIF']]]);
+        self::assertSame('past_due|true', $this->value("SELECT status || '|' || (past_due_since IS NOT NULL) FROM billing.subscription WHERE id = :s"));
+        self::assertSame('1', $this->value("SELECT count(*) FROM notification.delivery WHERE code = 'E-44' AND channel = 'email'"));
+
+        $this->stripe('active', '2026-12-14', '2027-01-14');
+        $this->receive('evt_f2', 'invoice.paid', self::invoice('in_2', 'subscription_cycle', '2026-12-14', '2027-01-14'));
+        self::assertSame('active|false', $this->value("SELECT status || '|' || (past_due_since IS NOT NULL) FROM billing.subscription WHERE id = :s"));
+    }
+
+    public function testUpgradeAddsTheDifferenceOnce(): void
+    {
+        $commands = self::getContainer()->get(CommandBus::class);
+        \assert($commands instanceof CommandBus);
+        $upper = '0190f5e4-0000-7000-8000-0000000b6402';
+        $commands->dispatch(new SavePlan(self::ADMIN, null, $upper, ['name' => 'Formule Supérieure Fictive', 'quotes_per_period' => '50', 'monthly_price' => '59,00']));
+        $commands->dispatch(new PlanAction(self::ADMIN, $upper, PlanAction::PUBLISH));
+        $commands->dispatch(new SyncPlanWithStripe($upper));
+        $this->stripe('active', '2026-11-14', '2026-12-14');
+        $this->receive('evt_1', 'invoice.paid', self::invoice('in_1', 'subscription_create', '2026-11-14', '2026-12-14'));
+
+        $this->stripePrice = DbalValue::string($this->connection->fetchOne('SELECT stripe_price_id FROM billing.plan_price WHERE plan_id = :p AND active', ['p' => $upper]));
+        $this->stripe('active', '2026-11-14', '2026-12-14');
+        $this->receive('evt_u1', 'customer.subscription.updated', ['id' => 'sub_FICTIF']);
+        $this->receive('evt_u2', 'customer.subscription.updated', ['id' => 'sub_FICTIF']);
+
+        self::assertSame($upper, $this->value('SELECT plan_id FROM billing.subscription WHERE id = :s'));
+        self::assertSame('50', $this->value('SELECT plan FROM billing.credit_balance WHERE artisan_id = :a'), 'Q7 : 20 + (50 − 20), une seule fois');
+        self::assertSame('1', $this->value("SELECT count(*) FROM notification.delivery WHERE code = 'E-43' AND channel = 'email'"));
+    }
+
+    public function testDisputeIsLoggedForFinance(): void
+    {
+        $this->receive('evt_d1', 'charge.dispute.created', ['id' => 'dp_FICTIF', 'charge' => 'ch_FICTIF', 'amount' => 3480, 'reason' => 'fraudulent']);
+        self::assertSame('1', $this->value("SELECT count(*) FROM admin.audit_log WHERE action = 'billing.dispute_opened'"));
     }
 
     public function testForeignEventsAreIgnored(): void

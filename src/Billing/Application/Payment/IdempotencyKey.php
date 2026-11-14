@@ -15,4 +15,12 @@ final class IdempotencyKey
     {
         return hash('sha256', $command."\n".$aggregateId."\n".$intent);
     }
+
+    /** Identifiant au format UUID (version 5, variante RFC) dérivé d'une graine : même opération → même identifiant. */
+    public static function uuid(string $seed): string
+    {
+        $h = hash('sha256', $seed);
+
+        return \sprintf('%s-%s-5%s-%x%s-%s', substr($h, 0, 8), substr($h, 8, 4), substr($h, 13, 3), 8 | (hexdec($h[16]) & 3), substr($h, 17, 3), substr($h, 20, 12));
+    }
 }

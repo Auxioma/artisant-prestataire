@@ -103,6 +103,27 @@ final readonly class DbalCreditLedger implements CreditLedger, QuoteCreditAccoun
         return true;
     }
 
+    public function grantPlanChange(string $entryId, string $artisanId, string $changeId, string $periodId, int $amount, \DateTimeImmutable $at): bool
+    {
+        if ($amount <= 0 || null === $this->lockForQuote($artisanId)) {
+            return false;
+        }
+        $granted = (int) $this->connection->executeStatement(
+            <<<'SQL'
+                INSERT INTO billing.credit_ledger_entry (id, artisan_id, type, bucket, amount, period_id, reference_type, reference_id, created_at)
+                VALUES (:id, :artisan, 'period_grant', 'plan', :amount, :period, 'plan_change', :change, :at)
+                ON CONFLICT (type, reference_type, reference_id) WHERE type IN ('quote_debit', 'refund', 'period_grant', 'expiry') DO NOTHING
+                SQL,
+            ['id' => $entryId, 'artisan' => $artisanId, 'amount' => $amount, 'period' => $periodId, 'change' => $changeId, 'at' => $at->format(\DATE_ATOM)],
+        );
+        if (1 !== $granted) {
+            return false;
+        }
+        $this->connection->executeStatement('UPDATE billing.credit_balance SET plan = plan + :n, updated_at = :at WHERE artisan_id = :a', ['n' => $amount, 'a' => $artisanId, 'at' => $at->format(\DATE_ATOM)]);
+
+        return true;
+    }
+
     public function lockForQuote(string $artisanId): ?CreditBalance
     {
         $row = $this->connection->fetchAssociative(

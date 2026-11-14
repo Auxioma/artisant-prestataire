@@ -25,6 +25,13 @@ final readonly class DbalSubscriptionPeriods implements SubscriptionPeriods
         );
     }
 
+    public function current(string $subscriptionId): ?array
+    {
+        $row = $this->connection->fetchAssociative('SELECT id, credits FROM billing.subscription_period WHERE subscription_id = :s ORDER BY period_start DESC LIMIT 1', ['s' => $subscriptionId]);
+
+        return false === $row ? null : ['id' => DbalValue::string($row['id']), 'credits' => DbalValue::int($row['credits'])];
+    }
+
     public function previousOf(string $subscriptionId, \DateTimeImmutable $start): ?string
     {
         $id = $this->connection->fetchOne('SELECT id FROM billing.subscription_period WHERE subscription_id = :s AND period_start < :start ORDER BY period_start DESC LIMIT 1', ['s' => $subscriptionId, 'start' => $start->format(\DATE_ATOM)]);

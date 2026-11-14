@@ -219,10 +219,12 @@ notifications:
         label: "Changement de forfait / résiliation programmée / annulation de résiliation"
         recipient: "Artisan"
         channels: [email, in_app]
+        variables: [prenom, forfait, changement, date, lien]
     'E-44':
         label: "Échec de paiement (chaque tentative)"
         recipient: "Artisan"
         channels: [email, in_app]
+        variables: [prenom, forfait, montant, tentative, prochaine_tentative, paiement, lien]
     'E-45':
         label: "Fin de période de grâce : abonnement suspendu"
         recipient: "Artisan"

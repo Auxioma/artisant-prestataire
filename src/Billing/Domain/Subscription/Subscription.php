@@ -19,6 +19,7 @@ final class Subscription extends AggregateRoot
     private ?\DateTimeImmutable $periodStart = null;
     private ?\DateTimeImmutable $periodEnd = null;
     private bool $cancelAtPeriodEnd = false;
+    private ?\DateTimeImmutable $pastDueSince = null;
 
     private function __construct(
         private readonly SubscriptionId $id,
@@ -37,7 +38,7 @@ final class Subscription extends AggregateRoot
     }
 
     /** Reconstitution depuis le stockage. */
-    public static function restore(SubscriptionId $id, string $artisanId, string $planId, string $planPriceId, BillingInterval $interval, SubscriptionStatus $status, ?string $stripeSubscriptionId, ?\DateTimeImmutable $periodStart, ?\DateTimeImmutable $periodEnd, bool $cancelAtPeriodEnd, \DateTimeImmutable $createdAt, \DateTimeImmutable $updatedAt): self
+    public static function restore(SubscriptionId $id, string $artisanId, string $planId, string $planPriceId, BillingInterval $interval, SubscriptionStatus $status, ?string $stripeSubscriptionId, ?\DateTimeImmutable $periodStart, ?\DateTimeImmutable $periodEnd, bool $cancelAtPeriodEnd, \DateTimeImmutable $createdAt, \DateTimeImmutable $updatedAt, ?\DateTimeImmutable $pastDueSince = null): self
     {
         $subscription = new self($id, $artisanId, $planId, $planPriceId, $interval, $createdAt, $updatedAt);
         $subscription->status = $status;
@@ -45,6 +46,7 @@ final class Subscription extends AggregateRoot
         $subscription->periodStart = $periodStart;
         $subscription->periodEnd = $periodEnd;
         $subscription->cancelAtPeriodEnd = $cancelAtPeriodEnd;
+        $subscription->pastDueSince = $pastDueSince;
 
         return $subscription;
     }
@@ -68,15 +70,18 @@ final class Subscription extends AggregateRoot
         $this->guardLive();
         $this->guardPeriod($periodStart, $periodEnd);
         $this->status = SubscriptionStatus::Active;
+        $this->pastDueSince = null;
         [$this->periodStart, $this->periodEnd] = [$periodStart, $periodEnd];
         $this->updatedAt = $now;
     }
 
+    /** Échec de prélèvement : la période de grâce (billing.grace_days) court depuis le premier échec. */
     public function markPastDue(\DateTimeImmutable $now): void
     {
         $this->guardLive();
         if (SubscriptionStatus::Active === $this->status) {
             $this->status = SubscriptionStatus::PastDue;
+            $this->pastDueSince ??= $now;
             $this->updatedAt = $now;
         }
     }
@@ -85,6 +90,7 @@ final class Subscription extends AggregateRoot
     public function suspend(\DateTimeImmutable $now): void
     {
         $this->guardLive();
+        $this->pastDueSince ??= $now;
         $this->status = SubscriptionStatus::Suspended;
         $this->updatedAt = $now;
     }
@@ -170,6 +176,11 @@ final class Subscription extends AggregateRoot
     public function cancelAtPeriodEnd(): bool
     {
         return $this->cancelAtPeriodEnd;
+    }
+
+    public function pastDueSince(): ?\DateTimeImmutable
+    {
+        return $this->pastDueSince;
     }
 
     public function createdAt(): \DateTimeImmutable

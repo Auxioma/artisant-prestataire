@@ -46,6 +46,7 @@ final readonly class DbalSubscriptionRepository implements SubscriptionRepositor
             'current_period_start' => $subscription->periodStart()?->format(\DATE_ATOM),
             'current_period_end' => $subscription->periodEnd()?->format(\DATE_ATOM),
             'cancel_at_period_end' => $subscription->cancelAtPeriodEnd() ? 'true' : 'false',
+            'past_due_since' => $subscription->pastDueSince()?->format(\DATE_ATOM),
             'updated_at' => $subscription->updatedAt()->format(\DATE_ATOM),
         ];
         $updated = (int) $this->connection->executeStatement(
@@ -82,6 +83,7 @@ final readonly class DbalSubscriptionRepository implements SubscriptionRepositor
             true === $row['cancel_at_period_end'],
             new \DateTimeImmutable(DbalValue::string($row['created_at'])),
             new \DateTimeImmutable(DbalValue::string($row['updated_at'])),
+            $date($row['past_due_since']),
         );
     }
 }
