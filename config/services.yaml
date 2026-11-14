@@ -64,6 +64,7 @@ services:
             - '../src/Quote/Application/Revision/RevisionPreview.php'
             - '../src/Quote/Application/Pro/{ProQuoteFilter,ProQuoteRow,ProQuotesPage,ProDashboardView}.php'
             - '../src/Quote/Application/Admin/{AdminQuoteRow,AdminQuotesPage}.php'
+            - '../src/Billing/Application/Plan/PlanView.php'
             - '../src/Quote/Application/Client/{ClientQuoteCard,ClientQuotes}.php'
             - '../src/ArtisanProfile/Application/Account/ArtisanAccount.php'
             - '../src/ArtisanProfile/Application/Quote/QuoteIssuerView.php'
@@ -145,6 +146,7 @@ services:
     App\Billing\Application\Credit\QuoteCreditAccount: '@App\Billing\Infrastructure\Credit\DbalCreditLedger'
     App\Quote\Application\Admin\AdminQuoteReader: '@App\Quote\Infrastructure\Admin\DbalAdminQuoteReader'
     App\Quote\Application\Pro\ProQuoteReader: '@App\Quote\Infrastructure\Pro\DbalProQuoteReader'
+    App\Billing\Domain\Plan\PlanRepository: '@App\Billing\Infrastructure\Plan\DbalPlanRepository'
     App\Billing\Application\Alert\CreditAlertLog: '@App\Billing\Infrastructure\Alert\DbalCreditAlertLog'
     App\Billing\Application\Alert\CreditAlertMailer: '@App\Billing\Infrastructure\Alert\NotificationCreditAlertMailer'
     App\Billing\Domain\Credit\CreditAlertPolicy: ~
