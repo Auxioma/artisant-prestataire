@@ -71,6 +71,20 @@ interface PaymentGateway
     /** État courant d'une Subscription (statut, prix, période, résiliation programmée, métadonnées). */
     public function retrieveSubscription(string $subscriptionId): SubscriptionState;
 
+    /**
+     * Rapprochement (ADR-0010) : tous les abonnements du compte Stripe (y compris annulés récemment).
+     *
+     * @return iterable<SubscriptionState>
+     */
+    public function allSubscriptions(): iterable;
+
+    /**
+     * Rapprochement : factures créées depuis `$since`.
+     *
+     * @return iterable<InvoiceSnapshot>
+     */
+    public function invoicesSince(\DateTimeImmutable $since): iterable;
+
     /** Annulation immédiate (impayé au-delà de `billing.cancel_after_days`) ; sans effet si déjà annulée. */
     public function cancelSubscription(string $subscriptionId, string $idempotencyKey): void;
 
