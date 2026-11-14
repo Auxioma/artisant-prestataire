@@ -73,6 +73,19 @@ interface PaymentGateway
     /** Changement de prix à la prochaine échéance (descente de forfait, retour au mensuel), sans prorata. */
     public function scheduleSubscriptionPrice(string $subscriptionId, string $priceId, string $idempotencyKey): void;
 
+    /** Moyen de paiement par défaut du client (factures), ou null s'il n'en a aucun. */
+    public function defaultPaymentMethod(string $customerId): ?PaymentMethodSummary;
+
+    /** PR13.2 — session du portail client Stripe (cartes, mandats SEPA) ; renvoie l'URL de redirection. */
+    public function createPortalSession(string $customerId, string $returnUrl): string;
+
+    /**
+     * Copie du PDF d'une facture, téléchargée depuis le domaine de fichiers du prestataire uniquement (anti-SSRF).
+     *
+     * @throws ExternalServiceUnavailable
+     */
+    public function downloadInvoicePdf(string $url): string;
+
     /** Résiliation en fin de période payée (vrai) ou annulation de cette résiliation (faux). */
     public function setCancelAtPeriodEnd(string $subscriptionId, bool $cancel, string $idempotencyKey): void;
 }

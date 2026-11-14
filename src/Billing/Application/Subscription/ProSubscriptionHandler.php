@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Billing\Application\Subscription;
 
 use App\Billing\Application\Credit\CreditLedger;
+use App\Billing\Application\Invoice\Invoices;
 use App\Billing\Application\Plan\PlanView;
 use App\Billing\Domain\Plan\Plan;
 use App\Billing\Domain\Plan\PlanId;
@@ -26,6 +27,7 @@ final readonly class ProSubscriptionHandler implements QueryHandler
         private SubscriptionRepository $subscriptions,
         private PlanRepository $plans,
         private CreditLedger $ledger,
+        private Invoices $invoices,
         private Clock $clock,
     ) {
     }
@@ -65,6 +67,9 @@ final readonly class ProSubscriptionHandler implements QueryHandler
             array_map(static fn (Plan $p): PlanView => PlanView::of($p, 0), $offered),
             $this->reader->history($artisanId, $query->historyLimit),
             $this->clock->now(),
+            $this->invoices->ofArtisan($artisanId, $query->historyLimit),
+            $this->invoices->paymentMethod($artisanId),
+            null !== $this->invoices->customerOfArtisan($artisanId),
         );
     }
 }

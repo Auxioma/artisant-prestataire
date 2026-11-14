@@ -8,6 +8,7 @@ use App\Billing\Application\Port\BillingAddress;
 use App\Billing\Application\Port\CheckoutRequest;
 use App\Billing\Application\Port\CheckoutSession;
 use App\Billing\Application\Port\PaymentGateway;
+use App\Billing\Application\Port\PaymentMethodSummary;
 use App\Billing\Application\Port\PromotionCode;
 use App\Billing\Application\Port\SubscriptionState;
 use App\Billing\Domain\Plan\BillingInterval;
@@ -115,9 +116,31 @@ final class InMemoryPaymentGateway implements PaymentGateway
         $this->respond($cancel ? 'subscription_cancel_at_end' : 'subscription_resume', $idempotencyKey, ['id' => $subscriptionId], $subscriptionId);
     }
 
+    /** @var array<string, PaymentMethodSummary> moyen par défaut, par client */
+    public array $paymentMethods = [];
+    /** @var array<string, string> PDF de facture servis, par URL */
+    public array $pdfs = [];
+
+    public function defaultPaymentMethod(string $customerId): ?PaymentMethodSummary
+    {
+        return $this->paymentMethods[$customerId] ?? null;
+    }
+
+    public function createPortalSession(string $customerId, string $returnUrl): string
+    {
+        $this->calls[] = ['portal', ['customer' => $customerId, 'return' => $returnUrl]];
+
+        return 'https://billing.stripe.test/session/'.substr(hash('sha256', $customerId), 0, 12);
+    }
+
+    public function downloadInvoicePdf(string $url): string
+    {
+        return $this->pdfs[$url] ?? throw new ExternalServiceUnavailable('stripe', 'PDF indisponible');
+    }
+
     public function reset(): void
     {
-        [$this->responses, $this->calls, $this->configured, $this->failing, $this->promotionCodes, $this->subscriptions] = [[], [], true, false, [], []];
+        [$this->responses, $this->calls, $this->configured, $this->failing, $this->promotionCodes, $this->subscriptions, $this->paymentMethods, $this->pdfs] = [[], [], true, false, [], [], [], []];
     }
 
     /** @param array<string, mixed> $params */

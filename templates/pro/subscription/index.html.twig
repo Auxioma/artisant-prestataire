@@ -2,7 +2,8 @@
     PR11 — Mes abonnements (Figma 167:1401) : en-tête (« Comparer les formules », « Changer de formule »), onglets,
     « Mon abonnement actuel » (forfait, statut, prix HT, prochain prélèvement, fin de période, période en cours) ou offre
     de lancement, « Inclus dans ma formule », « Mes options activées », « Nos formules d'abonnement » (PR11.4, forfait
-    actuel signalé), « Mes factures récentes » et « Mon moyen de paiement » (T-605), onglet « Historique » (PR11.2,
+    actuel signalé), « Mes factures récentes » et « Mon moyen de paiement » (portail Stripe, T-605), onglets « Mes factures »
+    (PR13.1) et « Historique » (PR11.2,
     registre RG-107). Écarts : P-95.
 -#}
 {% extends 'pro/_space.html.twig' %}
@@ -10,6 +11,11 @@
 {% block title %}Mes abonnements — Espace pro — TrouveMoi{% endblock %}
 {% set intervals = {month: 'mois', year: 'an'} %}
 {% set status_class = {active: 'is-ok', incomplete: 'is-todo', past_due: 'is-urgent', suspended: 'is-urgent', cancelled: 'is-muted'} %}
+{% set invoice_class = {paid: 'is-ok', open: 'is-todo', uncollectible: 'is-urgent', void: 'is-muted', draft: 'is-muted'} %}
+{% set months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] %}
+{% set brands = {visa: 'VISA', mastercard: 'Mastercard', amex: 'American Express', cartes_bancaires: 'CB'} %}
+{% macro month(date, months) %}{{ months[date|date('n', 'Europe/Paris') - 1] }} {{ date|date('Y', 'Europe/Paris') }}{% endmacro %}
+{% import _self as m %}
 {% block space_content %}
 <div class="tm-psub">
     <header class="tm-psub__head">
@@ -37,12 +43,39 @@
         <nav class="tm-pro-tabs tm-psub__tabs" aria-label="Rubriques de l’abonnement">
             <a href="{{ base }}"{% if tab == 'abonnement' %} aria-current="page"{% endif %}><twig:Icon name="receipt" class="tm-icon--inherit" />Mon abonnement</a>
             <a href="{{ base }}#options"><twig:Icon name="layers" class="tm-icon--inherit" />Mes options</a>
-            <a href="{{ base }}#factures"><twig:Icon name="file" class="tm-icon--inherit" />Mes factures</a>
+            <a href="{{ path('pro_subscription', {onglet: 'factures'}) }}"{% if tab == 'factures' %} aria-current="page"{% endif %}><twig:Icon name="file" class="tm-icon--inherit" />Mes factures</a>
             <a href="{{ base }}#paiement"><twig:Icon name="euro" class="tm-icon--inherit" />Mon moyen de paiement</a>
             <a href="{{ path('pro_subscription', {onglet: 'historique'}) }}"{% if tab == 'historique' %} aria-current="page"{% endif %}><twig:Icon name="clock" class="tm-icon--inherit" />Historique</a>
         </nav>
 
-        {% if tab == 'historique' %}
+        {% if tab == 'factures' %}
+            <section class="tm-pro-card tm-psub__history" aria-labelledby="factures-liste-titre">
+                <h2 id="factures-liste-titre" class="tm-pro-card__title"><twig:Icon name="file" class="tm-icon--inherit" />Mes factures d’abonnement</h2>
+                <p class="tm-psub__note">Factures émises par TrouveMoi (Auxioma) pour votre abonnement, numérotées sans interruption et conservées 10 ans.</p>
+                {% if view.invoices is empty %}
+                    <p class="tm-psub__empty">Aucune facture pour le moment. Vos factures d’abonnement apparaîtront ici après votre premier paiement.</p>
+                {% else %}
+                    <div class="tm-psub__table-wrap">
+                        <table class="tm-psub__table">
+                            <thead><tr><th scope="col">N° de facture</th><th scope="col">Date</th><th scope="col">Période</th><th scope="col" class="is-num">Montant HT</th><th scope="col" class="is-num">Montant TTC</th><th scope="col">Statut</th><th scope="col"><span class="tm-visually-hidden">PDF</span></th></tr></thead>
+                            <tbody>
+                                {% for i in view.invoices %}
+                                    <tr>
+                                        <td><strong>{{ i.number ?? '—' }}</strong></td>
+                                        <td><time datetime="{{ i.issuedAt|date('c') }}">{{ i.issuedAt|date('d/m/Y', 'Europe/Paris') }}</time></td>
+                                        <td>{% if i.periodStart and i.periodEnd %}{{ i.periodStart|date('d/m/Y', 'Europe/Paris') }} → {{ i.periodEnd|date('d/m/Y', 'Europe/Paris') }}{% else %}—{% endif %}</td>
+                                        <td class="is-num">{{ i.amountHtCents|tm_money }}</td>
+                                        <td class="is-num">{{ i.amountTtcCents|tm_money }}</td>
+                                        <td><span class="tm-pro-state {{ invoice_class[i.status] ?? 'is-muted' }}">{{ i.statusLabel() }}</span></td>
+                                        <td>{% if i.archived or i.hostedUrl %}<a class="tm-psub__dl" href="{{ path('pro_invoice_pdf', {id: i.id}) }}"><twig:Icon name="download" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Télécharger la facture {{ i.number }}</span></a>{% endif %}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </section>
+        {% elseif tab == 'historique' %}
             <section class="tm-pro-card tm-psub__history" aria-labelledby="historique-titre">
                 <h2 id="historique-titre" class="tm-pro-card__title"><twig:Icon name="clock" class="tm-icon--inherit" />Historique des crédits</h2>
                 <p class="tm-psub__note">Chaque mouvement est conservé tel quel : une correction s’ajoute, rien n’est modifié ni effacé.</p>
@@ -199,11 +232,40 @@
                 <div class="tm-psub__aside">
                     <section id="factures" class="tm-pro-card" aria-labelledby="factures-titre">
                         <h2 id="factures-titre" class="tm-pro-card__title"><twig:Icon name="file" class="tm-icon--inherit" />Mes factures récentes</h2>
-                        <p class="tm-psub__empty">Aucune facture pour le moment. Vos factures d’abonnement apparaîtront ici après votre premier paiement.</p>
+                        {% if view.invoices is empty %}
+                            <p class="tm-psub__empty">Aucune facture pour le moment. Vos factures d’abonnement apparaîtront ici après votre premier paiement.</p>
+                        {% else %}
+                            <ul class="tm-psub__invoices">
+                                {% for i in view.invoices|slice(0, 3) %}
+                                    <li>
+                                        <twig:Icon name="file" size="sm" class="tm-icon--inherit" />
+                                        <span>{{ m.month(i.periodStart ?? i.issuedAt, months) }}</span>
+                                        <strong>{{ i.amountTtcCents|tm_money }}</strong>
+                                        {% if i.archived or i.hostedUrl %}<a class="tm-psub__dl" href="{{ path('pro_invoice_pdf', {id: i.id}) }}"><twig:Icon name="download" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Télécharger la facture {{ i.number }}</span></a>{% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                            {% if view.invoices|length > 3 %}<a href="{{ path('pro_subscription', {onglet: 'factures'}) }}" class="tm-psub__more">Toutes mes factures</a>{% endif %}
+                        {% endif %}
                     </section>
                     <section id="paiement" class="tm-pro-card" aria-labelledby="paiement-titre">
                         <h2 id="paiement-titre" class="tm-pro-card__title"><twig:Icon name="receipt" class="tm-icon--inherit" />Mon moyen de paiement</h2>
-                        <p class="tm-psub__empty">Aucun moyen de paiement enregistré : il sera ajouté de façon sécurisée lors de votre souscription.</p>
+                        {% set pm = view.paymentMethod %}
+                        {% if pm %}
+                            <div class="tm-psub__card">
+                                <strong class="tm-psub__brand">{{ pm.type == 'sepa_debit' ? 'SEPA' : (brands[pm.brand] ?? (pm.brand|upper)) }}</strong>
+                                <p>{{ pm.type == 'sepa_debit' ? 'Prélèvement' : (brands[pm.brand] ?? pm.brand)|capitalize }}{% if pm.last4 %} •••• {{ pm.last4 }}{% endif %}{% if pm.expMonth and pm.expYear %}<br>Expire le {{ '%02d'|format(pm.expMonth) }}/{{ pm.expYear }}{% endif %}</p>
+                                <span class="tm-pro-state is-ok">Par défaut</span>
+                            </div>
+                        {% else %}
+                            <p class="tm-psub__empty">Aucun moyen de paiement enregistré : il sera ajouté de façon sécurisée lors de votre souscription.</p>
+                        {% endif %}
+                        {% if view.hasCustomer %}
+                            <form method="post" action="{{ path('pro_payment_portal') }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('pro_payment_portal') }}">
+                                <twig:Button type="submit" variant="secondary" block icon="edit" iconPosition="start">Modifier</twig:Button>
+                            </form>
+                        {% endif %}
                     </section>
                 </div>
             </div>

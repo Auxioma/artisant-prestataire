@@ -8,6 +8,7 @@ use App\Billing\Application\Port\BillingAddress;
 use App\Billing\Application\Port\CheckoutRequest;
 use App\Billing\Application\Port\CheckoutSession;
 use App\Billing\Application\Port\PaymentGateway;
+use App\Billing\Application\Port\PaymentMethodSummary;
 use App\Billing\Application\Port\PromotionCode;
 use App\Billing\Application\Port\SubscriptionState;
 use App\Billing\Domain\Plan\BillingInterval;
@@ -31,6 +32,9 @@ final class StripePaymentGateway implements PaymentGateway
     private const string SERVICE = 'stripe';
     private const string API_VERSION = '2025-08-27.basil';
     private const string CURRENCY = 'eur';
+
+    /** Domaines servant les PDF de factures Stripe (lien `invoice_pdf`) : rien d'autre n'est téléchargé. */
+    private const array PDF_HOSTS = ['pay.stripe.com', 'files.stripe.com', 'invoice.stripe.com'];
 
     private ?StripeClient $client = null;
 
@@ -202,6 +206,55 @@ final class StripePaymentGateway implements PaymentGateway
 
             return $subscriptionId;
         });
+    }
+
+    public function defaultPaymentMethod(string $customerId): ?PaymentMethodSummary
+    {
+        return $this->call('payment_method', static function (StripeClient $c) use ($customerId): ?PaymentMethodSummary {
+            $customer = $c->customers->retrieve($customerId, ['expand' => ['invoice_settings.default_payment_method']]);
+            $method = $customer->invoice_settings->default_payment_method ?? null;
+            if (!$method instanceof \Stripe\PaymentMethod) {
+                $method = $c->paymentMethods->all(['customer' => $customerId, 'limit' => 1])->data[0] ?? null;
+            }
+            if (null === $method) {
+                return null;
+            }
+            if ('card' === $method->type && null !== $method->card) {
+                return new PaymentMethodSummary('card', (string) $method->card->brand, (string) $method->card->last4, (int) $method->card->exp_month, (int) $method->card->exp_year);
+            }
+            if ('sepa_debit' === $method->type && null !== $method->sepa_debit) {
+                return new PaymentMethodSummary('sepa_debit', null, (string) $method->sepa_debit->last4, null, null);
+            }
+
+            return new PaymentMethodSummary('other', null, null, null, null);
+        });
+    }
+
+    public function createPortalSession(string $customerId, string $returnUrl): string
+    {
+        return $this->call('billing_portal', static fn (StripeClient $c): string => (string) $c->billingPortal->sessions->create(['customer' => $customerId, 'return_url' => $returnUrl, 'locale' => 'fr'])->url);
+    }
+
+    public function downloadInvoicePdf(string $url): string
+    {
+        $parts = parse_url($url);
+        if (!\is_array($parts) || 'https' !== ($parts['scheme'] ?? null) || !\in_array($parts['host'] ?? '', self::PDF_HOSTS, true)) {
+            throw new ExternalServiceUnavailable(self::SERVICE, 'adresse de PDF refusée');
+        }
+        try {
+            $response = $this->http->request('GET', $url, ['max_redirects' => 3]);
+            if (200 !== $response->getStatusCode()) {
+                throw new ExternalServiceUnavailable(self::SERVICE, 'PDF indisponible ('.$response->getStatusCode().')');
+            }
+            $bytes = $response->getContent();
+        } catch (\Symfony\Contracts\HttpClient\Exception\ExceptionInterface $e) {
+            throw new ExternalServiceUnavailable(self::SERVICE, 'PDF injoignable', $e);
+        }
+        if (!str_starts_with($bytes, '%PDF')) {
+            throw new ExternalServiceUnavailable(self::SERVICE, 'le document reçu n’est pas un PDF');
+        }
+
+        return $bytes;
     }
 
     public function changeSubscriptionPrice(string $subscriptionId, string $priceId, string $prorationBehavior, string $idempotencyKey): void

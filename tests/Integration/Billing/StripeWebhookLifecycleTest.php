@@ -9,6 +9,7 @@ use App\Billing\Application\Credit\QuoteCreditAccount;
 use App\Billing\Application\Payment\SyncPlanWithStripe;
 use App\Billing\Application\Plan\PlanAction;
 use App\Billing\Application\Plan\SavePlan;
+use App\Billing\Application\Port\PaymentMethodSummary;
 use App\Billing\Application\Port\SubscriptionState;
 use App\Billing\Application\Subscription\EnforceBillingGrace;
 use App\Billing\Application\Webhook\HandleStripeEvent;
@@ -211,6 +212,27 @@ final class StripeWebhookLifecycleTest extends KernelTestCase
     {
         $this->receive('evt_d1', 'charge.dispute.created', ['id' => 'dp_FICTIF', 'charge' => 'ch_FICTIF', 'amount' => 3480, 'reason' => 'fraudulent']);
         self::assertSame('1', $this->value("SELECT count(*) FROM admin.audit_log WHERE action = 'billing.dispute_opened'"));
+    }
+
+    public function testInvoicesAreReplicatedAndArchivedOnce(): void
+    {
+        $this->connection->executeStatement("UPDATE billing.credit_account SET stripe_customer_id = 'cus_FICTIF' WHERE artisan_id = :a", ['a' => self::ARTISAN]);
+        $pdf = 'https://pay.stripe.com/invoice/fictif/pdf';
+        $this->gateway->pdfs[$pdf] = '%PDF-1.4 facture fictive';
+        $this->stripe('active', '2026-11-14', '2026-12-14');
+        $invoice = self::invoice('in_1', 'subscription_create', '2026-11-14', '2026-12-14') + ['customer' => 'cus_FICTIF', 'status' => 'paid', 'number' => 'TM-FICTIF-0001', 'currency' => 'eur', 'total' => 3480, 'total_excluding_tax' => 2900, 'created' => 1794700000, 'invoice_pdf' => $pdf];
+        $this->receive('evt_i1', 'invoice.paid', $invoice);
+        $this->receive('evt_i2', 'invoice.updated', $invoice);
+
+        self::assertSame('1|TM-FICTIF-0001|paid|2900|580|3480|true', $this->value("SELECT count(*) || '|' || min(number) || '|' || min(status) || '|' || min(amount_ht_cents) || '|' || min(vat_cents) || '|' || min(amount_ttc_cents) || '|' || bool_and(pdf_key IS NOT NULL) FROM billing.invoice WHERE artisan_id = :a"));
+        self::assertSame(hash('sha256', '%PDF-1.4 facture fictive'), $this->value('SELECT pdf_sha256 FROM billing.invoice WHERE artisan_id = :a'));
+
+        $this->gateway->paymentMethods['cus_FICTIF'] = new PaymentMethodSummary('card', 'visa', '4242', 12, 2030);
+        $this->receive('evt_pm', 'payment_method.attached', ['id' => 'pm_FICTIF', 'customer' => 'cus_FICTIF']);
+        self::assertSame('card|visa|4242|12|2030', $this->value("SELECT type || '|' || brand || '|' || last4 || '|' || exp_month || '|' || exp_year FROM billing.payment_method WHERE artisan_id = :a"));
+
+        $this->receive('evt_i3', 'invoice.finalized', ['id' => 'in_AUTRE', 'customer' => 'cus_AUTRE', 'status' => 'open', 'total' => 100]);
+        self::assertSame('ignored', $this->value("SELECT status FROM billing.processed_stripe_event WHERE event_id = 'evt_i3'"));
     }
 
     public function testForeignEventsAreIgnored(): void

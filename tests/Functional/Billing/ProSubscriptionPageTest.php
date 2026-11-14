@@ -6,6 +6,7 @@ namespace App\Tests\Functional\Billing;
 
 use App\ArtisanProfile\Application\Verification\ApproveArtisan;
 use App\Billing\Application\Credit\CreditLedger;
+use App\Billing\Application\Invoice\InvoiceArchive;
 use App\Billing\Application\Plan\PlanAction;
 use App\Billing\Application\Plan\SavePlan;
 use App\Shared\Infrastructure\Persistence\DbalValue;
@@ -103,6 +104,40 @@ final class ProSubscriptionPageTest extends WebTestCase
         $crawler = $this->client->request('GET', '/espace-pro/abonnement');
         self::assertStringContainsString('Abonnement suspendu pour impayé', $crawler->filter('[role="alert"]')->text());
         self::assertStringContainsString('Suspendu', $crawler->filter('.tm-psub__current .tm-pro-state')->text());
+    }
+
+    public function testInvoicesPaymentMethodAndPortal(): void
+    {
+        $this->connection->executeStatement("UPDATE billing.credit_account SET stripe_customer_id = 'cus_FICTIF_PR13' WHERE artisan_id = :a", ['a' => $this->artisan]);
+        $archive = self::getContainer()->get(InvoiceArchive::class);
+        \assert($archive instanceof InvoiceArchive);
+        $archive->put('0190f5e4-0000-7000-8000-00000001a603', '%PDF-1.4 facture fictive PR13');
+        $this->connection->executeStatement(
+            "INSERT INTO billing.invoice (id, artisan_id, stripe_invoice_id, number, status, currency, amount_ht_cents, vat_cents, amount_ttc_cents, amount_paid_cents, period_start, period_end, issued_at, paid_at, pdf_key, pdf_sha256, archived_at, updated_at) VALUES ('0190f5e4-0000-7000-8000-00000001a603', :a, 'in_FICTIF_PR13', 'TM-FICTIF-0042', 'paid', 'EUR', 2900, 580, 3480, 3480, '2026-10-14', '2026-11-14', '2026-10-14', '2026-10-14', '0190f5e4-0000-7000-8000-00000001a603', :h, now(), now())",
+            ['a' => $this->artisan, 'h' => hash('sha256', '%PDF-1.4 facture fictive PR13')],
+        );
+        $this->connection->executeStatement("INSERT INTO billing.payment_method (artisan_id, type, brand, last4, exp_month, exp_year, updated_at) VALUES (:a, 'card', 'visa', '4587', 12, 2028, now())", ['a' => $this->artisan]);
+
+        $page = $this->client->request('GET', '/espace-pro/abonnement');
+        self::assertStringContainsString('Octobre 2026', $page->filter('.tm-psub__invoices')->text());
+        $card = $page->filter('.tm-psub__card')->text();
+        self::assertStringContainsString('•••• 4587', $card);
+        self::assertStringContainsString('Expire le 12/2028', $card);
+
+        $tab = $this->client->request('GET', '/espace-pro/abonnement?onglet=factures');
+        self::assertStringContainsString('TM-FICTIF-0042', $tab->filter('.tm-psub__table')->text());
+        self::assertStringContainsString('Payée', $tab->filter('.tm-psub__table')->text());
+
+        $this->client->request('GET', '/espace-pro/abonnement/factures/0190f5e4-0000-7000-8000-00000001a603/pdf');
+        self::assertResponseIsSuccessful();
+        self::assertSame('application/pdf', $this->client->getResponse()->headers->get('Content-Type'));
+        self::assertStringContainsString('facture-TM-FICTIF-0042.pdf', (string) $this->client->getResponse()->headers->get('Content-Disposition'));
+        $this->client->request('GET', '/espace-pro/abonnement/factures/0190f5e4-0000-7000-8000-00000001a699/pdf');
+        self::assertResponseStatusCodeSame(404);
+
+        $this->client->submit($page->selectButton('Modifier')->form());
+        self::assertResponseStatusCodeSame(303);
+        self::assertStringStartsWith('https://billing.stripe.test/session/', (string) $this->client->getResponse()->headers->get('Location'));
     }
 
     public function testHistoryTabListsLedger(): void

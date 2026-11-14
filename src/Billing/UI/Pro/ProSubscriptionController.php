@@ -21,7 +21,7 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class ProSubscriptionController extends AbstractController
 {
-    public const array TABS = ['abonnement', 'historique'];
+    public const array TABS = ['abonnement', 'factures', 'historique'];
 
     public function __construct(private readonly QueryBus $queries, private readonly CurrentUser $user)
     {

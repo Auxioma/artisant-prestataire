@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Billing\Application\Webhook;
 
 use App\Billing\Application\Credit\CreditLedger;
+use App\Billing\Application\Invoice\InvoiceReplicator;
 use App\Billing\Application\Payment\IdempotencyKey;
 use App\Billing\Application\Port\PaymentGateway;
 use App\Billing\Application\Port\SubscriptionState;
@@ -52,6 +53,7 @@ final readonly class HandleStripeEventHandler implements CommandHandler
         private SubscriptionMailer $mailer,
         private SettingsProvider $settings,
         private AuditTrail $audit,
+        private InvoiceReplicator $invoices,
         private IdGenerator $ids,
         private Clock $clock,
     ) {
@@ -69,8 +71,11 @@ final readonly class HandleStripeEventHandler implements CommandHandler
         $handled = match ($event->type) {
             'checkout.session.completed' => null !== $this->syncById($event->string('subscription')),
             'customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted' => null !== $this->syncById($event->string('id')),
-            'invoice.paid' => $this->invoicePaid($event),
-            'invoice.payment_failed' => $this->paymentFailed($event),
+            'invoice.paid' => self::either($this->invoices->replicate($event), $this->invoicePaid($event)),
+            'invoice.payment_failed' => self::either($this->invoices->replicate($event), $this->paymentFailed($event)),
+            'invoice.finalized', 'invoice.voided', 'invoice.marked_uncollectible', 'invoice.updated' => $this->invoices->replicate($event),
+            'customer.updated' => $this->invoices->refreshPaymentMethod($event->string('id')),
+            'payment_method.attached', 'payment_method.detached', 'setup_intent.succeeded' => $this->invoices->refreshPaymentMethod($event->string('customer')),
             'charge.dispute.created' => $this->dispute($event),
             default => false,
         };
@@ -275,5 +280,11 @@ final readonly class HandleStripeEventHandler implements CommandHandler
         $perMonth = $terms->unlimited ? ($terms->fairUseCap ?? 0) : ($terms->quotesPerPeriod ?? 0);
 
         return BillingInterval::Year === $interval ? $perMonth * self::MONTHS_PER_YEAR : $perMonth;
+    }
+
+    /** Les deux traitements ont lieu (arguments évalués) ; l'événement compte comme traité si l'un d'eux l'a pris. */
+    private static function either(bool $first, bool $second): bool
+    {
+        return $first || $second;
     }
 }
