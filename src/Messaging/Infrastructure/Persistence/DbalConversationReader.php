@@ -1,0 +1,163 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Messaging\Infrastructure\Persistence;
+
+use App\Messaging\Application\Query\ConversationReader;
+use App\Messaging\Application\Query\ConversationRow;
+use App\Messaging\Application\Query\ConversationThread;
+use App\Messaging\Application\Query\ThreadMessage;
+use App\Shared\Infrastructure\Persistence\DbalValue;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
+
+/**
+ * Lectures de la messagerie du point de vue d'un participant. Côté artisan, le client n'est désigné que par son prénom
+ * (RG-112) ; côté client, l'artisan par son nom commercial (logo seulement s'il est public).
+ */
+final readonly class DbalConversationReader implements ConversationReader
+{
+    private const string UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
+    private const string ROWS = <<<'SQL'
+        SELECT c.id, c.kind, c.request_id, c.artisan_id, c.blocked_by, c.last_message_at, p.archived, p.last_read_at,
+               (c.client_user_id = :u) AS as_client,
+               CASE WHEN c.client_user_id = :u THEN coalesce(a.trade_name, a.company_name, 'Professionnel') ELSE coalesce(u.first_name, 'Client') END AS name,
+               CASE WHEN c.client_user_id = :u AND a.logo_file_id IS NOT NULL AND a.status = 'verified' AND a.hidden_at IS NULL THEN a.id END AS logo,
+               r.title, r.number, coalesce(cm.name, a.hq_city) AS city,
+               (SELECT count(*) FROM messaging.message x WHERE x.conversation_id = c.id AND x.sender_user_id <> :u AND x.created_at > coalesce(p.last_read_at, '-infinity')) AS unread
+        FROM messaging.conversation c
+        JOIN messaging.participant p ON p.conversation_id = c.id AND p.user_id = :u
+        JOIN artisan.artisan_profile a ON a.id = c.artisan_id
+        JOIN identity.user_account u ON u.id = c.client_user_id
+        LEFT JOIN request.quote_request r ON r.id = c.request_id
+        LEFT JOIN catalog.commune cm ON cm.insee = r.city_insee
+        WHERE (c.client_user_id = :u OR c.artisan_user_id = :u) AND c.last_message_at IS NOT NULL
+        SQL;
+
+    public function __construct(private Connection $connection)
+    {
+    }
+
+    public function list(string $userId, string $filter, string $query, int $page, int $perPage): array
+    {
+        if (1 !== preg_match(self::UUID, $userId)) {
+            return ['rows' => [], 'total' => 0];
+        }
+        $where = match ($filter) {
+            'archived' => 't.archived',
+            'unread' => 'NOT t.archived AND t.unread > 0',
+            default => 'NOT t.archived',
+        };
+        $params = ['u' => $userId, 'limit' => $perPage, 'offset' => ($page - 1) * $perPage];
+        if ('' !== $query) {
+            $where .= " AND (t.name ILIKE :q ESCAPE '\\' OR t.title ILIKE :q ESCAPE '\\' OR t.number ILIKE :q ESCAPE '\\')";
+            $params['q'] = '%'.addcslashes($query, '%_\\').'%';
+        }
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT t.*, last.body AS last_body, last.sender_user_id AS last_sender, count(*) OVER () AS total FROM ('.self::ROWS.') t'
+            .' LEFT JOIN LATERAL (SELECT body, sender_user_id FROM messaging.message m WHERE m.conversation_id = t.id ORDER BY m.created_at DESC, m.id DESC LIMIT 1) last ON true'
+            .' WHERE '.$where.' ORDER BY t.last_message_at DESC LIMIT :limit OFFSET :offset',
+            $params,
+            ['limit' => ParameterType::INTEGER, 'offset' => ParameterType::INTEGER],
+        );
+
+        return [
+            'rows' => array_map(static fn (array $r): ConversationRow => new ConversationRow(
+                DbalValue::string($r['id']),
+                DbalValue::string($r['name']),
+                DbalValue::nullableString($r['logo']),
+                DbalValue::nullableString($r['title']),
+                DbalValue::nullableString($r['number']),
+                DbalValue::nullableString($r['last_body']),
+                null === $r['last_message_at'] ? null : new \DateTimeImmutable(DbalValue::string($r['last_message_at'])),
+                $userId === $r['last_sender'],
+                DbalValue::int($r['unread']),
+                true === $r['archived'],
+                null !== $r['blocked_by'],
+            ), $rows),
+            'total' => [] === $rows ? 0 : DbalValue::int($rows[0]['total']),
+        ];
+    }
+
+    public function thread(string $userId, string $conversationId): ?ConversationThread
+    {
+        if (1 !== preg_match(self::UUID, $userId)) {
+            return null;
+        }
+        $t = $this->connection->fetchAssociative(
+            'SELECT t.*, q.number AS quote_number, q.status AS quote_status, other.last_read_at AS other_read_at FROM ('.self::ROWS.' AND c.id = :id) t'
+            .' LEFT JOIN quote.quote q ON q.request_id = t.request_id AND q.artisan_id = t.artisan_id AND q.status <> \'draft\''
+            .' LEFT JOIN messaging.participant other ON other.conversation_id = t.id AND other.user_id <> :u',
+            ['u' => $userId, 'id' => $conversationId],
+        );
+        if (false === $t) {
+            return null;
+        }
+        $otherRead = null === $t['other_read_at'] ? null : new \DateTimeImmutable(DbalValue::string($t['other_read_at']));
+        $messages = array_map(static function (array $m) use ($userId, $otherRead): ThreadMessage {
+            $at = new \DateTimeImmutable(DbalValue::string($m['created_at']));
+            $mine = $userId === $m['sender_user_id'];
+
+            return new ThreadMessage(DbalValue::string($m['id']), $mine, DbalValue::string($m['body']), $at, null !== $m['original_sealed'], $mine && null !== $otherRead && $otherRead >= $at, $userId === $m['reported_by']);
+        }, $this->connection->fetchAllAssociative('SELECT id, sender_user_id, body, original_sealed, created_at, reported_by FROM messaging.message WHERE conversation_id = :c ORDER BY created_at, id', ['c' => $conversationId]));
+        $blocked = null === $t['blocked_by'] ? null : ($userId === $t['blocked_by'] ? 'me' : 'other');
+
+        return new ConversationThread(
+            DbalValue::string($t['id']),
+            DbalValue::string($t['kind']),
+            DbalValue::string($t['name']),
+            DbalValue::nullableString($t['logo']),
+            DbalValue::nullableString($t['city']),
+            DbalValue::string($t['artisan_id']),
+            DbalValue::nullableString($t['request_id']),
+            DbalValue::nullableString($t['title']),
+            DbalValue::nullableString($t['number']),
+            DbalValue::nullableString($t['quote_number']),
+            DbalValue::nullableString($t['quote_status']),
+            'accepted' === $t['quote_status'],
+            true === $t['archived'],
+            $blocked,
+            $messages,
+        );
+    }
+
+    public function unreadCount(string $userId): int
+    {
+        if (1 !== preg_match(self::UUID, $userId)) {
+            return 0;
+        }
+
+        return DbalValue::int($this->connection->fetchOne(
+            <<<'SQL'
+                SELECT count(*) FROM messaging.participant p
+                WHERE p.user_id = :u AND NOT p.archived AND EXISTS (
+                    SELECT 1 FROM messaging.message m WHERE m.conversation_id = p.conversation_id AND m.sender_user_id <> :u AND m.created_at > coalesce(p.last_read_at, '-infinity'))
+                SQL,
+            ['u' => $userId],
+        ));
+    }
+
+    public function idFor(string $userId, ?string $requestId, ?string $artisanId): ?string
+    {
+        $sql = 'SELECT c.id FROM messaging.conversation c LEFT JOIN artisan.artisan_profile a ON a.user_id = :u WHERE (c.client_user_id = :u OR c.artisan_user_id = :u)';
+        $params = ['u' => $userId];
+        if (null !== $requestId) {
+            $sql .= ' AND c.request_id = :r AND c.artisan_id = coalesce(:a, a.id)';
+            $params += ['r' => $requestId, 'a' => $artisanId];
+        } else {
+            $sql .= " AND c.kind = 'pre_question' AND c.artisan_id = :a";
+            $params['a'] = $artisanId;
+        }
+        $id = $this->connection->fetchOne($sql.' LIMIT 1', $params);
+
+        return false === $id ? null : DbalValue::string($id);
+    }
+
+    public function message(string $messageId): ?array
+    {
+        $r = $this->connection->fetchAssociative('SELECT m.body, coalesce(u.first_name, \'\') AS first_name FROM messaging.message m LEFT JOIN identity.user_account u ON u.id = m.sender_user_id WHERE m.id = :id', ['id' => $messageId]);
+
+        return false === $r ? null : ['body' => DbalValue::string($r['body']), 'sender_first_name' => DbalValue::string($r['first_name'])];
+    }
+}

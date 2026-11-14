@@ -91,6 +91,7 @@ notifications:
         label: "Nouveau message (regroupé)"
         recipient: "Client / artisan"
         channels: [email, in_app]
+        variables: [prenom, expediteur, extrait, lien]
     'E-18':
         label: "Avis publié / refusé (motif)"
         recipient: "Client"

@@ -158,8 +158,9 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 
 | Table | Colonnes | Contraintes / index |
 |---|---|---|
-| `messaging.conversation` | id, request_id NULL, client_id, artisan_id, kind (`request`/`pre_question`), status, last_message_at | **UQ** (request_id, artisan_id) · **IX** (client_id, last_message_at DESC), (artisan_id, last_message_at DESC) |
-| `messaging.message` | id, conversation_id, sender_user_id, body (masqué), body_original_encrypted 🔒, kek_id, masked, attachments (jsonb), read_at, reported, created_at | **IX** (conversation_id, created_at) · purge `messages.retention_years` |
+| `messaging.conversation` (T-701a) | id, kind (`request` / `pre_question`), request_id NULL, client_user_id, artisan_id, artisan_user_id, started_by, blocked_by, last_message_at, created_at | **UQ partiel** (request_id, artisan_id) · **UQ partiel** (client_user_id, artisan_id) WHERE question préalable · **IX** (client_user_id, last_message_at DESC), (artisan_user_id, last_message_at DESC) · purge `messages.retention_years` |
+| `messaging.message` (T-701a) | id, conversation_id (cascade), sender_user_id, body (masqué RG-080), original_sealed 🔒 (`SecretBox`, si masqué), created_at, reported_by, reported_at, report_reason | ajout seul (déclencheur : seul le signalement évolue) · **IX** (conversation_id, created_at) |
+| `messaging.participant` (T-701a) | (conversation_id, user_id) PK, last_read_at, archived, last_notified_at (regroupement E-17) | non-lus = messages de l'autre après `last_read_at` |
 | `review.review` | id, request_id, quote_id, client_id, artisan_id, rating, sub_ratings (jsonb), title, body, photos (jsonb), service_date, status (`pending`/`published`/`rejected`/`hidden`/`changes_requested`), risk_score, moderated_by, moderated_at, reason_code, reply_body, reply_status, reply_at, edited_until | **UQ** request_id (RG-033 : un avis par demande) · **CK** rating BETWEEN 1 AND 5 · **IX** (artisan_id, status, created_at DESC) |
 | `moderation.report` | id, target_type, target_id, reporter_user_id, reason_code, comment, status, resolution, handled_by, handled_at | **IX** (status, created_at) · **UQ** (target_type, target_id, reporter_user_id) |
 | `moderation.rule` | id, kind (`banned_word`/`contact_pattern`/`threshold`), value, active, updated_by | — |
