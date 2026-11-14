@@ -1,0 +1,45 @@
+{#- C04.2 — messages d'un fil, groupés par jour ; statut « lu » (✓✓) sur mes messages, signalement des messages reçus. -#}
+{% set today = 'now'|date('Y-m-d', 'Europe/Paris') %}
+{% set yesterday = '-1 day'|date('Y-m-d', 'Europe/Paris') %}
+{% set day = null %}
+{% for m in thread.messages %}
+    {% set d = m.at|date('Y-m-d', 'Europe/Paris') %}
+    {% if d != day %}
+        {% set day = d %}
+        <p class="tm-msg-day"><span>{{ d == today ? 'Aujourd’hui' : (d == yesterday ? 'Hier' : m.at|date('d/m/Y', 'Europe/Paris')) }}</span></p>
+    {% endif %}
+    <div class="tm-msg{{ m.mine ? ' is-mine' }}"{% if loop.last %} id="dernier"{% endif %}>
+        {% if not m.mine %}
+            {% if thread.counterpartLogoProfileId %}<img class="tm-msg-avatar tm-msg-avatar--sm" src="{{ path('public_artisan_logo', {id: thread.counterpartLogoProfileId}) }}" alt="" width="32" height="32" loading="lazy">{% else %}<span class="tm-msg-avatar tm-msg-avatar--sm tm-msg-avatar--initials" aria-hidden="true">{{ thread.initials() }}</span>{% endif %}
+        {% endif %}
+        <div class="tm-msg__bubble">
+            <p class="tm-msg__body">{{ m.body|nl2br }}</p>
+            <p class="tm-msg__meta">
+                <time datetime="{{ m.at|date('c') }}">{{ m.at|date('H:i', 'Europe/Paris') }}</time>
+                {% if m.mine %}<span class="tm-msg__read{{ m.readByCounterpart ? ' is-read' }}">{{ m.readByCounterpart ? '✓✓' : '✓' }}<span class="tm-visually-hidden">{{ m.readByCounterpart ? ' Lu' : ' Envoyé' }}</span></span>{% endif %}
+                {% if m.masked %}<span class="tm-msg__masked">Coordonnées masquées</span>{% endif %}
+            </p>
+            {% if not m.mine %}
+                {% if m.reportedByMe %}
+                    <p class="tm-msg__reported">Signalé à la modération</p>
+                {% else %}
+                    <details class="tm-msg__report">
+                        <summary>Signaler<span class="tm-visually-hidden"> ce message</span></summary>
+                        <form method="post" action="{{ path(space ~ '_conversation_action', {id: thread.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('messaging') }}">
+                            <input type="hidden" name="action" value="report">
+                            <input type="hidden" name="message" value="{{ m.id }}">
+                            <label class="tm-visually-hidden" for="motif-{{ m.id }}">Motif du signalement</label>
+                            <select id="motif-{{ m.id }}" name="motif" class="tm-select__input">
+                                {% for k, l in {spam: 'Démarchage ou publicité', abuse: 'Propos injurieux ou menaçants', fraud: 'Tentative de fraude', contact: 'Contournement de la plateforme', other: 'Autre'} %}<option value="{{ k }}">{{ l }}</option>{% endfor %}
+                            </select>
+                            <button type="submit" class="tm-link-button">Envoyer le signalement</button>
+                        </form>
+                    </details>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+{% else %}
+    <p class="tm-msg-list__empty">Aucun message.</p>
+{% endfor %}

@@ -27,6 +27,13 @@ final readonly class ConversationThread
     ) {
     }
 
+    public function initials(): string
+    {
+        $words = array_filter(preg_split('/[\s\-]+/u', trim($this->counterpartName)) ?: [], static fn (string $w): bool => '' !== $w);
+
+        return implode('', \array_slice(array_map(static fn (string $w): string => mb_strtoupper(mb_substr($w, 0, 1)), $words), 0, 2));
+    }
+
     /** Peut-on écrire ? (fil non bloqué) */
     public function writable(): bool
     {

@@ -191,7 +191,8 @@
         <aside class="tm-profile__aside" id="contact" aria-labelledby="contact-title">
             <div class="tm-profile__contact">
                 <h2 id="contact-title">Contacter {{ p.name }}</h2>
-                <p class="tm-profile__muted">La demande de devis en ligne arrive prochainement.</p>
+                {% if tm_route_exists('request_new') %}<twig:Button href="{{ path('request_new', {pro: p.profileId}) }}" icon="fileEuro" iconPosition="start">Demander un devis</twig:Button>{% endif %}
+                {% if tm_route_exists('client_message_new') and not is_granted('ROLE_ARTISAN') %}<twig:Button href="{{ path('client_message_new', {artisan: p.profileId}) }}" variant="secondary" icon="msg" iconPosition="start">Poser une question</twig:Button>{% endif %}
                 {% if p.phoneAvailable %}
                     <div class="tm-profile__phone" data-controller="phone-reveal">
                         {% if revealed %}

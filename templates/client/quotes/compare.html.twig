@@ -86,6 +86,7 @@
                         <li><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Devis PDF téléchargeable</li>
                     </ul>
                     <a class="tm-qcard__view" href="{{ path('client_quote_pdf', {quote: card.quoteId}) }}" target="_blank" rel="noopener">Voir le devis détaillé<span class="tm-visually-hidden"> de {{ card.artisanName }} (PDF, nouvel onglet)</span></a>
+                    {% if tm_route_exists('client_message_new') %}<a class="tm-qcard__view" href="{{ path('client_message_new', {demande: view.requestId, artisan: card.artisanId}) }}"><twig:Icon name="msg" size="xs" class="tm-icon--inherit" /> Envoyer un message<span class="tm-visually-hidden"> à {{ card.artisanName }}</span></a>{% endif %}
                     {% if card.decidable %}
                         <button type="button" class="tm-qcard__choose" data-controller="modal-opener" data-modal-opener-dialog-value="accepter-{{ card.quoteId }}" data-action="modal-opener#open">Choisir ce professionnel</button>
                         <div class="tm-qcard__secondary">

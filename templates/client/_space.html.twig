@@ -60,7 +60,7 @@
     </div>
     <div class="tm-cspace__body">
         <aside class="tm-cspace__aside">
-            <nav class="tm-cspace__menu" aria-label="Mon espace client">{{ space.nav(space_items, space_active ?? null, space_counts ?? {}) }}</nav>
+            <nav class="tm-cspace__menu" aria-label="Mon espace client">{{ space.nav(space_items, space_active ?? null, (space_counts ?? {})|merge({messages: tm_unread_messages()})) }}</nav>
             <a class="tm-cspace__logout" href="{{ logout_path('main') }}"><twig:Icon name="power" size="sm" class="tm-icon--inherit" />Se déconnecter</a>
         </aside>
         <div class="tm-cspace__content">
@@ -84,7 +84,7 @@
         <details class="tm-space__more">
             <summary class="tm-space__tab"><twig:Icon name="user" class="tm-icon--inherit" />Compte</summary>
             <div class="tm-space__sheet">
-                <nav class="tm-cspace__menu" aria-label="Mon espace client">{{ space.nav(space_items, space_active ?? null, space_counts ?? {}) }}</nav>
+                <nav class="tm-cspace__menu" aria-label="Mon espace client">{{ space.nav(space_items, space_active ?? null, (space_counts ?? {})|merge({messages: tm_unread_messages()})) }}</nav>
                 <a class="tm-cspace__logout" href="{{ logout_path('main') }}"><twig:Icon name="power" size="sm" class="tm-icon--inherit" />Se déconnecter</a>
             </div>
         </details>
