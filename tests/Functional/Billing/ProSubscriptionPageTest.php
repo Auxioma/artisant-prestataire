@@ -93,6 +93,18 @@ final class ProSubscriptionPageTest extends WebTestCase
         self::assertSame(1, DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM billing.subscription WHERE plan_id = :p', ['p' => self::PLAN])));
     }
 
+    public function testSuspendedSubscriptionIsFlagged(): void
+    {
+        $price = $this->connection->fetchOne("SELECT id FROM billing.plan_price WHERE plan_id = :p AND active AND interval = 'month'", ['p' => self::PLAN]);
+        $this->connection->executeStatement(
+            "INSERT INTO billing.subscription (id, artisan_id, plan_id, plan_price_id, interval, status, stripe_subscription_id, current_period_start, current_period_end, past_due_since, created_at, updated_at) VALUES ('0190f5e4-0000-7000-8000-0000000e6604', :a, :p, :price, 'month', 'suspended', 'sub_FICTIF_SUSP', now() - interval '20 days', now() + interval '10 days', now() - interval '9 days', now(), now())",
+            ['a' => $this->artisan, 'p' => self::PLAN, 'price' => $price],
+        );
+        $crawler = $this->client->request('GET', '/espace-pro/abonnement');
+        self::assertStringContainsString('Abonnement suspendu pour impayé', $crawler->filter('[role="alert"]')->text());
+        self::assertStringContainsString('Suspendu', $crawler->filter('.tm-psub__current .tm-pro-state')->text());
+    }
+
     public function testHistoryTabListsLedger(): void
     {
         $crawler = $this->client->request('GET', '/espace-pro/abonnement?onglet=historique');

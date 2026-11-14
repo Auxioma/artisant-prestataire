@@ -35,6 +35,13 @@ final readonly class DbalSubscriptionRepository implements SubscriptionRepositor
         return $this->one('SELECT * FROM billing.subscription WHERE artisan_id = :v AND status IN '.self::LIVE, $artisanId);
     }
 
+    public function inArrears(): array
+    {
+        $ids = $this->connection->fetchFirstColumn("SELECT id FROM billing.subscription WHERE status IN ('past_due', 'suspended') AND past_due_since IS NOT NULL ORDER BY past_due_since");
+
+        return array_values(array_filter(array_map(fn (mixed $id): ?Subscription => $this->find(new SubscriptionId(DbalValue::string($id))), $ids)));
+    }
+
     public function save(Subscription $subscription): void
     {
         $row = [

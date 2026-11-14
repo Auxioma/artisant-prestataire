@@ -60,4 +60,7 @@ interface PaymentGateway
 
     /** État courant d'une Subscription (statut, prix, période, résiliation programmée, métadonnées). */
     public function retrieveSubscription(string $subscriptionId): SubscriptionState;
+
+    /** Annulation immédiate (impayé au-delà de `billing.cancel_after_days`) ; sans effet si déjà annulée. */
+    public function cancelSubscription(string $subscriptionId, string $idempotencyKey): void;
 }

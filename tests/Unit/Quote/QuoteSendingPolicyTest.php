@@ -28,6 +28,7 @@ final class QuoteSendingPolicyTest extends TestCase
             [new SendingFacts(true, 1, 3, true, QuoteStatus::Sent, [$ok], 5), RefusalReason::AlreadySent, 'déjà envoyé'],
             [new SendingFacts(true, 1, 3, true, QuoteStatus::Draft, [$ok, $missing], 5), RefusalReason::MissingMentions, 'frais de déplacement'],
             [new SendingFacts(true, 1, 3, true, QuoteStatus::Draft, [$ok], 0), RefusalReason::NoCredit, 'plus de crédit'],
+            [new SendingFacts(true, 1, 3, true, QuoteStatus::Draft, [$ok], 5, subscriptionSuspended: true), RefusalReason::SubscriptionSuspended, 'suspendu pour impayé'],
         ];
         $policy = new QuoteSendingPolicy();
         foreach ($cases as [$facts, $reason, $message]) {

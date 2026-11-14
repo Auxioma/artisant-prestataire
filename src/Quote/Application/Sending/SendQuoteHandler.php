@@ -87,6 +87,7 @@ final readonly class SendQuoteHandler implements CommandHandler
             $quote->status(),
             $this->checker->check($content, QuoteEditorHandler::facts($issuer, $now), $this->mentions()),
             $balance?->total() ?? 0,
+            $this->credits->sendingSuspended($issuer->artisanId),
         ));
 
         // 4. Numéro, PDF figé, envoi de la v1.

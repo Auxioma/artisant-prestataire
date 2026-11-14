@@ -229,6 +229,7 @@ notifications:
         label: "Fin de période de grâce : abonnement suspendu"
         recipient: "Artisan"
         channels: [email, in_app]
+        variables: [prenom, forfait, jours, annulation, lien]
     'E-46':
         label: "Carte bientôt expirée"
         recipient: "Artisan"

@@ -13,4 +13,5 @@ enum RefusalReason: string
     case AlreadySent = 'already_sent';
     case MissingMentions = 'missing_mentions';
     case NoCredit = 'no_credit';
+    case SubscriptionSuspended = 'subscription_suspended';
 }

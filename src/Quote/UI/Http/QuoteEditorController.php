@@ -172,6 +172,9 @@ final class QuoteEditorController extends AbstractController
             if (RefusalReason::NoCredit === $e->reason) {
                 return $this->redirectToRoute('content_pricing', [], Response::HTTP_SEE_OTHER);
             }
+            if (RefusalReason::SubscriptionSuspended === $e->reason) {
+                return $this->redirectToRoute('pro_subscription', [], Response::HTTP_SEE_OTHER);
+            }
 
             return $this->redirectToRoute('pro_quote_new', ['demande' => $requestId], Response::HTTP_SEE_OTHER);
         }

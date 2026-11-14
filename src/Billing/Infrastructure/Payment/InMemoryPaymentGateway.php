@@ -95,6 +95,11 @@ final class InMemoryPaymentGateway implements PaymentGateway
         return $this->subscriptions[$subscriptionId] ?? throw new ExternalServiceUnavailable('stripe', 'abonnement inconnu');
     }
 
+    public function cancelSubscription(string $subscriptionId, string $idempotencyKey): void
+    {
+        $this->respond('subscription_cancel', $idempotencyKey, ['id' => $subscriptionId], $subscriptionId);
+    }
+
     public function reset(): void
     {
         [$this->responses, $this->calls, $this->configured, $this->failing, $this->promotionCodes, $this->subscriptions] = [[], [], true, false, [], []];

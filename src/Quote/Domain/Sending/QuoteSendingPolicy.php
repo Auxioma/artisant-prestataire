@@ -10,7 +10,8 @@ use App\Quote\Domain\Quote\QuoteStatus;
 
 /**
  * RG-101 — contrôle de l'envoi, dans l'ordre (a) demande ouverte, (b) places restantes (max figé), (c) artisan vérifié,
- * (d) aucun devis déjà envoyé sur la demande, (e) mentions obligatoires RG-120, (f) crédit disponible.
+ * (d) aucun devis déjà envoyé sur la demande, (e) mentions obligatoires RG-120, (f) abonnement non suspendu pour impayé
+ * (§4.3, RG-106), (g) crédit disponible.
  */
 final readonly class QuoteSendingPolicy
 {
@@ -31,6 +32,9 @@ final readonly class QuoteSendingPolicy
         $missing = array_values(array_filter(array_map(static fn (MentionCheck $c): ?string => $c->ok ? null : $c->missing, $facts->mentions)));
         if ([] !== $missing) {
             throw new QuoteSendingRefused(RefusalReason::MissingMentions, \sprintf(MandatoryMentionsChecker::MISSING_MESSAGE, implode(', ', $missing)));
+        }
+        if ($facts->subscriptionSuspended) {
+            throw new QuoteSendingRefused(RefusalReason::SubscriptionSuspended, 'Votre abonnement est suspendu pour impayé : réglez votre facture depuis « Mes abonnements » pour envoyer à nouveau des devis.');
         }
         if ($facts->creditsAvailable <= 0) {
             throw new QuoteSendingRefused(RefusalReason::NoCredit, 'Vous n’avez plus de crédit : souscrivez un forfait pour envoyer ce devis.');

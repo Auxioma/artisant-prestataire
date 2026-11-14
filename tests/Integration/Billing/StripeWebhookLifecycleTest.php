@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Integration\Billing;
 
 use App\Billing\Application\Credit\CreditLedger;
+use App\Billing\Application\Credit\QuoteCreditAccount;
 use App\Billing\Application\Payment\SyncPlanWithStripe;
 use App\Billing\Application\Plan\PlanAction;
 use App\Billing\Application\Plan\SavePlan;
 use App\Billing\Application\Port\SubscriptionState;
+use App\Billing\Application\Subscription\EnforceBillingGrace;
 use App\Billing\Application\Webhook\HandleStripeEvent;
 use App\Billing\Application\Webhook\HandleStripeEventHandler;
 use App\Billing\Application\Webhook\ProcessedEvents;
@@ -152,6 +154,36 @@ final class StripeWebhookLifecycleTest extends KernelTestCase
         $this->stripe('active', '2026-12-14', '2027-01-14');
         $this->receive('evt_f2', 'invoice.paid', self::invoice('in_2', 'subscription_cycle', '2026-12-14', '2027-01-14'));
         self::assertSame('active|false', $this->value("SELECT status || '|' || (past_due_since IS NOT NULL) FROM billing.subscription WHERE id = :s"));
+    }
+
+    public function testGraceThenSuspensionThenCancellation(): void
+    {
+        $this->stripe('active', '2026-11-14', '2026-12-14');
+        $this->receive('evt_1', 'invoice.paid', self::invoice('in_1', 'subscription_create', '2026-11-14', '2026-12-14'));
+        $this->stripe('past_due', '2026-11-14', '2026-12-14');
+        $this->receive('evt_g1', 'customer.subscription.updated', ['id' => 'sub_FICTIF']);
+        $commands = self::getContainer()->get(CommandBus::class);
+        $ledger = self::getContainer()->get(QuoteCreditAccount::class);
+        \assert($commands instanceof CommandBus && $ledger instanceof QuoteCreditAccount);
+
+        $commands->dispatch(new EnforceBillingGrace());
+        self::assertSame('past_due', $this->value('SELECT status FROM billing.subscription WHERE id = :s'), 'grâce en cours : envoi encore possible');
+        self::assertFalse($ledger->sendingSuspended(self::ARTISAN));
+
+        $this->connection->executeStatement("UPDATE billing.subscription SET past_due_since = now() - interval '8 days' WHERE id = :s", ['s' => self::SUB]);
+        $commands->dispatch(new EnforceBillingGrace());
+        $commands->dispatch(new EnforceBillingGrace());
+        self::assertSame('suspended', $this->value('SELECT status FROM billing.subscription WHERE id = :s'));
+        self::assertTrue($ledger->sendingSuspended(self::ARTISAN));
+        self::assertSame('1', $this->value("SELECT count(*) FROM notification.delivery WHERE code = 'E-45' AND channel = 'email'"), 'E-45 une seule fois');
+
+        $this->connection->executeStatement("UPDATE billing.subscription SET past_due_since = now() - interval '31 days' WHERE id = :s", ['s' => self::SUB]);
+        $commands->dispatch(new EnforceBillingGrace());
+        self::assertContains('subscription_cancel', array_column($this->gateway->calls, 0), 'impayé de plus de 30 jours : annulé chez Stripe');
+        $this->stripe('canceled', '2026-11-14', '2026-12-14');
+        $this->receive('evt_g2', 'customer.subscription.deleted', ['id' => 'sub_FICTIF']);
+        self::assertSame('cancelled', $this->value('SELECT status FROM billing.subscription WHERE id = :s'));
+        self::assertFalse($ledger->sendingSuspended(self::ARTISAN));
     }
 
     public function testUpgradeAddsTheDifferenceOnce(): void

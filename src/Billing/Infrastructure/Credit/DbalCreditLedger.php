@@ -124,6 +124,11 @@ final readonly class DbalCreditLedger implements CreditLedger, QuoteCreditAccoun
         return true;
     }
 
+    public function sendingSuspended(string $artisanId): bool
+    {
+        return false !== $this->connection->fetchOne("SELECT 1 FROM billing.subscription WHERE artisan_id = :a AND status = 'suspended'", ['a' => $artisanId]);
+    }
+
     public function lockForQuote(string $artisanId): ?CreditBalance
     {
         $row = $this->connection->fetchAssociative(

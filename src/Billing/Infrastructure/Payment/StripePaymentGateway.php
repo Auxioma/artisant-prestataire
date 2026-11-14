@@ -192,6 +192,18 @@ final class StripePaymentGateway implements PaymentGateway
         });
     }
 
+    public function cancelSubscription(string $subscriptionId, string $idempotencyKey): void
+    {
+        $this->call('subscription', static function (StripeClient $c) use ($subscriptionId, $idempotencyKey): string {
+            $current = $c->subscriptions->retrieve($subscriptionId);
+            if ('canceled' !== $current->status) {
+                $c->subscriptions->cancel($subscriptionId, ['invoice_now' => false, 'prorate' => false], ['idempotency_key' => $idempotencyKey]);
+            }
+
+            return $subscriptionId;
+        });
+    }
+
     /**
      * @template T
      *

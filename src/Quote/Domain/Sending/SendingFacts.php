@@ -19,6 +19,7 @@ final readonly class SendingFacts
         public QuoteStatus $quoteStatus,
         public array $mentions,
         public int $creditsAvailable,
+        public bool $subscriptionSuspended = false,
     ) {
     }
 }

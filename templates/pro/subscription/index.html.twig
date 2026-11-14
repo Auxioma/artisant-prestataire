@@ -70,6 +70,9 @@
         {% else %}
             {% set sub = view.subscription %}
             {% set plan = view.current %}
+            {% if sub and sub.status.value in ['past_due', 'suspended'] %}
+                <p class="tm-subscribe__notice is-error" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" />{{ sub.status.value == 'suspended' ? 'Abonnement suspendu pour impayé : l’envoi de devis est bloqué jusqu’au règlement de votre facture (lien dans l’e-mail reçu).' : 'Le dernier paiement a échoué : réglez votre facture (lien dans l’e-mail reçu) pour continuer à envoyer des devis après la période de grâce.' }}</p>
+            {% endif %}
             <div class="tm-psub__top">
                 <section class="tm-pro-card tm-psub__current" aria-labelledby="actuel-titre">
                     <span class="tm-psub__tag"><twig:Icon name="euro" size="xs" class="tm-icon--inherit" />Mon abonnement actuel</span>

@@ -64,6 +64,22 @@ final readonly class NotificationSubscriptionMailer implements SubscriptionMaile
         ], $link));
     }
 
+    public function suspended(string $userId, string $planName, int $graceDays, \DateTimeImmutable $cancelOn): void
+    {
+        $contact = $this->contact($userId);
+        if (null === $contact) {
+            return;
+        }
+        $link = $this->link();
+        $this->notifier->notify(new Notification('E-45', $contact->email, $userId, [
+            'prenom' => $contact->firstName,
+            'forfait' => $planName,
+            'jours' => $graceDays,
+            'annulation' => self::day($cancelOn),
+            'lien' => $link,
+        ], $link));
+    }
+
     private function contact(string $userId): ?UserContactDetails
     {
         $contact = $this->queries->ask(new UserContact($userId));

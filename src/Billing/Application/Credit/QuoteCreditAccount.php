@@ -15,6 +15,9 @@ interface QuoteCreditAccount
     /** Verrouille le compte (`FOR UPDATE`) et renvoie le solde par compartiment ; null si aucun compte. */
     public function lockForQuote(string $artisanId): ?CreditBalance;
 
+    /** RG-106 / §4.3 — abonnement suspendu pour impayé (grâce écoulée) : envoi de devis bloqué. */
+    public function sendingSuspended(string $artisanId): bool;
+
     /**
      * Débite 1 crédit pour ce devis, dans le premier compartiment non vide selon l'ordre donné (RG-104) ; idempotent par
      * devis (index unique du registre). Lève `InsufficientCredits` si aucun compartiment n'est approvisionné.
