@@ -40,6 +40,13 @@ final readonly class DbalSubscriptionReader implements SubscriptionReader
         return false === $id ? null : DbalValue::string($id);
     }
 
+    public function planNameOfPrice(string $planPriceId): ?string
+    {
+        $row = $this->connection->fetchAssociative('SELECT p.name, pp.interval FROM billing.plan_price pp JOIN billing.plan p ON p.id = pp.plan_id WHERE pp.id = :id', ['id' => $planPriceId]);
+
+        return false === $row ? null : DbalValue::string($row['name']).('year' === $row['interval'] ? ' (annuel)' : ' (mensuel)');
+    }
+
     public function priceByStripeId(string $stripePriceId): ?array
     {
         $row = $this->connection->fetchAssociative('SELECT plan_id, id, interval FROM billing.plan_price WHERE stripe_price_id = :s', ['s' => $stripePriceId]);

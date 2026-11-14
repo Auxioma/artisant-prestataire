@@ -100,6 +100,21 @@ final class InMemoryPaymentGateway implements PaymentGateway
         $this->respond('subscription_cancel', $idempotencyKey, ['id' => $subscriptionId], $subscriptionId);
     }
 
+    public function changeSubscriptionPrice(string $subscriptionId, string $priceId, string $prorationBehavior, string $idempotencyKey): void
+    {
+        $this->respond('subscription_price', $idempotencyKey, ['id' => $subscriptionId, 'price' => $priceId, 'proration' => $prorationBehavior], $subscriptionId);
+    }
+
+    public function scheduleSubscriptionPrice(string $subscriptionId, string $priceId, string $idempotencyKey): void
+    {
+        $this->respond('subscription_schedule', $idempotencyKey, ['id' => $subscriptionId, 'price' => $priceId], $subscriptionId);
+    }
+
+    public function setCancelAtPeriodEnd(string $subscriptionId, bool $cancel, string $idempotencyKey): void
+    {
+        $this->respond($cancel ? 'subscription_cancel_at_end' : 'subscription_resume', $idempotencyKey, ['id' => $subscriptionId], $subscriptionId);
+    }
+
     public function reset(): void
     {
         [$this->responses, $this->calls, $this->configured, $this->failing, $this->promotionCodes, $this->subscriptions] = [[], [], true, false, [], []];

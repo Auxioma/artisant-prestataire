@@ -48,6 +48,9 @@ final readonly class ProSubscriptionHandler implements QueryHandler
             $live->periodStart(),
             $live->periodEnd(),
             $live->cancelAtPeriodEnd(),
+            null === $live->scheduledPriceId() ? null : $this->reader->planNameOfPrice($live->scheduledPriceId()),
+            $live->scheduledOn(),
+            $live->planPriceId(),
         );
         $offered = array_values(array_filter(
             $this->plans->all(),

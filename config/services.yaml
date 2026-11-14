@@ -56,6 +56,7 @@ services:
             - '../src/Shared/Application/Billing/ArtisanBillingIdentityDetails.php'
             - '../src/Billing/Application/Checkout/{BillingDetails,CheckoutRejected,CheckoutPreview}.php'
             - '../src/Billing/Application/Webhook/{StripeEvent,InvalidWebhook}.php'
+            - '../src/Billing/Application/Subscription/{ChangePreview,SubscriptionChangeRejected,LedgerLine,SubscriptionSummary,ProSubscriptionView}.php'
             - '../src/Billing/Application/Port/{CheckoutRequest,CheckoutSession,PromotionCode,BillingAddress,SubscriptionState}.php'
             - '../src/Search/Application/Query/{Autocomplete,Suggestions}.php'
             - '../src/QuoteRequest/Application/Port/{RequestRiskInput,RequestRisk}.php'

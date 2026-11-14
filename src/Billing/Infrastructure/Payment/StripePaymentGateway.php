@@ -204,6 +204,65 @@ final class StripePaymentGateway implements PaymentGateway
         });
     }
 
+    public function changeSubscriptionPrice(string $subscriptionId, string $priceId, string $prorationBehavior, string $idempotencyKey): void
+    {
+        $this->call('subscription', static function (StripeClient $c) use ($subscriptionId, $priceId, $prorationBehavior, $idempotencyKey): string {
+            $subscription = self::releaseSchedule($c, $subscriptionId, $idempotencyKey);
+            $item = $subscription->items->data[0] ?? throw new \UnexpectedValueException('Abonnement sans ligne.');
+            $c->subscriptions->update($subscriptionId, [
+                'items' => [['id' => $item->id, 'price' => $priceId]],
+                'proration_behavior' => $prorationBehavior,
+                'payment_behavior' => 'pending_if_incomplete',
+            ], ['idempotency_key' => $idempotencyKey]);
+
+            return $subscriptionId;
+        });
+    }
+
+    public function scheduleSubscriptionPrice(string $subscriptionId, string $priceId, string $idempotencyKey): void
+    {
+        $this->call('subscription_schedule', static function (StripeClient $c) use ($subscriptionId, $priceId, $idempotencyKey): string {
+            $subscription = $c->subscriptions->retrieve($subscriptionId);
+            $item = $subscription->items->data[0] ?? throw new \UnexpectedValueException('Abonnement sans ligne.');
+            $scheduleId = \is_string($subscription->schedule) ? $subscription->schedule : ($subscription->schedule->id ?? null);
+            if (null === $scheduleId) {
+                $scheduleId = (string) $c->subscriptionSchedules->create(['from_subscription' => $subscriptionId], ['idempotency_key' => $idempotencyKey.'-schedule'])->id;
+            }
+            $c->subscriptionSchedules->update($scheduleId, [
+                'end_behavior' => 'release',
+                'phases' => [
+                    ['items' => [['price' => $item->price->id, 'quantity' => 1]], 'start_date' => $item->current_period_start, 'end_date' => $item->current_period_end],
+                    ['items' => [['price' => $priceId, 'quantity' => 1]], 'proration_behavior' => 'none'],
+                ],
+            ], ['idempotency_key' => $idempotencyKey]);
+
+            return $scheduleId;
+        });
+    }
+
+    public function setCancelAtPeriodEnd(string $subscriptionId, bool $cancel, string $idempotencyKey): void
+    {
+        $this->call('subscription', static function (StripeClient $c) use ($subscriptionId, $cancel, $idempotencyKey): string {
+            self::releaseSchedule($c, $subscriptionId, $idempotencyKey);
+            $c->subscriptions->update($subscriptionId, ['cancel_at_period_end' => $cancel], ['idempotency_key' => $idempotencyKey]);
+
+            return $subscriptionId;
+        });
+    }
+
+    /** Un abonnement piloté par un calendrier (changement programmé) n'accepte pas de modification directe. */
+    private static function releaseSchedule(StripeClient $c, string $subscriptionId, string $idempotencyKey): \Stripe\Subscription
+    {
+        $subscription = $c->subscriptions->retrieve($subscriptionId);
+        $scheduleId = \is_string($subscription->schedule) ? $subscription->schedule : ($subscription->schedule->id ?? null);
+        if (null !== $scheduleId) {
+            $c->subscriptionSchedules->release($scheduleId, [], ['idempotency_key' => $idempotencyKey.'-release']);
+            $subscription = $c->subscriptions->retrieve($subscriptionId);
+        }
+
+        return $subscription;
+    }
+
     /**
      * @template T
      *

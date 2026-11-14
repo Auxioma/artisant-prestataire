@@ -63,4 +63,16 @@ interface PaymentGateway
 
     /** Annulation immédiate (impayé au-delà de `billing.cancel_after_days`) ; sans effet si déjà annulée. */
     public function cancelSubscription(string $subscriptionId, string $idempotencyKey): void;
+
+    /**
+     * Changement de prix immédiat (montée de forfait, passage à l'annuel) avec le prorata `billing.proration_behavior` ;
+     * un changement programmé auparavant est abandonné.
+     */
+    public function changeSubscriptionPrice(string $subscriptionId, string $priceId, string $prorationBehavior, string $idempotencyKey): void;
+
+    /** Changement de prix à la prochaine échéance (descente de forfait, retour au mensuel), sans prorata. */
+    public function scheduleSubscriptionPrice(string $subscriptionId, string $priceId, string $idempotencyKey): void;
+
+    /** Résiliation en fin de période payée (vrai) ou annulation de cette résiliation (faux). */
+    public function setCancelAtPeriodEnd(string $subscriptionId, bool $cancel, string $idempotencyKey): void;
 }

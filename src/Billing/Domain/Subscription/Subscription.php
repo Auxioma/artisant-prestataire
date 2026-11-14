@@ -20,6 +20,8 @@ final class Subscription extends AggregateRoot
     private ?\DateTimeImmutable $periodEnd = null;
     private bool $cancelAtPeriodEnd = false;
     private ?\DateTimeImmutable $pastDueSince = null;
+    private ?string $scheduledPriceId = null;
+    private ?\DateTimeImmutable $scheduledOn = null;
 
     private function __construct(
         private readonly SubscriptionId $id,
@@ -38,7 +40,7 @@ final class Subscription extends AggregateRoot
     }
 
     /** Reconstitution depuis le stockage. */
-    public static function restore(SubscriptionId $id, string $artisanId, string $planId, string $planPriceId, BillingInterval $interval, SubscriptionStatus $status, ?string $stripeSubscriptionId, ?\DateTimeImmutable $periodStart, ?\DateTimeImmutable $periodEnd, bool $cancelAtPeriodEnd, \DateTimeImmutable $createdAt, \DateTimeImmutable $updatedAt, ?\DateTimeImmutable $pastDueSince = null): self
+    public static function restore(SubscriptionId $id, string $artisanId, string $planId, string $planPriceId, BillingInterval $interval, SubscriptionStatus $status, ?string $stripeSubscriptionId, ?\DateTimeImmutable $periodStart, ?\DateTimeImmutable $periodEnd, bool $cancelAtPeriodEnd, \DateTimeImmutable $createdAt, \DateTimeImmutable $updatedAt, ?\DateTimeImmutable $pastDueSince = null, ?string $scheduledPriceId = null, ?\DateTimeImmutable $scheduledOn = null): self
     {
         $subscription = new self($id, $artisanId, $planId, $planPriceId, $interval, $createdAt, $updatedAt);
         $subscription->status = $status;
@@ -47,6 +49,7 @@ final class Subscription extends AggregateRoot
         $subscription->periodEnd = $periodEnd;
         $subscription->cancelAtPeriodEnd = $cancelAtPeriodEnd;
         $subscription->pastDueSince = $pastDueSince;
+        [$subscription->scheduledPriceId, $subscription->scheduledOn] = null === $scheduledPriceId || null === $scheduledOn ? [null, null] : [$scheduledPriceId, $scheduledOn];
 
         return $subscription;
     }
@@ -100,6 +103,7 @@ final class Subscription extends AggregateRoot
     {
         $this->guardLive();
         $this->cancelAtPeriodEnd = true;
+        [$this->scheduledPriceId, $this->scheduledOn] = [null, null];
         $this->updatedAt = $now;
     }
 
@@ -118,7 +122,37 @@ final class Subscription extends AggregateRoot
     {
         $this->guardLive();
         [$this->planId, $this->planPriceId, $this->interval] = [$planId, $planPriceId, $interval];
+        if ($this->scheduledPriceId === $planPriceId) {
+            [$this->scheduledPriceId, $this->scheduledOn] = [null, null];
+        }
         $this->updatedAt = $now;
+    }
+
+    /** Descente de forfait ou retour au mensuel : effet à l'échéance (§4.3), en attendant affiché sur PR11. */
+    public function scheduleChange(string $planPriceId, \DateTimeImmutable $on, \DateTimeImmutable $now): void
+    {
+        $this->guardLive();
+        if ($this->cancelAtPeriodEnd) {
+            throw new SubscriptionRuleViolation('Une résiliation est programmée : annulez-la avant de changer de forfait.');
+        }
+        [$this->scheduledPriceId, $this->scheduledOn] = [$planPriceId, $on];
+        $this->updatedAt = $now;
+    }
+
+    public function clearScheduledChange(\DateTimeImmutable $now): void
+    {
+        [$this->scheduledPriceId, $this->scheduledOn] = [null, null];
+        $this->updatedAt = $now;
+    }
+
+    public function scheduledPriceId(): ?string
+    {
+        return $this->scheduledPriceId;
+    }
+
+    public function scheduledOn(): ?\DateTimeImmutable
+    {
+        return $this->scheduledOn;
     }
 
     public function cancel(\DateTimeImmutable $now): void

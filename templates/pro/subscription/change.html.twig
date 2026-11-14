@@ -1,0 +1,36 @@
+{#-
+    PR11.3 — changement de formule : récapitulatif (formule actuelle → nouvelle, prix HT, effet immédiat au prorata ou à
+    l'échéance, crédits ajoutés) puis confirmation. Pas de maquette dédiée : composants de PR12 (17:2). Écarts : P-100.
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'subscription' %}
+{% set per = {month: 'mois', year: 'an'} %}
+{% block title %}Changer de formule — Espace pro — TrouveMoi{% endblock %}
+{% block space_content %}
+<div class="tm-psub tm-subscribe">
+    <header class="tm-subscribe__head">
+        <h1>Changer de formule</h1>
+        <p>Vérifiez le changement avant de le confirmer. Il est transmis à notre prestataire de paiement sécurisé.</p>
+    </header>
+    <section class="tm-pro-card tm-subscribe__summary" aria-labelledby="change-titre">
+        <h2 id="change-titre" class="tm-subscribe__title">Résumé du changement</h2>
+        <dl class="tm-subscribe__recap">
+            <div><dt>Formule actuelle</dt><dd>{{ preview.currentPlanName }} — {{ preview.currentPriceCents|tm_money }} HT / {{ per[preview.currentInterval.value] }}</dd></div>
+            <div><dt>Nouvelle formule</dt><dd>{{ preview.target.terms.name }} — {{ preview.priceCents|tm_money }} HT / {{ per[preview.interval.value] }}</dd></div>
+            <div><dt>Prise d’effet</dt><dd>
+                {% if preview.immediate %}Immédiate<span>Le montant est ajusté au prorata de la période en cours et facturé selon les conditions de votre abonnement.</span>
+                {% else %}Le {{ preview.effectiveOn ? preview.effectiveOn|date('d/m/Y', 'Europe/Paris') : 'prochain renouvellement' }}<span>Votre formule actuelle et ses crédits restent valables jusque-là ; aucun prorata.</span>{% endif %}
+            </dd></div>
+            <div><dt>Crédits</dt><dd>
+                {{ preview.target.terms.unlimited ? 'Devis illimités (usage raisonnable)' : preview.target.terms.quotesPerPeriod ~ ' devis par période' }}
+                {% if preview.creditsAdded > 0 %}<span>{{ preview.creditsAdded }} devis ajoutés dès maintenant à votre période en cours.</span>{% endif %}
+            </dd></div>
+        </dl>
+        <form method="post" action="{{ path('pro_subscription_change', query) }}" class="tm-subscribe__actions">
+            <input type="hidden" name="_token" value="{{ csrf_token('pro_subscription_action') }}">
+            <twig:Button href="{{ path('pro_subscription') }}" variant="secondary">Annuler</twig:Button>
+            <twig:Button type="submit" icon="check" iconPosition="start">Confirmer le changement</twig:Button>
+        </form>
+    </section>
+</div>
+{% endblock %}

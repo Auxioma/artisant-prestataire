@@ -392,4 +392,15 @@
     @media (min-width: 1024px) {
         .tm-subscribe__grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
     }
+
+    /* PR11.3 — actions d'abonnement (T-603c). */
+    .tm-psub__scheduled { display: flex; align-items: flex-start; gap: 6px; color: var(--tm-navy); }
+    .tm-psub__scheduled svg { flex: none; margin-top: 2px; }
+    .tm-psub__manage { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-size: 13px; }
+    .tm-psub__manage a { font-weight: var(--font-weight-semibold); }
+    .tm-psub__leave { color: var(--color-danger-text); }
+    .tm-subscribe__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+    .tm-subscribe__reasons { display: grid; gap: 8px; margin: 0; padding: 0; border: 0; }
+    .tm-subscribe__reasons legend { margin-bottom: 8px; }
+    .tm-subscribe__reasons legend span { font-size: 13px; font-weight: var(--font-weight-regular); color: var(--color-text-muted); }
 }

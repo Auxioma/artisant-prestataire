@@ -13,6 +13,9 @@ interface SubscriptionReader
 
     public function userOfArtisan(string $artisanId): ?string;
 
+    /** Nom du forfait d'un prix (« Pro — annuel »). */
+    public function planNameOfPrice(string $planPriceId): ?string;
+
     /**
      * Prix de forfait correspondant à un prix Stripe.
      *

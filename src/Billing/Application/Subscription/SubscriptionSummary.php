@@ -19,6 +19,9 @@ final readonly class SubscriptionSummary
         public ?\DateTimeImmutable $periodStart,
         public ?\DateTimeImmutable $periodEnd,
         public bool $cancelAtPeriodEnd,
+        public ?string $scheduledPlanName = null,
+        public ?\DateTimeImmutable $scheduledOn = null,
+        public ?string $currentPriceId = null,
     ) {
     }
 

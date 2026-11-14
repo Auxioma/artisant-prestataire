@@ -108,6 +108,24 @@
                                 <progress max="{{ sub.totalDays() }}" value="{{ elapsed }}">{{ elapsed }} jours sur {{ sub.totalDays() }}</progress>
                             </div>
                         {% endif %}
+                        {% if sub.scheduledOn %}
+                            <p class="tm-psub__note tm-psub__scheduled"><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />Changement programmé le {{ sub.scheduledOn|date('d/m/Y', 'Europe/Paris') }} : {{ sub.scheduledPlanName }}.</p>
+                        {% endif %}
+                        {% if sub.status.value == 'active' %}
+                            <div class="tm-psub__manage">
+                                {% if sub.cancelAtPeriodEnd %}
+                                    <form method="post" action="{{ path('pro_subscription_resume') }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('pro_subscription_action') }}">
+                                        <twig:Button type="submit" variant="secondary" icon="refresh" iconPosition="start">Annuler la résiliation</twig:Button>
+                                    </form>
+                                {% else %}
+                                    {% if sub.interval.value == 'month' and plan and plan.yearlyCents is not null %}
+                                        <a href="{{ path('pro_subscription_change', {forfait: plan.id, periode: 'an'}) }}">Passer en annuel ({{ plan.yearlyCents|tm_money }} HT / an)</a>
+                                    {% endif %}
+                                    <a href="{{ path('pro_subscription_cancel') }}" class="tm-psub__leave">Résilier</a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                     {% else %}
                         <p class="tm-psub__price"><strong>Gratuit</strong> <span>(sans engagement, sans carte bancaire)</span></p>
                         <div class="tm-psub__period">
@@ -166,8 +184,9 @@
                                     </ul>
                                     {% if current %}
                                         <span class="tm-psub__chosen">Formule actuelle</span>
-                                    {% elseif tm_route_exists('pro_subscribe') and p.monthlyCents is not null %}
-                                        <twig:Button href="{{ path('pro_subscribe', {forfait: p.id, periode: 'mois'}) }}" variant="secondary">Choisir<span class="tm-visually-hidden"> la formule {{ p.terms.name }}</span></twig:Button>
+                                    {% elseif p.monthlyCents is not null %}
+                                        {% set target = view.subscription ? path('pro_subscription_change', {forfait: p.id, periode: 'mois'}) : path('pro_subscribe', {forfait: p.id, periode: 'mois'}) %}
+                                        <twig:Button href="{{ target }}" variant="secondary">Choisir<span class="tm-visually-hidden"> la formule {{ p.terms.name }}</span></twig:Button>
                                     {% else %}
                                         <span class="tm-psub__chosen">Souscription bientôt disponible</span>
                                     {% endif %}
