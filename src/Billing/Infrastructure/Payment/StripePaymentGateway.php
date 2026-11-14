@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Billing\Infrastructure\Payment;
 
+use App\Billing\Application\Port\BillingAddress;
+use App\Billing\Application\Port\CheckoutRequest;
+use App\Billing\Application\Port\CheckoutSession;
 use App\Billing\Application\Port\PaymentGateway;
+use App\Billing\Application\Port\PromotionCode;
 use App\Billing\Domain\Plan\BillingInterval;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
 use Psr\Log\LoggerInterface;
@@ -96,10 +100,79 @@ final class StripePaymentGateway implements PaymentGateway
         $this->call('price', static fn (StripeClient $c): string => $c->prices->update($priceId, ['active' => false], ['idempotency_key' => $idempotencyKey])->id);
     }
 
+    public function updateCustomerBilling(string $customerId, BillingAddress $address, string $idempotencyKey): void
+    {
+        $this->call('customer', static function (StripeClient $c) use ($customerId, $address, $idempotencyKey): string {
+            $c->customers->update($customerId, [
+                'name' => $address->name,
+                'address' => ['line1' => $address->street, 'postal_code' => $address->postalCode, 'city' => $address->city, 'country' => $address->country],
+            ], ['idempotency_key' => $idempotencyKey]);
+            if (null !== $address->vatNumber) {
+                $known = array_map(static fn ($t): string => (string) $t->value, $c->customers->allTaxIds($customerId, ['limit' => 20])->data);
+                if (!\in_array($address->vatNumber, $known, true)) {
+                    $c->customers->createTaxId($customerId, ['type' => 'eu_vat', 'value' => $address->vatNumber], ['idempotency_key' => $idempotencyKey.'-tva']);
+                }
+            }
+
+            return $customerId;
+        });
+    }
+
+    public function findPromotionCode(string $code): ?PromotionCode
+    {
+        return $this->call('promotion_code', static function (StripeClient $c) use ($code): ?PromotionCode {
+            $found = $c->promotionCodes->all(['code' => $code, 'active' => true, 'limit' => 1, 'expand' => ['data.coupon']])->data[0] ?? null;
+            if (null === $found) {
+                return null;
+            }
+            $coupon = $found->coupon;
+            $value = null !== $coupon->percent_off
+                ? '−'.rtrim(rtrim(number_format((float) $coupon->percent_off, 2, ',', ''), '0'), ',').' %'
+                : '−'.number_format(((int) $coupon->amount_off) / 100, 2, ',', ' ').' €';
+            $duration = match ($coupon->duration) {
+                'once' => 'sur la première échéance',
+                'repeating' => 'pendant '.(int) $coupon->duration_in_months.' mois',
+                default => 'pendant toute la durée de l’abonnement',
+            };
+
+            return new PromotionCode((string) $found->id, (string) $found->code, $value.' '.$duration);
+        });
+    }
+
+    public function createSubscriptionCheckout(CheckoutRequest $request): CheckoutSession
+    {
+        return $this->call('checkout', static function (StripeClient $c) use ($request): CheckoutSession {
+            $params = [
+                'mode' => 'subscription',
+                'customer' => $request->customerId,
+                'client_reference_id' => $request->clientReference,
+                'line_items' => [['price' => $request->priceId, 'quantity' => 1]],
+                'success_url' => $request->successUrl,
+                'cancel_url' => $request->cancelUrl,
+                'locale' => 'fr',
+                'automatic_tax' => ['enabled' => $request->automaticTax],
+                'customer_update' => ['address' => 'auto', 'name' => 'auto'],
+                'billing_address_collection' => 'required',
+                'metadata' => $request->metadata,
+                'subscription_data' => ['metadata' => $request->metadata],
+            ];
+            if (null !== $request->promotionCodeId) {
+                $params['discounts'] = [['promotion_code' => $request->promotionCodeId]];
+            }
+            $session = $c->checkout->sessions->create($params, ['idempotency_key' => $request->idempotencyKey]);
+
+            return new CheckoutSession((string) $session->id, (string) $session->url);
+        });
+    }
+
     /**
-     * @param callable(StripeClient): string $request
+     * @template T
+     *
+     * @param callable(StripeClient): T $request
+     *
+     * @return T
      */
-    private function call(string $object, callable $request): string
+    private function call(string $object, callable $request): mixed
     {
         if (!$this->isConfigured()) {
             throw new ExternalServiceUnavailable(self::SERVICE, 'clé secrète non configurée');

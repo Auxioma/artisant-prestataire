@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Billing\Infrastructure\Payment;
 
+use App\Billing\Application\Port\BillingAddress;
+use App\Billing\Application\Port\CheckoutRequest;
+use App\Billing\Application\Port\CheckoutSession;
 use App\Billing\Application\Port\PaymentGateway;
+use App\Billing\Application\Port\PromotionCode;
 use App\Billing\Domain\Plan\BillingInterval;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
 
@@ -51,9 +55,36 @@ final class InMemoryPaymentGateway implements PaymentGateway
         $this->respond('price_off', $idempotencyKey, ['id' => $priceId], $priceId);
     }
 
+    /** @var array<string, PromotionCode> codes promo actifs (saisie en majuscules → code) */
+    public array $promotionCodes = [];
+
+    public function updateCustomerBilling(string $customerId, BillingAddress $address, string $idempotencyKey): void
+    {
+        $this->respond('customer_update', $idempotencyKey, ['id' => $customerId, 'name' => $address->name, 'country' => $address->country, 'vat' => $address->vatNumber], $customerId);
+    }
+
+    public function findPromotionCode(string $code): ?PromotionCode
+    {
+        if (!$this->configured) {
+            throw new ExternalServiceUnavailable('stripe', 'clé secrète non configurée');
+        }
+
+        return $this->promotionCodes[strtoupper($code)] ?? null;
+    }
+
+    public function createSubscriptionCheckout(CheckoutRequest $request): CheckoutSession
+    {
+        if (!$this->configured) {
+            throw new ExternalServiceUnavailable('stripe', 'clé secrète non configurée');
+        }
+        $id = $this->respond('checkout', $request->idempotencyKey, ['customer' => $request->customerId, 'price' => $request->priceId, 'reference' => $request->clientReference, 'tax' => $request->automaticTax, 'promotion' => $request->promotionCodeId, 'metadata' => $request->metadata, 'success' => $request->successUrl]);
+
+        return new CheckoutSession($id, 'https://checkout.stripe.test/'.$id);
+    }
+
     public function reset(): void
     {
-        [$this->responses, $this->calls, $this->configured, $this->failing] = [[], [], true, false];
+        [$this->responses, $this->calls, $this->configured, $this->failing, $this->promotionCodes] = [[], [], true, false, []];
     }
 
     /** @param array<string, mixed> $params */

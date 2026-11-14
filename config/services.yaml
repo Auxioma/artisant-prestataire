@@ -53,6 +53,9 @@ services:
             - '../src/Shared/Infrastructure/DependencyInjection/'
             - '../src/Catalog/Application/Geo/Port/GeocodedAddress.php'
             - '../src/Billing/Application/Port/VatNumberCheck.php'
+            - '../src/Shared/Application/Billing/ArtisanBillingIdentityDetails.php'
+            - '../src/Billing/Application/Checkout/{BillingDetails,CheckoutRejected,CheckoutPreview}.php'
+            - '../src/Billing/Application/Port/{CheckoutRequest,CheckoutSession,PromotionCode,BillingAddress}.php'
             - '../src/Search/Application/Query/{Autocomplete,Suggestions}.php'
             - '../src/QuoteRequest/Application/Port/{RequestRiskInput,RequestRisk}.php'
             - '../src/QuoteRequest/Application/Dispatch/{DispatchTarget,DispatchSummary,PendingDigest}.php'
@@ -153,6 +156,7 @@ services:
     App\Billing\Application\Port\PaymentGateway: '@App\Billing\Infrastructure\Payment\StripePaymentGateway'
     App\Billing\Domain\Subscription\SubscriptionRepository: '@App\Billing\Infrastructure\Subscription\DbalSubscriptionRepository'
     App\Billing\Application\Subscription\SubscriptionReader: '@App\Billing\Infrastructure\Subscription\DbalSubscriptionReader'
+    App\Billing\Application\Checkout\BillingProfiles: '@App\Billing\Infrastructure\Checkout\DbalBillingProfiles'
     App\Billing\Application\Payment\StripePriceLinks: '@App\Billing\Infrastructure\Payment\DbalStripeLinks'
     App\Billing\Application\Payment\StripeCustomerAccounts: '@App\Billing\Infrastructure\Payment\DbalStripeLinks'
 
@@ -280,6 +284,8 @@ when@test:
             class: Symfony\Component\Cache\Adapter\ArrayAdapter
         App\Shared\Application\Integration\CompanyRegistry:
             class: App\Tests\Support\Fake\FakeCompanyRegistry
+        App\Billing\Application\Port\VatNumberChecker:
+            class: App\Tests\Support\Fake\FakeVatNumberChecker
         App\Catalog\Application\Geo\Port\AddressGeocoder:
             class: App\Tests\Support\Fake\FakeAddressGeocoder
         # Antivirus de test (reconnaît la chaîne EICAR) ; ClamAvScanner réel couvert par ClamAvScannerTest.

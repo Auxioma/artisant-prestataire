@@ -49,4 +49,12 @@ interface PaymentGateway
     public function createPrice(string $productId, int $amountCents, BillingInterval $interval, array $metadata, string $idempotencyKey): string;
 
     public function deactivatePrice(string $priceId, string $idempotencyKey): void;
+
+    /** Nom, adresse et n° de TVA intracommunautaire du client (ajouté une seule fois). */
+    public function updateCustomerBilling(string $customerId, BillingAddress $address, string $idempotencyKey): void;
+
+    /** Code promo actif correspondant à la saisie, ou null s'il n'existe pas, a expiré ou est épuisé. */
+    public function findPromotionCode(string $code): ?PromotionCode;
+
+    public function createSubscriptionCheckout(CheckoutRequest $request): CheckoutSession;
 }
