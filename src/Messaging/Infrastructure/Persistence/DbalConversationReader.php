@@ -20,7 +20,8 @@ final readonly class DbalConversationReader implements ConversationReader
 {
     private const string UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
     private const string ROWS = <<<'SQL'
-        SELECT c.id, c.kind, c.request_id, c.artisan_id, c.blocked_by, c.last_message_at, p.archived, p.last_read_at,
+        SELECT c.id, c.kind, c.request_id, c.artisan_id, c.blocked_by, c.last_message_at, p.archived, p.last_read_at, p.note,
+               EXISTS (SELECT 1 FROM quote.quote aq WHERE aq.request_id = c.request_id AND aq.artisan_id = c.artisan_id AND aq.status = 'accepted') AS is_client,
                (c.client_user_id = :u) AS as_client,
                CASE WHEN c.client_user_id = :u THEN coalesce(a.trade_name, a.company_name, 'Professionnel') ELSE coalesce(u.first_name, 'Client') END AS name,
                CASE WHEN c.client_user_id = :u AND a.logo_file_id IS NOT NULL AND a.status = 'verified' AND a.hidden_at IS NULL THEN a.id END AS logo,
@@ -47,6 +48,8 @@ final readonly class DbalConversationReader implements ConversationReader
         $where = match ($filter) {
             'archived' => 't.archived',
             'unread' => 'NOT t.archived AND t.unread > 0',
+            'clients' => 'NOT t.archived AND t.is_client',
+            'prospects' => 'NOT t.archived AND NOT t.is_client',
             default => 'NOT t.archived',
         };
         $params = ['u' => $userId, 'limit' => $perPage, 'offset' => ($page - 1) * $perPage];
@@ -119,7 +122,49 @@ final readonly class DbalConversationReader implements ConversationReader
             true === $t['archived'],
             $blocked,
             $messages,
+            DbalValue::nullableString($t['note']),
         );
+    }
+
+    public function counts(string $userId): array
+    {
+        $zero = ['all' => 0, 'unread' => 0, 'clients' => 0, 'prospects' => 0, 'archived' => 0];
+        if (1 !== preg_match(self::UUID, $userId)) {
+            return $zero;
+        }
+        $r = $this->connection->fetchAssociative(
+            'SELECT count(*) FILTER (WHERE NOT t.archived) AS "all", count(*) FILTER (WHERE NOT t.archived AND t.unread > 0) AS unread,'
+            .' count(*) FILTER (WHERE NOT t.archived AND t.is_client) AS clients, count(*) FILTER (WHERE NOT t.archived AND NOT t.is_client) AS prospects,'
+            .' count(*) FILTER (WHERE t.archived) AS archived FROM ('.self::ROWS.') t',
+            ['u' => $userId],
+        );
+
+        return false === $r ? $zero : array_map(static fn (mixed $v): int => DbalValue::int($v), array_intersect_key($r, $zero)) + $zero;
+    }
+
+    public function averageResponseMinutes(string $artisanId, \DateTimeImmutable $since, int $minSamples): ?int
+    {
+        if (1 !== preg_match(self::UUID, $artisanId)) {
+            return null;
+        }
+        // Par conversation : premier message du client, puis première réponse de l'artisan qui le suit.
+        $r = $this->connection->fetchAssociative(
+            <<<'SQL'
+                SELECT count(*) AS samples, avg(extract(epoch FROM f.answered_at - f.asked_at)) / 60 AS minutes FROM (
+                    SELECT q.created_at AS asked_at,
+                           (SELECT min(a.created_at) FROM messaging.message a WHERE a.conversation_id = c.id AND a.sender_user_id = c.artisan_user_id AND a.created_at >= q.created_at) AS answered_at
+                    FROM messaging.conversation c
+                    JOIN LATERAL (SELECT min(m.created_at) AS created_at FROM messaging.message m WHERE m.conversation_id = c.id AND m.sender_user_id = c.client_user_id) q ON q.created_at IS NOT NULL
+                    WHERE c.artisan_id = :a AND q.created_at >= :since
+                ) f WHERE f.answered_at IS NOT NULL
+                SQL,
+            ['a' => $artisanId, 'since' => $since->format(\DATE_ATOM)],
+        );
+        if (false === $r || DbalValue::int($r['samples']) < $minSamples || null === $r['minutes']) {
+            return null;
+        }
+
+        return max(1, (int) round((float) DbalValue::string($r['minutes'])));
     }
 
     public function unreadCount(string $userId): int

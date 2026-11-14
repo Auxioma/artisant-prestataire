@@ -1,0 +1,11 @@
+{#- C04.1 / PR07 — onglets de filtre des conversations (compteurs côté pro). -#}
+{% set route = space ~ '_messages' %}
+{% set tabs = list_tabs ?? {all: {label: 'Tous'}, unread: {label: 'Non lus'}, archived: {label: 'Archives'}} %}
+<nav class="tm-msg-list__tabs{{ (tabs_bar ?? false) ? ' tm-msg-list__tabs--bar' }}" aria-label="Filtrer les conversations">
+    {% for key, tab in tabs %}
+        <a href="{{ path(route, key == 'all' ? {} : {filtre: key}) }}"{% if filter == key %} aria-current="page"{% endif %}>
+            {%- if tab.icon is defined %}<twig:Icon name="{{ tab.icon }}" size="xs" class="tm-icon--inherit" />{% endif %}{{ tab.label }}
+            {%- if list_tabs is defined and list %} ({{ list.counts[key] ?? 0 }}){% elseif key == 'unread' and list and list.unread > 0 %} ({{ list.unread }})<span class="tm-msg-dot" aria-hidden="true"></span>{% endif -%}
+        </a>
+    {% endfor %}
+</nav>

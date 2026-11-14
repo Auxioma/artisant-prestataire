@@ -19,6 +19,7 @@ use App\Search\Application\Artisan\ArtisanSearchResult;
 use App\Search\Application\Artisan\SearchArtisans;
 use App\Search\UI\Twig\ArtisanUrlExtension;
 use App\Shared\Application\Bus\QueryBus;
+use App\Shared\Application\Messaging\ArtisanResponseTime;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -65,6 +66,7 @@ final class ArtisanProfilePageController extends AbstractController
             'clients' => PublicPresentation::CLIENTS,
             'hours_days' => OpeningHours::DAYS,
             'photo_kinds' => PortfolioEditor::KINDS,
+            'response_minutes' => $this->queries->ask(new ArtisanResponseTime($id)),
         ]);
     }
 

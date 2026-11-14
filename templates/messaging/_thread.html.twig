@@ -15,6 +15,16 @@
     {% if thread.blocked %}
         <p class="tm-msg-thread__blocked"><twig:Icon name="lock" size="sm" class="tm-icon--inherit" />{{ thread.blocked == 'me' ? 'Vous avez bloqué cet interlocuteur.' : 'Cet interlocuteur a fermé la conversation.' }}</p>
     {% else %}
+        {% if quick_replies is defined and quick_replies is not empty %}
+            <details class="tm-msg-quick" data-controller="quick-reply" data-quick-reply-field-value="message">
+                <summary><twig:Icon name="bulb" size="xs" class="tm-icon--inherit" />Réponses types</summary>
+                <ul>
+                    {% for reply in quick_replies %}
+                        <li><button type="button" data-action="quick-reply#insert" data-quick-reply-text-param="{{ reply.body }}" title="{{ reply.body|length > 120 ? reply.body|slice(0, 119) ~ '…' : reply.body }}">{{ reply.title }}</button></li>
+                    {% endfor %}
+                </ul>
+            </details>
+        {% endif %}
         <form method="post" action="{{ path(space ~ '_conversation_send', {id: thread.id}) }}" class="tm-msg-composer">
             <input type="hidden" name="_token" value="{{ csrf_token('messaging') }}">
             <label class="tm-visually-hidden" for="message">Votre message</label>

@@ -9,6 +9,8 @@ use Doctrine\DBAL\Connection;
 
 final readonly class DbalParticipantStates implements ParticipantStates
 {
+    private const string UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
+
     public function __construct(private Connection $connection)
     {
     }
@@ -44,9 +46,18 @@ final readonly class DbalParticipantStates implements ParticipantStates
         );
     }
 
+    public function saveNote(string $conversationId, string $userId, ?string $note): bool
+    {
+        if (1 !== preg_match(self::UUID, $conversationId)) {
+            return false;
+        }
+
+        return 1 === (int) $this->connection->executeStatement('UPDATE messaging.participant SET note = :n WHERE conversation_id = :c AND user_id = :u', ['n' => $note, 'c' => $conversationId, 'u' => $userId]);
+    }
+
     public function report(string $messageId, string $userId, string $reason, \DateTimeImmutable $at): bool
     {
-        if (1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $messageId)) {
+        if (1 !== preg_match(self::UUID, $messageId)) {
             return false;
         }
 

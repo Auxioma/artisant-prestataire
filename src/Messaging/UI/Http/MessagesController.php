@@ -75,7 +75,17 @@ abstract class MessagesController extends AbstractController
             'filter' => $filter,
             'q' => $request->query->getString('q'),
             'space' => $this->space(),
-        ]);
+        ] + $this->extra($userId));
+    }
+
+    /**
+     * Données propres à l'espace (réponses types de l'artisan…).
+     *
+     * @return array<string, mixed>
+     */
+    protected function extra(string $userId): array
+    {
+        return [];
     }
 
     protected function fragment(string $conversationId): Response

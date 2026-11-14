@@ -51,6 +51,7 @@
                         {% elseif p.areaMode == 'list' %}<li><twig:Icon name="locate" size="xs" />Intervient sur {{ (departments|length + p.areaCommunesCount) }} zone{{ (departments|length + p.areaCommunesCount) > 1 ? 's' }}</li>{% endif %}
                         {% if p.companyCreatedOn %}<li><twig:Icon name="building" size="xs" />Entreprise créée en {{ p.companyCreatedOn|date('Y') }}</li>{% endif %}
                         <li><twig:Icon name="calendar" size="xs" />Sur TrouveMoi depuis {{ p.memberSince|date('Y', 'Europe/Paris') }}</li>
+                        {% if response_minutes ?? null %}<li><twig:Icon name="clock" size="xs" />Répond en moyenne en {{ response_minutes < 60 ? response_minutes ~ ' min' : (response_minutes < 1440 ? (response_minutes / 60)|round ~ ' h' : (response_minutes / 1440)|round ~ ' j') }}</li>{% endif %}
                     </ul>
                 </div>
             </header>

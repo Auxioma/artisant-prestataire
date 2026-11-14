@@ -76,6 +76,9 @@
                     <p class="tm-pro-detail__ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Devis {{ sent_quote.number }} {{ {sent: 'envoyé au client', viewed: 'consulté par le client', accepted: 'accepté par le client'}[sent_quote.status] ?? sent_quote.label|lower }}.</p>
                 {% endif %}
                 <twig:Button href="{{ path('pro_quote_new', {demande: r.id}) }}" block>Voir mon devis</twig:Button>
+                {% if sent_quote.status != 'withdrawn' and tm_route_exists('pro_message_new') %}
+                    <twig:Button href="{{ path('pro_message_new', {demande: r.id}) }}" variant="soft" icon="msg" iconPosition="start" block>Écrire au client</twig:Button>
+                {% endif %}
                 {% set contact = sent_quote.status == 'accepted' ? tm_pro_client_contact(r.id) : null %}
                 {% if contact %}
                     <section class="tm-pro-contact" aria-labelledby="contact-title">
@@ -102,8 +105,8 @@
                     <twig:Button variant="primary" disabled block>Créer un devis</twig:Button>
                     <p class="tm-caption">La rédaction des devis en ligne arrive très prochainement.</p>
                 {% endif %}
-                {% if tm_route_exists('pro_request_question') %}
-                    <twig:Button href="{{ path('pro_request_question', {id: r.id}) }}" variant="soft" block>Poser une question</twig:Button>
+                {% if tm_route_exists('pro_message_new') %}
+                    <twig:Button href="{{ path('pro_message_new', {demande: r.id}) }}" variant="soft" icon="msg" iconPosition="start" block>Poser une question</twig:Button>
                 {% endif %}
             {% endif %}
 

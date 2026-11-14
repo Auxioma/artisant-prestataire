@@ -1,6 +1,6 @@
 /*
  * Messagerie C04 (Figma 160:644) et PR07 (232:13464), mêmes composants : liste des conversations, fil, encart de
- * l'interlocuteur. Mobile d'abord : la liste, puis le fil seul quand une conversation est ouverte ; trois colonnes à
+ * l'interlocuteur ; PR07 ajoute notes privées et réponses types. Mobile d'abord : la liste, puis le fil seul quand une conversation est ouverte ; trois colonnes à
  * partir de 1280 px (liste, fil, encart), deux à partir de 900 px.
  */
 @layer components {
@@ -24,6 +24,11 @@
     .tm-msg-list__tabs { display: flex; flex-wrap: wrap; gap: 6px; }
     .tm-msg-list__tabs a { display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; border-radius: var(--radius-pill); color: var(--tm-blue); font-size: 13px; font-weight: var(--font-weight-semibold); text-decoration: none; }
     .tm-msg-list__tabs a[aria-current="page"] { background: var(--tm-blue-deep); color: var(--color-text-inverse); }
+    /* PR07 : barre d'onglets au-dessus de la liste et du fil, boutons bordés de même largeur */
+    .tm-msg-list__tabs--bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 8px; }
+    .tm-msg-list__tabs--bar a { justify-content: center; gap: 8px; padding: 9px 12px; border: 1px solid var(--tm-line); border-radius: 10px; color: var(--tm-navy); font-size: 14px; }
+    .tm-msg-list__tabs--bar a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-msg-page.has-thread .tm-msg-list__tabs--bar { display: none; }
     .tm-msg-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tm-orange); }
     .tm-msg-list__items { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
     .tm-msg-row { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; color: var(--tm-navy); text-decoration: none; }
@@ -83,18 +88,53 @@
     .tm-msg-aside__actions button { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border: 0; background: none; color: var(--tm-navy); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
     .tm-msg-aside__actions button:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 6px; }
 
+    /* PR07 — encart client, notes privées, réponses types */
+    .tm-msg-side { display: grid; gap: var(--space-4); align-content: start; }
+    .tm-msg-aside__status { justify-self: center; }
+    .tm-msg-aside__links { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .tm-msg-aside__links a { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border: 1px solid var(--tm-line); border-radius: 10px; color: var(--tm-navy); font-size: 14px; font-weight: var(--font-weight-semibold); text-decoration: none; }
+    .tm-msg-aside__links a:hover { background: var(--tm-blue-soft); }
+    .tm-msg-aside__links a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-msg-aside__hint { font-size: 13px; color: var(--color-text-muted); }
+    .tm-msg-note, .tm-msg-replies { gap: 10px; }
+    .tm-msg-note h2, .tm-msg-replies h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 17px; color: var(--tm-navy); }
+    .tm-msg-note__picto { color: var(--tm-orange); }
+    .tm-msg-note { position: relative; }
+    .tm-msg-note__edit > summary { position: absolute; top: 16px; right: 16px; display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; color: var(--tm-navy); cursor: pointer; list-style: none; }
+    .tm-msg-note__edit > summary::-webkit-details-marker { display: none; }
+    .tm-msg-note__edit > summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-msg-note__edit form, .tm-msg-replies__form { display: grid; gap: 8px; }
+    .tm-msg-note__text { margin: 0; padding: 12px; border-radius: 10px; background: var(--color-warning-bg); color: var(--tm-navy); font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+    .tm-msg-replies ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .tm-msg-replies li { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; color: var(--tm-navy); }
+    .tm-msg-replies li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tm-msg-replies__delete { display: inline-grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--color-text-muted); cursor: pointer; }
+    .tm-msg-replies__delete:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-msg-replies summary { cursor: pointer; color: var(--color-link); font-size: 14px; font-weight: var(--font-weight-semibold); }
+    .tm-msg-quick { padding: 0 16px; font-size: 13px; }
+    .tm-msg-quick summary { display: inline-flex; align-items: center; gap: 6px; padding-top: 10px; cursor: pointer; color: var(--color-link); font-weight: var(--font-weight-semibold); }
+    .tm-msg-quick ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+    .tm-msg-quick button { padding: 5px 12px; border: 1px solid var(--tm-line); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--tm-navy); font: inherit; cursor: pointer; }
+    .tm-msg-quick button:hover { background: var(--tm-blue-soft); }
+    .tm-msg-quick button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
     /* Mobile : la liste seule, ou le fil seul quand une conversation est ouverte */
     .tm-msg-page.has-thread .tm-msg-list, .tm-msg-page.has-thread .tm-msg-aside { display: none; }
+    /* PR07 : l'encart client, la note et les réponses types passent sous le fil tant qu'il n'y a pas trois colonnes. */
+    .tm-msg-page.has-thread .tm-msg-side .tm-msg-aside { display: grid; }
+    .tm-msg-side { grid-column: 1 / -1; }
     .tm-msg-layout__empty { display: none; }
 
     @media (min-width: 900px) {
         .tm-msg-layout { grid-template-columns: 18rem minmax(0, 1fr); }
         .tm-msg-page.has-thread .tm-msg-list { display: grid; }
+        .tm-msg-page.has-thread .tm-msg-list__tabs--bar { display: grid; }
         .tm-msg-layout__empty { display: block; }
         .tm-msg-thread__back { display: none; }
     }
     @media (min-width: 1280px) {
         .tm-msg-page.has-thread .tm-msg-layout { grid-template-columns: 17rem minmax(0, 1fr) 16rem; }
         .tm-msg-page.has-thread .tm-msg-aside { display: grid; }
+        .tm-msg-side { grid-column: auto; }
     }
 }

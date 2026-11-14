@@ -24,6 +24,7 @@ final readonly class ConversationThread
         public bool $archived,
         public ?string $blocked,
         public array $messages,
+        public ?string $note = null,
     ) {
     }
 

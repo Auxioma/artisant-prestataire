@@ -1,19 +1,17 @@
-{#- C04.1 / PR07 — liste des conversations : recherche, filtres (tous, non lus, archivés), lignes, pagination. -#}
+{#-
+    C04.1 / PR07 — liste des conversations : recherche, filtres, lignes, pagination. L'espace pro passe ses onglets
+    (`list_tabs` : libellé et pictogramme) avec leurs compteurs ; le client garde Tous / Non lus / Archives.
+-#}
 {% set route = space ~ '_messages' %}
-{% set tabs = {all: 'Tous', unread: 'Non lus', archived: 'Archives'} %}
 <section class="tm-msg-list" aria-labelledby="fils-titre">
     <h2 id="fils-titre" class="tm-visually-hidden">Conversations</h2>
     <form method="get" action="{{ path(route) }}" class="tm-msg-list__search" role="search">
         {% if filter != 'all' %}<input type="hidden" name="filtre" value="{{ filter }}">{% endif %}
         <div class="tm-field__control"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><label class="tm-visually-hidden" for="msg-q">Rechercher une conversation</label><input class="tm-field__input" id="msg-q" name="q" type="search" value="{{ q }}" placeholder="Rechercher une conversation…"></div>
     </form>
-    <nav class="tm-msg-list__tabs" aria-label="Filtrer les conversations">
-        {% for key, label in tabs %}
-            <a href="{{ path(route, key == 'all' ? {} : {filtre: key}) }}"{% if filter == key %} aria-current="page"{% endif %}>{{ label }}{% if key == 'unread' and list and list.unread > 0 %} ({{ list.unread }})<span class="tm-msg-dot" aria-hidden="true"></span>{% endif %}</a>
-        {% endfor %}
-    </nav>
+    {% if not (tabs_bar ?? false) %}{{ include('messaging/_tabs.html.twig') }}{% endif %}
     {% if list is null or list.rows is empty %}
-        <p class="tm-msg-list__empty">{{ filter == 'archived' ? 'Aucune conversation archivée.' : (filter == 'unread' ? 'Aucun message non lu.' : (q ? 'Aucune conversation ne correspond à votre recherche.' : 'Aucune conversation pour le moment.')) }}</p>
+        <p class="tm-msg-list__empty">{{ filter == 'archived' ? 'Aucune conversation archivée.' : (filter == 'unread' ? 'Aucun message non lu.' : (filter == 'clients' ? 'Aucune conversation avec un client (devis accepté).' : (filter == 'prospects' ? 'Aucune conversation avec un prospect.' : (q ? 'Aucune conversation ne correspond à votre recherche.' : 'Aucune conversation pour le moment.')))) }}</p>
     {% else %}
         <ul class="tm-msg-list__items">
             {% for row in list.rows %}

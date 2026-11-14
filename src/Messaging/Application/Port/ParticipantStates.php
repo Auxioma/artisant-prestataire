@@ -19,6 +19,9 @@ interface ParticipantStates
      */
     public function claimNotification(string $conversationId, string $userId, \DateTimeImmutable $messageAt, \DateTimeImmutable $notSince, \DateTimeImmutable $at): bool;
 
+    /** PR07 — note privée du participant ; faux s'il ne participe pas à la conversation. */
+    public function saveNote(string $conversationId, string $userId, ?string $note): bool;
+
     /** Signalement d'un message par un participant (une fois). */
     public function report(string $messageId, string $userId, string $reason, \DateTimeImmutable $at): bool;
 }
