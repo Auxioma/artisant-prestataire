@@ -32,6 +32,7 @@ final class ExternalHttpClientsTest extends KernelTestCase
         yield 'vies.client' => ['vies.client', 'ec.europa.eu'];
         yield 'turnstile.client' => ['turnstile.client', 'challenges.cloudflare.com'];
         yield 'hibp.client' => ['hibp.client', 'api.pwnedpasswords.com'];
+        yield 'stripe.client' => ['stripe.client', 'api.stripe.com'];
     }
 
     /**

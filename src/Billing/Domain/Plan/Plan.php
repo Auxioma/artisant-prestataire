@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Billing\Domain\Plan;
 
+use App\Billing\Domain\Plan\Event\PlanChanged;
 use App\Shared\Domain\AggregateRoot;
 
 /**
@@ -18,6 +19,7 @@ final class Plan extends AggregateRoot
     private array $prices = [];
     private ?\DateTimeImmutable $publishedAt = null;
     private bool $everPublished = false;
+    private bool $pendingChange = false;
 
     private function __construct(
         private readonly PlanId $id,
@@ -62,7 +64,7 @@ final class Plan extends AggregateRoot
             throw new PlanRuleViolation('Un forfait publié doit garder un volume de devis (ou illimité avec plafond).');
         }
         $this->terms = $terms;
-        $this->updatedAt = $now;
+        $this->changed($now);
     }
 
     /** Nouveau prix (ou retrait, null) pour une périodicité ; le prix précédent reste dans l'historique. */
@@ -81,7 +83,7 @@ final class Plan extends AggregateRoot
         } else {
             $this->prices[$interval->value] = new PlanPrice($priceId, $interval, $amountCents, $now);
         }
-        $this->updatedAt = $now;
+        $this->changed($now);
     }
 
     public function publish(\DateTimeImmutable $now): void
@@ -96,7 +98,7 @@ final class Plan extends AggregateRoot
         $this->status = PlanStatus::Published;
         $this->publishedAt ??= $now;
         $this->everPublished = true;
-        $this->updatedAt = $now;
+        $this->changed($now);
     }
 
     /** Retiré de la vente ; les abonnés existants le conservent (BO08.1). */
@@ -104,7 +106,7 @@ final class Plan extends AggregateRoot
     {
         $this->guardNotArchived();
         $this->status = PlanStatus::Archived;
-        $this->updatedAt = $now;
+        $this->changed($now);
     }
 
     /** Supprimable seulement s'il n'a jamais été publié ni souscrit (sinon : archiver). */
@@ -185,6 +187,16 @@ final class Plan extends AggregateRoot
     public function updatedAt(): \DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    /** Un seul événement par opération, même si plusieurs champs changent. */
+    private function changed(\DateTimeImmutable $now): void
+    {
+        $this->updatedAt = $now;
+        if (!$this->pendingChange) {
+            $this->pendingChange = true;
+            $this->recordEvent(new PlanChanged($this->id->value, $now));
+        }
     }
 
     private function guardNotArchived(): void

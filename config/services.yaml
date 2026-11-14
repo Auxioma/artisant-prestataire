@@ -150,6 +150,9 @@ services:
     App\Billing\Application\Alert\CreditAlertLog: '@App\Billing\Infrastructure\Alert\DbalCreditAlertLog'
     App\Billing\Application\Alert\CreditAlertMailer: '@App\Billing\Infrastructure\Alert\NotificationCreditAlertMailer'
     App\Billing\Domain\Credit\CreditAlertPolicy: ~
+    App\Billing\Application\Port\PaymentGateway: '@App\Billing\Infrastructure\Payment\StripePaymentGateway'
+    App\Billing\Application\Payment\StripePriceLinks: '@App\Billing\Infrastructure\Payment\DbalStripeLinks'
+    App\Billing\Application\Payment\StripeCustomerAccounts: '@App\Billing\Infrastructure\Payment\DbalStripeLinks'
 
     # Ports du module QuoteRequest
     App\QuoteRequest\Domain\Request\QuoteRequestRepository: '@App\QuoteRequest\Infrastructure\Doctrine\Repository\DoctrineQuoteRequestRepository'
@@ -234,6 +237,10 @@ services:
 # Points d'entrée applicatifs accessibles aux tests d'intégration (aucun effet hors environnement test).
 when@test:
     services:
+        # Prestataire de paiement : double en mémoire, jamais d'appel réseau en test (T-602).
+        App\Billing\Application\Port\PaymentGateway: '@App\Billing\Infrastructure\Payment\InMemoryPaymentGateway'
+        App\Billing\Infrastructure\Payment\InMemoryPaymentGateway:
+            public: true
         test.command_bus:
             alias: App\Shared\Application\Bus\CommandBus
             public: true
@@ -294,4 +301,7 @@ when@test:
             public: true
         test.hibp.client:
             alias: hibp.client
+            public: true
+        test.stripe.client:
+            alias: stripe.client
             public: true

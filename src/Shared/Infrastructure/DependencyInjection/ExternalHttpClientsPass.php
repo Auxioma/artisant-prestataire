@@ -18,7 +18,7 @@ use Symfony\Component\HttpClient\NoPrivateNetworkHttpClient;
 final class ExternalHttpClientsPass implements CompilerPassInterface
 {
     /** Clients scoped de config/packages/framework.yaml qui sortent vers Internet. */
-    public const array EXTERNAL_CLIENTS = ['geo_api.client', 'geocoding.client', 'sirene.client', 'vies.client', 'turnstile.client', 'hibp.client'];
+    public const array EXTERNAL_CLIENTS = ['geo_api.client', 'geocoding.client', 'sirene.client', 'vies.client', 'turnstile.client', 'hibp.client', 'stripe.client'];
 
     private const int DECORATION_PRIORITY = 32;
 

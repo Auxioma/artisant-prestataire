@@ -14,6 +14,7 @@ use App\Billing\Domain\Plan\PlanTerms;
 use App\Billing\Domain\Plan\PlanVisibility;
 use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Application\Bus\CommandHandler;
+use App\Shared\Application\Bus\EventBus;
 use App\Shared\Domain\Audit\AuditRecord;
 use App\Shared\Domain\Identifier\IdGenerator;
 use App\Shared\Domain\Time\Clock;
@@ -22,12 +23,13 @@ use App\Shared\Domain\ValueObject\Slug;
 /**
  * BO08.1 — gestion des forfaits par l'équipe : création, modification (un nouveau prix remplace l'actif, l'ancien reste
  * à l'historique et pour les abonnés existants), publication, archivage, suppression d'un brouillon, ordre. Journalisé.
+ * Chaque changement publie PlanChanged : le catalogue Stripe est resynchronisé hors transaction (T-602).
  */
 final readonly class PlanHandler implements CommandHandler
 {
     private const int CENTS = 100;
 
-    public function __construct(private PlanRepository $plans, private AuditTrail $audit, private IdGenerator $ids, private Clock $clock)
+    public function __construct(private PlanRepository $plans, private AuditTrail $audit, private IdGenerator $ids, private Clock $clock, private EventBus $events)
     {
     }
 
@@ -51,6 +53,7 @@ final readonly class PlanHandler implements CommandHandler
             $this->plans->delete($plan->id());
         } elseif (!\in_array($command->action, [PlanAction::UP, PlanAction::DOWN], true)) {
             $this->plans->save($plan);
+            $this->events->publish(...$plan->releaseEvents());
         }
         $this->record($command->adminId, 'plan.'.$command->action, $plan, $now);
     }
@@ -72,6 +75,7 @@ final readonly class PlanHandler implements CommandHandler
             $plan->changePrice($interval, self::cents($command->input[$interval->field()] ?? null, $interval), $this->ids->next(), $now);
         }
         $this->plans->save($plan);
+        $this->events->publish(...$plan->releaseEvents());
         $this->record($command->adminId, null === $command->planId ? 'plan.created' : 'plan.updated', $plan, $now);
     }
 

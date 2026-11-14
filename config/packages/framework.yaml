@@ -44,6 +44,11 @@ framework:
                 base_uri: 'https://challenges.cloudflare.com/turnstile/v0/'
                 timeout: 5
                 max_duration: 8
+            # Stripe (T-602, ADR-0009) : transport de stripe-php ; reprises à la charge du worker (requêtes idempotentes).
+            stripe.client:
+                base_uri: 'https://api.stripe.com/'
+                timeout: 10
+                max_duration: 30
             hibp.client:
                 base_uri: 'https://api.pwnedpasswords.com/'
                 headers: { Add-Padding: 'true' } # réponses de taille uniforme (k-anonymat renforcé)
