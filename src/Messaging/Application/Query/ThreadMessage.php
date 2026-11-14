@@ -14,6 +14,7 @@ final readonly class ThreadMessage
         public bool $masked,
         public bool $readByCounterpart,
         public bool $reportedByMe,
+        public ?ThreadAttachment $attachment = null,
     ) {
     }
 }

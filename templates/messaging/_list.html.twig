@@ -26,7 +26,7 @@
                         <span class="tm-msg-row__text">
                             <strong>{{ row.counterpartName }}</strong>
                             {% if row.requestTitle %}<span class="tm-msg-row__ctx">{{ row.requestTitle }}</span>{% endif %}
-                            <span class="tm-msg-row__last">{{ row.lastIsMine ? 'Vous : ' }}{{ (row.lastBody ?? '')|length > 60 ? (row.lastBody ?? '')|slice(0, 59) ~ '…' : row.lastBody }}</span>
+                            <span class="tm-msg-row__last">{{ row.lastIsMine ? 'Vous : ' }}{{ (row.lastBody ?? '') == '' ? 'Pièce jointe' : ((row.lastBody ?? '')|length > 60 ? (row.lastBody ?? '')|slice(0, 59) ~ '…' : row.lastBody) }}</span>
                         </span>
                         <span class="tm-msg-row__meta">
                             {% if row.lastAt %}<time datetime="{{ row.lastAt|date('c') }}">{{ row.lastAt|date('Y-m-d', 'Europe/Paris') == 'now'|date('Y-m-d', 'Europe/Paris') ? row.lastAt|date('H:i', 'Europe/Paris') : row.lastAt|date('d/m', 'Europe/Paris') }}</time>{% endif %}

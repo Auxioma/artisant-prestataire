@@ -26,6 +26,9 @@ interface ConversationReader
     /** Délai moyen (minutes) entre le premier message d'un client et la réponse de l'artisan, ou null (échantillon trop petit). */
     public function averageResponseMinutes(string $artisanId, \DateTimeImmutable $since, int $minSamples): ?int;
 
+    /** La pièce jointe appartient-elle à ce fil, dont l'utilisateur est participant ? */
+    public function attachmentOf(string $userId, string $conversationId, string $fileId): bool;
+
     public function unreadCount(string $userId): int;
 
     /** Fil existant de l'utilisateur pour une demande et un artisan, ou une question préalable. */

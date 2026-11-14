@@ -12,6 +12,8 @@ use App\Quote\Application\Editor\SaveQuoteDraft;
 use App\Quote\Application\Sending\SendQuote;
 use App\QuoteRequest\Application\Dispatch\DispatchQuoteRequest;
 use App\QuoteRequest\Application\Submission\SubmitQuoteRequest;
+use App\Shared\Application\Storage\ScanQuarantinedFile;
+use App\Shared\Domain\Storage\FileQuarantined;
 use App\Shared\Domain\Text\ContactDetector;
 use App\Shared\Infrastructure\Persistence\DbalValue;
 use App\Tests\Support\ArtisanDossier;
@@ -20,6 +22,8 @@ use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\DomCrawler\Field\FileFormField;
+use Symfony\Component\DomCrawler\Form;
 
 /**
  * C04 (Figma 160:644) : liste (non-lus, pastille du menu), fil (coordonnées masquées, lecture), réponse, fragment de
@@ -128,5 +132,57 @@ final class ClientMessagesPageTest extends WebTestCase
         $this->client->submit($compose->selectButton('Envoyer')->form(), ['message' => 'Intervenez-vous aussi le samedi ?']);
         self::assertResponseStatusCodeSame(303);
         self::assertSame(2, DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM messaging.conversation')));
+    }
+
+    public function testAttachmentQuarantinedThenDownloadable(): void
+    {
+        $thread = $this->client->request('GET', '/espace-client/messages/'.self::CONVERSATION);
+        $form = $thread->filter('form.tm-msg-composer')->form();
+        self::fileField($form, 'piece')->upload(StorageSamples::file(StorageSamples::pdf()));
+        $this->client->submit($form, ['message' => '']);
+        self::assertResponseRedirects('/espace-client/messages/'.self::CONVERSATION.'#dernier');
+        $file = DbalValue::string($this->connection->fetchOne('SELECT file_id FROM messaging.attachment'));
+        self::assertSame('quarantined', $this->connection->fetchOne('SELECT status FROM shared.stored_file WHERE id = :f', ['f' => $file]));
+
+        $thread = $this->client->followRedirect();
+        self::assertStringContainsString('Analyse antivirus en cours', $thread->filter('.tm-msg.is-mine .tm-msg-file')->text());
+        self::assertStringContainsString('Vous : Pièce jointe', $thread->filter('.tm-msg-row__last')->text());
+        $this->client->request('GET', '/espace-client/messages/'.self::CONVERSATION.'/pieces-jointes/'.$file);
+        self::assertResponseStatusCodeSame(404, 'pas avant l’analyse');
+
+        $scan = self::getContainer()->get(ScanQuarantinedFile::class);
+        \assert($scan instanceof ScanQuarantinedFile);
+        $scan(new FileQuarantined($file, 'message_attachment', new \DateTimeImmutable()));
+        $thread = $this->client->request('GET', '/espace-client/messages/'.self::CONVERSATION);
+        $link = $thread->filter('.tm-msg.is-mine a.tm-msg-file');
+        self::assertStringContainsString('Ko', $link->text());
+        $this->client->request('GET', (string) $link->attr('href'));
+        self::assertResponseIsSuccessful();
+        self::assertSame('application/pdf', $this->client->getResponse()->headers->get('Content-Type'));
+        self::assertStringStartsWith('attachment;', (string) $this->client->getResponse()->headers->get('Content-Disposition'));
+        self::assertSame(1, DbalValue::int($this->connection->fetchOne("SELECT count(*) FROM admin.audit_log WHERE action = 'file.read' AND subject_id = :f", ['f' => $file])), 'lecture journalisée');
+
+        $this->client->request('GET', '/espace-client/messages/0190f5e4-0000-7000-8000-0000000fb799/pieces-jointes/'.$file);
+        self::assertResponseStatusCodeSame(404, 'fil d’autrui');
+    }
+
+    public function testRejectedAttachmentType(): void
+    {
+        $thread = $this->client->request('GET', '/espace-client/messages/'.self::CONVERSATION);
+        $form = $thread->filter('form.tm-msg-composer')->form();
+        self::fileField($form, 'piece')->upload(StorageSamples::file('texte simple, pas une image (fictif)'));
+        $this->client->submit($form, ['message' => 'Voici le document']);
+        $thread = $this->client->followRedirect();
+        self::assertStringContainsString('Pièce jointe non acceptée', $thread->filter('.tm-toasts')->text(''));
+        self::assertSame(0, DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM messaging.attachment')));
+        self::assertSame(1, DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM messaging.message')), 'message refusé en entier');
+    }
+
+    private static function fileField(Form $form, string $name): FileFormField
+    {
+        $field = $form[$name];
+        self::assertInstanceOf(FileFormField::class, $field);
+
+        return $field;
     }
 }

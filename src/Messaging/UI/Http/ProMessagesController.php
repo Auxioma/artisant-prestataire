@@ -90,6 +90,12 @@ final class ProMessagesController extends MessagesController
         return $this->fragment($id);
     }
 
+    #[Route('/{id}/pieces-jointes/{file}', name: 'pro_conversation_attachment', requirements: ['id' => self::UUID, 'file' => self::UUID], methods: ['GET'])]
+    public function download(Request $request, string $id, string $file): Response
+    {
+        return $this->attachment($request, $id, $file);
+    }
+
     #[Route('/{id}/action', name: 'pro_conversation_action', requirements: ['id' => self::UUID], methods: ['POST'])]
     public function action(Request $request, string $id): Response
     {

@@ -1,4 +1,7 @@
-{#- C04.2 — messages d'un fil, groupés par jour ; statut « lu » (✓✓) sur mes messages, signalement des messages reçus. -#}
+{#-
+    C04.2 — messages d'un fil, groupés par jour ; statut « lu » (✓✓) sur mes messages, signalement des messages reçus ;
+    pièce jointe (Figma 232:13464 : carte nom, poids, téléchargement ; vignette pour une image) une fois analysée.
+-#}
 {% set today = 'now'|date('Y-m-d', 'Europe/Paris') %}
 {% set yesterday = '-1 day'|date('Y-m-d', 'Europe/Paris') %}
 {% set day = null %}
@@ -13,7 +16,25 @@
             {% if thread.counterpartLogoProfileId %}<img class="tm-msg-avatar tm-msg-avatar--sm" src="{{ path('public_artisan_logo', {id: thread.counterpartLogoProfileId}) }}" alt="" width="32" height="32" loading="lazy">{% else %}<span class="tm-msg-avatar tm-msg-avatar--sm tm-msg-avatar--initials" aria-hidden="true">{{ thread.initials() }}</span>{% endif %}
         {% endif %}
         <div class="tm-msg__bubble">
-            <p class="tm-msg__body">{{ m.body|nl2br }}</p>
+            {% if m.body %}<p class="tm-msg__body">{{ m.body|nl2br }}</p>{% endif %}
+            {% if m.attachment %}
+                {% set a = m.attachment %}
+                {% set weight = a.size >= 1048576 ? (a.size / 1048576)|number_format(1, ',', ' ') ~ ' Mo' : max(1, (a.size / 1024)|round) ~ ' Ko' %}
+                {% if a.available %}
+                    {% set url = path(space ~ '_conversation_attachment', {id: thread.id, file: a.fileId}) %}
+                    {% if a.image %}<a class="tm-msg-file__thumb" href="{{ url }}" target="_blank" rel="noopener"><img src="{{ url }}" alt="{{ a.label }}" loading="lazy"></a>{% endif %}
+                    <a class="tm-msg-file" href="{{ url }}"{% if a.image %} target="_blank" rel="noopener"{% else %} download{% endif %}>
+                        <twig:Icon name="file" size="sm" class="tm-icon--inherit" />
+                        <span class="tm-msg-file__text"><strong>{{ a.label }}</strong><span>{{ weight }}</span></span>
+                        <twig:Icon name="download" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">{{ a.image ? 'Ouvrir' : 'Télécharger' }}</span>
+                    </a>
+                {% else %}
+                    <p class="tm-msg-file is-pending">
+                        <twig:Icon name="{{ a.status == 'quarantined' ? 'hourglass' : 'alert' }}" size="sm" class="tm-icon--inherit" />
+                        <span class="tm-msg-file__text"><strong>{{ a.label }}</strong><span>{{ a.status == 'quarantined' ? 'Analyse antivirus en cours…' : 'Pièce jointe refusée par l’analyse de sécurité' }}</span></span>
+                    </p>
+                {% endif %}
+            {% endif %}
             <p class="tm-msg__meta">
                 <time datetime="{{ m.at|date('c') }}">{{ m.at|date('H:i', 'Europe/Paris') }}</time>
                 {% if m.mine %}<span class="tm-msg__read{{ m.readByCounterpart ? ' is-read' }}">{{ m.readByCounterpart ? '✓✓' : '✓' }}<span class="tm-visually-hidden">{{ m.readByCounterpart ? ' Lu' : ' Envoyé' }}</span></span>{% endif %}

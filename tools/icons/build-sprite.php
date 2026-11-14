@@ -37,6 +37,8 @@ const ICONS = [
     'bulb' => 'lightbulb',
     // T-406a (espace client, C02)
     'send' => 'send', 'more' => 'ellipsis-vertical', 'edit' => 'pencil', 'download' => 'download',
+    // T-701d (pièces jointes de la messagerie, Figma 232:13464)
+    'paperclip' => 'paperclip',
 ];
 /** Variantes pleines (fill = currentColor), utilisées par la carte artisan (« icon/star-filled » dans Figma). */
 const FILLED_ICONS = ['starFilled' => 'star', 'heartFilled' => 'heart'];

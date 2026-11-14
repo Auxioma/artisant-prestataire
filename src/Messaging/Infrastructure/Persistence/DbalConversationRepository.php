@@ -37,6 +37,14 @@ final readonly class DbalConversationRepository implements ConversationRepositor
         return $this->one("SELECT * FROM messaging.conversation WHERE kind = 'pre_question' AND client_user_id = :c AND artisan_id = :a FOR UPDATE", ['c' => $clientUserId, 'a' => $artisanId]);
     }
 
+    public function attachmentsInactiveBefore(\DateTimeImmutable $before): array
+    {
+        return array_map(static fn (mixed $id): string => DbalValue::string($id), $this->connection->fetchFirstColumn(
+            'SELECT a.file_id FROM messaging.attachment a JOIN messaging.conversation c ON c.id = a.conversation_id WHERE coalesce(c.last_message_at, c.created_at) < :before',
+            ['before' => $before->format(\DATE_ATOM)],
+        ));
+    }
+
     public function purgeInactiveBefore(\DateTimeImmutable $before): int
     {
         return (int) $this->connection->executeStatement('DELETE FROM messaging.conversation WHERE coalesce(last_message_at, created_at) < :before', ['before' => $before->format(\DATE_ATOM)]);
@@ -72,6 +80,15 @@ final readonly class DbalConversationRepository implements ConversationRepositor
                 'original_sealed' => $message->sealedOriginal,
                 'created_at' => $message->at->format(\DATE_ATOM),
             ]);
+            if (null !== $message->attachmentFileId) {
+                $this->connection->insert('messaging.attachment', [
+                    'file_id' => $message->attachmentFileId,
+                    'message_id' => $message->id,
+                    'conversation_id' => $conversation->id()->value,
+                    'original_name' => $message->attachmentName,
+                    'created_at' => $message->at->format(\DATE_ATOM),
+                ]);
+            }
         }
     }
 

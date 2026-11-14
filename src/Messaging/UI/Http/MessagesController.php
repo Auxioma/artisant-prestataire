@@ -18,11 +18,16 @@ use App\Messaging\Domain\Conversation\MessagingRuleViolation;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Security\CurrentUser;
+use App\Shared\Application\Storage\FileReader;
+use App\Shared\Application\Storage\StoredFileNotFound;
 use App\Shared\Domain\Identifier\IdGenerator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\DependencyInjection\Attribute\Target;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
@@ -43,6 +48,7 @@ abstract class MessagesController extends AbstractController
         protected readonly IdGenerator $ids,
         protected readonly ConversationReader $reader,
         protected readonly MessagingDirectory $directory,
+        protected readonly FileReader $files,
         #[Target('message_user.limiter')]
         private readonly RateLimiterFactoryInterface $userLimiter,
         #[Target('message_thread.limiter')]
@@ -107,12 +113,44 @@ abstract class MessagesController extends AbstractController
         $userId = $this->userId();
         try {
             $this->guard($request, $userId, $conversationId);
-            $this->commands->dispatch(new SendMessage($userId, $conversationId, $this->ids->next(), $request->request->getString('message')));
+            $file = $request->files->get('piece');
+            if ($file instanceof UploadedFile && !$file->isValid()) {
+                throw new MessagingRuleViolation('La pièce jointe n’a pas pu être reçue : vérifiez son poids et réessayez.');
+            }
+            $file = $file instanceof UploadedFile ? $file : null;
+            $this->commands->dispatch(new SendMessage($userId, $conversationId, $this->ids->next(), $request->request->getString('message'), $file?->getPathname(), $file?->getClientOriginalName()));
         } catch (MessagingRuleViolation $e) {
             $this->addFlash('error', $e->getMessage());
         }
 
         return $this->redirect($this->generateUrl($this->space().'_conversation', ['id' => $conversationId]).'#dernier', Response::HTTP_SEE_OTHER);
+    }
+
+    /** Pièce jointe d'un fil : participant seulement, fichier analysé, lecture journalisée (FileReader). */
+    protected function attachment(Request $request, string $conversationId, string $fileId): Response
+    {
+        $userId = $this->userId();
+        if (!$this->reader->attachmentOf($userId, $conversationId, $fileId)) {
+            throw new NotFoundHttpException();
+        }
+        try {
+            $stored = $this->files->available($fileId);
+            $stream = $this->files->openForActor($fileId, 'user', $userId, $request->getClientIp());
+        } catch (StoredFileNotFound) {
+            throw new NotFoundHttpException();
+        }
+        $image = str_starts_with($stored->type->value, 'image/');
+
+        return new StreamedResponse(static function () use ($stream): void {
+            fpassthru($stream);
+            fclose($stream);
+        }, Response::HTTP_OK, [
+            'Content-Type' => $stored->type->value,
+            'Content-Disposition' => HeaderUtils::makeDisposition($image ? HeaderUtils::DISPOSITION_INLINE : HeaderUtils::DISPOSITION_ATTACHMENT, $stored->downloadName()),
+            'Cache-Control' => 'private, max-age=600',
+            'X-Content-Type-Options' => 'nosniff',
+            'Content-Security-Policy' => "default-src 'none'",
+        ]);
     }
 
     protected function compose(Request $request): Response

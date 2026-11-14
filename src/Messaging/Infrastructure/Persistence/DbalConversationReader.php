@@ -7,6 +7,7 @@ namespace App\Messaging\Infrastructure\Persistence;
 use App\Messaging\Application\Query\ConversationReader;
 use App\Messaging\Application\Query\ConversationRow;
 use App\Messaging\Application\Query\ConversationThread;
+use App\Messaging\Application\Query\ThreadAttachment;
 use App\Messaging\Application\Query\ThreadMessage;
 use App\Shared\Infrastructure\Persistence\DbalValue;
 use Doctrine\DBAL\Connection;
@@ -102,8 +103,15 @@ final readonly class DbalConversationReader implements ConversationReader
             $at = new \DateTimeImmutable(DbalValue::string($m['created_at']));
             $mine = $userId === $m['sender_user_id'];
 
-            return new ThreadMessage(DbalValue::string($m['id']), $mine, DbalValue::string($m['body']), $at, null !== $m['original_sealed'], $mine && null !== $otherRead && $otherRead >= $at, $userId === $m['reported_by']);
-        }, $this->connection->fetchAllAssociative('SELECT id, sender_user_id, body, original_sealed, created_at, reported_by FROM messaging.message WHERE conversation_id = :c ORDER BY created_at, id', ['c' => $conversationId]));
+            $attachment = null === $m['file_id'] ? null : new ThreadAttachment(DbalValue::string($m['file_id']), DbalValue::nullableString($m['original_name']), DbalValue::string($m['mime']), DbalValue::int($m['size']), DbalValue::string($m['file_status']));
+
+            return new ThreadMessage(DbalValue::string($m['id']), $mine, DbalValue::string($m['body']), $at, null !== $m['original_sealed'], $mine && null !== $otherRead && $otherRead >= $at, $userId === $m['reported_by'], $attachment);
+        }, $this->connection->fetchAllAssociative(
+            'SELECT m.id, m.sender_user_id, m.body, m.original_sealed, m.created_at, m.reported_by, a.file_id, a.original_name, f.mime, f.size, f.status AS file_status'
+            .' FROM messaging.message m LEFT JOIN messaging.attachment a ON a.message_id = m.id LEFT JOIN shared.stored_file f ON f.id = a.file_id'
+            .' WHERE m.conversation_id = :c ORDER BY m.created_at, m.id',
+            ['c' => $conversationId],
+        ));
         $blocked = null === $t['blocked_by'] ? null : ($userId === $t['blocked_by'] ? 'me' : 'other');
 
         return new ConversationThread(
@@ -165,6 +173,18 @@ final readonly class DbalConversationReader implements ConversationReader
         }
 
         return max(1, (int) round((float) DbalValue::string($r['minutes'])));
+    }
+
+    public function attachmentOf(string $userId, string $conversationId, string $fileId): bool
+    {
+        if (1 !== preg_match(self::UUID, $userId) || 1 !== preg_match(self::UUID, $conversationId) || 1 !== preg_match(self::UUID, $fileId)) {
+            return false;
+        }
+
+        return false !== $this->connection->fetchOne(
+            'SELECT 1 FROM messaging.attachment a JOIN messaging.conversation c ON c.id = a.conversation_id WHERE a.file_id = :f AND c.id = :c AND (c.client_user_id = :u OR c.artisan_user_id = :u)',
+            ['f' => $fileId, 'c' => $conversationId, 'u' => $userId],
+        );
     }
 
     public function unreadCount(string $userId): int

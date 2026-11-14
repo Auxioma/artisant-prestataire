@@ -18,6 +18,10 @@ use App\Shared\Application\Bus\EventBus;
 use App\Shared\Application\Security\SecretBox;
 use App\Shared\Application\Settings\SettingKey;
 use App\Shared\Application\Settings\SettingsProvider;
+use App\Shared\Application\Storage\FileUploader;
+use App\Shared\Application\Storage\RejectedUpload;
+use App\Shared\Application\Storage\StoredFile;
+use App\Shared\Domain\Storage\FilePurpose;
 use App\Shared\Domain\Text\ContactDetector;
 use App\Shared\Domain\Time\Clock;
 
@@ -38,6 +42,7 @@ final readonly class MessagingHandler implements CommandHandler
         private ProRequestAccess $requestAccess,
         private SecretBox $secrets,
         private SettingsProvider $settings,
+        private FileUploader $uploader,
         private EventBus $events,
         private Clock $clock,
     ) {
@@ -106,21 +111,44 @@ final readonly class MessagingHandler implements CommandHandler
         if (null === $conversation || !$conversation->isParticipant($command->userId)) {
             throw new MessagingRuleViolation('Conversation introuvable.');
         }
-        $this->postTo($conversation, $command->userId, $command->messageId, $command->body, $now);
+        $attachment = null;
+        if (null !== $command->attachmentPath) {
+            // Contrôles du fil avant de stocker le fichier : pas de fichier orphelin pour un envoi refusé.
+            if (null !== $conversation->blockedBy()) {
+                throw new MessagingRuleViolation('Cette conversation est bloquée : vous ne pouvez plus y écrire.');
+            }
+            if (mb_strlen(trim($command->body)) > Message::MAX_LENGTH) {
+                throw new MessagingRuleViolation('Le message est trop long (5 000 caractères au plus).');
+            }
+            $attachment = $this->upload($command->attachmentPath, $command->attachmentName);
+        }
+        $this->postTo($conversation, $command->userId, $command->messageId, $command->body, $now, $attachment);
     }
 
-    private function postTo(Conversation $conversation, string $userId, string $messageId, string $body, \DateTimeImmutable $now): void
+    /** Pièce jointe (RG-061, ADR-0008) : type réel contrôlé, quarantaine puis analyse antivirus avant toute lecture. */
+    private function upload(string $path, ?string $name): StoredFile
+    {
+        try {
+            return $this->uploader->upload($path, $name, FilePurpose::MessageAttachment);
+        } catch (RejectedUpload $e) {
+            throw new MessagingRuleViolation(match ($e->reason) {
+                RejectedUpload::TYPE_NOT_ALLOWED, RejectedUpload::TOO_LARGE => \sprintf('Pièce jointe non acceptée (formats : JPG, PNG, WEBP, PDF — %d Mo max).', $this->settings->int(SettingKey::RequestsMaxFileMb)), RejectedUpload::IMAGE_TOO_LARGE => 'Image trop grande : réduisez sa résolution.', RejectedUpload::PDF_ACTIVE_CONTENT, RejectedUpload::PDF_ENCRYPTED => 'Ce PDF est protégé ou contient du contenu actif : il ne peut pas être joint.', default => 'Cette pièce jointe n’a pas pu être acceptée.',
+            });
+        }
+    }
+
+    private function postTo(Conversation $conversation, string $userId, string $messageId, string $body, \DateTimeImmutable $now, ?StoredFile $attachment = null): void
     {
         $body = trim(str_replace("\r\n", "\n", $body));
         $sealed = null;
-        if ($this->masking($conversation)) {
+        if ('' !== $body && $this->masking($conversation)) {
             [$masked, $found] = ContactDetector::mask($body);
             if ([] !== $found) {
                 $sealed = $this->secrets->seal($body);
                 $body = $masked;
             }
         }
-        $conversation->post(new Message($messageId, $userId, $body, $sealed, $now));
+        $conversation->post(new Message($messageId, $userId, $body, $sealed, $now, $attachment?->id, $attachment?->originalName));
         $this->conversations->save($conversation);
         foreach ([$conversation->clientUserId(), $conversation->artisanUserId()] as $participant) {
             $this->participants->ensure($conversation->id()->value, $participant);
