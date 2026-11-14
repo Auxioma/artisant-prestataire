@@ -29,4 +29,13 @@ interface Invoices
     public function savePaymentMethod(string $artisanId, ?PaymentMethodSummary $method, \DateTimeImmutable $at): void;
 
     public function paymentMethod(string $artisanId): ?PaymentMethodSummary;
+
+    /**
+     * Cartes par défaut des abonnés en cours qui expirent (fin du mois d'expiration) avant `$limit`, pas encore signalées.
+     *
+     * @return list<array{artisan_id: string, user_id: string, brand: ?string, last4: string, exp_month: int, exp_year: int}>
+     */
+    public function cardsExpiringBefore(\DateTimeImmutable $limit): array;
+
+    public function markExpiryNotified(string $artisanId, \DateTimeImmutable $at): void;
 }

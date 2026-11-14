@@ -98,7 +98,8 @@ final readonly class DbalInvoices implements Invoices
         $this->connection->executeStatement(
             <<<'SQL'
                 INSERT INTO billing.payment_method (artisan_id, type, brand, last4, exp_month, exp_year, updated_at) VALUES (:a, :type, :brand, :last4, :m, :y, :at)
-                ON CONFLICT (artisan_id) DO UPDATE SET type = excluded.type, brand = excluded.brand, last4 = excluded.last4, exp_month = excluded.exp_month, exp_year = excluded.exp_year, updated_at = excluded.updated_at
+                ON CONFLICT (artisan_id) DO UPDATE SET type = excluded.type, brand = excluded.brand, last4 = excluded.last4, exp_month = excluded.exp_month, exp_year = excluded.exp_year, updated_at = excluded.updated_at,
+                    expiry_notified_at = CASE WHEN (billing.payment_method.last4, billing.payment_method.exp_month, billing.payment_method.exp_year) IS NOT DISTINCT FROM (excluded.last4, excluded.exp_month, excluded.exp_year) THEN billing.payment_method.expiry_notified_at END
                 SQL,
             ['a' => $artisanId, 'type' => \in_array($method->type, ['card', 'sepa_debit'], true) ? $method->type : 'other', 'brand' => $method->brand, 'last4' => $method->last4, 'm' => $method->expMonth, 'y' => $method->expYear, 'at' => $at->format(\DATE_ATOM)],
         );
@@ -110,6 +111,35 @@ final readonly class DbalInvoices implements Invoices
         $int = static fn (mixed $v): ?int => null === $v ? null : DbalValue::int($v);
 
         return false === $row ? null : new PaymentMethodSummary(DbalValue::string($row['type']), DbalValue::nullableString($row['brand']), DbalValue::nullableString($row['last4']), $int($row['exp_month']), $int($row['exp_year']));
+    }
+
+    public function cardsExpiringBefore(\DateTimeImmutable $limit): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            <<<'SQL'
+                SELECT pm.artisan_id, a.user_id, pm.brand, pm.last4, pm.exp_month, pm.exp_year
+                FROM billing.payment_method pm
+                JOIN billing.credit_account a ON a.artisan_id = pm.artisan_id
+                JOIN billing.subscription s ON s.artisan_id = pm.artisan_id AND s.status IN ('active', 'past_due') AND NOT s.cancel_at_period_end
+                WHERE pm.type = 'card' AND pm.expiry_notified_at IS NULL AND pm.exp_year IS NOT NULL AND pm.exp_month IS NOT NULL
+                  AND make_date(pm.exp_year, pm.exp_month, 1) + interval '1 month' <= :limit
+                SQL,
+            ['limit' => $limit->format(\DATE_ATOM)],
+        );
+
+        return array_map(static fn (array $r): array => [
+            'artisan_id' => DbalValue::string($r['artisan_id']),
+            'user_id' => DbalValue::string($r['user_id']),
+            'brand' => DbalValue::nullableString($r['brand']),
+            'last4' => DbalValue::string($r['last4']),
+            'exp_month' => DbalValue::int($r['exp_month']),
+            'exp_year' => DbalValue::int($r['exp_year']),
+        ], $rows);
+    }
+
+    public function markExpiryNotified(string $artisanId, \DateTimeImmutable $at): void
+    {
+        $this->connection->executeStatement('UPDATE billing.payment_method SET expiry_notified_at = :at WHERE artisan_id = :a', ['a' => $artisanId, 'at' => $at->format(\DATE_ATOM)]);
     }
 
     /** @param array<string, mixed> $row */

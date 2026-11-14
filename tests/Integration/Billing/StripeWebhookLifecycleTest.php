@@ -6,6 +6,7 @@ namespace App\Tests\Integration\Billing;
 
 use App\Billing\Application\Credit\CreditLedger;
 use App\Billing\Application\Credit\QuoteCreditAccount;
+use App\Billing\Application\Invoice\NotifyExpiringCards;
 use App\Billing\Application\Payment\SyncPlanWithStripe;
 use App\Billing\Application\Plan\PlanAction;
 use App\Billing\Application\Plan\SavePlan;
@@ -233,6 +234,29 @@ final class StripeWebhookLifecycleTest extends KernelTestCase
 
         $this->receive('evt_i3', 'invoice.finalized', ['id' => 'in_AUTRE', 'customer' => 'cus_AUTRE', 'status' => 'open', 'total' => 100]);
         self::assertSame('ignored', $this->value("SELECT status FROM billing.processed_stripe_event WHERE event_id = 'evt_i3'"));
+    }
+
+    public function testExpiringCardIsAnnouncedOnce(): void
+    {
+        $this->connection->executeStatement("UPDATE billing.credit_account SET stripe_customer_id = 'cus_FICTIF' WHERE artisan_id = :a", ['a' => self::ARTISAN]);
+        $this->stripe('active', '2026-11-14', '2026-12-14');
+        $this->receive('evt_1', 'invoice.paid', self::invoice('in_1', 'subscription_create', '2026-11-14', '2026-12-14'));
+        $soon = new \DateTimeImmutable('first day of this month');
+        $this->gateway->paymentMethods['cus_FICTIF'] = new PaymentMethodSummary('card', 'visa', '4242', (int) $soon->format('n'), (int) $soon->format('Y'));
+        $this->receive('evt_c1', 'payment_method.attached', ['id' => 'pm_1', 'customer' => 'cus_FICTIF']);
+        $commands = self::getContainer()->get(CommandBus::class);
+        \assert($commands instanceof CommandBus);
+
+        $commands->dispatch(new NotifyExpiringCards());
+        $commands->dispatch(new NotifyExpiringCards());
+        self::assertSame('1', $this->value("SELECT count(*) FROM notification.delivery WHERE code = 'E-46'"), 'une seule fois par carte');
+
+        $later = $soon->modify('+3 years');
+        $this->gateway->paymentMethods['cus_FICTIF'] = new PaymentMethodSummary('card', 'visa', '1881', (int) $later->format('n'), (int) $later->format('Y'));
+        $this->receive('evt_c2', 'payment_method.attached', ['id' => 'pm_2', 'customer' => 'cus_FICTIF']);
+        self::assertSame('true', $this->value('SELECT expiry_notified_at IS NULL FROM billing.payment_method WHERE artisan_id = :a'), 'nouvelle carte : signalement remis à zéro');
+        $commands->dispatch(new NotifyExpiringCards());
+        self::assertSame('1', $this->value("SELECT count(*) FROM notification.delivery WHERE code = 'E-46'"), 'carte valable : rien');
     }
 
     public function testForeignEventsAreIgnored(): void

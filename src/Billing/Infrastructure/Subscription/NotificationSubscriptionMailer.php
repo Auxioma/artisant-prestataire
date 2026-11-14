@@ -80,6 +80,21 @@ final readonly class NotificationSubscriptionMailer implements SubscriptionMaile
         ], $link));
     }
 
+    public function cardExpiring(string $userId, ?string $brand, string $last4, int $expMonth, int $expYear): void
+    {
+        $contact = $this->contact($userId);
+        if (null === $contact) {
+            return;
+        }
+        $link = $this->link().'#paiement';
+        $this->notifier->notify(new Notification('E-46', $contact->email, $userId, [
+            'prenom' => $contact->firstName,
+            'carte' => trim(ucfirst($brand ?? 'Carte').' •••• '.$last4),
+            'expiration' => \sprintf('%02d/%d', $expMonth, $expYear),
+            'lien' => $link,
+        ], $link));
+    }
+
     private function contact(string $userId): ?UserContactDetails
     {
         $contact = $this->queries->ask(new UserContact($userId));

@@ -234,6 +234,7 @@ notifications:
         label: "Carte bientôt expirée"
         recipient: "Artisan"
         channels: [email]
+        variables: [prenom, carte, expiration, lien]
     'E-47':
         label: "Évolution tarifaire d'un forfait (préavis)"
         recipient: "Artisans concernés"

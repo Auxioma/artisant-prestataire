@@ -51,7 +51,7 @@ final class NotificationDispatcherTest extends KernelTestCase
     public function testCatalogHoldsTheWholeAnnexF(): void
     {
         self::assertSame('56', $this->scalar('SELECT count(*) FROM notification.template'), 'annexe F (54, dont E-90 et E-95) + I-02 + I-03');
-        self::assertSame('E-01,E-03,E-04,E-05,E-06,E-10,E-10b,E-11,E-12,E-12b,E-13,E-19,E-19b,E-19c,E-20,E-21,E-22,E-23,E-24,E-25,E-26,E-30,E-31,E-33,E-34,E-35,E-35b,E-40,E-41,E-42,E-42b,E-43,E-44,E-45,E-90,E-95,I-01,I-02,I-03', $this->scalar("SELECT string_agg(code, ',' ORDER BY code) FROM notification.template WHERE active"));
+        self::assertSame('E-01,E-03,E-04,E-05,E-06,E-10,E-10b,E-11,E-12,E-12b,E-13,E-19,E-19b,E-19c,E-20,E-21,E-22,E-23,E-24,E-25,E-26,E-30,E-31,E-33,E-34,E-35,E-35b,E-40,E-41,E-42,E-42b,E-43,E-44,E-45,E-46,E-90,E-95,I-01,I-02,I-03', $this->scalar("SELECT string_agg(code, ',' ORDER BY code) FROM notification.template WHERE active"));
         self::assertSame('{email,in_app,sms}', $this->scalar("SELECT channels FROM notification.template WHERE code = 'E-12'"));
     }
 
