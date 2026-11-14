@@ -53,6 +53,16 @@ interface PaymentGateway
     /** Nom, adresse et n° de TVA intracommunautaire du client (ajouté une seule fois). */
     public function updateCustomerBilling(string $customerId, BillingAddress $address, string $idempotencyKey): void;
 
+    /**
+     * BO08.3 — crée le Coupon puis le Promotion Code.
+     *
+     * @return array{coupon: string, promotion: string}
+     */
+    public function createPromotion(PromotionSpec $spec): array;
+
+    /** Désactive un code promo (le coupon reste pour les abonnements qui en bénéficient déjà). */
+    public function deactivatePromotionCode(string $promotionCodeId, string $idempotencyKey): void;
+
     /** Code promo actif correspondant à la saisie, ou null s'il n'existe pas, a expiré ou est épuisé. */
     public function findPromotionCode(string $code): ?PromotionCode;
 

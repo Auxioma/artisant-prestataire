@@ -10,6 +10,7 @@ use App\Billing\Application\Port\CheckoutSession;
 use App\Billing\Application\Port\PaymentGateway;
 use App\Billing\Application\Port\PaymentMethodSummary;
 use App\Billing\Application\Port\PromotionCode;
+use App\Billing\Application\Port\PromotionSpec;
 use App\Billing\Application\Port\SubscriptionState;
 use App\Billing\Domain\Plan\BillingInterval;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
@@ -121,6 +122,44 @@ final class StripePaymentGateway implements PaymentGateway
 
             return $customerId;
         });
+    }
+
+    public function createPromotion(PromotionSpec $spec): array
+    {
+        return $this->call('promotion_code', static function (StripeClient $c) use ($spec): array {
+            $coupon = ['name' => $spec->code, 'duration' => $spec->duration, 'metadata' => $spec->metadata];
+            if (null !== $spec->percentOff) {
+                $coupon['percent_off'] = $spec->percentOff;
+            } else {
+                $coupon += ['amount_off' => $spec->amountOffCents, 'currency' => self::CURRENCY];
+            }
+            if ('repeating' === $spec->duration) {
+                $coupon['duration_in_months'] = $spec->durationMonths;
+            }
+            if ([] !== $spec->productIds) {
+                $coupon['applies_to'] = ['products' => $spec->productIds];
+            }
+            // @phpstan-ignore argument.type (durée et montants validés par PromoTerms)
+            $couponId = (string) $c->coupons->create($coupon, ['idempotency_key' => $spec->idempotencyKey.'-coupon'])->id;
+            $promotion = ['coupon' => $couponId, 'code' => $spec->code, 'metadata' => $spec->metadata];
+            if (null !== $spec->maxRedemptions) {
+                $promotion['max_redemptions'] = $spec->maxRedemptions;
+            }
+            if (null !== $spec->expiresAt) {
+                $promotion['expires_at'] = $spec->expiresAt->getTimestamp();
+            }
+            if ($spec->firstTimeOnly) {
+                $promotion['restrictions'] = ['first_time_transaction' => true];
+            }
+            $promotionId = (string) $c->promotionCodes->create($promotion, ['idempotency_key' => $spec->idempotencyKey.'-promotion'])->id;
+
+            return ['coupon' => $couponId, 'promotion' => $promotionId];
+        });
+    }
+
+    public function deactivatePromotionCode(string $promotionCodeId, string $idempotencyKey): void
+    {
+        $this->call('promotion_code', static fn (StripeClient $c): string => (string) $c->promotionCodes->update($promotionCodeId, ['active' => false], ['idempotency_key' => $idempotencyKey])->id);
     }
 
     public function findPromotionCode(string $code): ?PromotionCode

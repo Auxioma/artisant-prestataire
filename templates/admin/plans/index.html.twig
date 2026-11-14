@@ -14,7 +14,7 @@
     <div class="tm-admin-head">
         <div>
             <h1>Forfaits, crédits et codes promo</h1>
-            <p class="tm-admin-head__sub">Modèle économique · synchronisation avec Stripe (Product / Price / Coupon) à l’activation des paiements</p>
+            <p class="tm-admin-head__sub">Modèle économique · synchronisé avec Stripe (Product / Price / Coupon)</p>
         </div>
         {% if is_granted('admin.plans.create') %}<twig:Button href="{{ path('admin_plan_new') }}">Nouveau forfait</twig:Button>{% endif %}
     </div>
@@ -90,8 +90,46 @@
         </form>
     </section>
 
+    {% set promo_states = {active: 'Actif', exhausted: 'Épuisé', expired: 'Expiré', disabled: 'Désactivé'} %}
+    {% set promo_variants = {active: 'available', exhausted: 'neutral', expired: 'neutral', disabled: 'refused'} %}
     <section class="tm-admin-panel" id="promo" aria-labelledby="promo-titre">
-        <h2 id="promo-titre" class="tm-card-title">Codes promo</h2>
-        <twig:EmptyState title="Aucun code promo" text="Les codes promo (remise, durée, utilisations, validité) se créent ici une fois les paiements Stripe activés." icon="tag" />
+        <div class="tm-promo-head">
+            <h2 id="promo-titre" class="tm-card-title">Codes promo</h2>
+            {% if is_granted('admin.plans.create') %}<twig:Button href="{{ path('admin_promo_new') }}" variant="secondary" icon="plus" iconPosition="start">Nouveau code promo</twig:Button>{% endif %}
+        </div>
+        <form method="get" action="{{ path('admin_plans') }}#promo" class="tm-admin-filters" role="search">
+            <div class="tm-field tm-admin-filters__search"><label class="tm-visually-hidden" for="code">Code</label><div class="tm-field__control"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><input class="tm-field__input" id="code" name="code" type="search" value="{{ promo_filters.code }}" placeholder="Code"></div></div>
+            <div class="tm-select"><label class="tm-visually-hidden" for="statut">Statut</label><select class="tm-select__input" id="statut" name="statut"><option value="">Statut</option>{% for v, l in promo_states %}<option value="{{ v }}"{{ promo_filters.statut == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
+            <twig:Button type="submit" variant="secondary" icon="search" iconPosition="start">Filtrer</twig:Button>
+            {% if is_granted('admin.plans.export') %}<twig:Button href="{{ path('admin_promo_export', promo_filters|filter(v => v != '')) }}" variant="secondary" icon="download" iconPosition="start">Exporter CSV</twig:Button>{% endif %}
+        </form>
+        {% if promo_codes is empty %}
+            <twig:EmptyState title="Aucun code promo" text="Créez un code (remise en % ou en montant, durée, forfaits éligibles, utilisations, validité) : il est enregistré chez Stripe et utilisable au tunnel de souscription." icon="tag" />
+        {% else %}
+            <div class="tm-admin-table-wrap">
+                <table class="tm-admin-table">
+                    <thead><tr><th scope="col">Code</th><th scope="col">Remise</th><th scope="col">Durée</th><th scope="col">Utilisations</th><th scope="col">Validité</th><th scope="col">Statut</th><th scope="col"><span class="tm-visually-hidden">Actions</span></th></tr></thead>
+                    <tbody>
+                        {% for c in promo_codes %}
+                            {% set t = c.terms %}
+                            <tr>
+                                <td><strong>{{ t.code }}</strong>{% if t.newSubscribersOnly %}<span class="tm-caption"> · nouveaux abonnés</span>{% endif %}</td>
+                                <td>{{ t.label() }}</td>
+                                <td>{{ t.durationLabel() }}</td>
+                                <td>{{ c.redemptions }} / {{ t.maxRedemptions ?? '∞' }}{% if t.maxPerAccount %}<span class="tm-caption"> · {{ t.maxPerAccount }} par compte</span>{% endif %}</td>
+                                <td>{% if c.state() == 'expired' %}Expiré {{ t.validUntil|date_modify('-1 day')|date('d/m', 'Europe/Paris') }}{% elseif t.validUntil %}→ {{ t.validUntil|date_modify('-1 day')|date('d/m/Y', 'Europe/Paris') }}{% endif %}{% if c.planNames is not empty %}{{ t.validUntil ? ' · ' }}{{ c.planNames|join(', ') }}{% elseif not t.validUntil %}Tous les forfaits{% endif %}</td>
+                                <td><twig:Badge variant="{{ promo_variants[c.state()] }}">{{ c.stateLabel() }}</twig:Badge></td>
+                                <td>{% if not c.disabled and is_granted('admin.plans.edit') %}
+                                    <form method="post" action="{{ path('admin_promo_disable', {id: c.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('admin_promo_codes') }}">
+                                        <button type="submit" class="tm-link-button">Désactiver<span class="tm-visually-hidden"> {{ t.code }}</span></button>
+                                    </form>
+                                {% endif %}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
     </section>
 {% endblock %}

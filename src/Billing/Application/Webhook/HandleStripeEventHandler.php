@@ -9,6 +9,7 @@ use App\Billing\Application\Invoice\InvoiceReplicator;
 use App\Billing\Application\Payment\IdempotencyKey;
 use App\Billing\Application\Port\PaymentGateway;
 use App\Billing\Application\Port\SubscriptionState;
+use App\Billing\Application\Promo\PromoCodes;
 use App\Billing\Application\Subscription\SubscriptionMailer;
 use App\Billing\Application\Subscription\SubscriptionPeriods;
 use App\Billing\Application\Subscription\SubscriptionReader;
@@ -54,6 +55,7 @@ final readonly class HandleStripeEventHandler implements CommandHandler
         private SettingsProvider $settings,
         private AuditTrail $audit,
         private InvoiceReplicator $invoices,
+        private PromoCodes $promoCodes,
         private IdGenerator $ids,
         private Clock $clock,
     ) {
@@ -162,7 +164,8 @@ final readonly class HandleStripeEventHandler implements CommandHandler
     {
         $stripeSubscriptionId = $event->string('parent', 'subscription_details', 'subscription') ?? $event->string('subscription');
         $invoiceId = $event->string('id');
-        $subscription = $this->syncById($stripeSubscriptionId);
+        $state = null === $stripeSubscriptionId ? null : $this->gateway->retrieveSubscription($stripeSubscriptionId);
+        $subscription = null === $state ? null : $this->sync($state);
         if (null === $subscription || null === $invoiceId) {
             return false;
         }
@@ -185,6 +188,10 @@ final readonly class HandleStripeEventHandler implements CommandHandler
         $periodId = $this->ids->next();
         if (!$this->periods->record($periodId, $subscription->id()->value, $invoiceId, $start, $end, $credits, $amountPaid, $now)) {
             return true;
+        }
+        $promoCodeId = $state?->metadata['promo_code_id'] ?? '';
+        if (self::PERIOD_REASONS[$reason] && 1 === preg_match(self::UUID, $promoCodeId)) {
+            $this->promoCodes->recordRedemption($promoCodeId, $subscription->id()->value, $subscription->artisanId(), $now);
         }
         $previous = $this->settings->bool(SettingKey::PlansRollover) ? null : $this->periods->previousOf($subscription->id()->value, $start);
         $this->ledger->grantPeriod($this->ids->next(), $subscription->artisanId(), $periodId, $credits, $end, $previous, $this->ids->next(), $now);

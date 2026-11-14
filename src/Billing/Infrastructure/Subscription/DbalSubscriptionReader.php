@@ -40,6 +40,11 @@ final readonly class DbalSubscriptionReader implements SubscriptionReader
         return false === $id ? null : DbalValue::string($id);
     }
 
+    public function hadSubscription(string $artisanId): bool
+    {
+        return false !== $this->connection->fetchOne("SELECT 1 FROM billing.subscription WHERE artisan_id = :a AND status <> 'incomplete'", ['a' => $artisanId]);
+    }
+
     public function planNameOfPrice(string $planPriceId): ?string
     {
         $row = $this->connection->fetchAssociative('SELECT p.name, pp.interval FROM billing.plan_price pp JOIN billing.plan p ON p.id = pp.plan_id WHERE pp.id = :id', ['id' => $planPriceId]);

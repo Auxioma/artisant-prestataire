@@ -9,6 +9,7 @@ use App\Billing\Application\Plan\AdminPlans;
 use App\Billing\Application\Plan\PlanAction;
 use App\Billing\Application\Plan\PlanView;
 use App\Billing\Application\Plan\SavePlan;
+use App\Billing\Application\Promo\AdminPromoCodes;
 use App\Billing\Domain\Plan\PlanRuleViolation;
 use App\Billing\Domain\Plan\PlanVisibility;
 use App\Shared\Application\Bus\CommandBus;
@@ -43,10 +44,14 @@ final class PlansAdminController extends AbstractController
 
     #[Route('', name: 'admin_plans', methods: ['GET'])]
     #[IsGranted('admin.plans.view')]
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $promoFilters = ['code' => trim($request->query->getString('code')), 'statut' => (string) PromoCodesAdminController::state($request)];
+
         return $this->render('admin/plans/index.html.twig', [
             'plans' => $this->plans(),
+            'promo_codes' => PromoCodesAdminController::codes($this->queries->ask(new AdminPromoCodes($promoFilters['code'], PromoCodesAdminController::state($request)))),
+            'promo_filters' => $promoFilters,
             'credits' => [
                 'free' => $this->settings->int(SettingKey::CreditsFreeOnSignup),
                 'grace' => $this->settings->int(SettingKey::BillingGraceDays),

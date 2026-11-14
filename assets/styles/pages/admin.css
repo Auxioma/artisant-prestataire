@@ -458,4 +458,12 @@
     .tm-plan-gauge li.is-alert::before { background: var(--tm-gold); }
     .tm-plan-gauge li.is-critical::before { background: var(--tm-orange); }
     .tm-plan-gauge li.is-exhausted::before { background: var(--tm-red); }
+
+    /* BO08.3 — codes promo (Figma 186:3467, T-606a). */
+    .tm-promo-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+    .tm-promo-type, .tm-promo-plans { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; margin: 0; padding: 0; border: 0; }
+    .tm-promo-type legend, .tm-promo-plans legend { width: 100%; margin-bottom: 4px; }
+    .tm-promo-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+    .tm-admin-table .tm-link-button { padding: 0; border: 0; background: none; color: var(--color-danger-text); font: inherit; font-weight: var(--font-weight-semibold); text-decoration: underline; cursor: pointer; }
+    .tm-admin-table .tm-link-button:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
 }

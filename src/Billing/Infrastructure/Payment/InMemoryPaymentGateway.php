@@ -10,6 +10,7 @@ use App\Billing\Application\Port\CheckoutSession;
 use App\Billing\Application\Port\PaymentGateway;
 use App\Billing\Application\Port\PaymentMethodSummary;
 use App\Billing\Application\Port\PromotionCode;
+use App\Billing\Application\Port\PromotionSpec;
 use App\Billing\Application\Port\SubscriptionState;
 use App\Billing\Domain\Plan\BillingInterval;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
@@ -63,6 +64,22 @@ final class InMemoryPaymentGateway implements PaymentGateway
     public function updateCustomerBilling(string $customerId, BillingAddress $address, string $idempotencyKey): void
     {
         $this->respond('customer_update', $idempotencyKey, ['id' => $customerId, 'name' => $address->name, 'country' => $address->country, 'vat' => $address->vatNumber], $customerId);
+    }
+
+    public function createPromotion(PromotionSpec $spec): array
+    {
+        if (!$this->configured) {
+            throw new ExternalServiceUnavailable('stripe', 'clé secrète non configurée');
+        }
+        $coupon = $this->respond('coupon', $spec->idempotencyKey.'-coupon', ['code' => $spec->code, 'percent' => $spec->percentOff, 'amount' => $spec->amountOffCents, 'duration' => $spec->duration, 'months' => $spec->durationMonths, 'products' => $spec->productIds]);
+        $promotion = $this->respond('promo', $spec->idempotencyKey.'-promotion', ['coupon' => $coupon, 'code' => $spec->code, 'max' => $spec->maxRedemptions, 'first_time' => $spec->firstTimeOnly]);
+
+        return ['coupon' => $coupon, 'promotion' => $promotion];
+    }
+
+    public function deactivatePromotionCode(string $promotionCodeId, string $idempotencyKey): void
+    {
+        $this->respond('promo_off', $idempotencyKey, ['id' => $promotionCodeId], $promotionCodeId);
     }
 
     public function findPromotionCode(string $code): ?PromotionCode

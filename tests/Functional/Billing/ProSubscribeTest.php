@@ -134,6 +134,25 @@ final class ProSubscribeTest extends WebTestCase
         self::assertStringContainsString('−20 % pendant 3 mois', $page->filter('.tm-subscribe__recap')->text());
     }
 
+    public function testLocalPromoCodeIsCheckedAndPassedToCheckout(): void
+    {
+        $this->connection->executeStatement(
+            "INSERT INTO billing.promo_code (id, code, discount_type, percent_bp, duration, duration_months, plan_ids, stripe_coupon_id, stripe_promotion_code_id, created_by, created_at) VALUES ('0190f5e4-0000-7000-8000-00000001b604', 'LOCALFICTIF', 'percent', 1500, 'repeating', 2, CAST(:plans AS uuid[]), 'coupon_FICTIF', 'promo_LOCAL', '0190f5e4-0000-7000-8000-0000000aa604', now())",
+            ['plans' => '{'.self::PLAN.'}'],
+        );
+        $page = $this->submit($this->page(), 'apply', ['promo' => 'localfictif']);
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('−15 % pendant 2 mois', $page->filter('.tm-subscribe__recap')->text());
+
+        $this->submit($page, 'pay', self::BILLING + ['cgv' => '1']);
+        self::assertResponseStatusCodeSame(303);
+        $index = array_search('checkout', array_column($this->gateway->calls, 0), true);
+        self::assertIsInt($index);
+        $checkout = $this->gateway->calls[$index][1] ?? [];
+        $metadata = \is_array($checkout['metadata'] ?? null) ? $checkout['metadata'] : [];
+        self::assertSame(['promo_LOCAL', '0190f5e4-0000-7000-8000-00000001b604'], [$checkout['promotion'] ?? null, $metadata['promo_code_id'] ?? null]);
+    }
+
     public function testCheckoutStartsPendingSubscription(): void
     {
         $this->gateway->promotionCodes['BIENVENUE'] = new PromotionCode('promo_FICTIF', 'BIENVENUE', '−20 % pendant 3 mois');

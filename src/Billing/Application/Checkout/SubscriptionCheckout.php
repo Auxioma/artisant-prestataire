@@ -13,6 +13,8 @@ use App\Billing\Application\Port\CheckoutSession;
 use App\Billing\Application\Port\PaymentGateway;
 use App\Billing\Application\Port\PromotionCode;
 use App\Billing\Application\Port\VatNumberChecker;
+use App\Billing\Application\Promo\PromoCodes;
+use App\Billing\Application\Promo\PromoEligibility;
 use App\Billing\Application\Subscription\SubscriptionReader;
 use App\Billing\Domain\Plan\BillingInterval;
 use App\Billing\Domain\Plan\Plan;
@@ -60,6 +62,8 @@ final readonly class SubscriptionCheckout
         private Clock $clock,
         private AuditTrail $audit,
         private IdGenerator $ids,
+        private PromoCodes $promoCodes,
+        private PromoEligibility $eligibility,
     ) {
     }
 
@@ -73,7 +77,7 @@ final readonly class SubscriptionCheckout
             $interval,
             $plan->price($interval)->amountCents ?? 0,
             $billing,
-            null === $promoCode || '' === trim($promoCode) ? null : $this->promotion($promoCode),
+            null === $promoCode || '' === trim($promoCode) ? null : $this->promotion($promoCode, $artisanId, $plan->id()->value),
             $this->gateway->isConfigured(),
         );
     }
@@ -98,7 +102,7 @@ final readonly class SubscriptionCheckout
             throw new CheckoutRejected('Cette formule est en cours de mise en ligne : réessayez dans quelques minutes.', 'plan');
         }
         $verifiedAt = $this->verifyVat($details);
-        $promotion = null === $promoCode || '' === trim($promoCode) ? null : $this->promotion($promoCode);
+        $promotion = null === $promoCode || '' === trim($promoCode) ? null : $this->promotion($promoCode, $artisanId, $plan->id()->value);
 
         try {
             $customerId = $this->customers->idFor($artisanId, $userId);
@@ -129,7 +133,7 @@ final readonly class SubscriptionCheckout
                 $cancelUrl,
                 'stripe_tax' === $this->settings->choice(SettingKey::BillingTaxEngine),
                 $promotion?->id,
-                ['subscription_id' => $attemptId, 'artisan_id' => $artisanId, 'plan_id' => $plan->id()->value, 'plan_price_id' => $price->id],
+                array_filter(['subscription_id' => $attemptId, 'artisan_id' => $artisanId, 'plan_id' => $plan->id()->value, 'plan_price_id' => $price->id, 'promo_code_id' => $promotion?->localId]),
                 IdempotencyKey::for('StartCheckout', $attemptId, $price->id.'|'.($promotion->id ?? '')),
             ));
         } catch (ExternalServiceUnavailable) {
@@ -208,16 +212,35 @@ final readonly class SubscriptionCheckout
         return $check->checkedAt;
     }
 
-    private function promotion(string $code): PromotionCode
+    private function promotion(string $code, string $artisanId, string $planId): PromotionCode
     {
         $code = strtoupper(trim($code));
         if (1 !== preg_match('/^[A-Z0-9_-]{2,40}$/', $code)) {
             throw new CheckoutRejected('Code promo invalide.', 'promo');
+        }
+        // BO08.3 : règles locales d'abord (forfaits, utilisations par compte, nouveaux abonnés) ; sinon code Stripe direct.
+        $local = $this->promoCodes->findByCode($code, $this->clock->now());
+        if (null !== $local) {
+            $refusal = $this->eligibility->refusal($local, $artisanId, $planId, $this->reader->hadSubscription($artisanId));
+            if (null !== $refusal) {
+                throw new CheckoutRejected($refusal, 'promo');
+            }
+
+            return new PromotionCode($local->stripePromotionCodeId, $local->terms->code, $local->terms->label().' '.self::durationText($local->terms->durationLabel()), $local->id);
         }
         try {
             return $this->gateway->findPromotionCode($code) ?? throw new CheckoutRejected('Ce code promo n’existe pas ou n’est plus valable.', 'promo');
         } catch (ExternalServiceUnavailable) {
             throw new CheckoutRejected('Les codes promo ne peuvent pas être vérifiés pour le moment.', 'promo');
         }
+    }
+
+    private static function durationText(string $duration): string
+    {
+        return match ($duration) {
+            '1 fois' => 'sur la première échéance',
+            'Toujours' => 'pendant toute la durée de l’abonnement',
+            default => 'pendant '.$duration,
+        };
     }
 }

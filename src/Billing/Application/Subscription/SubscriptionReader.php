@@ -13,6 +13,9 @@ interface SubscriptionReader
 
     public function userOfArtisan(string $artisanId): ?string;
 
+    /** L'artisan a-t-il déjà eu un abonnement payé (codes réservés aux nouveaux abonnés) ? */
+    public function hadSubscription(string $artisanId): bool;
+
     /** Nom du forfait d'un prix (« Pro — annuel »). */
     public function planNameOfPrice(string $planPriceId): ?string;
 
