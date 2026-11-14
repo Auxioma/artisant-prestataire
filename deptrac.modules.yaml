@@ -26,10 +26,10 @@ deptrac:
     Search: [Shared, Catalog, ArtisanProfile]
     QuoteRequest: [Shared, Catalog, ArtisanProfile, Moderation, Notification] # Notification : E-10 (P11.7)
     Quote: [Shared, QuoteRequest, Billing, ArtisanProfile, Catalog, Notification] # Catalog : métier ; Notification : E-12, E-33 (T-504)
-    Billing: [Shared, Notification]
+    Billing: [Shared, Notification, Administration] # Administration : paramètres de crédits BO08.2 enregistrés par ChangeSetting
     Messaging: [Shared, QuoteRequest, Quote]
     Review: [Shared, Quote, Moderation]
     Moderation: [Shared, Administration] # Administration : règles automatiques BO05.3 enregistrées par ChangeSetting
-    Content: [Shared, Catalog, Search, Notification, Administration] # Search : cartes de l'accueil (P01) ; Notification : E-90, I-03 (P16) ; Administration : réglages SEO modifiés depuis BO12 (ChangeSetting)
+    Content: [Shared, Catalog, Search, Notification, Administration, Billing] # Search : cartes de l'accueil (P01) ; Notification : E-90, I-03 (P16) ; Administration : réglages SEO modifiés depuis BO12 (ChangeSetting) ; Billing : forfaits publiés (P13)
     Notification: [Shared]
     Administration: [Shared, Notification] # Notification : invitation de l'équipe (I-02)

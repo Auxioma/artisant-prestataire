@@ -438,4 +438,24 @@
     @media (min-width: 1024px) {
         .tm-moderation { grid-template-columns: minmax(0, 340px) minmax(0, 1fr); }
     }
+
+    /* BO08 — monétisation (Figma 186:3467) */
+    .tm-admin-warning { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 12px; border-radius: 10px; background: var(--tm-orange-soft); color: var(--tm-orange-ink); font-size: 12px; line-height: 18px; font-weight: var(--font-weight-medium); }
+    .tm-admin-warning svg { flex: none; margin-top: 1px; }
+    .tm-admin-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
+    .tm-plan-actions { white-space: nowrap; }
+    .tm-plan-actions > * { vertical-align: middle; }
+    .tm-plan-menu { position: relative; display: inline-block; }
+    .tm-plan-menu summary { list-style: none; cursor: pointer; }
+    .tm-plan-menu summary::-webkit-details-marker { display: none; }
+    .tm-plan-menu form { position: absolute; right: 0; z-index: 5; display: grid; gap: 4px; min-width: 12rem; padding: 8px 12px; border: 1px solid var(--tm-line); border-radius: 10px; background: var(--color-surface); box-shadow: var(--shadow-card); text-align: left; }
+    .tm-plan-credits form, .tm-plan-form { display: grid; gap: var(--space-3); }
+    .tm-plan-form__frame { display: grid; gap: var(--space-3); min-width: 0; margin: 0; padding: 0; border: 0; }
+    .tm-plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 12px; }
+    .tm-plan-gauge ul { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 0; padding: 0; list-style: none; }
+    .tm-plan-gauge li { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border: 1px solid var(--tm-line); border-radius: var(--radius-pill); font-size: 12px; line-height: 18px; color: var(--tm-ink); }
+    .tm-plan-gauge li::before { content: ''; width: 12px; height: 12px; border-radius: 50%; background: var(--tm-success); }
+    .tm-plan-gauge li.is-alert::before { background: var(--tm-gold); }
+    .tm-plan-gauge li.is-critical::before { background: var(--tm-orange); }
+    .tm-plan-gauge li.is-exhausted::before { background: var(--tm-red); }
 }

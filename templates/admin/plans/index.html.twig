@@ -1,0 +1,97 @@
+{#-
+    BO08 (Figma 186:3467) — monétisation : en-tête, « Nouveau forfait », onglets, BO08.1 forfaits (ordre, nom, prix HT
+    mensuel / annuel, devis par période, abonnés, visibilité, statut, actions), avertissement sur les prix, BO08.2
+    paramètres de crédits, BO08.3 codes promo (avec Stripe). Écarts : P-93.
+-#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'plans' %}
+{% set status_variants = {draft: 'pending', published: 'available', archived: 'neutral'} %}
+{% block title %}Forfaits, crédits et codes promo{% endblock %}
+{% block body %}
+    <nav class="tm-admin-crumbs" aria-label="Fil d’Ariane">
+        <ol><li><a href="{{ path('admin_dashboard') }}">Back-office</a></li><li aria-current="page">Monétisation</li></ol>
+    </nav>
+    <div class="tm-admin-head">
+        <div>
+            <h1>Forfaits, crédits et codes promo</h1>
+            <p class="tm-admin-head__sub">Modèle économique · synchronisation avec Stripe (Product / Price / Coupon) à l’activation des paiements</p>
+        </div>
+        {% if is_granted('admin.plans.create') %}<twig:Button href="{{ path('admin_plan_new') }}">Nouveau forfait</twig:Button>{% endif %}
+    </div>
+    <nav class="tm-admin-tabs" aria-label="Monétisation">
+        <a class="tm-admin-tab is-active" href="#forfaits" aria-current="true">Forfaits</a>
+        <a class="tm-admin-tab" href="#credits">Paramètres de crédits</a>
+        <a class="tm-admin-tab" href="#promo">Codes promo</a>
+    </nav>
+
+    <section class="tm-admin-panel" id="forfaits" aria-labelledby="forfaits-titre">
+        <h2 id="forfaits-titre" class="tm-visually-hidden">Forfaits</h2>
+        <div class="tm-admin-table-wrap">
+            <table class="tm-admin-table">
+                <thead><tr><th scope="col">Ordre</th><th scope="col">Forfait</th><th scope="col">Prix HT mensuel</th><th scope="col">Prix HT annuel</th><th scope="col">Devis / période</th><th scope="col">Abonnés</th><th scope="col">Visibilité</th><th scope="col">Statut</th><th scope="col"><span class="tm-visually-hidden">Actions</span></th></tr></thead>
+                <tbody>
+                    {% for p in plans %}
+                        <tr>
+                            <td>{{ p.status.value == 'archived' ? '—' : p.position }}</td>
+                            <td><strong>{{ p.terms.name }}</strong>{% if p.terms.badge %} <twig:Badge variant="neutral">{{ p.terms.badge }}</twig:Badge>{% endif %}</td>
+                            <td>{{ p.monthlyCents is not null ? p.monthlyCents|tm_money : 'À fixer' }}</td>
+                            <td>{{ p.yearlyCents is not null ? p.yearlyCents|tm_money : '—' }}</td>
+                            <td>{% if p.terms.unlimited %}Illimité{{ p.terms.fairUseCap ? ' (plafond ' ~ p.terms.fairUseCap ~ ')' : ' (plafond à fixer)' }}{% else %}{{ p.terms.quotesPerPeriod ?? 'À fixer' }}{% endif %}</td>
+                            <td>{{ p.subscribers }}</td>
+                            <td>{{ p.terms.visibility.label() }}</td>
+                            <td><twig:Badge variant="{{ status_variants[p.status.value] }}">{{ p.status.label() }}</twig:Badge></td>
+                            <td class="tm-plan-actions">
+                                {% if p.status.value != 'archived' and is_granted('admin.plans.edit') %}
+                                    <a class="tm-icon-link" href="{{ path('admin_plan_edit', {id: p.id}) }}" aria-label="Modifier {{ p.terms.name }}"><twig:Icon name="edit" size="sm" class="tm-icon--inherit" /></a>
+                                    <details class="tm-plan-menu">
+                                        <summary class="tm-icon-link" aria-label="Autres actions pour {{ p.terms.name }}"><twig:Icon name="dots" size="sm" class="tm-icon--inherit" /></summary>
+                                        <form method="post" action="{{ path('admin_plan_action', {id: p.id}) }}" data-turbo="false">
+                                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                                            {% if p.status.value == 'draft' %}<button type="submit" class="tm-link-button" name="action" value="publish">Publier</button>{% endif %}
+                                            {% if p.status.value == 'published' %}<button type="submit" class="tm-link-button tm-admin-danger" name="action" value="archive">Archiver</button>{% endif %}
+                                            {% if p.deletable %}<button type="submit" class="tm-link-button tm-admin-danger" name="action" value="delete">Supprimer le brouillon</button>{% endif %}
+                                            <button type="submit" class="tm-link-button" name="action" value="up">Monter</button>
+                                            <button type="submit" class="tm-link-button" name="action" value="down">Descendre</button>
+                                        </form>
+                                    </details>
+                                {% else %}
+                                    <a class="tm-icon-link" href="{{ path('admin_plan_edit', {id: p.id}) }}" aria-label="Voir {{ p.terms.name }}"><twig:Icon name="eye" size="sm" class="tm-icon--inherit" /></a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="9">Aucun forfait : créez-en un avec « Nouveau forfait ».</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    <p class="tm-admin-warning"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" />Modifier un prix crée un nouveau prix (nouveau Price Stripe) : les abonnés existants ne sont pas affectés, sauf migration explicite avec préavis (E-47). Un forfait déjà publié ou souscrit ne peut qu’être archivé.</p>
+
+    <section class="tm-admin-panel tm-plan-credits" id="credits" aria-labelledby="credits-titre">
+        <h2 id="credits-titre" class="tm-card-title">Paramètres de crédits</h2>
+        <form method="post" action="{{ path('admin_plans_settings') }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            {% set readonly = not is_granted('admin.plans.edit') %}
+            <div class="tm-plan-grid">
+                <div class="tm-field"><label class="tm-field__label" for="free">Devis gratuits à la vérification <span aria-hidden="true">*</span></label><div class="tm-field__control"><input class="tm-field__input" id="free" name="free" type="number" min="0" required value="{{ credits.free }}"{{ readonly ? ' disabled' }}></div><p class="tm-field__help">credits.free_on_signup</p></div>
+                <div class="tm-field"><label class="tm-field__label" for="grace">Période de grâce (jours) <span aria-hidden="true">*</span></label><div class="tm-field__control"><input class="tm-field__input" id="grace" name="grace" type="number" min="0" required value="{{ credits.grace }}"{{ readonly ? ' disabled' }}></div><p class="tm-field__help">billing.grace_days</p></div>
+                <div class="tm-field"><label class="tm-field__label" for="thresholds">Seuils d’alerte (devis consommés) <span aria-hidden="true">*</span></label><div class="tm-field__control"><input class="tm-field__input" id="thresholds" name="thresholds" required value="{{ credits.thresholds }}"{{ readonly ? ' disabled' }}></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="plan_alerts">Alertes forfait (%) <span aria-hidden="true">*</span></label><div class="tm-field__control"><input class="tm-field__input" id="plan_alerts" name="plan_alerts" required value="{{ credits.plan_alerts }}"{{ readonly ? ' disabled' }}></div></div>
+            </div>
+            <div class="tm-plan-gauge">
+                <p class="tm-field__label">Couleurs de la jauge</p>
+                <ul><li class="is-normal">&gt; 20 %</li><li class="is-alert">10–20 %</li><li class="is-critical">&lt; 10 %</li><li class="is-exhausted">0</li></ul>
+            </div>
+            <label class="tm-check"><input type="checkbox" class="tm-check__input" name="rollover" value="1"{{ credits.rollover ? ' checked' }}{{ readonly ? ' disabled' }}><span>Report des crédits non consommés (plans.rollover)</span></label>
+            <div class="tm-field"><label class="tm-field__label" for="order">Ordre de consommation</label><div class="tm-select"><select class="tm-select__input" id="order" name="order"{{ readonly ? ' disabled' }}>{% for v, l in orders %}<option value="{{ v }}"{{ credits.order == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div></div>
+            <p class="tm-caption">Toute modification est journalisée (valeur avant / après) et ne s’applique qu’aux nouveaux comptes vérifiés.</p>
+            {% if not readonly %}<twig:Button type="submit" variant="secondary">Enregistrer les paramètres</twig:Button>{% endif %}
+        </form>
+    </section>
+
+    <section class="tm-admin-panel" id="promo" aria-labelledby="promo-titre">
+        <h2 id="promo-titre" class="tm-card-title">Codes promo</h2>
+        <twig:EmptyState title="Aucun code promo" text="Les codes promo (remise, durée, utilisations, validité) se créent ici une fois les paiements Stripe activés." icon="tag" />
+    </section>
+{% endblock %}

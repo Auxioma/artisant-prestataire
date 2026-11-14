@@ -28,6 +28,7 @@ final class AdminNavigationExtension extends AbstractExtension
         'clients' => 'admin_clients',
         'artisans' => 'admin_artisans',
         'requests' => 'admin_requests',
+        'plans' => 'admin_plans',
         'moderation' => 'admin_moderation',
         'catalog' => 'admin_catalog',
         'seo' => 'admin_seo',
