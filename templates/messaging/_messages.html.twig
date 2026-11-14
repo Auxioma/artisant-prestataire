@@ -16,7 +16,7 @@
             {% if thread.counterpartLogoProfileId %}<img class="tm-msg-avatar tm-msg-avatar--sm" src="{{ path('public_artisan_logo', {id: thread.counterpartLogoProfileId}) }}" alt="" width="32" height="32" loading="lazy">{% else %}<span class="tm-msg-avatar tm-msg-avatar--sm tm-msg-avatar--initials" aria-hidden="true">{{ thread.initials() }}</span>{% endif %}
         {% endif %}
         <div class="tm-msg__bubble">
-            {% if m.body %}<p class="tm-msg__body">{{ m.body|nl2br }}</p>{% endif %}
+            {% if m.removed %}<p class="tm-msg__body tm-msg__removed"><twig:Icon name="shield" size="xs" class="tm-icon--inherit" />Message retiré par la modération.</p>{% elseif m.body %}<p class="tm-msg__body">{{ m.body|nl2br }}</p>{% endif %}
             {% if m.attachment %}
                 {% set a = m.attachment %}
                 {% set weight = a.size >= 1048576 ? (a.size / 1048576)|number_format(1, ',', ' ') ~ ' Mo' : max(1, (a.size / 1024)|round) ~ ' Ko' %}
@@ -40,7 +40,7 @@
                 {% if m.mine %}<span class="tm-msg__read{{ m.readByCounterpart ? ' is-read' }}">{{ m.readByCounterpart ? '✓✓' : '✓' }}<span class="tm-visually-hidden">{{ m.readByCounterpart ? ' Lu' : ' Envoyé' }}</span></span>{% endif %}
                 {% if m.masked %}<span class="tm-msg__masked">Coordonnées masquées</span>{% endif %}
             </p>
-            {% if not m.mine %}
+            {% if not m.mine and not m.removed %}
                 {% if m.reportedByMe %}
                     <p class="tm-msg__reported">Signalé à la modération</p>
                 {% else %}

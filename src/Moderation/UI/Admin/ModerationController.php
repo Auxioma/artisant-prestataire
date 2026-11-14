@@ -8,9 +8,13 @@ use App\Administration\Application\Command\ChangeSetting;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Moderation\DecideProfileReview;
+use App\Shared\Application\Moderation\DecideReportedMessage;
 use App\Shared\Application\Moderation\ModerationDecisionRejected;
 use App\Shared\Application\Moderation\PendingProfileReviews;
 use App\Shared\Application\Moderation\ProfileReviewItem;
+use App\Shared\Application\Moderation\ReportedMessageItem;
+use App\Shared\Application\Moderation\ReportedMessages;
+use App\Shared\Application\Moderation\RevealMessageOriginal;
 use App\Shared\Application\Security\CurrentAdministrator;
 use App\Shared\Application\Settings\InvalidSettingValue;
 use App\Shared\Application\Settings\SettingKey;
@@ -24,8 +28,9 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * BO05 (/admin/moderation/{onglet}, Figma 186:2172) — files de modération : avis, messages signalés, signalements,
- * contenus de profils (relecture RG-031), offres, et règles automatiques éditables (BO05.3). Les files des avis, des
- * messages, des signalements et des offres arrivent avec leurs lots ; leur onglet indique un compte nul.
+ * contenus de profils (relecture RG-031), offres, et règles automatiques éditables (BO05.3). Messages signalés
+ * (T-701d2) : contexte du fil, lecture journalisée de l'original scellé, classement ou retrait. Les files des avis, des
+ * signalements et des offres arrivent avec leurs lots ; leur onglet indique un compte nul.
  */
 #[Route('/admin/moderation')]
 final class ModerationController extends AbstractController
@@ -61,19 +66,65 @@ final class ModerationController extends AbstractController
     #[IsGranted('admin.moderation.view')]
     public function index(Request $request, string $onglet = 'avis'): Response
     {
+        return $this->page($onglet, $request->query->getString('element'));
+    }
+
+    /** Messages signalés : signalement classé, ou message retiré de l'affichage avec un motif. */
+    #[Route('/messages/{id}', name: 'admin_moderation_message', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
+    #[IsGranted('admin.moderation.edit')]
+    public function decideMessage(Request $request, string $id): Response
+    {
+        $this->assertCsrf($request);
+        $remove = 'remove' === $request->request->getString('decision');
+        try {
+            $this->commands->dispatch(new DecideReportedMessage($this->adminId(), $id, $remove, $request->request->getString('reason') ?: null));
+            $this->addFlash('success', $remove ? 'Message retiré : les deux participants voient « Message retiré par la modération ».' : 'Signalement classé sans suite.');
+        } catch (ModerationDecisionRejected $e) {
+            $this->addFlash('error', $e->getMessage());
+
+            return $this->redirectToRoute('admin_moderation_tab', ['onglet' => 'messages', 'element' => $id], Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->redirectToRoute('admin_moderation_tab', ['onglet' => 'messages'], Response::HTTP_SEE_OTHER);
+    }
+
+    /** Original d'un message dont les coordonnées ont été masquées (ADR-0014) : affiché une fois, lecture journalisée. */
+    #[Route('/messages/{id}/original', name: 'admin_moderation_message_original', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
+    #[IsGranted('admin.moderation.edit')]
+    public function original(Request $request, string $id): Response
+    {
+        $this->assertCsrf($request);
+        $original = $this->queries->ask(new RevealMessageOriginal($this->adminId(), $id, $request->getClientIp()));
+
+        $response = $this->page('messages', $id, \is_string($original) ? $original : null);
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    private function page(string $onglet, string $selected, ?string $original = null): Response
+    {
         $contents = $this->contents();
-        $selected = $request->query->getString('element');
         $current = null;
         foreach ($contents as $item) {
             $current = $item->id === $selected ? $item : $current;
+        }
+        $messages = $this->messages();
+        $message = null;
+        foreach ($messages as $item) {
+            $message = $item->id === $selected ? $item : $message;
         }
 
         return $this->render('admin/moderation/index.html.twig', [
             'tab' => $onglet,
             'tabs' => self::TABS,
-            'counts' => ['avis' => 0, 'messages' => 0, 'signalements' => 0, 'contenus' => \count($contents), 'offres' => 0],
+            'counts' => ['avis' => 0, 'messages' => \count($messages), 'signalements' => 0, 'contenus' => \count($contents), 'offres' => 0],
             'contents' => $contents,
             'current' => $current ?? ($contents[0] ?? null),
+            'messages' => $messages,
+            'message' => $message ?? ($messages[0] ?? null),
+            'original' => null !== $original && null !== $message ? $original : null,
+            'message_reasons' => DecideReportedMessage::REASONS,
             'reasons' => DecideProfileReview::REASONS,
             'forbidden_terms' => $this->settings->stringList(SettingKey::ModerationForbiddenTerms),
             'thresholds' => array_map(fn (SettingKey $k): array => ['key' => $k->value, 'label' => $k->definition()->label, 'value' => $this->settings->int($k)], self::THRESHOLDS),
@@ -133,6 +184,14 @@ final class ModerationController extends AbstractController
         $items = $this->queries->ask(new PendingProfileReviews());
 
         return array_values(array_filter(\is_array($items) ? $items : [], static fn (mixed $i): bool => $i instanceof ProfileReviewItem));
+    }
+
+    /** @return list<ReportedMessageItem> */
+    private function messages(): array
+    {
+        $items = $this->queries->ask(new ReportedMessages());
+
+        return array_values(array_filter(\is_array($items) ? $items : [], static fn (mixed $i): bool => $i instanceof ReportedMessageItem));
     }
 
     private function adminId(): string

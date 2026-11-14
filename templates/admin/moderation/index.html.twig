@@ -63,10 +63,65 @@
                 </section>
             {% endif %}
         </div>
+    {% elseif tab == 'messages' and messages is not empty %}
+        <div class="tm-moderation">
+            <section class="tm-admin-panel tm-moderation__queue" aria-labelledby="file-messages-titre">
+                <h2 id="file-messages-titre" class="tm-card-title">Messages signalés</h2>
+                <ul>
+                    {% for item in messages %}
+                        <li class="tm-moderation__item{{ message and message.id == item.id ? ' is-current' }}">
+                            <a href="{{ path('admin_moderation_tab', {onglet: 'messages', element: item.id}) }}"{{ message and message.id == item.id ? ' aria-current="true"' }}>
+                                <strong>{{ item.senderName }} → {{ item.reasonLabel }}</strong>
+                                <span class="tm-caption">signalé {{ _self.ago(item.reportedAt, now) }}{{ (now|date('U') - item.reportedAt|date('U')) > 172800 ? ' · SLA' }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% if message %}
+                <section class="tm-admin-panel tm-moderation__detail" aria-labelledby="message-titre">
+                    <h2 id="message-titre" class="tm-card-title">Message signalé</h2>
+                    <p class="tm-caption">Écrit par {{ message.senderName }} ({{ message.senderRole == 'artisan' ? 'professionnel' : 'client' }}) le {{ message.sentAt|date('d/m/Y à H:i', 'Europe/Paris') }} · signalé par {{ message.reporterName }} le {{ message.reportedAt|date('d/m/Y à H:i', 'Europe/Paris') }}{% if message.requestNumber %} · demande {{ message.requestNumber }}{% endif %}</p>
+                    <dl class="tm-facts">
+                        <div><dt>Motif du signalement</dt><dd>{{ message.reasonLabel }}</dd></div>
+                        <div><dt>Message</dt><dd class="tm-pre">{{ message.body ?: '(pièce jointe seule)' }}</dd></div>
+                        {% if message.hasAttachment %}<div><dt>Pièce jointe</dt><dd>Oui — non affichée ici ; retirée avec le message.</dd></div>{% endif %}
+                        {% if original %}<div><dt>Original (coordonnées non masquées)</dt><dd class="tm-pre tm-moderation__original">{{ original }}</dd></div>{% endif %}
+                    </dl>
+                    {% if message.masked and not original and is_granted('admin.moderation.edit') %}
+                        <form method="post" action="{{ path('admin_moderation_message_original', {id: message.id}) }}" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                            <p class="tm-caption">Des coordonnées ont été masquées dans ce message. Leur lecture est journalisée (ADR-0014).</p>
+                            <twig:Button type="submit" variant="secondary" icon="eye" iconPosition="start">Voir l’original</twig:Button>
+                        </form>
+                    {% endif %}
+                    <h3 class="tm-card-title">Contexte du fil</h3>
+                    <ol class="tm-moderation__thread">
+                        {% for c in message.context %}
+                            <li{% if c.reported %} class="is-reported"{% endif %}><p class="tm-caption">{{ c.author }} · {{ c.at|date('d/m H:i', 'Europe/Paris') }}{{ c.reported ? ' · message signalé' }}</p><p class="tm-pre">{{ c.body ?: '(pièce jointe)' }}</p></li>
+                        {% endfor %}
+                    </ol>
+                    {% if is_granted('admin.moderation.edit') %}
+                        <form method="post" action="{{ path('admin_moderation_message', {id: message.id}) }}" class="tm-admin-decision" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                            <h3 class="tm-card-title">Décision</h3>
+                            <fieldset>
+                                <legend>Motif du retrait (normalisé) :</legend>
+                                <div class="tm-admin-chips">{% for v, l in message_reasons %}<label class="tm-admin-chip"><input type="radio" name="reason" value="{{ v }}"><span>{{ l }}</span></label>{% endfor %}</div>
+                            </fieldset>
+                            <div class="tm-admin-actions">
+                                <twig:Button type="submit" variant="secondary" name="decision" value="dismiss">Classer sans suite</twig:Button>
+                                <twig:Button type="submit" variant="danger" name="decision" value="remove">Retirer le message</twig:Button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </div>
     {% elseif tab != 'regles' %}
         <section class="tm-admin-panel">
             <twig:EmptyState title="{{ {avis: 'Aucun avis à modérer', messages: 'Aucun message signalé', signalements: 'Aucun signalement', offres: 'Aucune offre à modérer'}[tab] }}"
-                text="{{ {avis: 'Les avis arrivent avec le lot Avis : leur file (texte, note, photos, preuve de prestation, score de risque) s’affichera ici.', messages: 'Les messages signalés arrivent avec la messagerie.', signalements: 'Les signalements (avis, message, profil, demande, offre) arrivent avec leurs lots.', offres: 'Les offres et promotions des artisans arrivent en V2 (modération a priori).'}[tab] }}" />
+                text="{{ {avis: 'Les avis arrivent avec le lot Avis : leur file (texte, note, photos, preuve de prestation, score de risque) s’affichera ici.', messages: 'Les messages signalés par les clients et les professionnels s’afficheront ici, avec le contexte du fil.', signalements: 'Les signalements (avis, message, profil, demande, offre) arrivent avec leurs lots.', offres: 'Les offres et promotions des artisans arrivent en V2 (modération a priori).'}[tab] }}" />
         </section>
     {% endif %}
 

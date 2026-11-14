@@ -62,6 +62,7 @@
     .tm-msg__bubble { padding: 10px 14px; border: 1px solid var(--tm-line); border-radius: 14px 14px 14px 4px; background: var(--color-surface); color: var(--tm-navy); }
     .tm-msg.is-mine .tm-msg__bubble { border-color: var(--tm-blue-soft); border-radius: 14px 14px 4px 14px; background: var(--tm-blue-soft); }
     .tm-msg__body { margin: 0; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+    .tm-msg__removed { display: flex; align-items: center; gap: 6px; color: var(--color-text-muted); font-style: italic; }
     .tm-msg__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 0; font-size: 12px; color: var(--tm-ink); }
     .tm-msg__read.is-read { color: var(--tm-blue); }
     .tm-msg__masked { padding: 1px 8px; border-radius: var(--radius-pill); background: var(--color-warning-bg); color: var(--color-warning-text); }

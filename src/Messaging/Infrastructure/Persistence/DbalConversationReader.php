@@ -19,6 +19,8 @@ use Doctrine\DBAL\ParameterType;
  */
 final readonly class DbalConversationReader implements ConversationReader
 {
+    /** Aperçu d'un message retiré par la modération (texte conservé comme preuve, jamais réaffiché). */
+    private const string REMOVED = 'Message retiré par la modération';
     private const string UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
     private const string ROWS = <<<'SQL'
         SELECT c.id, c.kind, c.request_id, c.artisan_id, c.blocked_by, c.last_message_at, p.archived, p.last_read_at, p.note,
@@ -53,14 +55,14 @@ final readonly class DbalConversationReader implements ConversationReader
             'prospects' => 'NOT t.archived AND NOT t.is_client',
             default => 'NOT t.archived',
         };
-        $params = ['u' => $userId, 'limit' => $perPage, 'offset' => ($page - 1) * $perPage];
+        $params = ['u' => $userId, 'limit' => $perPage, 'offset' => ($page - 1) * $perPage, 'removed' => self::REMOVED];
         if ('' !== $query) {
             $where .= " AND (t.name ILIKE :q ESCAPE '\\' OR t.title ILIKE :q ESCAPE '\\' OR t.number ILIKE :q ESCAPE '\\')";
             $params['q'] = '%'.addcslashes($query, '%_\\').'%';
         }
         $rows = $this->connection->fetchAllAssociative(
             'SELECT t.*, last.body AS last_body, last.sender_user_id AS last_sender, count(*) OVER () AS total FROM ('.self::ROWS.') t'
-            .' LEFT JOIN LATERAL (SELECT body, sender_user_id FROM messaging.message m WHERE m.conversation_id = t.id ORDER BY m.created_at DESC, m.id DESC LIMIT 1) last ON true'
+            .' LEFT JOIN LATERAL (SELECT CASE WHEN m.moderation_decision = \'removed\' THEN :removed ELSE m.body END AS body, m.sender_user_id FROM messaging.message m WHERE m.conversation_id = t.id ORDER BY m.created_at DESC, m.id DESC LIMIT 1) last ON true'
             .' WHERE '.$where.' ORDER BY t.last_message_at DESC LIMIT :limit OFFSET :offset',
             $params,
             ['limit' => ParameterType::INTEGER, 'offset' => ParameterType::INTEGER],
@@ -105,9 +107,11 @@ final readonly class DbalConversationReader implements ConversationReader
 
             $attachment = null === $m['file_id'] ? null : new ThreadAttachment(DbalValue::string($m['file_id']), DbalValue::nullableString($m['original_name']), DbalValue::string($m['mime']), DbalValue::int($m['size']), DbalValue::string($m['file_status']));
 
-            return new ThreadMessage(DbalValue::string($m['id']), $mine, DbalValue::string($m['body']), $at, null !== $m['original_sealed'], $mine && null !== $otherRead && $otherRead >= $at, $userId === $m['reported_by'], $attachment);
+            $removed = 'removed' === $m['moderation_decision'];
+
+            return new ThreadMessage(DbalValue::string($m['id']), $mine, $removed ? '' : DbalValue::string($m['body']), $at, !$removed && null !== $m['original_sealed'], $mine && null !== $otherRead && $otherRead >= $at, $userId === $m['reported_by'], $removed ? null : $attachment, $removed);
         }, $this->connection->fetchAllAssociative(
-            'SELECT m.id, m.sender_user_id, m.body, m.original_sealed, m.created_at, m.reported_by, a.file_id, a.original_name, f.mime, f.size, f.status AS file_status'
+            'SELECT m.id, m.sender_user_id, m.body, m.original_sealed, m.created_at, m.reported_by, m.moderation_decision, a.file_id, a.original_name, f.mime, f.size, f.status AS file_status'
             .' FROM messaging.message m LEFT JOIN messaging.attachment a ON a.message_id = m.id LEFT JOIN shared.stored_file f ON f.id = a.file_id'
             .' WHERE m.conversation_id = :c ORDER BY m.created_at, m.id',
             ['c' => $conversationId],
@@ -182,7 +186,8 @@ final readonly class DbalConversationReader implements ConversationReader
         }
 
         return false !== $this->connection->fetchOne(
-            'SELECT 1 FROM messaging.attachment a JOIN messaging.conversation c ON c.id = a.conversation_id WHERE a.file_id = :f AND c.id = :c AND (c.client_user_id = :u OR c.artisan_user_id = :u)',
+            'SELECT 1 FROM messaging.attachment a JOIN messaging.conversation c ON c.id = a.conversation_id JOIN messaging.message m ON m.id = a.message_id'
+            ." WHERE a.file_id = :f AND c.id = :c AND (c.client_user_id = :u OR c.artisan_user_id = :u) AND m.moderation_decision IS DISTINCT FROM 'removed'",
             ['f' => $fileId, 'c' => $conversationId, 'u' => $userId],
         );
     }

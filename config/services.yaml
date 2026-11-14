@@ -151,6 +151,7 @@ services:
     App\Messaging\Domain\Conversation\ConversationRepository: '@App\Messaging\Infrastructure\Persistence\DbalConversationRepository'
     App\Messaging\Application\Port\MessagingDirectory: '@App\Messaging\Infrastructure\Persistence\DbalMessagingDirectory'
     App\Messaging\Application\Port\ParticipantStates: '@App\Messaging\Infrastructure\Persistence\DbalParticipantStates'
+    App\Messaging\Application\Port\MessageModeration: '@App\Messaging\Infrastructure\Persistence\DbalMessageModeration'
     App\Messaging\Application\Port\QuickReplies: '@App\Messaging\Infrastructure\Persistence\DbalQuickReplies'
     App\Messaging\Application\Port\MessagingMailer: '@App\Messaging\Infrastructure\Mailer\NotificationMessagingMailer'
     App\Messaging\Application\Query\ConversationReader: '@App\Messaging\Infrastructure\Persistence\DbalConversationReader'
