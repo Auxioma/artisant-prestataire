@@ -64,7 +64,7 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 | `session_device` (T-204) | id, user_id (FK différée), device_hash (SHA-256 d'un identifiant aléatoire en cookie `tm_device`, aucune empreinte navigateur), description (« Chrome sur Windows »), ip_hash, first_seen_at, last_seen_at, revoked_at | **UQ** (user_id, device_hash) — sert à E-05 (nouvel appareil) |
 | `remember_me_token` | — | pas de table : cookie « rester connecté » **signé** (Symfony, `signature_properties` : empreinte du mot de passe, e-mail), invalidé par tout changement de l'un ou l'autre |
 | `consent` | id, user_id NULL, anon_id, category, granted, policy_version, created_at, expires_at | **IX** (user_id, category, created_at DESC) ; append-only |
-| `client_profile` (T-202) | user_id (PK, FK différée), type (`particulier`/`professionnel`), company_name, siret, siret_verified, postal_code, newsletter_opt_in_at, created_at, updated_at | **CK** particulier ⇒ ni raison sociale ni SIRET · **CK** professionnel ⇒ raison sociale · **CK** vérifié ⇒ SIRET présent |
+| `client_profile` (T-202) | user_id (PK, FK différée), type (`particulier`/`professionnel`), company_name, siret, siret_verified, postal_code, newsletter_opt_in_at, avatar_file_id (FK `shared.stored_file`, T-705c1), search_radius_km, interests (jsonb, valeurs `ClientInterest`), created_at, updated_at | **CK** particulier ⇒ ni raison sociale ni SIRET · **CK** professionnel ⇒ raison sociale · **CK** vérifié ⇒ SIRET présent |
 | `legal_document` | id, type (`cgu`/`cgv`/`cgv_pro`/`privacy`), version, title, content_html (assaini), content_hash, substantial, published_at, published_by | **UQ** (type, version) · **immuable** (trigger) |
 | `legal_acceptance` | id, user_id (FK différée : compte inséré au flush), legal_document_id, content_hash (copie du texte accepté), accepted_at, ip_hash | **UQ** (user_id, legal_document_id) ; append-only (RG-002, trigger) |
 | `login_attempt` | — | pas de table : le rate limiter Redis gère compte + IP (RG-045) ; les échecs sont tracés dans l'AuditLog |
@@ -183,7 +183,7 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 | `content.not_found_log` | path, hits, last_seen_at | rapport 404 (BO12.2) |
 | `notification.template` | code (E-xx), channel, locale, subject, preheader, body_html, body_text, active, version | **UQ** (code, channel, locale) |
 | `notification.notification` | id, user_id, code, payload (jsonb, sans PII superflue), read_at, created_at | **IX** (user_id, read_at NULLS FIRST, created_at DESC) |
-| `notification.preference` | user_id, code, channel, enabled, digest_mode | **PK** (user_id, code, channel) |
+| `notification.preference` (T-705c1) | user_id (FK cascade), topic (`NotificationTopic` : nouveaux_devis, suivi_demandes, rappels_rdv), channel (`email`/`in_app`/`sms`), enabled, updated_at | **PK** (user_id, topic, channel) ; sans ligne = envoyé ; les codes sans sujet (indispensables) partent toujours |
 | `notification.delivery_log` | id, template_code, recipient_hash, channel, status, provider_message_id, sent_at | rebonds → désactivation de l'email |
 | `admin.admin_user` | id, email, password_hash, totp_secret 🔒 (chiffré), backup_codes_hash, status, last_login_at | séparé de `identity.user` (ADR-0013) |
 | `admin.role` / `role_permission` / `admin_user_role` | presets + rôles personnalisés ; `max_manual_credits` | — |

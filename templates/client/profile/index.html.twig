@@ -1,0 +1,179 @@
+{#-
+    C07 « Mon profil » (Figma 231:12840) : synthèse (photo, identité, coordonnées, badge « Compte vérifié »), « Mon type
+    de compte », onglets, informations personnelles, adresse et rayon de recherche, domaines d'intérêt et notifications
+    e-mail, complétude, badges, activité, « Enregistrer les modifications » / « Annuler ». Écarts : P-123.
+-#}
+{% extends 'client/_space.html.twig' %}
+{% set space_active = 'profile' %}
+{% set space_title = 'Mon profil' %}
+{% set space_subtitle = 'Gérez vos informations, vos préférences et la sécurité de votre compte.' %}
+{% block title %}Mon profil — Espace client — TrouveMoi{% endblock %}
+{% set v = submitted ?? {} %}
+{% macro error(errors, field) %}{% if errors[field] is defined %}<p class="tm-field__error" id="{{ field }}_error"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" />{{ errors[field] }}</p>{% endif %}{% endmacro %}
+{% import _self as m %}
+{% block space_content %}
+<div class="tm-account">
+    <h1 class="tm-visually-hidden">Mon profil</h1>
+    {% if errors is not empty %}
+        <div class="tm-callout tm-account__error" role="alert">Vos modifications ne sont pas enregistrées : corrigez le champ signalé.</div>
+    {% endif %}
+    <section class="tm-account__summary" aria-label="Synthèse du profil">
+        <div class="tm-account__card tm-account__identity">
+            <div class="tm-account__photo">
+                {% if avatar_ready %}
+                    <img src="{{ path('client_profile_avatar_show') }}" alt="Votre photo de profil" width="120" height="120">
+                {% else %}
+                    <span class="tm-account__initials" aria-hidden="true">{{ profile.initials() }}</span>
+                {% endif %}
+                <form method="post" action="{{ path('client_profile_avatar') }}" enctype="multipart/form-data" data-controller="autosubmit">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <label class="tm-account__camera" for="avatar_input" title="Changer la photo"><twig:Icon name="camera" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Changer la photo de profil</span></label>
+                    <input class="tm-visually-hidden" type="file" id="avatar_input" name="avatar" accept="image/jpeg,image/png,image/webp" data-action="change->autosubmit#submit">
+                    <noscript><button type="submit" class="tm-link-button">Envoyer la photo</button></noscript>
+                </form>
+            </div>
+            <div class="tm-account__who">
+                <p class="tm-account__name"><span>{{ profile.firstName }} {{ profile.lastName }}</span> <a href="#firstName" class="tm-account__edit" title="Modifier"><twig:Icon name="edit" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Modifier le nom</span></a></p>
+                <p class="tm-account__kind">{{ profile.type.value == 'professionnel' ? 'Client professionnel' : 'Client particulier' }}</p>
+                {% if profile.emailVerified %}<span class="tm-account__verified"><twig:Icon name="checkC" size="xs" class="tm-icon--inherit" />Compte vérifié</span>{% endif %}
+            </div>
+            <ul class="tm-account__contact">
+                <li><twig:Icon name="mail" size="sm" class="tm-icon--inherit" /><span>{{ profile.email }}</span>{% if tm_route_exists('client_security') %}<a href="{{ path('client_security') }}" class="tm-account__edit" title="Modifier"><twig:Icon name="edit" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden">Modifier l’adresse e-mail</span></a>{% endif %}</li>
+                <li><twig:Icon name="phone" size="sm" class="tm-icon--inherit" /><span>{{ profile.phoneDisplay() ?? 'Téléphone à renseigner' }}</span></li>
+                <li><twig:Icon name="pin" size="sm" class="tm-icon--inherit" /><span>{{ profile.place() }}</span><a href="#postalCode" class="tm-account__edit" title="Modifier"><twig:Icon name="edit" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden">Modifier l’adresse</span></a></li>
+            </ul>
+            {% if avatar_ready %}
+                <form method="post" action="{{ path('client_profile_avatar') }}" class="tm-account__remove-photo">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="remove" value="1">
+                    <button type="submit" class="tm-link-button">Retirer la photo</button>
+                </form>
+            {% endif %}
+        </div>
+        <div class="tm-account__card tm-account__type">
+            <div class="tm-account__type-head">
+                <span class="tm-account__pastille" aria-hidden="true"><twig:Icon name="{{ profile.type.value == 'professionnel' ? 'building' : 'user' }}" class="tm-icon--inherit" /></span>
+                <div>
+                    <p class="tm-account__type-title">Mon type de compte</p>
+                    <span class="tm-account__type-badge">{{ profile.type.value == 'professionnel' ? 'Client professionnel' : 'Client particulier' }}</span>
+                </div>
+            </div>
+            {% if profile.type.value == 'professionnel' %}
+                <p class="tm-caption">{{ profile.companyName }}{% if profile.siret %} · SIRET {{ profile.siret }}{% endif %}</p>
+                <form method="post" action="{{ path('client_profile_type') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="type" value="particulier">
+                    <twig:Button type="submit" variant="secondary" icon="user" iconPosition="start" block>Passer en compte Particulier</twig:Button>
+                </form>
+            {% else %}
+                <details class="tm-account__switch" data-controller="disclosure">
+                    <summary class="tm-button tm-button--primary tm-button--block"><twig:Icon name="building" size="sm" class="tm-icon--inherit" />Passer en compte Professionnel</summary>
+                    <form method="post" action="{{ path('client_profile_type') }}" class="tm-account__switch-form">
+                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="type" value="professionnel">
+                        <twig:Field id="companyName" name="companyName" label="Raison sociale" required maxlength="120" autocomplete="organization" />
+                        <twig:Field id="siret" name="siret" label="SIRET (facultatif)" inputmode="numeric" maxlength="17" help="Vérifié auprès de la base Sirene." />
+                        <twig:Button type="submit" variant="primary" block>Confirmer</twig:Button>
+                    </form>
+                </details>
+            {% endif %}
+        </div>
+    </section>
+
+    <nav class="tm-account__tabs" aria-label="Rubriques du profil">
+        <a href="{{ path('client_profile') }}" aria-current="page"><twig:Icon name="user" size="sm" class="tm-icon--inherit" />Mes informations</a>
+        <a href="#preferences"><twig:Icon name="sliders" size="sm" class="tm-icon--inherit" />Mes préférences</a>
+        {% if tm_route_exists('client_security') %}<a href="{{ path('client_security') }}"><twig:Icon name="shield" size="sm" class="tm-icon--inherit" />Sécurité</a>{% else %}<span aria-disabled="true" title="Bientôt disponible"><twig:Icon name="shield" size="sm" class="tm-icon--inherit" />Sécurité<span class="tm-visually-hidden"> (bientôt disponible)</span></span>{% endif %}
+        <a href="{{ path('client_reviews') }}"><twig:Icon name="star" size="sm" class="tm-icon--inherit" />Mes avis</a>
+        <a href="#activite"><twig:Icon name="bars" size="sm" class="tm-icon--inherit" />Mon activité</a>
+    </nav>
+
+    <form method="post" action="{{ path('client_profile') }}" class="tm-account__form" novalidate>
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+        <div class="tm-account__cols">
+            <div class="tm-account__col">
+                <section class="tm-account__card" aria-labelledby="infos_title">
+                    <h2 id="infos_title" class="tm-account__title"><twig:Icon name="user" class="tm-icon--inherit" />Informations personnelles</h2>
+                    <div class="tm-account__pair">
+                        <twig:Field id="firstName" name="firstName" label="Prénom" required maxlength="50" autocomplete="given-name" value="{{ v.firstName ?? profile.firstName }}" error="{{ errors.firstName ?? null }}" />
+                        <twig:Field id="lastName" name="lastName" label="Nom" required maxlength="50" autocomplete="family-name" value="{{ v.lastName ?? profile.lastName }}" error="{{ errors.lastName ?? null }}" />
+                    </div>
+                    <div class="tm-account__pair">
+                        <twig:Field id="email" name="email_display" label="E-mail" required readonly value="{{ profile.email }}" help="{{ tm_route_exists('client_security') ? 'Modifiable dans « Sécurité ».' : null }}" />
+                        <twig:Field id="phone" name="phone" type="tel" label="Téléphone" required autocomplete="tel" inputmode="tel" maxlength="20" value="{{ v.phone ?? profile.phoneDisplay() }}" error="{{ errors.phone ?? null }}" />
+                    </div>
+                </section>
+                <section class="tm-account__card" aria-labelledby="zone_title">
+                    <h2 id="zone_title" class="tm-account__title"><twig:Icon name="pin" class="tm-icon--inherit" />Adresse et zone de recherche</h2>
+                    <twig:Field id="postalCode" name="postalCode" label="Code postal" required inputmode="numeric" maxlength="5" autocomplete="postal-code" icon="pin" value="{{ v.postalCode ?? profile.postalCode }}" help="{{ profile.city ? profile.city : null }}" error="{{ errors.postalCode ?? null }}" />
+                    {% set radius = v.searchRadiusKm ?? (profile.searchRadiusKm ?? radius_default) %}
+                    <div class="tm-account__radius" data-controller="range-sync">
+                        <label for="searchRadiusKm" class="tm-field__label">Rayon de recherche</label>
+                        <div class="tm-account__radius-row">
+                            <input type="range" min="{{ radius_min }}" max="{{ radius_max }}" step="1" value="{{ radius }}" aria-label="Rayon de recherche (curseur)" data-range-sync-target="range" data-action="input->range-sync#slide" hidden>
+                            <span class="tm-account__km"><input type="number" id="searchRadiusKm" name="searchRadiusKm" min="{{ radius_min }}" max="{{ radius_max }}" value="{{ radius }}" data-range-sync-target="number" data-action="input->range-sync#type"{% if errors.searchRadiusKm is defined %} aria-invalid="true" aria-describedby="searchRadiusKm_error"{% endif %}> km</span>
+                        </div>
+                        {{ m.error(errors, 'searchRadiusKm') }}
+                    </div>
+                </section>
+            </div>
+            <div class="tm-account__col">
+                <section class="tm-account__card" id="preferences" aria-labelledby="prefs_title">
+                    <h2 id="prefs_title" class="tm-account__title"><twig:Icon name="sliders" class="tm-icon--inherit" />Mes préférences</h2>
+                    <fieldset class="tm-account__fieldset">
+                        <legend>Mes domaines d’intérêt (facultatif)</legend>
+                        <div class="tm-account__chips">
+                            {% for i in interests %}
+                                {% set on = submitted is not null ? (i.value in (v.interests ?? [])) : profile.hasInterest(i) %}
+                                <twig:Checkbox id="interest_{{ i.value }}" name="interests[]" value="{{ i.value }}" label="{{ i.label() }}" checked="{{ on }}" class="tm-account__chip" />
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                    <fieldset class="tm-account__fieldset">
+                        <legend>Mes notifications</legend>
+                        <p class="tm-caption">Par e-mail. Les messages indispensables (sécurité, devis accepté, rendez-vous proposé ou confirmé) sont toujours envoyés ; tout reste visible dans vos notifications.</p>
+                        {% for t in topics %}
+                            {% set on = submitted is not null ? (v.notifications[t.value] is defined) : email_preferences[t.value] %}
+                            <div class="tm-account__toggle"><twig:Icon name="bell" size="sm" class="tm-icon--inherit" /><twig:Switch id="notif_{{ t.value }}" name="notifications[{{ t.value }}]" label="{{ t.label() }}" checked="{{ on }}" /></div>
+                        {% endfor %}
+                        <div class="tm-account__toggle"><twig:Icon name="bell" size="sm" class="tm-icon--inherit" /><twig:Switch id="newsletter" name="newsletter" label="Offres et actualités TrouveMoi" checked="{{ submitted is not null ? (v.newsletter is defined) : profile.newsletter }}" /></div>
+                    </fieldset>
+                </section>
+            </div>
+            <div class="tm-account__col">
+                <section class="tm-account__card" aria-labelledby="completion_title">
+                    <h2 id="completion_title" class="tm-account__title"><twig:Icon name="crown" class="tm-icon--inherit" />Complétude du profil</h2>
+                    <div class="tm-account__completion">
+                        <span class="tm-account__ring tm-account__ring--{{ completion_percent >= 100 ? 'full' : (completion_percent >= 60 ? 'mid' : 'low') }}" role="img" aria-label="Profil complété à {{ completion_percent }} %"><span>{{ completion_percent }} %</span></span>
+                        <ul>
+                            {% for label, done in completion %}
+                                <li class="{{ done ? 'is-done' : 'is-todo' }}"><twig:Icon name="{{ done ? 'checkC' : 'hourglass' }}" size="sm" class="tm-icon--inherit" />{{ label }}<span class="tm-visually-hidden">{{ done ? ' : complété' : ' : à compléter' }}</span></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </section>
+                <section class="tm-account__card" aria-labelledby="badges_title">
+                    <h2 id="badges_title" class="tm-account__title"><twig:Icon name="crown" class="tm-icon--inherit" />Mes badges</h2>
+                    <ul class="tm-account__badges">
+                        {% for b in badges %}
+                            <li class="{{ b.earned ? 'is-earned' : 'is-locked' }}" title="{{ b.hint }}">
+                                <span class="tm-account__badge is-{{ b.tone }}" aria-hidden="true"><twig:Icon name="{{ b.icon }}" class="tm-icon--inherit" /></span>
+                                {{ b.label }}<span class="tm-visually-hidden">{{ b.earned ? ' : obtenu' : ' : à obtenir (' ~ b.hint ~ ')' }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+                <section class="tm-account__card" id="activite" aria-labelledby="activity_title">
+                    <h2 id="activity_title" class="tm-account__title"><twig:Icon name="bars" class="tm-icon--inherit" />Mon activité sur TrouveMoi</h2>
+                    <dl class="tm-account__stats">
+                        <div><dt>Demandes</dt><dd>{{ activity.requests }}</dd></div>
+                        <div><dt>Devis</dt><dd>{{ activity.quotes }}</dd></div>
+                        <div><dt>Rendez-vous</dt><dd>{{ activity.appointments }}</dd></div>
+                    </dl>
+                </section>
+            </div>
+        </div>
+        <div class="tm-account__actions">
+            <twig:Button type="submit" variant="primary" icon="check" iconPosition="start">Enregistrer les modifications</twig:Button>
+            <twig:Button href="{{ path('client_profile') }}" variant="secondary" icon="x" iconPosition="start">Annuler</twig:Button>
+        </div>
+    </form>
+</div>
+{% endblock %}

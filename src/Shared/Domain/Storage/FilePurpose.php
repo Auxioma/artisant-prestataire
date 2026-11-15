@@ -20,6 +20,7 @@ enum FilePurpose: string
     case ReviewPhoto = 'review_photo';
     case PortfolioPhoto = 'portfolio_photo';
     case ContactAttachment = 'contact_attachment';
+    case ClientAvatar = 'client_avatar';
 
     /** @return list<FileType> */
     public function allowedTypes(): array
@@ -27,7 +28,7 @@ enum FilePurpose: string
         return match ($this) {
             self::ArtisanDocument, self::MessageAttachment, self::ContactAttachment => [FileType::Pdf, FileType::Jpeg, FileType::Png, FileType::Webp],
             self::RequestPhoto => [FileType::Jpeg, FileType::Png, FileType::Webp, FileType::Pdf], // RG-061 : photos et PDF
-            self::ArtisanLogo, self::ReviewPhoto, self::PortfolioPhoto => [FileType::Jpeg, FileType::Png, FileType::Webp],
+            self::ArtisanLogo, self::ReviewPhoto, self::PortfolioPhoto, self::ClientAvatar => [FileType::Jpeg, FileType::Png, FileType::Webp],
             self::QuotePdf => [FileType::Pdf],
         };
     }

@@ -123,6 +123,18 @@ final class User extends AggregateRoot
         $this->passwordHash = $newHash;
     }
 
+    /** C07.1 : prénom et nom modifiables par le titulaire. */
+    public function rename(PersonName $firstName, PersonName $lastName, \DateTimeImmutable $now): void
+    {
+        $this->assertNotAnonymized();
+        if ($firstName->value === $this->firstName && $lastName->value === $this->lastName) {
+            return;
+        }
+        $this->firstName = $firstName->value;
+        $this->lastName = $lastName->value;
+        $this->touch($now);
+    }
+
     /** A02 : facultatif à l'inscription, exigé au premier dépôt de demande. Un changement annule la vérification. */
     public function changePhone(?PhoneNumber $phone, \DateTimeImmutable $now): void
     {
