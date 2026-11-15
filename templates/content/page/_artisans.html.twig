@@ -1,0 +1,11 @@
+<section class="tm-container tm-page__block">
+    <h2>{{ b.title }}</h2>
+    {% set hits = context.artisans[id] ?? [] %}
+    {% if hits is empty %}
+        <p class="tm-catalog__fine">Les premiers professionnels vérifiés arrivent bientôt.</p>
+    {% else %}
+        <ul class="tm-catalog__carousel">
+            {% for hit in hits %}<li>{% include 'catalog/_artisan_card.html.twig' with {hit: hit, job_names: job_names} only %}</li>{% endfor %}
+        </ul>
+    {% endif %}
+</section>

@@ -1,0 +1,4 @@
+<figure class="tm-page__block tm-page__image{{ b.width == 'full' ? ' is-full' : ' tm-container' }}">
+    <twig:Media id="{{ b.media }}" sizes="{{ b.width == 'full' ? '100vw' : '(min-width: 1024px) 760px, 100vw' }}" />
+    {% if b.caption %}<figcaption>{{ b.caption }}</figcaption>{% endif %}
+</figure>

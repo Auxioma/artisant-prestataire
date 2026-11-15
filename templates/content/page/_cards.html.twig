@@ -1,0 +1,12 @@
+<section class="tm-container tm-page__block">
+    {% if b.title %}<h2>{{ b.title }}</h2>{% endif %}
+    <ul class="tm-page__cards">
+        {% for card in b.items ?? [] %}
+            <li class="tm-page__card">
+                {% if card.media %}<twig:Media id="{{ card.media }}" sizes="(min-width: 1024px) 360px, 100vw" class="tm-page__card-media" />{% endif %}
+                <h3>{% if card.link %}<a href="{{ card.link }}">{{ card.title }}</a>{% else %}{{ card.title }}{% endif %}</h3>
+                {% if card.text %}<p>{{ card.text }}</p>{% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+</section>

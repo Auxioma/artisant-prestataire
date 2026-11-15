@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Content\Application\Media;
 
+use App\Content\Application\Page\PageStore;
 use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Application\Bus\CommandHandler;
 use App\Shared\Application\Storage\FileShredder;
@@ -22,6 +23,7 @@ final readonly class MediaHandler implements CommandHandler
 
     public function __construct(
         private MediaLibrary $library,
+        private PageStore $pages,
         private FileUploader $uploader,
         private FileShredder $shredder,
         private AuditTrail $audit,
@@ -35,6 +37,10 @@ final readonly class MediaHandler implements CommandHandler
         $now = $this->clock->now();
         if ($command instanceof DeleteMedia) {
             $media = $this->library->find($command->mediaId) ?? throw new MediaRejected('media', 'Image introuvable.');
+            $used = $this->pages->usingMedia($media->id);
+            if ([] !== $used) {
+                throw new MediaRejected('media', \sprintf('Image utilisée par : %s. Retirez-la de ces pages avant de la supprimer.', implode(', ', $used)));
+            }
             $this->library->delete($media->id);
             $files = [$media->fileId];
             foreach ($media->variants as $byWidth) {

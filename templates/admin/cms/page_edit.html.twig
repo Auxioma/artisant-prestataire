@@ -1,0 +1,113 @@
+{#- BO10.2 — édition d'une page : méta SEO, blocs (ajouter, éditer, ordonner, retirer), publication, aperçu. P-130. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'cms' %}
+{% set can_edit = is_granted('admin.cms.edit') %}
+{% set st = page.status(now) %}
+{% set status_labels = {draft: 'Brouillon (jamais publiée)', published: 'Publiée', scheduled: 'Publication programmée'} %}
+{% block title %}{{ page.title }} — Pages — CMS{% endblock %}
+{% macro action(label, action, csrf_id, variant, block) %}
+    <form method="post" class="tm-cms-inline" data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="{{ action }}">{% if block %}<input type="hidden" name="block" value="{{ block }}">{% endif %}
+        <twig:Button type="submit" variant="{{ variant }}">{{ label }}</twig:Button>
+    </form>
+{% endmacro %}
+{% import _self as m %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: page.title, crumbs: ['Contenus', 'CMS', 'Pages'], subtitle: status_labels[st]
+        ~ (st == 'scheduled' ? ' le ' ~ page.pendingAt|date('d/m/Y à H:i', 'Europe/Paris') : '')
+        ~ (st != 'draft' and page.hasUnpublishedChanges(now) ? ' · modifications non publiées' : '')}) }}
+    {{ include('admin/cms/_tabs.html.twig', {current: 'pages'}) }}
+
+    <div class="tm-cms-toolbar">
+        <a class="tm-button tm-button--secondary" href="{{ path('admin_cms_pages') }}">← Toutes les pages</a>
+        <a class="tm-button tm-button--secondary" href="{{ path('admin_cms_page_preview', {id: page.id}) }}" target="_blank" rel="noopener">Aperçu du brouillon</a>
+        {% if st == 'published' %}<a class="tm-button tm-button--secondary" href="{{ path('content_page', {slug: page.slug}) }}" target="_blank" rel="noopener">Voir la page en ligne</a>{% endif %}
+        {% if can_edit %}
+            {{ m.action('Publier maintenant', 'publish', csrf_id, 'primary') }}
+            <form method="post" class="tm-cms-publish" data-turbo="false">
+                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="schedule">
+                <div class="tm-field"><label class="tm-field__label" for="page_at">Programmer</label><div class="tm-field__control"><input class="tm-field__input" type="datetime-local" id="page_at" name="at" required></div></div>
+                <twig:Button type="submit" variant="secondary">Programmer</twig:Button>
+            </form>
+            {% if st != 'draft' %}{{ m.action('Retirer du site', 'unpublish', csrf_id, 'secondary') }}{% endif %}
+        {% endif %}
+    </div>
+
+    <div class="tm-cms tm-cms--page">
+        <section class="tm-admin-panel" aria-labelledby="blocks-title">
+            <h2 id="blocks-title" class="tm-card-title">Blocs ({{ page.draft|length }})</h2>
+            <ol class="tm-page-blocks">
+                {% for block in page.draft %}
+                    {% set type = type_map[block.type] %}
+                    <li class="tm-page-block" id="bloc-{{ block.id }}">
+                        <div class="tm-page-block__head">
+                            <h3>{{ loop.index }}. {{ type.label() }}</h3>
+                            {% if can_edit %}
+                                <div class="tm-admin-actions">
+                                    {% if not loop.first %}{{ m.action('Monter', 'move_up', csrf_id, 'secondary', block.id) }}{% endif %}
+                                    {% if not loop.last %}{{ m.action('Descendre', 'move_down', csrf_id, 'secondary', block.id) }}{% endif %}
+                                    {{ m.action('Retirer', 'remove_block', csrf_id, 'danger', block.id) }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <form method="post" class="tm-media-form" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="save_block"><input type="hidden" name="block" value="{{ block.id }}">
+                            <fieldset{% if not can_edit %} disabled{% endif %} class="tm-page-block__fields">
+                                <legend class="tm-visually-hidden">Champs du bloc {{ loop.index }}</legend>
+                                {% for name, field in type.fields() %}
+                                    {% if field.type == 'items' %}
+                                        {% set items = block.data[name] ?? [] %}
+                                        {% for i in 0..(field.max - 1) %}
+                                            <fieldset class="tm-page-block__item">
+                                                <legend>Carte {{ i + 1 }}{{ i >= items|length ? ' (vide : ignorée)' }}</legend>
+                                                {% for sub, subfield in field.fields %}
+                                                    {% include 'admin/cms/_page_field.html.twig' with {name: 'data[' ~ name ~ '][' ~ i ~ '][' ~ sub ~ ']', id: block.id ~ '_' ~ i ~ '_' ~ sub, field: subfield, value: items[i][sub] ?? ''} %}
+                                                {% endfor %}
+                                            </fieldset>
+                                        {% endfor %}
+                                    {% else %}
+                                        {% include 'admin/cms/_page_field.html.twig' with {name: 'data[' ~ name ~ ']', id: block.id ~ '_' ~ name, field: field, value: block.data[name] ?? ''} %}
+                                    {% endif %}
+                                {% endfor %}
+                            </fieldset>
+                            {% if can_edit %}<twig:Button type="submit" variant="secondary">Enregistrer le bloc</twig:Button>{% endif %}
+                        </form>
+                    </li>
+                {% else %}
+                    <li><twig:EmptyState title="Page vide" text="Ajoutez un premier bloc ci-dessous." icon="file" /></li>
+                {% endfor %}
+            </ol>
+            {% if can_edit %}
+                <form method="post" class="tm-cms-publish" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="add_block">
+                    <div class="tm-field"><label class="tm-field__label" for="new_block">Ajouter un bloc</label><div class="tm-field__control"><select class="tm-field__input" id="new_block" name="data[type]">{% for t in types %}<option value="{{ t.value }}">{{ t.label() }}</option>{% endfor %}</select></div></div>
+                    <twig:Button type="submit" icon="plus" iconPosition="start">Ajouter</twig:Button>
+                </form>
+            {% endif %}
+        </section>
+        <section class="tm-admin-panel" aria-labelledby="meta-title">
+            <h2 id="meta-title" class="tm-card-title">Page et référencement</h2>
+            <form method="post" class="tm-media-form" data-turbo="false">
+                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="meta">
+                <fieldset{% if not can_edit %} disabled{% endif %} class="tm-page-block__fields">
+                    <legend class="tm-visually-hidden">Page et référencement</legend>
+                    <twig:Field id="meta_page_title" name="data[title]" label="Titre (H1)" required maxlength="120" value="{{ page.title }}" />
+                    <twig:Field id="meta_slug" name="data[slug]" label="Adresse" required maxlength="80" value="{{ page.slug }}" help="/pages/{{ page.slug }} — changer l’adresse d’une page publiée casse les liens existants (ajoutez une redirection en SEO)." />
+                    <twig:Field id="meta_title" name="data[meta_title]" label="Titre SEO (facultatif)" maxlength="70" value="{{ page.metaTitle }}" help="70 caractères au plus ; par défaut, le titre de la page." />
+                    <div class="tm-field">
+                        <label class="tm-field__label" for="meta_description">Description SEO</label>
+                        <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="meta_description" name="data[meta_description]" rows="3" maxlength="170">{{ page.metaDescription }}</textarea></div>
+                    </div>
+                    <label class="tm-check"><input class="tm-check__input" type="checkbox" name="noindex" value="1"{% if page.noindex %} checked{% endif %}><span>Ne pas indexer (hors sitemap, balise noindex)</span></label>
+                </fieldset>
+                {% if can_edit %}<twig:Button type="submit" variant="secondary">Enregistrer</twig:Button>{% endif %}
+            </form>
+            {% if can_edit %}
+                <form method="post" class="tm-cms-inline" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="delete">
+                    <button type="submit" class="tm-link-button tm-admin-danger">Supprimer la page</button>
+                </form>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

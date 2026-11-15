@@ -1,0 +1,4 @@
+<section class="tm-container tm-page__block tm-help">
+    <h2>{{ b.title }}</h2>
+    {% include 'content/help/_accordion.html.twig' with {questions: context.faq[id] ?? []} %}
+</section>

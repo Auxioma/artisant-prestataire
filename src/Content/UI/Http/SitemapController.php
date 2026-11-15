@@ -11,6 +11,8 @@ use App\Catalog\Application\Query\MainCategories;
 use App\Content\Application\Faq\FaqQuery;
 use App\Content\Application\Faq\FaqQuestion;
 use App\Content\Application\Faq\FaqTopic;
+use App\Content\Application\Page\PageQuery;
+use App\Content\Application\Page\PageView;
 use App\Search\Application\Directory\CountArtisans;
 use App\Search\Application\Directory\SitemapArtisans;
 use App\Search\Application\Directory\SitemapLocalPages;
@@ -153,6 +155,14 @@ final readonly class SitemapController
         foreach (\is_array($legal) ? $legal : [] as $slug => $date) {
             if (\is_string($slug) && $date instanceof \DateTimeImmutable) {
                 $entries[] = [$this->url('identity_legal_document', ['slug' => $slug]), $date->format('Y-m-d')];
+            }
+        }
+        // BO10.2 — pages éditoriales publiées et indexables.
+        $now = new \DateTimeImmutable();
+        $cmsPages = $this->queries->ask(new PageQuery());
+        foreach (\is_array($cmsPages) ? $cmsPages : [] as $page) {
+            if ($page instanceof PageView && !$page->noindex && 'published' === $page->status($now)) {
+                $entries[] = [$this->url('content_page', ['slug' => $page->slug]), $page->updatedAt->format('Y-m-d')];
             }
         }
         $topics = $this->queries->ask(FaqQuery::topics());

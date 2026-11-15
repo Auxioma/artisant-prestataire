@@ -1,0 +1,7 @@
+<section class="tm-container tm-page__block">
+    <div class="tm-page__cta">
+        <h2>{{ b.title }}</h2>
+        {% if b.text %}<p>{{ b.text }}</p>{% endif %}
+        <twig:Button href="{{ b.link }}">{{ b.button }}</twig:Button>
+    </div>
+</section>

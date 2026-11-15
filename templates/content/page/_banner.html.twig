@@ -1,0 +1,8 @@
+<section class="tm-page__block tm-page__banner">
+    <twig:Media id="{{ b.media }}" sizes="100vw" alt="" class="tm-page__banner-media" />
+    <div class="tm-container tm-page__banner-text">
+        <h2>{{ b.title }}</h2>
+        {% if b.text %}<p>{{ b.text }}</p>{% endif %}
+        {% if b.button and b.link %}<twig:Button href="{{ b.link }}">{{ b.button }}</twig:Button>{% endif %}
+    </div>
+</section>

@@ -265,3 +265,4 @@ Les IP sont stockées **hachées** (HMAC avec un sel tournant) sauf dans l'Audit
 | Table | Colonnes | Contraintes |
 |---|---|---|
 | `media` | id, file_id (FK `shared.stored_file`, usage `media`, public), title, alt (obligatoire), focal (`tl`…`br`), width, height, variants (jsonb : format → largeur → fichier), status (`processing`/`ready`/`failed`), created_by, created_at, updated_at | **CK** texte alternatif non vide ; **UQ** fichier ; `stored_file` : type `image/avif` |
+| `page` (T-801b) | id, slug (UQ, minuscules-tirets), title, meta_title, meta_description, noindex, draft (jsonb : blocs `{id, type, data}`), live + live_at (version en ligne), pending + pending_at (version programmée, visible dès son heure), created_at, updated_at, updated_by | **CK** version et date vont ensemble ; usage d'une image recherché dans les trois versions |
