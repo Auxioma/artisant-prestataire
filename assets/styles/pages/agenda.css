@@ -1,0 +1,145 @@
+/*
+ * PR16 « Mes disponibilités » (Figma 383:17652, agenda PR06 du CDC) : en-tête, onglets, indicateurs, planning (grille
+ * semaine en tableau, mois, liste), formulaires des horaires et des absences, colonne statut / réglages / légende.
+ * Mobile : liste par jour (la grille reste consultable par défilement horizontal).
+ */
+@layer components {
+    .tm-agenda { display: grid; gap: var(--space-4); }
+    .tm-agenda__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+    .tm-agenda__head .tm-pro-head { flex: 1 1 20rem; }
+    .tm-agenda__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .tm-agenda__tabs { flex-wrap: wrap; }
+    .tm-agenda__tabs a { flex: 1 1 10rem; }
+    .tm-agenda > * { min-width: 0; }
+    .tm-agenda__main, .tm-agenda__side { display: grid; gap: var(--space-4); align-content: start; }
+    .tm-agenda__title { margin: 0; font-size: 18px; line-height: 26px; color: var(--tm-navy); }
+
+    /* Indicateurs */
+    .tm-agenda__kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+    .tm-agenda__kpis li { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; font-size: 13px; line-height: 18px; color: var(--tm-navy); }
+    .tm-agenda__kpis li > svg { flex: none; width: 28px; height: 28px; }
+    .tm-agenda__kpis strong { display: block; font-size: 20px; line-height: 26px; }
+    .tm-agenda__kpis .is-green { background: var(--color-success-bg); }
+    .tm-agenda__kpis .is-green > svg { color: var(--tm-green); }
+    .tm-agenda__kpis .is-blue { background: var(--tm-blue-soft); }
+    .tm-agenda__kpis .is-blue > svg { color: var(--tm-blue); }
+    .tm-agenda__kpis .is-orange { background: var(--tm-orange-soft); }
+    .tm-agenda__kpis .is-orange > svg { color: var(--tm-orange); }
+    .tm-agenda__kpis .is-violet { background: var(--color-surface-section); }
+    .tm-agenda__kpis .is-violet > svg { color: var(--tm-blue-deep); }
+
+    /* Barre de période et d'affichage */
+    .tm-agenda__planning { gap: var(--space-3); }
+    .tm-agenda__bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+    .tm-agenda__period { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--tm-line); border-radius: 10px; font-size: 14px; font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
+    .tm-agenda__period > span { display: inline-flex; align-items: center; gap: 6px; padding-inline: 6px; }
+    .tm-agenda__period a { display: inline-grid; place-items: center; min-width: 32px; height: 32px; border-radius: 8px; color: var(--tm-navy); text-decoration: none; }
+    .tm-agenda__period a:focus-visible, .tm-agenda__views a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-agenda__period .tm-agenda__today { padding-inline: 10px; border: 1px solid var(--tm-navy); font-size: 13px; }
+    .tm-agenda__views { display: flex; gap: 8px; }
+    .tm-agenda__views a { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding-inline: 14px; border: 1px solid var(--tm-navy); border-radius: var(--radius-pill); color: var(--tm-navy); font-size: 13px; font-weight: var(--font-weight-semibold); text-decoration: none; }
+    .tm-agenda__views a[aria-current="page"] { background: var(--tm-navy); color: var(--color-text-inverse); }
+
+    /* Grille semaine : une ligne par pas, cellules fusionnées par plage */
+    .tm-agenda__scroll { overflow-x: auto; border: 1px solid var(--tm-line); border-radius: 12px; }
+    .tm-agenda__week { width: 100%; min-width: 46rem; border-collapse: collapse; table-layout: fixed; font-size: 12px; color: var(--tm-navy); }
+    .tm-agenda__week thead th { padding: 8px 4px; border-bottom: 1px solid var(--tm-line); background: var(--tm-bg); font-size: 13px; line-height: 16px; text-align: center; }
+    .tm-agenda__week thead th span { display: block; font-weight: var(--font-weight-medium); color: var(--tm-ink); }
+    .tm-agenda__week thead th:first-child { width: 4.5rem; }
+    .tm-agenda__week thead th.is-today { color: var(--tm-orange-ink); }
+    .tm-agenda__week tbody th { height: 11px; padding: 0 6px; font-weight: var(--font-weight-medium); text-align: left; vertical-align: top; color: var(--tm-ink); white-space: nowrap; }
+    .tm-agenda__week tbody tr.is-hour > * { border-top: 1px solid var(--tm-line); }
+    .tm-agenda__week td { padding: 0; border-left: 1px solid var(--tm-line); }
+    /* Le bloc est la cellule elle-même (une hauteur à 100 % n'a pas d'effet dans un tableau) ; liseré blanc = marge visuelle. */
+    .tm-agenda__week td.tm-agenda__slot { padding: 6px 4px; border-radius: 10px; box-shadow: inset 0 0 0 3px var(--color-surface); text-align: center; vertical-align: middle; line-height: 15px; }
+    .tm-agenda__slot > div { display: grid; place-items: center; gap: 2px; }
+    .tm-agenda__slot strong { font-size: 12px; }
+    .tm-agenda__slot span { font-size: 11px; color: var(--tm-ink); }
+    .tm-agenda__week td.is-open { background: var(--color-success-bg); }
+    .tm-agenda__slot.is-open svg { color: var(--tm-green); }
+    .tm-agenda__week td.is-busy { background: var(--tm-blue-soft); }
+    .tm-agenda__slot.is-busy svg { color: var(--tm-blue); }
+    .tm-agenda__week td.is-held { background: var(--tm-orange-soft); }
+    .tm-agenda__slot.is-held svg { color: var(--tm-orange); }
+    .tm-agenda__week td.is-closed, .tm-agenda__week td.is-off { background: var(--tm-red-soft); }
+    .tm-agenda__slot.is-closed svg, .tm-agenda__slot.is-off svg { color: var(--tm-red); }
+
+    /* Mois */
+    .tm-agenda__month { width: 100%; border-collapse: separate; border-spacing: 4px; table-layout: fixed; font-size: 12px; color: var(--tm-navy); }
+    .tm-agenda__month th { padding: 4px; font-size: 12px; color: var(--tm-ink); }
+    .tm-agenda__month td { padding: 0; border-radius: 8px; background: var(--tm-bg); }
+    .tm-agenda__month a { display: grid; gap: 2px; min-height: 4rem; padding: 6px; color: inherit; text-decoration: none; overflow-wrap: anywhere; }
+    .tm-agenda__month a:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 8px; }
+    .tm-agenda__month td.is-open { background: var(--color-success-bg); }
+    .tm-agenda__month td.is-busy { background: var(--tm-blue-soft); }
+    .tm-agenda__month td.is-closed { background: var(--tm-red-soft); }
+    .tm-agenda__month td.is-other { opacity: .55; }
+    .tm-agenda__month td.is-today { box-shadow: inset 0 0 0 2px var(--tm-orange); }
+
+    /* Liste (vue liste, et mobile) */
+    .tm-agenda__list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .tm-agenda__list > li { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--tm-line); border-radius: 10px; }
+    .tm-agenda__list > li.is-today { border-color: var(--tm-orange); }
+    .tm-agenda__list ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .tm-agenda__list-day { margin: 0; font-size: 14px; font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
+    .tm-agenda__tag { display: inline-flex; width: fit-content; margin: 0; padding: 3px 10px; border-radius: var(--radius-pill); font-size: 12px; font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
+    .tm-agenda__tag.is-open { background: var(--color-success-bg); }
+    .tm-agenda__tag.is-busy { background: var(--tm-blue-soft); }
+    .tm-agenda__tag.is-closed, .tm-agenda__tag.is-off { background: var(--tm-red-soft); }
+    .tm-agenda__tag.is-leave { background: var(--tm-orange-soft); }
+    .tm-agenda__empty { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; color: var(--tm-ink); }
+    .tm-agenda__next { gap: 8px; }
+    .tm-agenda__next h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 16px; color: var(--tm-navy); }
+    .tm-agenda__next p { margin: 0; font-size: 14px; color: var(--tm-ink); }
+
+    /* Horaires récurrents, absences, jours fériés */
+    .tm-agenda__rules, .tm-agenda__absences, .tm-agenda__holidays { gap: var(--space-3); }
+    .tm-agenda__days { display: grid; grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr)); gap: 12px; }
+    .tm-agenda__day { display: grid; gap: 6px; margin: 0; padding: 10px 12px; border: 1px solid var(--tm-line); border-radius: 10px; }
+    .tm-agenda__day legend { padding: 0 4px; font-size: 14px; font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
+    .tm-agenda__range { display: flex; align-items: center; gap: 6px; }
+    .tm-agenda__range input { min-width: 0; }
+    .tm-agenda__copy { justify-self: start; padding: 0; border: 0; background: none; color: var(--color-link); font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
+    .tm-agenda__settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 12px; }
+    .tm-agenda__absences > ul, .tm-agenda__holiday-list { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .tm-agenda__absences > ul li { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 14px; color: var(--tm-navy); }
+    .tm-agenda__absences > ul li form { margin-left: auto; }
+    .tm-agenda__delete { display: inline-grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 8px; background: none; color: var(--color-text-muted); cursor: pointer; }
+    .tm-agenda__delete:focus-visible, .tm-agenda__copy:focus-visible, .tm-agenda__toggle:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-agenda__absence-form { display: grid; gap: 12px; padding-top: 12px; border-top: 1px solid var(--tm-line); }
+    .tm-agenda__switch-form { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
+    .tm-agenda__switch-form p { margin: 0; font-size: 14px; color: var(--tm-ink); }
+    .tm-agenda__holiday-list li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--tm-line); font-size: 14px; color: var(--tm-navy); }
+
+    /* Colonne */
+    .tm-agenda__side h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 17px; color: var(--tm-navy); }
+    .tm-agenda__side h2 svg { color: var(--tm-orange); }
+    .tm-agenda__status, .tm-agenda__quick, .tm-agenda__legend { gap: 12px; }
+    .tm-agenda__toggle { display: flex; align-items: center; gap: 12px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--tm-ink); font: inherit; font-size: 13px; line-height: 18px; text-align: left; cursor: pointer; }
+    .tm-agenda__toggle-track { position: relative; flex: none; width: 44px; height: 24px; border-radius: 12px; background: var(--color-border-strong); }
+    .tm-agenda__toggle-track span { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--color-surface); transition: transform .15s; }
+    .tm-agenda__toggle[aria-checked="true"] .tm-agenda__toggle-track { background: var(--tm-green); }
+    .tm-agenda__toggle[aria-checked="true"] .tm-agenda__toggle-track span { transform: translateX(20px); }
+    .tm-agenda__quick ul, .tm-agenda__legend ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .tm-agenda__quick a { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; background: var(--tm-blue-soft); color: var(--tm-navy); font-size: 13px; font-weight: var(--font-weight-medium); text-decoration: none; }
+    .tm-agenda__quick a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-agenda__legend li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--tm-ink); }
+    .tm-agenda__legend strong { color: var(--tm-navy); }
+    .tm-agenda__swatch { flex: none; width: 18px; height: 18px; border-radius: 4px; }
+    .tm-agenda__swatch.is-open { background: var(--color-success-bg); }
+    .tm-agenda__swatch.is-busy { background: var(--tm-blue-soft); }
+    .tm-agenda__swatch.is-closed { background: var(--tm-red-soft); }
+
+    /* Mobile d'abord : liste par jour ; grille semaine et mois à partir de 700 px */
+    .tm-agenda__scroll, .tm-agenda__month { display: none; }
+    @media (min-width: 700px) {
+        .tm-agenda__scroll { display: block; }
+        .tm-agenda__month { display: table; }
+        .tm-agenda__list--mobile { display: none; }
+    }
+    @media (min-width: 1280px) {
+        .tm-agenda { grid-template-columns: minmax(0, 1fr) 18rem; align-items: start; }
+        .tm-agenda > :not(.tm-agenda__side) { grid-column: 1; }
+        .tm-agenda__side { grid-column: 2; grid-row: 1 / span 3; }
+    }
+}

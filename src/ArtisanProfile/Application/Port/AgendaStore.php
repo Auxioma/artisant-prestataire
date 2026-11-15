@@ -55,6 +55,13 @@ interface AgendaStore
      */
     public function replaceOpenSlots(string $artisanId, \DateTimeImmutable $from, array $slots): void;
 
+    /**
+     * Tous les créneaux (ouverts, retenus, réservés, bloqués) entre deux instants.
+     *
+     * @return list<array{0: \DateTimeImmutable, 1: \DateTimeImmutable, 2: string}> [début, fin, statut]
+     */
+    public function slots(string $artisanId, \DateTimeImmutable $from, \DateTimeImmutable $to): array;
+
     /** @return list<string> artisans qui ont au moins une plage récurrente */
     public function artisansWithRules(): array;
 

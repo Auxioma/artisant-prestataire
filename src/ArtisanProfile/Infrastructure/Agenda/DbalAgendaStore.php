@@ -141,6 +141,17 @@ final readonly class DbalAgendaStore implements AgendaStore
         }
     }
 
+    public function slots(string $artisanId, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        return array_map(
+            static fn (array $r): array => [new \DateTimeImmutable(DbalValue::string($r['starts_at'])), new \DateTimeImmutable(DbalValue::string($r['ends_at'])), DbalValue::string($r['status'])],
+            $this->connection->fetchAllAssociative(
+                'SELECT starts_at, ends_at, status FROM artisan.availability_slot WHERE artisan_id = :a AND ends_at > :from AND starts_at < :to ORDER BY starts_at',
+                ['a' => $artisanId, 'from' => $from->format(self::TS), 'to' => $to->format(self::TS)],
+            ),
+        );
+    }
+
     public function artisansWithRules(): array
     {
         return array_map(static fn (mixed $id): string => DbalValue::string($id), $this->connection->fetchFirstColumn('SELECT DISTINCT artisan_id FROM artisan.availability_rule ORDER BY artisan_id'));
