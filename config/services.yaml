@@ -200,6 +200,10 @@ services:
 
     # Module Quote
     App\Quote\Domain\Quote\QuoteRepository: '@App\Quote\Infrastructure\Persistence\DbalQuoteRepository'
+    App\Quote\Domain\Appointment\AppointmentRepository: '@App\Quote\Infrastructure\Appointment\DbalAppointmentRepository'
+    App\Quote\Application\Appointment\AppointmentReader: '@App\Quote\Infrastructure\Appointment\DbalAppointmentReader'
+    App\Quote\Application\Appointment\AppointmentParties: '@App\Quote\Infrastructure\Appointment\DbalAppointmentReader'
+    App\Quote\Application\Appointment\AppointmentMailer: '@App\Quote\Infrastructure\Mailer\NotificationAppointmentMailer'
     App\Quote\Domain\Mention\MandatoryMentionsChecker: ~
     App\Quote\Domain\Sending\QuoteSendingPolicy: ~
     App\Quote\Application\Port\QuoteNumberAllocator: '@App\Quote\Infrastructure\Persistence\DbalQuoteNumberAllocator'
@@ -220,6 +224,7 @@ services:
     App\ArtisanProfile\Application\Port\ProfileReviews: '@App\ArtisanProfile\Infrastructure\Projection\DbalProfileReviews'
     App\ArtisanProfile\Application\Port\ProfileContent: '@App\ArtisanProfile\Infrastructure\Projection\DbalPortfolioStore'
     App\ArtisanProfile\Application\Port\AgendaStore: '@App\ArtisanProfile\Infrastructure\Agenda\DbalAgendaStore'
+    App\ArtisanProfile\Application\Agenda\SlotReservations: '@App\ArtisanProfile\Infrastructure\Agenda\DbalSlotReservations'
     App\ArtisanProfile\Application\Port\PortfolioStore: '@App\ArtisanProfile\Infrastructure\Projection\DbalPortfolioStore'
     App\ArtisanProfile\Application\Port\VerificationDecisions: '@App\ArtisanProfile\Infrastructure\Projection\DbalVerificationDecisions'
     App\ArtisanProfile\Application\Port\MaintenanceCandidates: '@App\ArtisanProfile\Infrastructure\Projection\DbalMaintenanceCandidates'

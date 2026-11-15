@@ -79,10 +79,12 @@ notifications:
         label: "RDV proposé / confirmé / reporté / annulé par l'artisan"
         recipient: "Client"
         channels: [email, in_app, sms]
+        variables: [prenom, interlocuteur, evenement, action, quand, motif, demande, lien]
     'E-15':
         label: "Rappel de RDV J-1"
         recipient: "Client et artisan"
         channels: [email, sms]
+        variables: [prenom, interlocuteur, quand, demande, lien]
     'E-16':
         label: "Invitation à déposer un avis (J+1, relance J+7)"
         recipient: "Client"
@@ -184,6 +186,7 @@ notifications:
         label: "RDV proposé / confirmé / annulé par le client"
         recipient: "Artisan"
         channels: [email, in_app, sms]
+        variables: [prenom, interlocuteur, evenement, action, quand, motif, demande, lien]
     'E-37':
         label: "Nouvel avis reçu"
         recipient: "Artisan"
