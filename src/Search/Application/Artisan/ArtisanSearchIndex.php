@@ -82,4 +82,7 @@ interface ArtisanSearchIndex
 
     /** @return list<array{id: string, name: string, commune: ?string, updated_at: string}> artisans publics (fiches P10) */
     public function publicArtisans(): array;
+
+    /** Note moyenne et nombre d'avis publiés (module Review). */
+    public function updateRating(string $profileId, ?float $average, int $count): void;
 }

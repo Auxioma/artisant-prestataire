@@ -43,6 +43,14 @@ final readonly class DbalArtisanSearchIndex implements ArtisanSearchIndex
         );
     }
 
+    public function updateRating(string $profileId, ?float $average, int $count): void
+    {
+        $this->connection->executeStatement(
+            'UPDATE search.artisan_search_view SET rating_avg = :avg, reviews_count = :n, updated_at = now() WHERE artisan_id = :id',
+            ['avg' => null === $average ? null : number_format($average, 2, '.', ''), 'n' => $count, 'id' => $profileId],
+        );
+    }
+
     public function remove(string $profileId): void
     {
         $this->connection->executeStatement('DELETE FROM search.artisan_search_view WHERE artisan_id = :id', ['id' => $profileId]);

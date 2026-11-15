@@ -200,6 +200,10 @@ services:
 
     # Module Quote
     App\Quote\Domain\Quote\QuoteRepository: '@App\Quote\Infrastructure\Persistence\DbalQuoteRepository'
+    # Ports du module Review (T-704)
+    App\Review\Domain\Review\ReviewRepository: '@App\Review\Infrastructure\Persistence\DbalReviewRepository'
+    App\Review\Application\Port\ReviewDirectory: '@App\Review\Infrastructure\Persistence\DbalReviewDirectory'
+    App\Review\Application\Port\ReviewMailer: '@App\Review\Infrastructure\Mailer\NotificationReviewMailer'
     App\Quote\Domain\Appointment\AppointmentRepository: '@App\Quote\Infrastructure\Appointment\DbalAppointmentRepository'
     App\Quote\Application\Appointment\AppointmentReader: '@App\Quote\Infrastructure\Appointment\DbalAppointmentReader'
     App\Quote\Application\Appointment\AppointmentParties: '@App\Quote\Infrastructure\Appointment\DbalAppointmentReader'

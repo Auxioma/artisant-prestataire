@@ -1,0 +1,10 @@
+Bonjour {{ prenom }},
+
+Votre avis sur {{ artisan }} {{ resultat }}.
+{% if decision == 'changes_requested' %}Demande de la modération : {{ motif }}
+Modifiez votre avis pour qu’il puisse être publié.
+{% elseif motif %}Motif : {{ motif }}
+Les motifs de refus sont décrits dans notre politique des avis.
+{% else %}Merci : votre avis aide d’autres particuliers à choisir leur professionnel.
+{% endif %}
+Voir mes avis : {{ lien }}

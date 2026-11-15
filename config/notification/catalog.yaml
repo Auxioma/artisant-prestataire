@@ -98,6 +98,7 @@ notifications:
         label: "Avis publié / refusé (motif)"
         recipient: "Client"
         channels: [email, in_app]
+        variables: [prenom, artisan, decision, resultat, motif, lien]
     'E-19':
         label: "Demande bientôt expirée (J-3) / expirée"
         recipient: "Client"
@@ -191,10 +192,12 @@ notifications:
         label: "Nouvel avis reçu"
         recipient: "Artisan"
         channels: [email, in_app]
+        variables: [prenom, note, demande, lien]
     'E-38':
         label: "Réponse à un avis publiée / refusée"
         recipient: "Artisan"
         channels: [in_app]
+        variables: [publiee, motif, lien]
     'E-39':
         label: "Offre publiée / refusée / expirée"
         recipient: "Artisan"
