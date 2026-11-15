@@ -96,6 +96,16 @@ final readonly class NotificationIdentityMailer implements IdentityMailer
         ], $link));
     }
 
+    public function sendDataExportReady(Email $to, string $firstName, string $userId, int $validityDays, \DateTimeImmutable $expiresAt): void
+    {
+        $this->notifier->notify(new Notification('E-07', $to->value, $userId, [
+            'prenom' => $firstName,
+            'lien' => $this->absolute('client_data'),
+            'validite_jours' => $validityDays,
+            'expiration' => $expiresAt,
+        ], $this->urls->generate('client_data')));
+    }
+
     private function absolute(string $route): string
     {
         try {

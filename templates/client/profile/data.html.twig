@@ -1,0 +1,36 @@
+{#-
+    C07.4 « Mes données » : onglet de C07 (Figma 231:12840, mêmes cartes — pas de maquette dédiée, P-125).
+    « Télécharger mes données » : archive JSON + PDF lisible, générée sous 24 h, lien valable 7 jours (E-07).
+-#}
+{% extends 'client/_space.html.twig' %}
+{% set space_active = 'profile' %}
+{% set space_title = 'Mes données' %}
+{% set space_subtitle = 'Consultez et récupérez vos données personnelles.' %}
+{% block title %}Mes données — Espace client — TrouveMoi{% endblock %}
+{% block space_content %}
+<div class="tm-account">
+    <h1 class="tm-visually-hidden">Mes données personnelles</h1>
+    {% include 'client/profile/_tabs.html.twig' with {current: 'donnees'} %}
+    <section class="tm-account__card" aria-labelledby="export_title">
+        <h2 id="export_title" class="tm-account__title"><twig:Icon name="download" class="tm-icon--inherit" />Télécharger mes données</h2>
+        <p>Recevez une archive de toutes les informations que TrouveMoi détient sur vous : compte, demandes, devis, rendez-vous, messages envoyés, avis, favoris et préférences. Elle contient un fichier lisible (PDF) et un fichier réutilisable (JSON).</p>
+        {% if export and export.status == 'requested' %}
+            <p class="tm-callout" role="status"><twig:Icon name="hourglass" size="xs" class="tm-icon--inherit" />Archive demandée le {{ export.requestedAt|date('d/m/Y à H:i', 'Europe/Paris') }} : elle est en préparation, vous recevrez un e-mail sous 24 heures.</p>
+        {% elseif export and export.downloadable(now) %}
+            <p class="tm-callout" role="status"><twig:Icon name="checkC" size="xs" class="tm-icon--inherit" />Votre archive est prête : téléchargeable jusqu’au {{ export.expiresAt|date('d/m/Y à H:i', 'Europe/Paris') }}.</p>
+            <div class="tm-account__actions tm-account__actions--start">
+                <twig:Button href="{{ path('client_data_download') }}" variant="primary" icon="download" iconPosition="start">Télécharger l’archive</twig:Button>
+            </div>
+        {% elseif export and export.status == 'failed' %}
+            <p class="tm-callout" role="status"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" />La préparation de votre dernière archive a échoué : vous pouvez en demander une nouvelle.</p>
+        {% endif %}
+        {% if not export or export.status != 'requested' %}
+            <form method="post" action="{{ path('client_data_export') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                <twig:Button type="submit" variant="{{ export and export.downloadable(now) ? 'secondary' : 'primary' }}" icon="file" iconPosition="start">Demander une nouvelle archive</twig:Button>
+            </form>
+            <p class="tm-caption">Une demande par 24 heures. Le lien de téléchargement reste valable 7 jours, puis l’archive est détruite.</p>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

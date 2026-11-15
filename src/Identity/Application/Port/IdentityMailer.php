@@ -38,4 +38,7 @@ interface IdentityMailer
 
     /** E-95 — information de mise à jour des CGU / CGV (acceptation demandée à la prochaine connexion si substantielle). */
     public function sendLegalUpdate(Email $to, string $firstName, string $userId, LegalDocumentVersion $document): void;
+
+    /** E-07 : archive « Mes données » prête (lien vers l'espace, valable jusqu'à `$expiresAt`). */
+    public function sendDataExportReady(Email $to, string $firstName, string $userId, int $validityDays, \DateTimeImmutable $expiresAt): void;
 }

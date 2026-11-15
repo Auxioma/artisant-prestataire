@@ -1,0 +1,39 @@
+{#-
+    C07.4 — version lisible de l'archive « Mes données » (dompdf, CSS 2.1). Une section par module ; valeurs imbriquées
+    rendues en JSON. Couleurs : ZipDataExportPackager::COLORS.
+-#}
+{%- macro value(v) -%}{%- if v is iterable -%}{{ v|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES')) }}{%- elseif v is same as(true) -%}oui{%- elseif v is same as(false) -%}non{%- elseif v is null -%}—{%- else -%}{{ v }}{%- endif -%}{%- endmacro -%}
+{%- import _self as m -%}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Mes données TrouveMoi</title>
+<style>
+    @page { margin: 16mm 14mm 18mm; }
+    body { font-family: 'DejaVu Sans', sans-serif; font-size: 8.5pt; color: {{ palette.text }}; line-height: 1.35; }
+    h1 { font-size: 16pt; margin: 0 0 2mm; }
+    h2 { font-size: 11pt; margin: 6mm 0 2mm; }
+    p { margin: 0 0 1.5mm; }
+    .muted { color: {{ palette.muted }}; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 3mm; page-break-inside: auto; }
+    th { width: 32%; text-align: left; vertical-align: top; background: {{ palette.head }}; padding: 1.2mm 1.6mm; border-bottom: 0.4pt solid {{ palette.rule }}; font-weight: bold; }
+    td { vertical-align: top; padding: 1.2mm 1.6mm; border-bottom: 0.4pt solid {{ palette.rule }}; word-wrap: break-word; }
+</style>
+</head>
+<body>
+<h1>Mes données TrouveMoi</h1>
+<p>Titulaire : <strong>{{ holder }}</strong></p>
+<p class="muted">Archive générée le {{ generated_at|date('d/m/Y à H:i', 'Europe/Paris') }} (RGPD, articles 15 et 20). Le fichier donnees.json contient les mêmes informations dans un format réutilisable.</p>
+{% for s in sections %}
+    <h2>{{ s.title }} ({{ s.rows|length }})</h2>
+    {% for row in s.rows %}
+        <table>
+            {% for label, v in row %}<tr><th>{{ label|replace({'_': ' '})|capitalize }}</th><td>{{ m.value(v) }}</td></tr>{% endfor %}
+        </table>
+    {% endfor %}
+{% else %}
+    <p>Aucune donnée.</p>
+{% endfor %}
+</body>
+</html>

@@ -14,6 +14,9 @@ services:
             tags: [{ name: messenger.message_handler, bus: query.bus }]
         App\Shared\Application\Bus\EventHandler:
             tags: [{ name: messenger.message_handler, bus: event.bus }]
+        # C07.4 : sections de l'export RGPD fournies par chaque module.
+        App\Shared\Application\Privacy\PersonalDataSource:
+            tags: ['app.personal_data_source']
 
     App\:
         resource: '../src/'
@@ -220,6 +223,9 @@ services:
     App\Quote\Infrastructure\Pdf\DompdfQuotePdfRenderer:
         arguments:
             $cacheDir: '%kernel.cache_dir%/dompdf'
+    App\Identity\Infrastructure\Privacy\ZipDataExportPackager:
+        arguments:
+            $cacheDir: '%kernel.cache_dir%/dompdf'
 
     App\Catalog\Application\Questionnaire\QuestionnaireStore: '@App\Catalog\Infrastructure\Questionnaire\DbalQuestionnaireStore'
 
@@ -276,6 +282,11 @@ services:
             $settingsCache: '@cache.settings'
 
 # Points d'entrée applicatifs accessibles aux tests d'intégration (aucun effet hors environnement test).
+
+    App\Identity\Application\Privacy\BuildDataExport:
+        arguments:
+            $sources: !tagged_iterator app.personal_data_source
+
 when@test:
     services:
         # Prestataire de paiement : double en mémoire, jamais d'appel réseau en test (T-602).

@@ -36,7 +36,8 @@ notifications:
     'E-07':
         label: "Export de données prêt"
         recipient: "Tous"
-        channels: [email]
+        channels: [email, in_app]
+        variables: [prenom, lien, validite_jours, expiration]
     'E-08':
         label: "Demande de suppression de compte enregistrée"
         recipient: "Tous"

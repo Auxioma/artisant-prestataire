@@ -21,6 +21,8 @@ enum FilePurpose: string
     case PortfolioPhoto = 'portfolio_photo';
     case ContactAttachment = 'contact_attachment';
     case ClientAvatar = 'client_avatar';
+    /** Archive « Télécharger mes données » (C07.4), générée par l'application. */
+    case DataExport = 'data_export';
 
     /** @return list<FileType> */
     public function allowedTypes(): array
@@ -30,6 +32,7 @@ enum FilePurpose: string
             self::RequestPhoto => [FileType::Jpeg, FileType::Png, FileType::Webp, FileType::Pdf], // RG-061 : photos et PDF
             self::ArtisanLogo, self::ReviewPhoto, self::PortfolioPhoto, self::ClientAvatar => [FileType::Jpeg, FileType::Png, FileType::Webp],
             self::QuotePdf => [FileType::Pdf],
+            self::DataExport => [FileType::Zip],
         };
     }
 
@@ -49,6 +52,6 @@ enum FilePurpose: string
 
     public function encryptedAtRest(): bool
     {
-        return self::ArtisanDocument === $this || self::ContactAttachment === $this;
+        return self::ArtisanDocument === $this || self::ContactAttachment === $this || self::DataExport === $this;
     }
 }

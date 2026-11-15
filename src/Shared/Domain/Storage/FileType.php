@@ -11,6 +11,8 @@ enum FileType: string
     case Png = 'image/png';
     case Webp = 'image/webp';
     case Pdf = 'application/pdf';
+    /** Archive produite par l'application (export RGPD) : jamais acceptée en dépôt. */
+    case Zip = 'application/zip';
 
     public function extension(): string
     {
@@ -19,11 +21,12 @@ enum FileType: string
             self::Png => 'png',
             self::Webp => 'webp',
             self::Pdf => 'pdf',
+            self::Zip => 'zip',
         };
     }
 
     public function isImage(): bool
     {
-        return self::Pdf !== $this;
+        return self::Pdf !== $this && self::Zip !== $this;
     }
 }

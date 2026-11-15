@@ -122,3 +122,9 @@
         .tm-account__duo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 }
+
+/* C07.4 « Mes données » */
+@layer components {
+    .tm-account__card > p { margin: 0; font-size: 15px; color: var(--tm-navy); }
+    .tm-account__actions--start { justify-content: flex-start; }
+}
