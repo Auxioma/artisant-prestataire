@@ -16,7 +16,7 @@ use Doctrine\DBAL\Connection;
 final readonly class DbalAuditTrail implements AuditTrail
 {
     /** Clé arbitraire et stable du verrou consultatif PostgreSQL dédié à la chaîne d'audit. */
-    private const int CHAIN_LOCK_KEY = 726_384_001;
+    public const int CHAIN_LOCK_KEY = 726_384_001;
 
     public function __construct(private Connection $connection)
     {
@@ -52,7 +52,8 @@ final readonly class DbalAuditTrail implements AuditTrail
 
     public function verifyChain(): ?string
     {
-        $previousHash = null;
+        // Après une purge de rétention, la chaîne reprend à l'empreinte de la dernière entrée supprimée (point d'ancrage).
+        $previousHash = DbalValue::nullableString($this->connection->fetchOne('SELECT last_hash FROM admin.audit_anchor ORDER BY purged_through_seq DESC LIMIT 1') ?: null);
         foreach ($this->connection->iterateAssociative('SELECT id, canonical, prev_hash, hash FROM admin.audit_log ORDER BY seq') as $row) {
             $hash = DbalValue::string($row['hash']);
             $expected = hash('sha256', ($previousHash ?? '').'|'.DbalValue::string($row['canonical']));

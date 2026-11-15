@@ -27,4 +27,11 @@ interface ConversationRepository
 
     /** Enregistre la conversation et les messages postés pendant l'opération. */
     public function save(Conversation $conversation): void;
+
+    /**
+     * RG-090 — messages écrits par un compte effacé : texte remplacé, original scellé et pièces jointes retirés.
+     *
+     * @return list<string> fichiers des pièces jointes retirées, à détruire
+     */
+    public function scrubMessagesOf(string $userId): array;
 }

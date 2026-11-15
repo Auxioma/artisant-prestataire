@@ -47,4 +47,12 @@ final readonly class DbalContactMessages implements ContactMessages
             new \DateTimeImmutable(DbalValue::string($r['created_at'])),
         );
     }
+
+    public function purgeBefore(\DateTimeImmutable $before): array
+    {
+        return array_values(array_filter(array_map(
+            static fn (mixed $f): ?string => \is_string($f) ? $f : null,
+            $this->connection->fetchFirstColumn('DELETE FROM content.contact_message WHERE created_at < :b RETURNING attachment_file_id', ['b' => $before->format(\DATE_ATOM)]),
+        )));
+    }
 }
