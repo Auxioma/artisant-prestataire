@@ -5,9 +5,9 @@
 #}
 {# BO10.5 — colonnes administrables (tm_menu) #}
 {% set columns = [
-    {title: 'Liens utiles', links: tm_menu('footer_useful')},
-    {title: 'Informations', links: tm_menu('footer_info')},
-    {title: 'Aide', links: tm_menu('footer_help')},
+    {title: tm_label('footer.column_useful', 'Liens utiles'), links: tm_menu('footer_useful')},
+    {title: tm_label('footer.column_info', 'Informations'), links: tm_menu('footer_info')},
+    {title: tm_label('footer.column_help', 'Aide'), links: tm_menu('footer_help')},
 ] %}
 <footer {{ attributes.defaults({class: 'tm-footer'}) }}>
     <svg class="tm-footer__wave" viewBox="0 0 1440 70" preserveAspectRatio="none" aria-hidden="true" focusable="false">
@@ -19,7 +19,7 @@
         <div class="tm-footer__columns">
             <div class="tm-footer__brand">
                 <twig:Logo href="{{ tm_path('public_home') }}" />
-                <p class="tm-footer__tagline">La plateforme qui met en relation particuliers, entreprises et artisans vérifiés, partout en France.</p>
+                <p class="tm-footer__tagline">{{ tm_label('footer.tagline', 'La plateforme qui met en relation particuliers, entreprises et artisans vérifiés, partout en France.') }}</p>
                 {% set socials = tm_social_links() %}
                 {% if socials is not empty %}
                     <ul class="tm-footer__socials">
@@ -51,18 +51,18 @@
 
             {% if tm_route_exists('content_newsletter_subscribe') %}
                 <form class="tm-footer__newsletter" method="post" action="{{ tm_path('content_newsletter_subscribe') }}">
-                    <p class="tm-footer__title">Newsletter</p>
-                    <p class="tm-footer__text">Conseils travaux et nouveautés, une fois par mois.</p>
+                    <p class="tm-footer__title">{{ tm_label('footer.newsletter_title', 'Newsletter') }}</p>
+                    <p class="tm-footer__text">{{ tm_label('footer.newsletter_text', 'Conseils travaux et nouveautés, une fois par mois.') }}</p>
                     <twig:Field id="newsletter_email" name="email" type="email" label="Votre adresse email" icon="mail" autocomplete="email" required class="tm-footer__field" />
                     <twig:Checkbox id="newsletter_consent" name="consent" label="J’accepte de recevoir la newsletter TrouveMoi. Désinscription en un clic." required />
                     <input type="hidden" name="_token" value="{{ csrf_token('newsletter') }}">
-                    <twig:Button type="submit">S’inscrire</twig:Button>
+                    <twig:Button type="submit">{{ tm_label('footer.newsletter_submit', 'S’inscrire') }}</twig:Button>
                 </form>
             {% endif %}
         </div>
         <div class="tm-footer__bottom">
             <p>© {{ 'now'|date('Y') }} TrouveMoi.com — Auxioma</p>
-            <p>Opérateur de plateforme en ligne · <a class="tm-footer__link" href="{{ tm_path('content_how_it_works') }}#classement">Comment sont classés les professionnels ?</a></p>
+            <p>{{ tm_label('footer.operator', 'Opérateur de plateforme en ligne') }} · <a class="tm-footer__link" href="{{ tm_path('content_how_it_works') }}#classement">{{ tm_label('footer.ranking_link', 'Comment sont classés les professionnels ?') }}</a></p>
         </div>
     </div>
 </footer>

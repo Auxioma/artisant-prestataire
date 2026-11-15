@@ -542,3 +542,10 @@
         .tm-menus-admin { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
     }
 }
+
+/* BO10.6 « Libellés » */
+@layer components {
+    .tm-labels-table td { vertical-align: middle; }
+    .tm-labels-form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+    .tm-labels-form .tm-field__control { flex: 1 1 260px; }
+}

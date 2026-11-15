@@ -1,0 +1,44 @@
+{#- BO10.6 « Libellés » (pas de maquette dédiée, P-133) : textes d'interface par rubrique, modification, retour à l'origine. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'cms' %}
+{% set can_edit = is_granted('admin.cms.edit') %}
+{% block title %}Libellés — CMS{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Libellés', crumbs: ['Contenus', 'CMS'], subtitle: 'Textes de l’interface (français) · un texte vidé revient au texte d’origine'}) }}
+    {{ include('admin/cms/_tabs.html.twig', {current: 'libelles'}) }}
+    <form method="get" class="tm-cms-publish" role="search">
+        <div class="tm-field"><label class="tm-field__label" for="labels_q">Rechercher un libellé</label><div class="tm-field__control"><input class="tm-field__input" type="search" id="labels_q" name="q" value="{{ term }}"></div></div>
+        <twig:Button type="submit" variant="secondary" icon="search" iconPosition="start">Rechercher</twig:Button>
+    </form>
+    {% for group, labels in groups %}
+        <section class="tm-admin-panel" aria-labelledby="group-{{ group }}">
+            <h2 id="group-{{ group }}" class="tm-card-title">{{ group_names[group] ?? group|capitalize }} ({{ labels|length }})</h2>
+            <div class="tm-admin-table-wrap">
+                <table class="tm-admin-table tm-labels-table">
+                    <thead><tr><th scope="col">Clé</th><th scope="col">Texte d’origine</th><th scope="col">Texte affiché</th></tr></thead>
+                    <tbody>
+                        {% for l in labels %}
+                            <tr id="label-{{ l.key|replace({'.': '-'}) }}">
+                                <th scope="row"><code>{{ l.key }}</code>{% if l.text %} <span class="tm-admin-status is-scheduled">Modifié</span>{% endif %}</th>
+                                <td>{{ l.defaultText }}</td>
+                                <td>
+                                    {% if can_edit %}
+                                        <form method="post" action="{{ path('admin_cms_labels_save') }}" class="tm-labels-form" data-turbo="false">
+                                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="key" value="{{ l.key }}"><input type="hidden" name="q" value="{{ term }}">
+                                            <label class="tm-visually-hidden" for="text-{{ l.key }}">Texte affiché pour {{ l.key }}</label>
+                                            <div class="tm-field__control"><input class="tm-field__input" type="text" id="text-{{ l.key }}" name="text" maxlength="500" value="{{ l.value }}"></div>
+                                            <twig:Button type="submit" variant="secondary">Enregistrer</twig:Button>
+                                            {% if l.text %}<twig:Button type="submit" variant="tertiary" name="action" value="reset">Revenir à l’origine</twig:Button>{% endif %}
+                                        </form>
+                                    {% else %}{{ l.value }}{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    {% else %}
+        <twig:EmptyState title="Aucun libellé" text="{{ term ? 'Aucun libellé ne correspond à cette recherche.' : 'Lancez app:labels:sync pour relever les libellés des gabarits.' }}" icon="search" />
+    {% endfor %}
+{% endblock %}

@@ -53,8 +53,8 @@
                                         </ul>
                                     {% endif %}
                                     <div class="tm-mega__footer">
-                                        <a class="tm-mega__all" href="{{ tm_path('catalog_categories') }}">Toutes les catégories<twig:Icon name="arrowR" size="xs" class="tm-icon--inherit" /></a>
-                                        <p class="tm-mega__cta">Vous ne trouvez pas votre métier ? <twig:Button href="{{ tm_path('request_new') }}">Déposer une demande</twig:Button></p>
+                                        <a class="tm-mega__all" href="{{ tm_path('catalog_categories') }}">{{ tm_label('header.mega_all', 'Toutes les catégories') }}<twig:Icon name="arrowR" size="xs" class="tm-icon--inherit" /></a>
+                                        <p class="tm-mega__cta">{{ tm_label('header.mega_missing', 'Vous ne trouvez pas votre métier ?') }} <twig:Button href="{{ tm_path('request_new') }}">{{ tm_label('header.request_cta', 'Déposer une demande') }}</twig:Button></p>
                                     </div>
                                 </div>
                             {% else %}
@@ -68,23 +68,23 @@
 
             <div class="tm-header__actions">
                 {% if variant == 'visitor' %}
-                    <twig:Button variant="secondary" href="{{ tm_path('identity_login') }}" class="tm-header__desktop-only">Se connecter</twig:Button>
+                    <twig:Button variant="secondary" href="{{ tm_path('identity_login') }}" class="tm-header__desktop-only">{{ tm_label('header.login', 'Se connecter') }}</twig:Button>
                     <div class="tm-header__dropdown tm-header__desktop-only" data-controller="disclosure">
-                        <twig:Button aria-expanded="false" aria-controls="tm-signup-menu" data-disclosure-target="button" data-action="disclosure#toggle">Créer mon compte</twig:Button>
+                        <twig:Button aria-expanded="false" aria-controls="tm-signup-menu" data-disclosure-target="button" data-action="disclosure#toggle">{{ tm_label('header.signup', 'Créer mon compte') }}</twig:Button>
                         <div class="tm-dropdown tm-dropdown--signup" id="tm-signup-menu" hidden data-disclosure-target="panel">
                             <a class="tm-dropdown__choice" href="{{ tm_path('identity_register_client') }}">
                                 <span class="tm-dropdown__picto"><twig:Icon name="user" size="xs" class="tm-icon--inherit" /></span>
-                                <span><span class="tm-dropdown__title">Je suis particulier / entreprise cliente</span><span class="tm-dropdown__text">Trouver un pro et recevoir des devis</span></span>
+                                <span><span class="tm-dropdown__title">{{ tm_label('header.signup_client_title', 'Je suis particulier / entreprise cliente') }}</span><span class="tm-dropdown__text">{{ tm_label('header.signup_client_text', 'Trouver un pro et recevoir des devis') }}</span></span>
                             </a>
                             <a class="tm-dropdown__choice" href="{{ tm_path('identity_register_pro') }}">
                                 <span class="tm-dropdown__picto"><twig:Icon name="briefcase" size="xs" class="tm-icon--inherit" /></span>
                                 <span>
-                                    <span class="tm-dropdown__title">Je suis artisan / prestataire</span>
-                                    <span class="tm-dropdown__text">Recevoir des demandes dans ma zone</span>
+                                    <span class="tm-dropdown__title">{{ tm_label('header.signup_pro_title', 'Je suis artisan / prestataire') }}</span>
+                                    <span class="tm-dropdown__text">{{ tm_label('header.signup_pro_text', 'Recevoir des demandes dans ma zone') }}</span>
                                     <span class="tm-dropdown__offer">{{ tm_setting_int('credits.free_on_signup') }} devis offerts</span>
                                 </span>
                             </a>
-                            <p class="tm-dropdown__login">Déjà inscrit ? <a href="{{ tm_path('identity_login') }}">Se connecter</a></p>
+                            <p class="tm-dropdown__login">{{ tm_label('header.already_registered', 'Déjà inscrit ?') }} <a href="{{ tm_path('identity_login') }}">{{ tm_label('header.login', 'Se connecter') }}</a></p>
                         </div>
                     </div>
                 {% else %}
@@ -104,11 +104,11 @@
                         {% if unreadNotifications > 0 %}<span class="tm-icon-link__count" aria-hidden="true">{{ unreadNotifications > 99 ? '99+' : unreadNotifications }}</span>{% endif %}
                     </a>
                     {% if variant == 'client' %}
-                        <twig:Button href="{{ tm_path('request_new') }}" class="tm-header__desktop-only">Déposer une demande</twig:Button>
+                        <twig:Button href="{{ tm_path('request_new') }}" class="tm-header__desktop-only">{{ tm_label('header.request_cta', 'Déposer une demande') }}</twig:Button>
                     {% endif %}
                     <div class="tm-header__dropdown tm-header__desktop-only" data-controller="disclosure">
                         <button type="button" class="tm-account-button" aria-expanded="false" aria-controls="tm-account-menu" data-disclosure-target="button" data-action="disclosure#toggle">
-                            <twig:Icon name="user" size="xs" class="tm-icon--inherit" />Mon compte<twig:Icon name="chevD" size="xs" class="tm-icon--inherit" />
+                            <twig:Icon name="user" size="xs" class="tm-icon--inherit" />{{ tm_label('header.account', 'Mon compte') }}<twig:Icon name="chevD" size="xs" class="tm-icon--inherit" />
                         </button>
                         <div class="tm-dropdown tm-dropdown--account" id="tm-account-menu" hidden data-disclosure-target="panel">
                             {% if accountName %}
@@ -122,7 +122,7 @@
                                     <li><a class="tm-dropdown__item" href="{{ item.href }}"><twig:Icon name="{{ item.icon }}" size="xs" class="tm-icon--inherit" />{{ item.label }}</a></li>
                                 {% endfor %}
                             </ul>
-                            <a class="tm-dropdown__item tm-dropdown__item--danger" href="{{ logout_href }}"><twig:Icon name="x" size="xs" class="tm-icon--inherit" />Se déconnecter</a>
+                            <a class="tm-dropdown__item tm-dropdown__item--danger" href="{{ logout_href }}"><twig:Icon name="x" size="xs" class="tm-icon--inherit" />{{ tm_label('header.logout', 'Se déconnecter') }}</a>
                         </div>
                     </div>
                 {% endif %}
