@@ -20,8 +20,10 @@ use App\Search\Application\Artisan\SearchArtisans;
 use App\Search\UI\Twig\ArtisanUrlExtension;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Messaging\ArtisanResponseTime;
+use App\Shared\Application\Review\PublicReviews;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
@@ -41,7 +43,7 @@ final class ArtisanProfilePageController extends AbstractController
     }
 
     #[Route('/pro/{slug}-{id}', name: 'public_artisan_profile', requirements: ['slug' => '[a-z0-9]+(?:-[a-z0-9]+)*', 'id' => self::UUID], methods: ['GET'])]
-    public function show(string $slug, string $id): Response
+    public function show(Request $request, string $slug, string $id): Response
     {
         $profile = $this->profile($id);
         $canonical = ArtisanUrlExtension::slug($profile->name, $profile->communeName);
@@ -67,6 +69,9 @@ final class ArtisanProfilePageController extends AbstractController
             'hours_days' => OpeningHours::DAYS,
             'photo_kinds' => PortfolioEditor::KINDS,
             'response_minutes' => $this->queries->ask(new ArtisanResponseTime($id)),
+            'reviews' => $this->queries->ask(new PublicReviews($id, $request->query->getString('tri', 'recents'), $request->query->getString('note', 'toutes'), max(PublicReviews::PAGE, $request->query->getInt('avis', PublicReviews::PAGE)))),
+            'review_sorts' => PublicReviews::SORTS,
+            'review_filters' => PublicReviews::FILTERS,
         ]);
     }
 

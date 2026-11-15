@@ -63,6 +63,62 @@
                 </section>
             {% endif %}
         </div>
+    {% elseif tab == 'avis' and reviews is not empty %}
+        <div class="tm-moderation">
+            <section class="tm-admin-panel tm-moderation__queue" aria-labelledby="file-avis-titre">
+                <h2 id="file-avis-titre" class="tm-card-title">Avis à modérer</h2>
+                <ul>
+                    {% for item in reviews %}
+                        <li class="tm-moderation__item{{ review and review.id == item.id ? ' is-current' }}">
+                            <a href="{{ path('admin_moderation_tab', {onglet: 'avis', element: item.id}) }}"{{ review and review.id == item.id ? ' aria-current="true"' }}>
+                                <strong>{{ item.kindLabel() }} · {{ item.artisanName }}</strong>
+                                <span class="tm-caption">{{ item.rating }}/5 · {{ item.author }} · {{ _self.ago(item.since, now) }}{{ (now|date('U') - item.since|date('U')) > 172800 ? ' · SLA' }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% if review %}
+                {% set rv = review %}
+                <section class="tm-admin-panel tm-moderation__detail" aria-labelledby="avis-titre">
+                    <h2 id="avis-titre" class="tm-card-title">{{ rv.kindLabel() }}</h2>
+                    <p class="tm-moderation__stars"><span class="tm-pr-stars" aria-hidden="true">{% for i in 1..5 %}<twig:Icon name="{{ i <= rv.rating ? 'starFilled' : 'star' }}" size="xs" class="tm-icon--inherit{{ i <= rv.rating ? ' is-on' }}" />{% endfor %}</span><strong>{{ rv.rating }}/5{% if rv.title %} · « {{ rv.title }} »{% endif %}</strong> — {{ rv.author }} sur {{ rv.artisanName }}</p>
+                    <p class="tm-pre">{{ rv.text }}</p>
+                    {% if rv.photos is not empty %}<p class="tm-pr__photos">{% for f in rv.photos %}<a href="{{ path('review_photo', {review: rv.id, file: f}) }}" target="_blank" rel="noopener">Photo {{ loop.index }}</a>{% endfor %}</p>{% endif %}
+                    <p class="tm-moderation__proof"><twig:Icon name="shield" size="xs" class="tm-icon--inherit" />Avis certifié : devis {{ rv.proof.quote ?? '—' }} accepté le {{ rv.proof.accepted ?? '—' }}{% if rv.proof.service is defined %} · RDV réalisé le {{ rv.proof.service }}{% endif %}{% if rv.requestId and tm_route_exists('admin_request') %} · <a href="{{ path('admin_request', {id: rv.requestId}) }}">Voir la prestation</a>{% endif %}</p>
+                    {% if rv.kind == 'reply' %}<dl class="tm-facts"><div><dt>Réponse de l’artisan</dt><dd class="tm-pre">{{ rv.reply }}</dd></div></dl>{% endif %}
+                    {% if rv.kind == 'report' %}<dl class="tm-facts"><div><dt>Signalé par l’artisan</dt><dd>{{ rv.reportReason }}</dd></div></dl>{% endif %}
+                    <div class="tm-moderation__facts">
+                        <dl class="tm-admin-panel"><h3 class="tm-card-title">Historique auteur</h3><div><dt>Avis déposés</dt><dd>{{ rv.history.reviews }}</dd></div><div><dt>Refus antérieurs</dt><dd>{{ rv.history.rejections }}</dd></div></dl>
+                        <dl class="tm-admin-panel"><h3 class="tm-card-title">Score de risque</h3><div><dt>Score global</dt><dd><span class="tm-moderation__risk{{ rv.riskScore >= review_threshold ? ' is-high' }}">{{ rv.riskScore }} / 100</span></dd></div><div><dt>Seuil de modération</dt><dd>{{ review_threshold }}</dd></div></dl>
+                    </div>
+                    {% if is_granted('admin.moderation.edit') %}
+                        <form method="post" action="{{ path('admin_moderation_review', {id: rv.id}) }}" class="tm-admin-decision" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                            <h3 class="tm-card-title">Décision</h3>
+                            <fieldset>
+                                <legend>Motif de refus ou de masquage (normalisé, communiqué à l’auteur) :</legend>
+                                <div class="tm-admin-chips">{% for v, l in review_reasons %}<label class="tm-admin-chip"><input type="radio" name="reason" value="{{ v }}"><span>{{ l }}</span></label>{% endfor %}</div>
+                            </fieldset>
+                            {% if rv.kind == 'reply' %}
+                                <div class="tm-admin-actions">
+                                    <twig:Button type="submit" name="decision" value="reply_publish">Publier la réponse</twig:Button>
+                                    <twig:Button type="submit" variant="danger" name="decision" value="reply_reject">Refuser la réponse</twig:Button>
+                                </div>
+                            {% else %}
+                                <div class="tm-field"><label class="tm-field__label" for="note-modif">Demande de modification (texte envoyé à l’auteur)</label><div class="tm-field__control"><input class="tm-field__input" id="note-modif" name="note" maxlength="500"></div></div>
+                                <div class="tm-admin-actions">
+                                    <twig:Button type="submit" name="decision" value="publish">{{ rv.kind == 'report' ? 'Maintenir en ligne' : 'Publier' }}</twig:Button>
+                                    {% if rv.kind == 'review' %}<twig:Button type="submit" variant="secondary" name="decision" value="changes">Demander une modification</twig:Button>
+                                    <twig:Button type="submit" variant="danger" name="decision" value="reject">Refuser</twig:Button>{% endif %}
+                                    <twig:Button type="submit" variant="danger" name="decision" value="hide">Masquer</twig:Button>
+                                </div>
+                            {% endif %}
+                        </form>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </div>
     {% elseif tab == 'messages' and messages is not empty %}
         <div class="tm-moderation">
             <section class="tm-admin-panel tm-moderation__queue" aria-labelledby="file-messages-titre">
@@ -121,7 +177,7 @@
     {% elseif tab != 'regles' %}
         <section class="tm-admin-panel">
             <twig:EmptyState title="{{ {avis: 'Aucun avis à modérer', messages: 'Aucun message signalé', signalements: 'Aucun signalement', offres: 'Aucune offre à modérer'}[tab] }}"
-                text="{{ {avis: 'Les avis arrivent avec le lot Avis : leur file (texte, note, photos, preuve de prestation, score de risque) s’affichera ici.', messages: 'Les messages signalés par les clients et les professionnels s’afficheront ici, avec le contexte du fil.', signalements: 'Les signalements (avis, message, profil, demande, offre) arrivent avec leurs lots.', offres: 'Les offres et promotions des artisans arrivent en V2 (modération a priori).'}[tab] }}" />
+                text="{{ {avis: 'Aucun avis ni réponse en attente, aucun avis signalé.', messages: 'Les messages signalés par les clients et les professionnels s’afficheront ici, avec le contexte du fil.', signalements: 'Les signalements (avis, message, profil, demande, offre) arrivent avec leurs lots.', offres: 'Les offres et promotions des artisans arrivent en V2 (modération a priori).'}[tab] }}" />
         </section>
     {% endif %}
 

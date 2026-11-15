@@ -9,12 +9,15 @@ use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Moderation\DecideProfileReview;
 use App\Shared\Application\Moderation\DecideReportedMessage;
+use App\Shared\Application\Moderation\ModerateReview;
 use App\Shared\Application\Moderation\ModerationDecisionRejected;
 use App\Shared\Application\Moderation\PendingProfileReviews;
+use App\Shared\Application\Moderation\PendingReviews;
 use App\Shared\Application\Moderation\ProfileReviewItem;
 use App\Shared\Application\Moderation\ReportedMessageItem;
 use App\Shared\Application\Moderation\ReportedMessages;
 use App\Shared\Application\Moderation\RevealMessageOriginal;
+use App\Shared\Application\Moderation\ReviewModerationItem;
 use App\Shared\Application\Security\CurrentAdministrator;
 use App\Shared\Application\Settings\InvalidSettingValue;
 use App\Shared\Application\Settings\SettingKey;
@@ -29,8 +32,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * BO05 (/admin/moderation/{onglet}, Figma 186:2172) — files de modération : avis, messages signalés, signalements,
  * contenus de profils (relecture RG-031), offres, et règles automatiques éditables (BO05.3). Messages signalés
- * (T-701d2) : contexte du fil, lecture journalisée de l'original scellé, classement ou retrait. Les files des avis, des
- * signalements et des offres arrivent avec leurs lots ; leur onglet indique un compte nul.
+ * (T-701d2) : contexte du fil, lecture journalisée de l'original scellé, classement ou retrait. Avis (T-704d) : preuve
+ * de certification, historique de l'auteur, score de risque, décisions. Signalements et offres : lots suivants.
  */
 #[Route('/admin/moderation')]
 final class ModerationController extends AbstractController
@@ -88,6 +91,25 @@ final class ModerationController extends AbstractController
         return $this->redirectToRoute('admin_moderation_tab', ['onglet' => 'messages'], Response::HTTP_SEE_OTHER);
     }
 
+    /** BO05.1 — décision sur un avis ou une réponse (RG-035, RG-036) ; le refus et le masquage exigent un motif normalisé. */
+    #[Route('/avis/{id}', name: 'admin_moderation_review', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
+    #[IsGranted('admin.moderation.edit')]
+    public function decideReview(Request $request, string $id): Response
+    {
+        $this->assertCsrf($request);
+        $decision = $request->request->getString('decision');
+        try {
+            $this->commands->dispatch(new ModerateReview($this->adminId(), $id, $decision, $request->request->getString('reason') ?: null, $request->request->getString('note') ?: null));
+            $this->addFlash('success', ['publish' => 'Avis publié : l’auteur est prévenu.', 'reject' => 'Avis refusé : l’auteur reçoit le motif.', 'hide' => 'Avis masqué.', 'changes' => 'Modification demandée à l’auteur.', 'reply_publish' => 'Réponse publiée.', 'reply_reject' => 'Réponse refusée : l’artisan est prévenu.'][$decision] ?? 'Décision enregistrée.');
+        } catch (ModerationDecisionRejected $e) {
+            $this->addFlash('error', $e->getMessage());
+
+            return $this->redirectToRoute('admin_moderation_tab', ['onglet' => 'avis', 'element' => $id], Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->redirectToRoute('admin_moderation_tab', ['onglet' => 'avis'], Response::HTTP_SEE_OTHER);
+    }
+
     /** Original d'un message dont les coordonnées ont été masquées (ADR-0014) : affiché une fois, lecture journalisée. */
     #[Route('/messages/{id}/original', name: 'admin_moderation_message_original', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
     #[IsGranted('admin.moderation.edit')]
@@ -109,6 +131,11 @@ final class ModerationController extends AbstractController
         foreach ($contents as $item) {
             $current = $item->id === $selected ? $item : $current;
         }
+        $reviews = $this->reviews();
+        $review = null;
+        foreach ($reviews as $item) {
+            $review = $item->id === $selected ? $item : $review;
+        }
         $messages = $this->messages();
         $message = null;
         foreach ($messages as $item) {
@@ -118,9 +145,12 @@ final class ModerationController extends AbstractController
         return $this->render('admin/moderation/index.html.twig', [
             'tab' => $onglet,
             'tabs' => self::TABS,
-            'counts' => ['avis' => 0, 'messages' => \count($messages), 'signalements' => 0, 'contenus' => \count($contents), 'offres' => 0],
+            'counts' => ['avis' => \count($reviews), 'messages' => \count($messages), 'signalements' => 0, 'contenus' => \count($contents), 'offres' => 0],
             'contents' => $contents,
             'current' => $current ?? ($contents[0] ?? null),
+            'reviews' => $reviews,
+            'review' => $review ?? ($reviews[0] ?? null),
+            'review_reasons' => ['offensive' => 'Propos injurieux', 'off_topic' => 'Hors sujet', 'personal_data' => 'Données personnelles', 'conflict_of_interest' => 'Conflit d’intérêts'],
             'messages' => $messages,
             'message' => $message ?? ($messages[0] ?? null),
             'original' => null !== $original && null !== $message ? $original : null,
@@ -184,6 +214,14 @@ final class ModerationController extends AbstractController
         $items = $this->queries->ask(new PendingProfileReviews());
 
         return array_values(array_filter(\is_array($items) ? $items : [], static fn (mixed $i): bool => $i instanceof ProfileReviewItem));
+    }
+
+    /** @return list<ReviewModerationItem> */
+    private function reviews(): array
+    {
+        $items = $this->queries->ask(new PendingReviews());
+
+        return array_values(array_filter(\is_array($items) ? $items : [], static fn (mixed $i): bool => $i instanceof ReviewModerationItem));
     }
 
     /** @return list<ReportedMessageItem> */

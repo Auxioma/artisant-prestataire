@@ -42,8 +42,12 @@
                             </div>
                         </details>
                         {% if p.availableSoon %}<twig:Badge variant="available" />{% endif %}
-                        <twig:Badge variant="new">Nouveau</twig:Badge>
-                        <span class="tm-profile__no-review">Aucun avis pour le moment</span>
+                        {% if reviews.count > 0 %}
+                            <a class="tm-profile__rating" href="#avis"><span class="tm-pr-stars" aria-hidden="true">{% for i in 1..5 %}<twig:Icon name="{{ i <= reviews.average|round ? 'starFilled' : 'star' }}" size="xs" class="tm-icon--inherit{{ i <= reviews.average|round ? ' is-on' }}" />{% endfor %}</span><strong>{{ reviews.average|number_format(1, ',', ' ') }}</strong> ({{ reviews.count }} avis)<span class="tm-visually-hidden"> — note moyenne sur 5</span></a>
+                        {% else %}
+                            <twig:Badge variant="new">Nouveau</twig:Badge>
+                            <span class="tm-profile__no-review">Aucun avis pour le moment</span>
+                        {% endif %}
                     </div>
                     {% if job_names is not empty %}<p class="tm-profile__trades">{{ job_names|join(' · ') }}</p>{% endif %}
                     <ul class="tm-profile__facts">
@@ -163,16 +167,56 @@
             </section>
 
             <section class="tm-profile__section" id="avis" aria-labelledby="avis-title">
-                <h2 id="avis-title">Avis clients</h2>
-                <twig:EmptyState icon="star" title="Aucun avis pour le moment">
-                    Les avis apparaîtront ici après les premières prestations réalisées via TrouveMoi.
-                </twig:EmptyState>
+                <h2 id="avis-title">Avis clients certifiés</h2>
+                {% if reviews.count == 0 %}
+                    <twig:EmptyState icon="star" title="Ce professionnel n’a pas encore reçu d’avis">
+                        Les avis apparaîtront ici après les premières prestations réalisées via TrouveMoi.
+                    </twig:EmptyState>
+                {% else %}
+                    <div class="tm-profile__reviews-summary">
+                        <div class="tm-profile__reviews-score"><strong>{{ reviews.average|number_format(1, ',', ' ') }}</strong><span class="tm-pr-stars" aria-hidden="true">{% for i in 1..5 %}<twig:Icon name="{{ i <= reviews.average|round ? 'starFilled' : 'star' }}" size="xs" class="tm-icon--inherit{{ i <= reviews.average|round ? ' is-on' }}" />{% endfor %}</span><span>{{ reviews.count }} avis</span></div>
+                        <ul class="tm-pr__bars" aria-label="Répartition des notes">
+                            {% for n in 5..1 %}<li><span>{{ n }} ét.</span><span class="tm-pr__bar"><span class="tm-pr__fill is-{{ (reviews.share(n) / 5)|round * 5 }}"></span></span><span>{{ reviews.distribution[n] ?? 0 }}</span></li>{% endfor %}
+                        </ul>
+                        {% if reviews.criteria is not empty %}
+                            <dl class="tm-pr__criteria">
+                                {% for key, label in {quality: 'Qualité', punctuality: 'Ponctualité', cleanliness: 'Propreté', value: 'Rapport qualité/prix', communication: 'Communication'} %}{% if reviews.criteria[key] is defined %}<div><dt>{{ label }}</dt><dd>{{ reviews.criteria[key]|number_format(1, ',', ' ') }}</dd></div>{% endif %}{% endfor %}
+                            </dl>
+                        {% endif %}
+                    </div>
+                    {% set tri = app.request.query.get('tri', 'recents') %}
+                    {% set note = app.request.query.get('note', 'toutes') %}
+                    <form method="get" action="{{ app.request.pathInfo }}#avis" class="tm-profile__reviews-tools" data-controller="autosubmit">
+                        <label class="tm-visually-hidden" for="tri-avis">Trier les avis</label>
+                        <div class="tm-field__control tm-profile__sort"><span>Trier :</span><select class="tm-field__input" id="tri-avis" name="tri" data-action="autosubmit#submit">{% for k, l in review_sorts %}<option value="{{ k }}"{% if tri == k %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+                        {% if note != 'toutes' %}<input type="hidden" name="note" value="{{ note }}">{% endif %}
+                        <noscript><button type="submit" class="tm-button tm-button--secondary">Trier</button></noscript>
+                    </form>
+                    <nav class="tm-profile__reviews-filters" aria-label="Filtrer par note">
+                        {% for k, l in review_filters %}<a href="{{ path('public_artisan_profile', {slug: app.request.attributes.get('slug'), id: p.profileId, tri: tri != 'recents' ? tri : null, note: k != 'toutes' ? k : null}|filter(v => v is not null)) }}#avis"{% if note == k %} aria-current="page"{% endif %}>{{ l }}</a>{% endfor %}
+                    </nav>
+                    <ol class="tm-profile__reviews">
+                        {% for r in reviews.items %}
+                            <li>
+                                <p class="tm-profile__review-head"><span class="tm-pr-stars" aria-hidden="true">{% for i in 1..5 %}<twig:Icon name="{{ i <= r.rating ? 'starFilled' : 'star' }}" size="xs" class="tm-icon--inherit{{ i <= r.rating ? ' is-on' }}" />{% endfor %}</span><strong>{{ r.rating }}/5</strong><strong>{{ r.author }}{% if r.city %} · {{ r.city }}{% endif %}</strong><span class="tm-profile__certified"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Avis certifié — prestation du {{ r.serviceDate|date('d/m/Y') }}</span></p>
+                                {% if r.title %}<p class="tm-profile__review-title">{{ r.title }}</p>{% endif %}
+                                <p class="tm-profile__review-text">{{ r.text }}</p>
+                                {% if r.photos is not empty %}<p class="tm-pr__photos">{% for f in r.photos %}<a href="{{ path('review_photo', {review: r.id, file: f}) }}" target="_blank" rel="noopener"><img src="{{ path('review_photo', {review: r.id, file: f}) }}" alt="Photo {{ loop.index }} de l’avis de {{ r.author }}" width="72" height="72" loading="lazy"></a>{% endfor %}</p>{% endif %}
+                                {% if r.reply %}<div class="tm-profile__reply"><p><strong>Réponse de {{ p.name }}</strong></p><p>{{ r.reply }}</p></div>{% endif %}
+                                {% if tm_route_exists('content_contact') %}<a class="tm-profile__report" href="{{ path('content_contact', {sujet: 'signalement'}) }}">Signaler cet avis</a>{% endif %}
+                            </li>
+                        {% else %}
+                            <li class="tm-profile__muted">Aucun avis avec cette note.</li>
+                        {% endfor %}
+                    </ol>
+                {% endif %}
                 <p class="tm-profile__fine" id="avis-controle">
                     <twig:Icon name="info" size="xs" /> Avis contrôlés (art. L111-7-2 du Code de la consommation) : seul un client dont la demande a abouti
                     à une prestation via TrouveMoi peut déposer un avis. Les avis sont modérés avant publication, sans contrepartie, et affichés
                     du plus récent au plus ancien ; la note n’est affichée qu’à partir du premier avis publié.
                     {% if tm_route_exists('identity_legal_document') %}<a href="{{ path('identity_legal_document', {slug: 'cgu'}) }}">Fonctionnement des avis (CGU)</a>{% endif %}
                 </p>
+                {% if reviews.matching > reviews.items|length %}<twig:Button href="{{ path('public_artisan_profile', {slug: app.request.attributes.get('slug'), id: p.profileId, tri: app.request.query.get('tri'), note: app.request.query.get('note'), avis: reviews.items|length + 10}|filter(v => v is not null)) }}#avis" variant="secondary">Afficher 10 avis de plus</twig:Button>{% endif %}
             </section>
 
             <section class="tm-profile__section" id="informations" aria-labelledby="informations-title">
@@ -269,6 +313,7 @@
  |merge(logo ? {logo: app.request.schemeAndHttpHost ~ logo, image: app.request.schemeAndHttpHost ~ logo} : {})
  |merge(p.vatNumber ? {vatID: p.vatNumber} : {})
  |merge(area_center and p.areaRadiusKm ? {areaServed: {'@type': 'GeoCircle', geoMidpoint: {'@type': 'Place', name: area_center.name}, geoRadius: p.areaRadiusKm * 1000}} : (departments is not empty ? {areaServed: department_areas} : {})) %}
-{# Pas d'AggregateRating tant qu'aucun avis n'est publié. |raw justifié : json_encode avec JSON_HEX_TAG/JSON_HEX_AMP. #}
+{% if reviews.count > 0 %}{% set business = business|merge({aggregateRating: {'@type': 'AggregateRating', ratingValue: reviews.average, reviewCount: reviews.count, bestRating: 5, worstRating: 1}}) %}{% endif %}
+{# AggregateRating seulement à partir du premier avis publié. |raw justifié : json_encode avec JSON_HEX_TAG/JSON_HEX_AMP. #}
 {% if tm_schema('local_business') %}<script type="application/ld+json" nonce="{{ csp_nonce('script') }}">{{ business|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP'))|raw }}</script>{% endif %}
 {% endblock %}

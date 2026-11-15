@@ -8,6 +8,7 @@ use App\Review\Application\Query\ReviewReader;
 use App\Review\Application\Query\ReviewView;
 use App\Shared\Infrastructure\Persistence\DbalValue;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 
 final readonly class DbalReviewReader implements ReviewReader
 {
@@ -160,6 +161,54 @@ final readonly class DbalReviewReader implements ReviewReader
                 SQL,
             ['a' => $artisanId],
         ));
+    }
+
+    public function publicPage(string $artisanId, string $sort, string $filter, int $limit): array
+    {
+        if (1 !== preg_match(self::UUID, $artisanId)) {
+            return ['items' => [], 'matching' => 0];
+        }
+        $where = " WHERE v.artisan_id = :a AND v.status = 'published'".match ($filter) {
+            '5' => ' AND v.rating = 5',
+            '4' => ' AND v.rating = 4',
+            '3-et-moins' => ' AND v.rating <= 3',
+            default => '',
+        };
+        $order = match ($sort) {
+            'meilleurs' => 'v.rating DESC, v.service_date DESC',
+            'moins-bons' => 'v.rating ASC, v.service_date DESC',
+            default => 'v.service_date DESC, v.created_at DESC',
+        };
+        $rows = $this->connection->fetchAllAssociative(self::VIEW.$where.' ORDER BY '.$order.' LIMIT :l', ['a' => $artisanId, 'l' => $limit], ['l' => ParameterType::INTEGER]);
+        $matching = DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM review.review v'.$where, ['a' => $artisanId]));
+
+        return ['items' => array_map(self::view(...), $rows), 'matching' => $matching];
+    }
+
+    public function moderationQueue(int $limit): array
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT x.*, q.number AS quote_number, q.decided_at,'
+            ." (SELECT max(a.starts_at) FROM quote.appointment a WHERE a.quote_id = q.id AND a.status IN ('completed', 'confirmed') AND a.starts_at <= now()) AS service_at,"
+            .' (SELECT count(*) FROM review.review o WHERE o.client_user_id = x.client_user_id) AS author_reviews,'
+            ." (SELECT count(*) FROM review.review o WHERE o.client_user_id = x.client_user_id AND o.status IN ('rejected', 'hidden')) AS author_rejections"
+            .' FROM ('.self::VIEW.") x JOIN quote.quote q ON q.id = x.quote_id
+             WHERE x.status = 'pending' OR x.reply_status = 'pending' OR (x.status = 'published' AND x.reported_at IS NOT NULL)
+             ORDER BY coalesce(x.reported_at, x.reply_at, x.updated_at) LIMIT :l",
+            ['l' => $limit],
+            ['l' => ParameterType::INTEGER],
+        );
+        $d = static fn (mixed $v): ?\DateTimeImmutable => null === $v ? null : new \DateTimeImmutable(DbalValue::string($v));
+
+        return array_map(static fn (array $r): array => [
+            'view' => self::view($r),
+            'kind' => 'pending' === $r['status'] ? 'review' : ('pending' === $r['reply_status'] ? 'reply' : 'report'),
+            'quote_number' => DbalValue::nullableString($r['quote_number']) ?? '',
+            'accepted_at' => $d($r['decided_at']),
+            'service_at' => $d($r['service_at']),
+            'author_reviews' => DbalValue::int($r['author_reviews']),
+            'author_rejections' => DbalValue::int($r['author_rejections']),
+        ], $rows);
     }
 
     /** @param array<string, mixed> $r */
