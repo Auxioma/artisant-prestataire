@@ -219,6 +219,7 @@ services:
     App\ArtisanProfile\Application\Port\CoverageProjection: '@App\ArtisanProfile\Infrastructure\Projection\DbalCoverageProjection'
     App\ArtisanProfile\Application\Port\ProfileReviews: '@App\ArtisanProfile\Infrastructure\Projection\DbalProfileReviews'
     App\ArtisanProfile\Application\Port\ProfileContent: '@App\ArtisanProfile\Infrastructure\Projection\DbalPortfolioStore'
+    App\ArtisanProfile\Application\Port\AgendaStore: '@App\ArtisanProfile\Infrastructure\Agenda\DbalAgendaStore'
     App\ArtisanProfile\Application\Port\PortfolioStore: '@App\ArtisanProfile\Infrastructure\Projection\DbalPortfolioStore'
     App\ArtisanProfile\Application\Port\VerificationDecisions: '@App\ArtisanProfile\Infrastructure\Projection\DbalVerificationDecisions'
     App\ArtisanProfile\Application\Port\MaintenanceCandidates: '@App\ArtisanProfile\Infrastructure\Projection\DbalMaintenanceCandidates'

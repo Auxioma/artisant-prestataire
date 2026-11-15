@@ -76,6 +76,7 @@ enum SettingKey: string
     case ProCompletionWeights = 'pro.completion_weights';
     case ProCompletionPhotosTarget = 'pro.completion_photos_target';
     case AvailabilityBadgeDays = 'availability.badge_days';
+    case AvailabilityHorizonDays = 'availability.horizon_days';
     case AppointmentsHoldHours = 'appointments.hold_hours';
     case ReviewsWindowDays = 'reviews.window_days';
     case ReviewsModerationMode = 'reviews.moderation_mode';
@@ -242,6 +243,7 @@ enum SettingKey: string
             self::ProCompletionPhotosTarget => $d(T::Integer, 5, 'Photos de réalisations attendues pour la complétude (PR08.1)', 1, 50),
             self::ProVerificationDelayHours => $d(T::Integer, 48, 'Délai de vérification annoncé aux artisans (heures ouvrées) — CDC A03.7', 1, 720),
             self::AvailabilityBadgeDays => $d(T::Integer, 7, 'Fenêtre du badge Disponible (j)', 1, 60),
+            self::AvailabilityHorizonDays => $d(T::Integer, 60, 'Créneaux ouverts générés à l\'avance (j) — PR06', 14, 180, proposed: true),
             self::AppointmentsHoldHours => $d(T::Integer, 24, 'Verrouillage d\'un créneau proposé (h)', 1, 168),
             self::ReviewsWindowDays => $d(T::Integer, 90, 'Fenêtre de dépôt d\'avis (j)', 1, 730),
             self::ReviewsModerationMode => $d(T::Choice, 'a_priori', 'Modération des avis', choices: ['a_priori', 'a_posteriori']),
