@@ -17,6 +17,9 @@ services:
         # C07.4 : sections de l'export RGPD fournies par chaque module.
         App\Shared\Application\Privacy\PersonalDataSource:
             tags: ['app.personal_data_source']
+        # BO05.2 : contenus signalables décrits par chaque module.
+        App\Shared\Application\Moderation\ReportableContent:
+            tags: ['app.reportable_content']
 
     App\:
         resource: '../src/'
@@ -286,6 +289,10 @@ services:
     App\Identity\Application\Privacy\BuildDataExport:
         arguments:
             $sources: !tagged_iterator app.personal_data_source
+
+    App\Moderation\Application\Report\ReportHandler:
+        arguments:
+            $reportables: !tagged_iterator app.reportable_content
 
 when@test:
     services:

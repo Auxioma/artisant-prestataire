@@ -153,6 +153,11 @@ notifications:
         recipient: "Artisan / client"
         channels: [email]
         variables: [prenom, suspendu, motif, lien_aide]
+    'E-27':
+        label: "Réponse à votre signalement (BO05.2)"
+        recipient: "Signalant (client / artisan)"
+        channels: [email, in_app]
+        variables: [prenom, contenu, suite_donnee, reponse]
     'E-30':
         label: "Nouvelle demande compatible (immédiat ou digest)"
         recipient: "Artisan"

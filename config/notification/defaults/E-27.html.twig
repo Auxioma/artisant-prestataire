@@ -1,0 +1,5 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Merci pour votre signalement concernant « {{ contenu }} ». Notre équipe de modération l’a examiné.</p>
+{% if suite_donnee %}<p>Nous avons pris les mesures nécessaires au regard de nos règles de publication.</p>{% else %}<p>Après vérification, ce contenu respecte nos règles de publication : il reste en ligne.</p>{% endif %}
+{% if reponse %}<p><strong>Message de l’équipe :</strong> {{ reponse }}</p>{% endif %}
+<p class="muted">Vos signalements nous aident à garder TrouveMoi fiable pour tous.</p>

@@ -29,7 +29,7 @@ deptrac:
     Billing: [Shared, Notification, Administration] # Administration : paramètres de crédits BO08.2 enregistrés par ChangeSetting
     Messaging: [Shared, QuoteRequest, Quote, Notification] # Notification : E-17 (nouveau message, regroupé)
     Review: [Shared, Quote, Moderation, Notification] # Notification : E-18, E-37, E-38 (T-704)
-    Moderation: [Shared, Administration] # Administration : règles automatiques BO05.3 enregistrées par ChangeSetting
+    Moderation: [Shared, Administration, Notification] # Administration : règles automatiques BO05.3 enregistrées par ChangeSetting ; Notification : réponse au signalant (E-27)
     Content: [Shared, Catalog, Search, Notification, Administration, Billing] # Search : cartes de l'accueil (P01) ; Notification : E-90, I-03 (P16) ; Administration : réglages SEO modifiés depuis BO12 (ChangeSetting) ; Billing : forfaits publiés (P13)
     Notification: [Shared]
     Administration: [Shared, Notification] # Notification : invitation de l'équipe (I-02)

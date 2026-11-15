@@ -203,7 +203,7 @@
                                 <p class="tm-profile__review-text">{{ r.text }}</p>
                                 {% if r.photos is not empty %}<p class="tm-pr__photos">{% for f in r.photos %}<a href="{{ path('review_photo', {review: r.id, file: f}) }}" target="_blank" rel="noopener"><img src="{{ path('review_photo', {review: r.id, file: f}) }}" alt="Photo {{ loop.index }} de l’avis de {{ r.author }}" width="72" height="72" loading="lazy"></a>{% endfor %}</p>{% endif %}
                                 {% if r.reply %}<div class="tm-profile__reply"><p><strong>Réponse de {{ p.name }}</strong></p><p>{{ r.reply }}</p></div>{% endif %}
-                                {% if tm_route_exists('content_contact') %}<a class="tm-profile__report" href="{{ path('content_contact', {sujet: 'signalement'}) }}">Signaler cet avis</a>{% endif %}
+                                <a class="tm-profile__report" href="{{ path('moderation_report', {type: 'avis', id: r.id, retour: app.request.requestUri}) }}" rel="nofollow">Signaler cet avis</a>
                             </li>
                         {% else %}
                             <li class="tm-profile__muted">Aucun avis avec cette note.</li>
@@ -277,6 +277,7 @@
                     <p class="tm-profile__muted" data-share-target="status" role="status"></p>
                     <noscript><a href="mailto:?subject={{ p.name|url_encode }}&amp;body={{ canonical|url_encode }}">Partager par e-mail</a></noscript>
                 </div>
+                {% if not is_owner|default(false) %}<a class="tm-profile__report tm-profile__report--profile" href="{{ path('moderation_report', {type: 'profil', id: p.profileId, retour: app.request.requestUri}) }}" rel="nofollow"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" />Signaler ce profil</a>{% endif %}
             </div>
         </aside>
     </div>

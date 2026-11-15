@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace App\Moderation\UI\Admin;
 
 use App\Administration\Application\Command\ChangeSetting;
+use App\Moderation\Application\Report\DecideReport;
+use App\Moderation\Application\Report\OpenReports;
+use App\Moderation\Application\Report\ReportRejected;
+use App\Moderation\Application\Report\ReportView;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Moderation\DecideProfileReview;
@@ -14,6 +18,7 @@ use App\Shared\Application\Moderation\ModerationDecisionRejected;
 use App\Shared\Application\Moderation\PendingProfileReviews;
 use App\Shared\Application\Moderation\PendingReviews;
 use App\Shared\Application\Moderation\ProfileReviewItem;
+use App\Shared\Application\Moderation\ReportableContent;
 use App\Shared\Application\Moderation\ReportedMessageItem;
 use App\Shared\Application\Moderation\ReportedMessages;
 use App\Shared\Application\Moderation\RevealMessageOriginal;
@@ -23,6 +28,7 @@ use App\Shared\Application\Settings\InvalidSettingValue;
 use App\Shared\Application\Settings\SettingKey;
 use App\Shared\Application\Settings\SettingsProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
@@ -33,7 +39,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * BO05 (/admin/moderation/{onglet}, Figma 186:2172) — files de modération : avis, messages signalés, signalements,
  * contenus de profils (relecture RG-031), offres, et règles automatiques éditables (BO05.3). Messages signalés
  * (T-701d2) : contexte du fil, lecture journalisée de l'original scellé, classement ou retrait. Avis (T-704d) : preuve
- * de certification, historique de l'auteur, score de risque, décisions. Signalements et offres : lots suivants.
+ * de certification, historique de l'auteur, score de risque, décisions. Signalements (BO05.2) : avis, profils et
+ * demandes signalés, décision et réponse au signalant. Offres : lot suivant.
  */
 #[Route('/admin/moderation')]
 final class ModerationController extends AbstractController
@@ -61,6 +68,9 @@ final class ModerationController extends AbstractController
         private readonly CommandBus $commands,
         private readonly CurrentAdministrator $admin,
         private readonly SettingsProvider $settings,
+        /** @var iterable<ReportableContent> */
+        #[AutowireIterator('app.reportable_content')]
+        private readonly iterable $reportables,
     ) {
     }
 
@@ -136,6 +146,13 @@ final class ModerationController extends AbstractController
         foreach ($reviews as $item) {
             $review = $item->id === $selected ? $item : $review;
         }
+        $reports = $this->queries->ask(new OpenReports());
+        \assert(\is_array($reports));
+        /** @var list<ReportView> $reports */
+        $report = null;
+        foreach ($reports as $item) {
+            $report = $item->id === $selected ? $item : $report;
+        }
         $messages = $this->messages();
         $message = null;
         foreach ($messages as $item) {
@@ -145,7 +162,10 @@ final class ModerationController extends AbstractController
         return $this->render('admin/moderation/index.html.twig', [
             'tab' => $onglet,
             'tabs' => self::TABS,
-            'counts' => ['avis' => \count($reviews), 'messages' => \count($messages), 'signalements' => 0, 'contenus' => \count($contents), 'offres' => 0],
+            'counts' => ['avis' => \count($reviews), 'messages' => \count($messages), 'signalements' => \count($reports), 'contenus' => \count($contents), 'offres' => 0],
+            'reports' => $reports,
+            'report' => $report ?? ($reports[0] ?? null),
+            'report_types' => $this->reportTypes($reports),
             'contents' => $contents,
             'current' => $current ?? ($contents[0] ?? null),
             'reviews' => $reviews,
@@ -164,6 +184,57 @@ final class ModerationController extends AbstractController
             'now' => new \DateTimeImmutable(),
             'csrf_id' => self::CSRF,
         ]);
+    }
+
+    /**
+     * BO05.2 — signalement classé sans suite ou traité, réponse facultative au signalant (E-27). « Masquer l'avis » applique
+     * d'abord la décision BO05.1 au contenu signalé.
+     */
+    #[Route('/signalements/{id}', name: 'admin_moderation_report', requirements: ['id' => '[0-9a-f-]{36}'], methods: ['POST'])]
+    #[IsGranted('admin.moderation.edit')]
+    public function report(Request $request, string $id): Response
+    {
+        $this->assertCsrf($request);
+        $decision = $request->request->getString('decision');
+        $response = $request->request->getString('response');
+        try {
+            if ('hide_review' === $decision) {
+                $this->commands->dispatch(new ModerateReview($this->adminId(), $request->request->getString('subject'), 'hide', $request->request->getString('hide_reason')));
+                $decision = 'actioned';
+            }
+            $this->commands->dispatch(new DecideReport($this->adminId(), $id, $decision, $response));
+            $this->addFlash('success', 'actioned' === $decision ? 'Signalement traité ; le signalant est informé.' : 'Signalement classé sans suite ; le signalant est informé.');
+        } catch (ReportRejected|ModerationDecisionRejected $e) {
+            $this->addFlash('error', $e->getMessage());
+
+            return $this->redirectToRoute('admin_moderation_tab', ['onglet' => 'signalements', 'element' => $id], Response::HTTP_SEE_OTHER);
+        }
+
+        return $this->redirectToRoute('admin_moderation_tab', ['onglet' => 'signalements'], Response::HTTP_SEE_OTHER);
+    }
+
+    /**
+     * Libellés des types et lien d'administration de chaque élément signalé.
+     *
+     * @param list<ReportView> $reports
+     *
+     * @return array{labels: array<string, string>, links: array<string, array{route: string, parameters: array<string, string>}>}
+     */
+    private function reportTypes(array $reports): array
+    {
+        $labels = [];
+        $links = [];
+        foreach ($this->reportables as $reportable) {
+            $labels[$reportable->type()] = $reportable->label();
+            foreach ($reports as $report) {
+                $link = $report->type === $reportable->type() ? $reportable->adminRoute($report->subjectId) : null;
+                if (null !== $link) {
+                    $links[$report->id] = $link;
+                }
+            }
+        }
+
+        return ['labels' => $labels, 'links' => $links];
     }
 
     /** RG-031 — contenu de profil validé, ou retiré du profil public (motif normalisé). */

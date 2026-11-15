@@ -63,6 +63,61 @@
                 </section>
             {% endif %}
         </div>
+    {% elseif tab == 'signalements' and reports is not empty %}
+        <div class="tm-moderation">
+            <section class="tm-admin-panel tm-moderation__queue" aria-labelledby="file-signalements-titre">
+                <h2 id="file-signalements-titre" class="tm-card-title">Signalements à traiter</h2>
+                <ul>
+                    {% for item in reports %}
+                        <li class="tm-moderation__item{{ report and report.id == item.id ? ' is-current' }}">
+                            <a href="{{ path('admin_moderation_tab', {onglet: 'signalements', element: item.id}) }}"{{ report and report.id == item.id ? ' aria-current="true"' }}>
+                                <strong>{{ report_types.labels[item.type] ?? item.type }} · {{ item.title }}</strong>
+                                <span class="tm-caption">{{ item.reasonLabel() }}{{ item.similar > 1 ? ' · ' ~ item.similar ~ ' signalements' }} · {{ _self.ago(item.createdAt, now) }}{{ (now|date('U') - item.createdAt|date('U')) > 172800 ? ' · SLA' }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% if report %}
+                {% set rp = report %}
+                <section class="tm-admin-panel tm-moderation__detail" aria-labelledby="signalement-titre">
+                    <h2 id="signalement-titre" class="tm-card-title">{{ report_types.labels[rp.type] ?? rp.type }} signalé</h2>
+                    <dl class="tm-facts">
+                        <div><dt>Contenu</dt><dd><strong>{{ rp.title }}</strong></dd></div>
+                        <div><dt>Instantané au signalement</dt><dd class="tm-pre">{{ rp.excerpt }}</dd></div>
+                        <div><dt>Motif</dt><dd>{{ rp.reasonLabel() }}</dd></div>
+                        {% if rp.details %}<div><dt>Précisions</dt><dd class="tm-pre">{{ rp.details }}</dd></div>{% endif %}
+                        <div><dt>Signalé par</dt><dd>{{ rp.reporterName ?? 'Compte supprimé' }} · le {{ rp.createdAt|date('d/m/Y à H:i', 'Europe/Paris') }}</dd></div>
+                        <div><dt>Signalements ouverts sur ce contenu</dt><dd>{{ rp.similar }}</dd></div>
+                        <div><dt>Statut</dt><dd>À traiter</dd></div>
+                    </dl>
+                    {% set link = report_types.links[rp.id] ?? null %}
+                    {% if link and tm_route_exists(link.route) %}<p><a href="{{ path(link.route, link.parameters) }}">Ouvrir l’élément dans le back-office</a> (suspension, retrait…)</p>{% endif %}
+                    {% if is_granted('admin.moderation.edit') %}
+                        <form method="post" action="{{ path('admin_moderation_report', {id: rp.id}) }}" class="tm-admin-decision" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                            <input type="hidden" name="subject" value="{{ rp.subjectId }}">
+                            <h3 class="tm-card-title">Décision</h3>
+                            <div class="tm-field">
+                                <label class="tm-field__label" for="report_response">Réponse au signalant (facultative, envoyée par e-mail)</label>
+                                <div class="tm-field__control"><textarea class="tm-field__input tm-report__details" id="report_response" name="response" maxlength="1000" rows="3"></textarea></div>
+                            </div>
+                            {% if rp.type == 'avis' %}
+                                <fieldset>
+                                    <legend>Motif de masquage de l’avis (si « Masquer l’avis ») :</legend>
+                                    <div class="tm-admin-chips">{% for v, l in review_reasons %}<label class="tm-admin-chip"><input type="radio" name="hide_reason" value="{{ v }}"><span>{{ l }}</span></label>{% endfor %}</div>
+                                </fieldset>
+                            {% endif %}
+                            <div class="tm-admin-actions">
+                                <twig:Button type="submit" variant="secondary" name="decision" value="dismiss">Classer sans suite</twig:Button>
+                                {% if rp.type == 'avis' %}<twig:Button type="submit" variant="danger" name="decision" value="hide_review">Masquer l’avis</twig:Button>{% endif %}
+                                <twig:Button type="submit" name="decision" value="actioned">Marquer comme traité</twig:Button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </div>
     {% elseif tab == 'avis' and reviews is not empty %}
         <div class="tm-moderation">
             <section class="tm-admin-panel tm-moderation__queue" aria-labelledby="file-avis-titre">

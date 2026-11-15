@@ -135,3 +135,14 @@
     .tm-account__danger .tm-account__title .tm-icon { color: var(--tm-red); }
     .tm-account__consequences { display: grid; gap: 6px; margin: 0; padding-left: 20px; font-size: 15px; color: var(--tm-navy); }
 }
+
+/* « Signaler » (avis, profil, demande) — page et liens discrets */
+@layer components {
+    .tm-report { gap: var(--space-4); }
+    .tm-report__content { margin: 0; padding: 12px 14px; border-left: 3px solid var(--tm-line); background: var(--tm-ice); color: var(--tm-navy); font-size: 14px; overflow-wrap: anywhere; }
+    .tm-report__content p { margin: 0 0 4px; }
+    .tm-report__form { display: grid; gap: 14px; }
+    .tm-report__reasons { display: grid; gap: 4px; margin: 0; padding: 0; border: 0; }
+    .tm-report__details { min-height: 96px; resize: vertical; }
+    .tm-profile__report--profile, .tm-pro-detail__report { display: inline-flex; align-items: center; gap: 6px; justify-self: start; color: var(--tm-muted); font-size: 13px; }
+}

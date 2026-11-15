@@ -253,3 +253,9 @@ Les IP sont stockées **hachées** (HMAC avec un sel tournant) sauf dans l'Audit
 | `seo_template` (T-308b, schéma `content`) | page_type (**PK**), title, description, updated_at, updated_by | — |
 | `seo_override` | path (**PK**, chemin interne), title, description, noindex, updated_at, updated_by | **CK** chemin commençant par « / » |
 | `not_found` | path (**PK**), hits, last_referer (domaine + chemin, sans paramètres), first_seen_at, last_seen_at | **IX** (hits DESC, last_seen_at DESC) |
+
+### Schéma `moderation` (T-706a)
+
+| Table | Colonnes | Contraintes |
+|---|---|---|
+| `report` | id, subject_type (`avis`/`profil`/`demande`), subject_id, subject_title, subject_excerpt (instantané, preuve), subject_owner_id, reporter_id (FK compte, mis à vide à l'effacement), reason, details, status (`open`/`dismissed`/`actioned`), decided_by, decided_at, decision_note (réponse au signalant), created_at | **CK** ouvert ⇔ non décidé ; **UQ** un signalement ouvert par signalant et par contenu ; IX file des ouverts |

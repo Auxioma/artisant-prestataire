@@ -144,6 +144,7 @@
                     </form>
                 </details>
             {% endif %}
+            <a class="tm-pro-detail__report" href="{{ path('moderation_report', {type: 'demande', id: r.id, retour: path('pro_request', {id: r.id})}) }}" rel="nofollow"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" />Signaler cette demande</a>
         </section>
     </div>
 
