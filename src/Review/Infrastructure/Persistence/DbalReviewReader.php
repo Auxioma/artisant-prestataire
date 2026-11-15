@@ -79,6 +79,89 @@ final readonly class DbalReviewReader implements ReviewReader
         return false === $r ? null : self::view($r);
     }
 
+    public function publishedOf(string $artisanId): array
+    {
+        if (1 !== preg_match(self::UUID, $artisanId)) {
+            return [];
+        }
+
+        return array_map(self::view(...), $this->connection->fetchAllAssociative(self::VIEW." WHERE v.artisan_id = :a AND v.status = 'published' ORDER BY v.service_date DESC, v.created_at DESC", ['a' => $artisanId]));
+    }
+
+    public function stats(string $artisanId, \DateTimeImmutable $before): array
+    {
+        $empty = ['average' => null, 'count' => 0, 'distribution' => [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0], 'criteria' => [], 'previous' => null];
+        if (1 !== preg_match(self::UUID, $artisanId)) {
+            return $empty;
+        }
+        $rows = $this->connection->fetchAllAssociative("SELECT rating, sub_ratings, created_at FROM review.review WHERE artisan_id = :a AND status = 'published'", ['a' => $artisanId]);
+        if ([] === $rows) {
+            return $empty;
+        }
+        $distribution = $empty['distribution'];
+        $sums = [];
+        $counts = [];
+        $old = [];
+        foreach ($rows as $r) {
+            $rating = DbalValue::int($r['rating']);
+            ++$distribution[$rating];
+            if (new \DateTimeImmutable(DbalValue::string($r['created_at'])) < $before) {
+                $old[] = $rating;
+            }
+            $sub = DbalValue::json($r['sub_ratings']);
+            foreach (\is_array($sub) ? $sub : [] as $k => $v) {
+                if (\is_string($k) && \is_int($v)) {
+                    $sums[$k] = ($sums[$k] ?? 0) + $v;
+                    $counts[$k] = ($counts[$k] ?? 0) + 1;
+                }
+            }
+        }
+        $criteria = [];
+        foreach ($sums as $k => $sum) {
+            $criteria[$k] = round($sum / $counts[$k], 1);
+        }
+        $total = array_sum(array_map(static fn (array $r): int => DbalValue::int($r['rating']), $rows));
+
+        return [
+            'average' => round($total / \count($rows), 1),
+            'count' => \count($rows),
+            'distribution' => $distribution,
+            'criteria' => $criteria,
+            'previous' => [] === $old ? null : round(array_sum($old) / \count($old), 1),
+        ];
+    }
+
+    public function solicitable(string $artisanId): array
+    {
+        if (1 !== preg_match(self::UUID, $artisanId)) {
+            return [];
+        }
+        $d = static fn (mixed $v): ?\DateTimeImmutable => null === $v ? null : new \DateTimeImmutable(DbalValue::string($v));
+
+        return array_map(static fn (array $r): array => [
+            'request_id' => DbalValue::string($r['id']),
+            'request_title' => DbalValue::nullableString($r['title']),
+            'request_number' => DbalValue::string($r['number']),
+            'client_name' => trim(DbalValue::string($r['first_name']).' '.DbalValue::string($r['initial']).'.'),
+            'accepted_at' => new \DateTimeImmutable(DbalValue::string($r['decided_at'])),
+            'service_at' => $d($r['service_at']),
+            'artisan_reminded_at' => $d($r['artisan_reminded_at']),
+        ], $this->connection->fetchAllAssociative(
+            <<<'SQL'
+                SELECT r.id, r.title, r.number, q.decided_at, i.artisan_reminded_at, coalesce(u.first_name, 'Client') AS first_name, coalesce(left(u.last_name, 1), '') AS initial,
+                       (SELECT max(a.starts_at) FROM quote.appointment a WHERE a.quote_id = q.id AND (a.status = 'completed' OR (a.status = 'confirmed' AND a.starts_at <= now()))) AS service_at
+                FROM quote.quote q
+                JOIN request.quote_request r ON r.id = q.request_id
+                LEFT JOIN identity.user_account u ON u.id = r.client_id AND u.status <> 'anonymized'
+                LEFT JOIN review.invitation i ON i.request_id = r.id
+                WHERE q.artisan_id = :a AND q.status = 'accepted' AND q.decided_at IS NOT NULL
+                  AND NOT EXISTS (SELECT 1 FROM review.review v WHERE v.request_id = r.id)
+                ORDER BY q.decided_at DESC
+                SQL,
+            ['a' => $artisanId],
+        ));
+    }
+
     /** @param array<string, mixed> $r */
     public static function view(array $r): ReviewView
     {

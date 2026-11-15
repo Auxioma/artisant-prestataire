@@ -1,0 +1,92 @@
+{#-
+    PR09 « Avis reçus » (Figma 233:13842) : synthèse (note, étoiles, évolution sur 3 mois, répartition 5→1, sous-notes),
+    avis et réponses (réponse publique 1 500 car. modérée, modifiable, signalement avec motif, mention RG-036),
+    solliciter des avis (relance unique). Écarts : P-119.
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'profile' %}
+{% block title %}Avis reçus — Espace pro — TrouveMoi{% endblock %}
+{% set st = view.stats %}
+{% macro stars(n) %}<span class="tm-pr-stars" aria-hidden="true">{% for i in 1..5 %}<twig:Icon name="{{ i <= n ? 'starFilled' : 'star' }}" size="xs" class="tm-icon--inherit{{ i <= n ? ' is-on' }}" />{% endfor %}</span>{% endmacro %}
+{% import _self as m %}
+{% block space_content %}
+<div class="tm-pr">
+    <header>
+        <h1>Avis reçus</h1>
+        <p>{{ st.count }} avis certifié{{ st.count > 1 ? 's' }}</p>
+    </header>
+
+    <section class="tm-pro-card tm-pr__summary" aria-label="Synthèse">
+        <div class="tm-pr__score">
+            <strong>{{ st.average is null ? '—' : st.average|number_format(1, ',', ' ') }}</strong>
+            {{ m.stars(st.average ?? 0) }}<span class="tm-visually-hidden">Note moyenne {{ st.average ?? 'non disponible' }} sur 5</span>
+            {% set t = view.trend() %}
+            {% if t is not null %}<span class="tm-pr__trend{{ t < 0 ? ' is-down' }}">{{ t >= 0 ? '+' }}{{ t|number_format(1, ',', ' ') }} sur 3 mois</span>{% endif %}
+        </div>
+        <ul class="tm-pr__bars" aria-label="Répartition des notes">
+            {% for n in 5..1 %}
+                <li><span>{{ n }} ét.</span><span class="tm-pr__bar"><span class="tm-pr__fill is-{{ (view.share(n) / 5)|round * 5 }}"></span></span><span>{{ st.distribution[n] ?? 0 }}</span></li>
+            {% endfor %}
+        </ul>
+        <dl class="tm-pr__criteria">
+            {% for key, label in criteria %}<div><dt>{{ label }}</dt><dd>{{ st.criteria[key] is defined ? st.criteria[key]|number_format(1, ',', ' ') : '—' }}</dd></div>{% endfor %}
+        </dl>
+    </section>
+
+    <section class="tm-pro-card tm-pr__list" aria-labelledby="avis-titre">
+        <h2 id="avis-titre">Avis et réponses</h2>
+        {% for r in view.reviews %}
+            <article class="tm-pr__review">
+                <p class="tm-pr__head">{{ m.stars(r.rating) }}<span class="tm-visually-hidden">{{ r.rating }} sur 5 —</span><strong>{{ r.author() }}{% if r.city %} · {{ r.city }}{% endif %} · prestation du {{ r.serviceDate|date('d/m/Y') }}</strong>{% if r.reportedAt %}<span class="tm-pr__flag"><twig:Icon name="clock" size="xs" class="tm-icon--inherit" />Signalé · en examen</span>{% endif %}</p>
+                {% if r.title %}<p class="tm-pr__title">{{ r.title }}</p>{% endif %}
+                <p class="tm-pr__text">« {{ r.text }} »</p>
+                {% if r.photos is not empty %}<p class="tm-pr__photos">{% for f in r.photos %}<a href="{{ path('review_photo', {review: r.id, file: f}) }}" target="_blank" rel="noopener"><img src="{{ path('review_photo', {review: r.id, file: f}) }}" alt="Photo {{ loop.index }} de l’avis" width="64" height="64" loading="lazy"></a>{% endfor %}</p>{% endif %}
+                {% if r.reply and r.replyStatus == 'published' and r.repliedAt and r.repliedAt|date_modify('+' ~ view.editDays ~ ' days') < date() %}
+                    <div class="tm-reviews__reply"><p class="tm-caption">Votre réponse publique</p><p>« {{ r.reply }} »</p></div>
+                {% else %}
+                    <form method="post" action="{{ path('pro_review_answer', {id: r.id}) }}" class="tm-pr__answer" data-controller="char-count" data-char-count-max-value="{{ reply_max }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                        <label class="tm-field__label" for="rep-{{ r.id }}">Votre réponse publique *</label>
+                        <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="rep-{{ r.id }}" name="reponse" rows="2" maxlength="{{ reply_max }}" required data-char-count-target="input" data-action="input->char-count#update">{{ r.reply }}</textarea></div>
+                        <p class="tm-caption"><span data-char-count-target="count">{{ (r.reply ?? '')|length }} / {{ reply_max|number_format(0, ',', ' ') }}</span> · modifiable {{ view.editDays }} jours · modérée{% if r.replyStatus == 'pending' %} · <strong>en modération</strong>{% elseif r.replyStatus == 'rejected' %} · <strong>refusée{% if r.replyReasonLabel() %} ({{ r.replyReasonLabel() }}){% endif %}</strong>{% endif %}</p>
+                        <twig:Button type="submit">{{ r.reply ? 'Modifier la réponse' : 'Publier la réponse' }}</twig:Button>
+                    </form>
+                {% endif %}
+                {% if not r.reportedAt %}
+                    <details class="tm-pr__report">
+                        <summary>Signaler cet avis</summary>
+                        <form method="post" action="{{ path('pro_review_report', {id: r.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                            <label class="tm-field__label" for="motif-{{ r.id }}">Motif du signalement</label>
+                            <div class="tm-field__control"><input class="tm-field__input" id="motif-{{ r.id }}" name="motif" maxlength="300" required placeholder="Ce client n’est pas le mien, propos injurieux…"></div>
+                            <twig:Button type="submit" variant="secondary">Envoyer le signalement</twig:Button>
+                        </form>
+                    </details>
+                {% endif %}
+            </article>
+        {% else %}
+            <p class="tm-caption">Vous n’avez pas encore reçu d’avis publié.</p>
+        {% endfor %}
+        <p class="tm-reviews__info"><twig:Icon name="info" size="sm" class="tm-icon--inherit" />Vous ne pouvez ni supprimer ni masquer un avis ; un avis signalé reste en ligne pendant l’examen, sauf contenu manifestement illicite (RG-036).</p>
+    </section>
+
+    <section class="tm-pro-card tm-pr__solicit" aria-labelledby="solliciter-titre">
+        <h2 id="solliciter-titre">Solliciter des avis</h2>
+        {% for s in view.solicit %}
+            <div class="tm-pr__ask">
+                <p><strong>{{ s.client_name }} · {{ s.request_title ?? ('Demande ' ~ s.request_number) }}</strong><span class="tm-caption">Terminée le {{ s.opens|date('d/m/Y', 'Europe/Paris') }}</span></p>
+                {% if s.reminded %}
+                    <span class="tm-caption">Client relancé</span>
+                {% else %}
+                    <form method="post" action="{{ path('pro_review_remind', {demande: s.request_id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                        <twig:Button type="submit" variant="secondary">Relancer le client (1 fois)</twig:Button>
+                    </form>
+                {% endif %}
+            </div>
+        {% else %}
+            <p class="tm-caption">Aucune prestation terminée sans avis pour le moment.</p>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}
