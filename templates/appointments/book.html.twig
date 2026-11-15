@@ -1,0 +1,57 @@
+{#-
+    C03.6 — prise de rendez-vous : créneaux ouverts de l'agenda de l'artisan sur 30 jours (prévenance comprise pour le
+    client), groupés par jour, note pour l'autre partie ; report si un rendez-vous est en cours. Écarts : P-115.
+-#}
+{% extends layout %}
+{% set space_active = 'appointments' %}
+{% set space_title = 'Mes rendez-vous' %}
+{% set space_subtitle = 'Choisissez un créneau dans l’agenda du professionnel.' %}
+{% block title %}{{ slots.current ? 'Reprogrammer' : 'Prendre rendez-vous' }} — TrouveMoi{% endblock %}
+{% set day_names = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] %}
+{% set months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] %}
+{% block space_content %}
+<div class="tm-rdv-book">
+    <header class="tm-pro-head">
+        <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="calendar" class="tm-icon--inherit" /></span>
+        <div>
+            <h1>{{ slots.current ? 'Reprogrammer le rendez-vous' : 'Prendre rendez-vous' }}</h1>
+            <p>{{ slots.party == 'client' ? 'Avec ' ~ slots.artisanName : 'Avec ' ~ slots.clientFirstName }} — {{ slots.requestTitle ?? ('demande ' ~ slots.requestNumber) }} (devis {{ slots.quoteNumber }})</p>
+        </div>
+    </header>
+    {% if slots.current %}<p class="tm-rdv-book__current"><twig:Icon name="info" size="sm" class="tm-icon--inherit" />Rendez-vous actuel : {{ slots.current.startsAt|date('d/m/Y à H:i', 'Europe/Paris') }} ({{ slots.current.statusLabel()|lower }}). Il sera remplacé par le créneau choisi.</p>{% endif %}
+    {% if slots.days is empty %}
+        <div class="tm-pro-card">
+            <twig:EmptyState title="Aucun créneau disponible sous {{ constant('App\\Quote\\Application\\Appointment\\BookableSlots::DAYS') }} jours" text="{{ slots.party == 'client' ? 'Le professionnel n’a pas encore ouvert de créneau : convenez d’une date avec lui via la messagerie.' : 'Ouvrez des créneaux dans « Mes disponibilités » pour pouvoir en proposer un.' }}" icon="calendar" />
+        </div>
+    {% else %}
+        <form method="post" class="tm-pro-card tm-rdv-book__form">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            {% if error %}<p class="tm-field__error" role="alert"><twig:Icon name="alert" size="xs" />{{ error }}</p>{% endif %}
+            <fieldset class="tm-rdv-book__days">
+                <legend class="tm-agenda__title">Créneaux disponibles{% if slots.party == 'client' %} <span class="tm-caption">(au moins {{ slots.noticeHours }} h à l’avance)</span>{% endif %}</legend>
+                {% for day, list in slots.days %}
+                    <div class="tm-rdv-book__day">
+                        <p>{{ day_names[day|date('N', 'Europe/Paris') - 1] }} {{ day|date('j', 'Europe/Paris') }} {{ months[day|date('n', 'Europe/Paris') - 1] }}</p>
+                        <div>
+                            {% for s in list %}
+                                {% set value = s[0]|date('c') %}
+                                <label class="tm-rdv-book__slot"><input type="radio" name="creneau" value="{{ value }}" required{% if chosen == value %} checked{% endif %}><span>{{ s[0]|date('H:i', 'Europe/Paris') }} – {{ s[1]|date('H:i', 'Europe/Paris') }}</span></label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </fieldset>
+            <div class="tm-field">
+                <label class="tm-field__label" for="note">Note pour {{ slots.party == 'client' ? 'le professionnel' : 'le client' }} (facultatif)</label>
+                <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="note" name="note" rows="3" maxlength="500" placeholder="Accès, digicode, matériel à prévoir…">{{ note }}</textarea></div>
+                {% if slots.party == 'client' %}<p class="tm-field__help">L’intervention a lieu à l’adresse de votre demande, déjà transmise au professionnel.</p>{% endif %}
+            </div>
+            <p class="tm-caption">Le créneau est réservé pour vous pendant {{ tm_setting_int('appointments.hold_hours') }} h en attendant la confirmation de {{ slots.party == 'client' ? 'l’artisan' : 'votre client' }} ; sans réponse, il est libéré automatiquement.</p>
+            <div class="tm-agenda__actions">
+                <twig:Button type="submit" icon="calendar" iconPosition="start">{{ slots.current ? 'Proposer ce nouveau créneau' : 'Proposer ce créneau' }}</twig:Button>
+                <twig:Button href="{{ path(space ~ '_appointments') }}" variant="secondary">Retour</twig:Button>
+            </div>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

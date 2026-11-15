@@ -136,6 +136,67 @@
     .tm-leave__tip p { margin: 0; font-size: 13px; line-height: 20px; color: var(--tm-ink); }
     .tm-leave__tip h2 svg { color: var(--tm-gold); }
 
+    /* Rendez-vous : C10 / PR06 (liste, cartes, statuts, mini-agenda), C03.6 (prise de rendez-vous), C03B (suivi) */
+    .tm-rdv__search .tm-field__control { min-height: 44px; }
+    .tm-rdv__list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+    .tm-rdv__card { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .tm-rdv__who { display: flex; align-items: center; gap: 14px; }
+    .tm-rdv__who h2 { margin: 0; font-size: 18px; line-height: 24px; color: var(--tm-blue); }
+    .tm-rdv__who p, .tm-rdv__when p, .tm-rdv__next p { display: flex; align-items: center; gap: 6px; margin: 2px 0 0; font-size: 13px; color: var(--tm-ink); }
+    .tm-rdv__who svg, .tm-rdv__next svg { color: var(--tm-orange); }
+    .tm-rdv__when p { font-size: 15px; font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
+    .tm-rdv__status { display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 4px 12px; border-radius: var(--radius-pill); background: var(--color-success-bg); color: var(--color-success-text); font-size: 13px; font-weight: var(--font-weight-semibold); }
+    .tm-rdv__status.is-proposed { background: var(--tm-orange-soft); color: var(--color-accent-text); }
+    .tm-rdv__status.is-cancelled, .tm-rdv__status.is-expired { background: var(--tm-red-soft); color: var(--color-danger-text); }
+    .tm-rdv__status.is-completed { background: var(--tm-blue-soft); color: var(--tm-navy); }
+    .tm-rdv__reason { margin: 0; font-size: 13px; color: var(--tm-ink); }
+    .tm-rdv__buttons, .tm-rdv-actions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; }
+    .tm-rdv-cancel summary { display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 18px; border: 1px solid var(--tm-red); border-radius: var(--radius-pill); color: var(--tm-red); font-size: 14px; font-weight: var(--font-weight-semibold); cursor: pointer; list-style: none; }
+    .tm-rdv-cancel summary::-webkit-details-marker { display: none; }
+    .tm-rdv-cancel summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-rdv-cancel form { display: grid; gap: 8px; margin-top: 8px; min-width: min(22rem, 100%); }
+    .tm-rdv-done { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .tm-rdv-done p { margin: 0; font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
+    .tm-rdv__help { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 14px 16px; border-radius: 12px; background: var(--tm-blue-soft); font-size: 13px; line-height: 19px; color: var(--tm-ink); }
+    .tm-rdv__help strong { display: block; color: var(--tm-navy); }
+    .tm-rdv__help svg { flex: none; color: var(--tm-blue); }
+    .tm-rdv__next { gap: 6px; }
+    p.tm-rdv__next-name { font-size: 16px; font-weight: var(--font-weight-bold); color: var(--tm-blue); }
+    .tm-rdv-month { gap: 10px; }
+    .tm-rdv-month__bar { display: flex; align-items: center; justify-content: space-between; color: var(--tm-navy); }
+    .tm-rdv-month__bar a { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; color: var(--tm-navy); }
+    .tm-rdv-month table { width: 100%; border-collapse: separate; border-spacing: 2px; font-size: 13px; text-align: center; color: var(--tm-navy); }
+    .tm-rdv-month th { font-size: 12px; font-weight: var(--font-weight-semibold); color: var(--tm-ink); }
+    .tm-rdv-month td { height: 30px; border-radius: 8px; }
+    .tm-rdv-month td.is-confirmed { background: var(--tm-blue-deep); color: var(--color-text-inverse); font-weight: var(--font-weight-bold); }
+    .tm-rdv-month td.is-proposed { background: var(--tm-orange-soft); color: var(--color-accent-text); font-weight: var(--font-weight-bold); }
+    .tm-rdv-month td.is-today { box-shadow: inset 0 0 0 2px var(--tm-orange); }
+    .tm-rdv-book { display: grid; gap: var(--space-4); }
+    .tm-rdv-book__current { display: flex; align-items: center; gap: 8px; margin: 0; padding: 12px 14px; border-radius: 10px; background: var(--tm-blue-soft); font-size: 14px; color: var(--tm-navy); }
+    .tm-rdv-book__form { gap: var(--space-4); }
+    .tm-rdv-book__days { display: grid; gap: 12px; margin: 0; padding: 0; border: 0; }
+    .tm-rdv-book__day { display: grid; gap: 6px; }
+    .tm-rdv-book__day > p { margin: 0; font-size: 14px; font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
+    .tm-rdv-book__day > div { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tm-rdv-book__slot { position: relative; }
+    .tm-rdv-book__slot input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+    .tm-rdv-book__slot span { display: inline-block; padding: 8px 14px; border: 1px solid var(--tm-line); border-radius: 10px; background: var(--color-success-bg); color: var(--tm-navy); font-size: 13px; font-weight: var(--font-weight-semibold); }
+    .tm-rdv-book__slot input:checked + span { border-color: var(--tm-navy); background: var(--tm-navy); color: var(--color-text-inverse); }
+    .tm-rdv-book__slot input:focus-visible + span { box-shadow: var(--focus-ring); }
+    .tm-rdv-track { gap: 12px; }
+    .tm-rdv-track__steps { display: flex; flex-wrap: wrap; gap: 10px 24px; margin: 0; padding: 0; list-style: none; }
+    .tm-rdv-track__steps li { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--tm-ink); }
+    .tm-rdv-track__steps span { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--tm-blue-soft); font-weight: var(--font-weight-semibold); }
+    .tm-rdv-track__steps .is-done { color: var(--tm-navy); }
+    .tm-rdv-track__steps .is-done span { background: var(--tm-green); color: var(--color-text-inverse); }
+    .tm-rdv-track__steps .is-current { color: var(--tm-navy); font-weight: var(--font-weight-semibold); }
+    .tm-rdv-track__steps .is-current span { background: var(--tm-orange); color: var(--color-text-inverse); }
+    .tm-rdv-track__when { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 14px; color: var(--tm-navy); }
+    @media (min-width: 900px) {
+        .tm-rdv__card { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; align-items: center; }
+        .tm-rdv__buttons, .tm-rdv__card .tm-rdv-actions, .tm-rdv__reason { grid-column: 1 / -1; }
+    }
+
     /* Colonne */
     .tm-agenda__side h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 17px; color: var(--tm-navy); }
     .tm-agenda__side h2 svg { color: var(--tm-orange); }

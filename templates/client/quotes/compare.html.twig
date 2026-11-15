@@ -3,7 +3,7 @@
     TTC, HT / TVA, validité et durée, principaux postes, « Voir le devis détaillé », « Choisir ce professionnel »,
     « Refuser »), « Comparatif détaillé » (Imprimer / PDF), « Avant de confirmer votre choix ». Modales : acceptation
     (195:9075, RG-071) et refus motivé (C03.5). Devis accepté : C03B (12:2) — confirmation, devis retenu, coordonnées de
-    l'artisan (RG-022bis), prochaines étapes. Écarts : P-87, P-88.
+    l'artisan (RG-022bis), prochaines étapes, suivi du rendez-vous (T-703b). Écarts : P-87, P-88, P-115.
 -#}
 {% extends 'client/_space.html.twig' %}
 {% set space_active = 'requests' %}
@@ -43,7 +43,7 @@
         <h2 id="next-title">Et maintenant ?</h2>
         <ol class="tm-accepted__steps">
             <li><span>1</span>L’artisan reçoit la confirmation et les coordonnées nécessaires.</li>
-            <li><span>2</span>Vous planifiez ensemble l’intervention en le contactant directement.</li>
+            <li><span>2</span>Vous planifiez ensemble l’intervention : prenez rendez-vous ci-dessous dans son agenda, ou échangez via la messagerie.</li>
             <li><span>3</span>Après la prestation, vous pourrez laisser un avis certifié.</li>
         </ol>
     </section>
@@ -52,6 +52,31 @@
         <a class="tm-qcard__view" href="{{ path('client_requests') }}">Retour à mes demandes</a>
     </div>
     <p class="tm-accepted__legal">L’acceptation exprime votre choix du professionnel. Les modalités contractuelles et le paiement des travaux sont convenus directement avec lui.</p>
+    {% if tm_route_exists('client_appointments') %}
+        {% set a = appointment %}
+        {% set step = {proposed: 1, confirmed: 2, completed: 3}[a.status ?? ''] ?? 0 %}
+        <section class="tm-accepted__card tm-rdv-track" aria-labelledby="rdv-title">
+            <h2 id="rdv-title">Suivi du rendez-vous</h2>
+            <ol class="tm-rdv-track__steps">
+                {% for i, label in {1: (a and a.proposedBy == 'artisan' ? 'Proposé par l’artisan' : 'Proposé par vous'), 2: (a and a.proposedBy == 'artisan' ? 'Confirmé par vous' : 'Confirmé par l’artisan'), 3: 'Réalisé', 4: 'Avis'} %}
+                    <li class="{{ i <= step ? 'is-done' : (i == step + 1 ? 'is-current' : '') }}"><span>{% if i <= step %}<twig:Icon name="check" size="xs" class="tm-icon--inherit" />{% else %}{{ i }}{% endif %}</span>{{ label }}</li>
+                {% endfor %}
+            </ol>
+            {% if a and a.isActive() %}
+                <p class="tm-rdv-track__when"><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />{{ a.startsAt|date('d/m/Y', 'Europe/Paris') }} de {{ a.startsAt|date('H:i', 'Europe/Paris') }} à {{ a.endsAt|date('H:i', 'Europe/Paris') }} — {{ a.status == 'proposed' ? (a.awaits('client') ? 'à confirmer par vous' : 'en attente de confirmation de l’artisan') : 'confirmé' }}</p>
+            {% elseif a and a.status in ['cancelled', 'expired'] %}
+                <p class="tm-rdv-track__when">Dernier rendez-vous {{ a.status == 'cancelled' ? 'annulé' : 'non confirmé à temps' }}{% if a.cancelReason %} ({{ a.cancelReason }}){% endif %} : proposez un nouveau créneau.</p>
+            {% elseif a and a.status == 'completed' %}
+                <p class="tm-rdv-track__when">Prestation réalisée le {{ a.startsAt|date('d/m/Y', 'Europe/Paris') }}. Vous pourrez bientôt laisser un avis certifié.</p>
+            {% endif %}
+            <p class="tm-caption">Créneau verrouillé {{ tm_setting_int('appointments.hold_hours') }} h en attente de confirmation (RG-073). Après la date : « La prestation a-t-elle eu lieu ? » puis invitation à l’avis.</p>
+            {% if a and a.isActive() %}
+                {{ include('appointments/_actions.html.twig', {appointment: a, party: 'client', space: 'client', retour: app.request.requestUri}) }}
+            {% elseif not a or a.status in ['cancelled', 'expired'] %}
+                <twig:Button href="{{ path('client_appointment_new', {devis: retained.quoteId}) }}" icon="calendar" iconPosition="start">Prendre rendez-vous</twig:Button>
+            {% endif %}
+        </section>
+    {% endif %}
 </div>
 {% else %}
 <div class="tm-compare">

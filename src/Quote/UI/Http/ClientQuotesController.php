@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Quote\UI\Http;
 
+use App\Quote\Application\Appointment\QuoteAppointment;
 use App\Quote\Application\Client\AcceptQuote;
 use App\Quote\Application\Client\ClientQuotePdf;
 use App\Quote\Application\Client\ClientQuotes;
@@ -45,8 +46,12 @@ final class ClientQuotesController extends AbstractController
             throw new NotFoundHttpException('Demande introuvable.');
         }
 
+        $accepted = $view->accepted();
+
         return $this->render('client/quotes/compare.html.twig', [
             'view' => $view,
+            'appointment' => null === $accepted ? null : $this->queries->ask(new QuoteAppointment($this->userId(), $accepted->quoteId)),
+            'today' => new \DateTimeImmutable(),
             'reasons' => ClientRefusalReason::cases(),
             'csrf_id' => self::CSRF,
             'space_counts' => ['requests' => $reader->stats($this->userId())['active']],

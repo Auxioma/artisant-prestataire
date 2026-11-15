@@ -1,0 +1,37 @@
+{#-
+    Actions sur un rendez-vous selon la partie (`party` : client | artisan) et l'état : confirmer la proposition de
+    l'autre partie, reprogrammer (nouvelle proposition sur l'agenda), annuler avec motif, « La prestation a-t-elle eu
+    lieu ? » / « Marquer réalisé » après l'heure de début. `retour` : page où revenir.
+-#}
+{% set a = appointment %}
+{% set started = a.startsAt <= date() %}
+<div class="tm-rdv-actions">
+    {% if a.awaits(party) and not started %}
+        <form method="post" action="{{ path(space ~ '_appointment_action', {id: a.id}) }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('appointments') }}">
+            <input type="hidden" name="retour" value="{{ retour }}">
+            <twig:Button type="submit" name="action" value="confirm" icon="check" iconPosition="start">Confirmer ce créneau</twig:Button>
+        </form>
+    {% endif %}
+    {% if a.isActive() and not started %}
+        <twig:Button href="{{ path(space ~ '_appointment_new', {devis: a.quoteId}) }}" variant="secondary" icon="calendar" iconPosition="start">{{ a.awaits(party) ? 'Proposer un autre créneau' : 'Reprogrammer' }}</twig:Button>
+        <details class="tm-rdv-cancel">
+            <summary><twig:Icon name="x" size="xs" class="tm-icon--inherit" />Annuler</summary>
+            <form method="post" action="{{ path(space ~ '_appointment_action', {id: a.id}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('appointments') }}">
+                <input type="hidden" name="retour" value="{{ retour }}">
+                <label class="tm-field__label" for="motif-{{ a.id }}">Motif de l’annulation</label>
+                <textarea class="tm-field__input" id="motif-{{ a.id }}" name="motif" rows="2" maxlength="300" required></textarea>
+                <twig:Button type="submit" variant="danger" name="action" value="cancel">Annuler le rendez-vous</twig:Button>
+            </form>
+        </details>
+    {% endif %}
+    {% if a.status == 'confirmed' and started %}
+        <form method="post" action="{{ path(space ~ '_appointment_action', {id: a.id}) }}" class="tm-rdv-done">
+            <input type="hidden" name="_token" value="{{ csrf_token('appointments') }}">
+            <input type="hidden" name="retour" value="{{ retour }}">
+            {% if party == 'client' %}<p>La prestation a-t-elle eu lieu ?</p>{% endif %}
+            <twig:Button type="submit" name="action" value="complete" icon="checkC" iconPosition="start">{{ party == 'client' ? 'Oui, elle a eu lieu' : 'Marquer réalisé' }}</twig:Button>
+        </form>
+    {% endif %}
+</div>
