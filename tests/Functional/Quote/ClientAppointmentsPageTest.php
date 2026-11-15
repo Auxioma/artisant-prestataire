@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Functional\Quote;
 
 use App\ArtisanProfile\Application\Agenda\SaveWeeklyRules;
+use App\ArtisanProfile\Application\Agenda\SlotReservations;
 use App\ArtisanProfile\Application\Verification\ApproveArtisan;
 use App\Billing\Application\Credit\CreditLedger;
 use App\Identity\Application\Command\RegisterUser;
 use App\Quote\Application\Appointment\AppointmentDecision;
+use App\Quote\Application\Appointment\ProposeAppointment;
 use App\Quote\Application\Client\AcceptQuote;
 use App\Quote\Application\Editor\SaveQuoteDraft;
 use App\Quote\Application\Sending\SendQuote;
@@ -124,5 +126,32 @@ final class ClientAppointmentsPageTest extends WebTestCase
     {
         $this->client->request('GET', '/espace-client/rendez-vous/nouveau?devis=0190f5e4-0000-7000-8000-0000000fb899');
         self::assertResponseStatusCodeSame(404);
+    }
+
+    public function testCalendarFileAndCancelAcceptance(): void
+    {
+        $slots = self::getContainer()->get(SlotReservations::class);
+        \assert($slots instanceof SlotReservations);
+        $start = $slots->openSlots($this->artisan, new \DateTimeImmutable('+3 days'), new \DateTimeImmutable('+20 days'))[0][0];
+        $this->dossierDispatch(new ProposeAppointment(self::CLIENT, self::A3, self::QUOTE, $start->format(\DATE_ATOM)));
+        $this->dossierDispatch(new AppointmentDecision(self::DOSSIER_USER, self::A3, AppointmentDecision::CONFIRM));
+
+        $this->client->request('GET', '/espace-client/rendez-vous/'.self::A3.'.ics');
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('SUMMARY:Rendez-vous avec Atelier Fictif (TrouveMoi)', (string) $this->client->getResponse()->getContent());
+        self::assertStringContainsString('DTSTART:'.$start->setTimezone(new \DateTimeZone('UTC'))->format('Ymd\THis\Z'), (string) $this->client->getResponse()->getContent());
+
+        // RG-072 : rendez-vous confirmé dans moins de 48 h → plus d'annulation d'acceptation.
+        $this->connection->executeStatement("UPDATE quote.appointment SET starts_at = now() + interval '10 hours', ends_at = now() + interval '11 hours' WHERE id = :id", ['id' => self::A3]);
+        self::assertCount(0, $this->client->request('GET', '/espace-client/demandes/'.self::REQUEST)->filter('.tm-accepted__revoke'));
+        $this->connection->executeStatement('UPDATE quote.appointment SET starts_at = :s, ends_at = :e WHERE id = :id', ['s' => $start->format(\DATE_ATOM), 'e' => $start->modify('+1 hour')->format(\DATE_ATOM), 'id' => self::A3]);
+
+        $page = $this->client->request('GET', '/espace-client/demandes/'.self::REQUEST);
+        $this->client->submit($page->filter('.tm-accepted__revoke form')->form(), ['motif' => 'Changement de projet (fictif)']);
+        self::assertSame('refused', $this->connection->fetchOne('SELECT status FROM quote.quote WHERE id = :q', ['q' => self::QUOTE]));
+        self::assertContains($this->connection->fetchOne('SELECT status FROM request.quote_request WHERE id = :r', ['r' => self::REQUEST]), ['open', 'full']);
+        self::assertSame('cancelled', $this->connection->fetchOne('SELECT status FROM quote.appointment WHERE id = :id', ['id' => self::A3]));
+        self::assertSame('open', $this->connection->fetchOne('SELECT status FROM artisan.availability_slot WHERE starts_at = :s', ['s' => $start->format(\DATE_ATOM)]));
+        self::assertStringContainsString('Acceptation annulée — Changement de projet (fictif)', DbalValue::string($this->connection->fetchOne('SELECT decision_reason FROM quote.quote WHERE id = :q', ['q' => self::QUOTE])));
     }
 }

@@ -24,6 +24,12 @@ final class ClientAppointmentsController extends AppointmentsController
         return $this->book($request);
     }
 
+    #[Route('/{id}.ics', name: 'client_appointment_ics', requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['GET'])]
+    public function calendar(Request $request, string $id): Response
+    {
+        return $this->ics($request, $id);
+    }
+
     #[Route('/{id}/action', name: 'client_appointment_action', requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['POST'])]
     public function action(Request $request, string $id): Response
     {

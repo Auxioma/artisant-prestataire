@@ -75,6 +75,19 @@
             {% elseif not a or a.status in ['cancelled', 'expired'] %}
                 <twig:Button href="{{ path('client_appointment_new', {devis: retained.quoteId}) }}" icon="calendar" iconPosition="start">Prendre rendez-vous</twig:Button>
             {% endif %}
+            {% set locked = a and (a.status == 'completed' or (a.status == 'confirmed' and a.startsAt < date('+' ~ cancel_min_hours ~ ' hours'))) %}
+            {% if not locked %}
+                <details class="tm-rdv-cancel tm-accepted__revoke">
+                    <summary>Annuler l’acceptation (jusqu’à {{ cancel_min_hours }} h avant le rendez-vous, motif)</summary>
+                    <form method="post" action="{{ path('client_quote_cancel_acceptance', {quote: retained.quoteId}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                        <label class="tm-field__label" for="motif-acceptation">Motif de l’annulation</label>
+                        <textarea class="tm-field__input" id="motif-acceptation" name="motif" rows="2" maxlength="300" required></textarea>
+                        <p class="tm-caption">{{ retained.artisanName }} est prévenu ; {{ a and a.isActive() ? 'le rendez-vous est annulé et ' }}votre demande redevient ouverte aux devis.</p>
+                        <twig:Button type="submit" variant="danger">Annuler l’acceptation</twig:Button>
+                    </form>
+                </details>
+            {% endif %}
         </section>
     {% endif %}
 </div>

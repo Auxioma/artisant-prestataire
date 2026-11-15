@@ -14,6 +14,7 @@
         </form>
     {% endif %}
     {% if a.isActive() and not started %}
+        <twig:Button href="{{ path(space ~ '_appointment_ics', {id: a.id}) }}" variant="tertiary" icon="download" iconPosition="start">Ajouter à mon agenda</twig:Button>
         <twig:Button href="{{ path(space ~ '_appointment_new', {devis: a.quoteId}) }}" variant="secondary" icon="calendar" iconPosition="start">{{ a.awaits(party) ? 'Proposer un autre créneau' : 'Reprogrammer' }}</twig:Button>
         <details class="tm-rdv-cancel">
             <summary><twig:Icon name="x" size="xs" class="tm-icon--inherit" />Annuler</summary>

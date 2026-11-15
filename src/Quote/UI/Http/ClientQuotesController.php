@@ -6,6 +6,7 @@ namespace App\Quote\UI\Http;
 
 use App\Quote\Application\Appointment\QuoteAppointment;
 use App\Quote\Application\Client\AcceptQuote;
+use App\Quote\Application\Client\CancelAcceptance;
 use App\Quote\Application\Client\ClientQuotePdf;
 use App\Quote\Application\Client\ClientQuotes;
 use App\Quote\Application\Client\ClientRequestQuotes;
@@ -17,6 +18,8 @@ use App\QuoteRequest\Application\Port\ClientRequestReader;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Security\CurrentUser;
+use App\Shared\Application\Settings\SettingKey;
+use App\Shared\Application\Settings\SettingsProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -34,7 +37,7 @@ final class ClientQuotesController extends AbstractController
     private const string CSRF = 'client_quotes';
     private const string UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
 
-    public function __construct(private readonly QueryBus $queries, private readonly CommandBus $commands, private readonly CurrentUser $user)
+    public function __construct(private readonly QueryBus $queries, private readonly CommandBus $commands, private readonly CurrentUser $user, private readonly SettingsProvider $settings)
     {
     }
 
@@ -52,6 +55,7 @@ final class ClientQuotesController extends AbstractController
             'view' => $view,
             'appointment' => null === $accepted ? null : $this->queries->ask(new QuoteAppointment($this->userId(), $accepted->quoteId)),
             'today' => new \DateTimeImmutable(),
+            'cancel_min_hours' => $this->settings->int(SettingKey::QuotesCancelAcceptanceMinHoursBeforeAppointment),
             'reasons' => ClientRefusalReason::cases(),
             'csrf_id' => self::CSRF,
             'space_counts' => ['requests' => $reader->stats($this->userId())['active']],
@@ -90,7 +94,14 @@ final class ClientQuotesController extends AbstractController
         return $this->decide($request, new RefuseQuote($this->userId(), $quote, $request->request->getString('reason'), '' === $comment ? null : $comment), 'Devis refusé : le professionnel est prévenu.');
     }
 
-    private function decide(Request $request, AcceptQuote|RefuseQuote $command, string $success): Response
+    /** RG-072 — annulation de l'acceptation avec motif, jusqu'à 48 h avant le rendez-vous confirmé. */
+    #[Route('/espace-client/devis/{quote}/annuler-acceptation', name: 'client_quote_cancel_acceptance', requirements: ['quote' => self::UUID], methods: ['POST'])]
+    public function cancelAcceptance(Request $request, string $quote): Response
+    {
+        return $this->decide($request, new CancelAcceptance($this->userId(), $quote, $request->request->getString('motif')), 'Acceptation annulée : le professionnel est prévenu et votre demande est de nouveau ouverte aux devis.');
+    }
+
+    private function decide(Request $request, AcceptQuote|RefuseQuote|CancelAcceptance $command, string $success): Response
     {
         if (!$this->isCsrfTokenValid(self::CSRF, $request->request->getString('_token'))) {
             throw new AccessDeniedHttpException('Jeton CSRF invalide.');

@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace App\Quote\Application\Client;
 
+use App\ArtisanProfile\Application\Agenda\SlotReservations;
+use App\Quote\Domain\Appointment\Appointment;
+use App\Quote\Domain\Appointment\AppointmentParty;
+use App\Quote\Domain\Appointment\AppointmentRepository;
+use App\Quote\Domain\Appointment\AppointmentStatus;
 use App\Quote\Domain\Quote\ClientRefusalReason;
 use App\Quote\Domain\Quote\Quote;
 use App\Quote\Domain\Quote\QuoteId;
@@ -16,6 +21,8 @@ use App\QuoteRequest\Domain\Request\RequestRuleViolation;
 use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Application\Bus\CommandHandler;
 use App\Shared\Application\Bus\EventBus;
+use App\Shared\Application\Settings\SettingKey;
+use App\Shared\Application\Settings\SettingsProvider;
 use App\Shared\Domain\Audit\AuditRecord;
 use App\Shared\Domain\Identifier\IdGenerator;
 use App\Shared\Domain\Time\Clock;
@@ -33,6 +40,9 @@ final readonly class ClientDecisionHandler implements CommandHandler
         private ClientQuotesHandler $access,
         private QuoteRepository $quotes,
         private QuoteRequestRepository $requests,
+        private AppointmentRepository $appointments,
+        private SlotReservations $slots,
+        private SettingsProvider $settings,
         private EventBus $events,
         private AuditTrail $audit,
         private IdGenerator $ids,
@@ -40,13 +50,53 @@ final readonly class ClientDecisionHandler implements CommandHandler
     ) {
     }
 
-    public function __invoke(MarkQuoteViewed|AcceptQuote|RefuseQuote $command): void
+    public function __invoke(MarkQuoteViewed|AcceptQuote|RefuseQuote|CancelAcceptance $command): void
     {
         match (true) {
             $command instanceof MarkQuoteViewed => $this->view($command),
             $command instanceof AcceptQuote => $this->accept($command),
+            $command instanceof CancelAcceptance => $this->cancelAcceptance($command),
             default => $this->refuse($command),
         };
+    }
+
+    /**
+     * RG-072 — acceptation annulée avec motif, au plus tard `quotes.cancel_acceptance_min_hours_before_appointment`
+     * heures avant le rendez-vous confirmé : rendez-vous annulé (créneau rouvert), devis « refusé » (E-35 à l'artisan),
+     * demande de nouveau ouverte ou complète, place libérée.
+     */
+    private function cancelAcceptance(CancelAcceptance $command): void
+    {
+        $reason = trim($command->reason);
+        if ('' === $reason || mb_strlen($reason) > self::COMMENT_MAX) {
+            throw new QuoteRuleViolation(\sprintf('Indiquez le motif de l’annulation (%d caractères maximum).', self::COMMENT_MAX));
+        }
+        $found = $this->owned($command->userId, $command->quoteId);
+        $request = $this->requests->findForUpdate(new QuoteRequestId($found->requestId())) ?? throw new QuoteRuleViolation('Demande introuvable.');
+        $quote = $this->quotes->findForUpdate($found->id()) ?? throw new QuoteRuleViolation('Devis introuvable.');
+        $now = $this->clock->now();
+        $appointment = $this->appointments->activeForQuote($quote->id()->value);
+        $minHours = $this->settings->int(SettingKey::QuotesCancelAcceptanceMinHoursBeforeAppointment);
+        if (null !== $appointment && AppointmentStatus::Confirmed === $appointment->status() && $appointment->startsAt() < $now->modify(\sprintf('+%d hours', $minHours))) {
+            throw new QuoteRuleViolation(\sprintf('Le rendez-vous a lieu dans moins de %d h : l’acceptation ne peut plus être annulée. Contactez le professionnel via la messagerie.', $minHours));
+        }
+        $quote->cancelAcceptance($reason, $now);
+        try {
+            $request->revokeAward('acceptance_cancelled', $now);
+            $request->releaseQuote($now, 'acceptance_cancelled');
+        } catch (RequestRuleViolation) {
+            throw new QuoteRuleViolation('Cette demande est terminée ou close : l’acceptation ne peut plus être annulée.');
+        }
+        $events = [];
+        if (null !== $appointment) {
+            $appointment->cancel(AppointmentParty::Client, mb_substr('Acceptation du devis annulée — '.$reason, 0, Appointment::REASON_MAX), $now);
+            $this->slots->release($appointment->id()->value, $now);
+            $this->appointments->save($appointment);
+            $events = $appointment->releaseEvents();
+        }
+        $this->quotes->save($quote);
+        $this->events->publish(...$quote->releaseEvents(), ...$events, ...$request->releaseEvents());
+        $this->record($command->userId, 'quote.acceptance_cancelled', $quote, ['request' => $request->number(), 'reason' => $reason], $now);
     }
 
     private function view(MarkQuoteViewed $command): void

@@ -17,9 +17,14 @@ final readonly class AppointmentQueriesHandler implements QueryHandler
     {
     }
 
-    public function __invoke(QuoteAppointment|MyAppointments|BookableSlots $query): AppointmentView|MyAppointmentsView|BookableSlotsView|null
+    public function __invoke(QuoteAppointment|MyAppointments|BookableSlots|AppointmentOf $query): AppointmentView|MyAppointmentsView|BookableSlotsView|null
     {
         $now = $this->clock->now();
+        if ($query instanceof AppointmentOf) {
+            $a = $this->reader->one($query->appointmentId);
+
+            return null !== $a && \in_array($query->userId, [$a->clientUserId, $a->artisanUserId], true) ? $a : null;
+        }
         if ($query instanceof MyAppointments) {
             $filter = \in_array($query->filter, MyAppointments::FILTERS, true) ? $query->filter : 'upcoming';
 

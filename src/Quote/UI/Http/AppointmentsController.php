@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Quote\UI\Http;
 
+use App\ArtisanProfile\Application\Agenda\IcalFeedView;
+use App\ArtisanProfile\UI\Http\Agenda\IcalWriter;
 use App\Quote\Application\Appointment\AppointmentDecision;
+use App\Quote\Application\Appointment\AppointmentOf;
+use App\Quote\Application\Appointment\AppointmentView;
 use App\Quote\Application\Appointment\BookableSlots;
 use App\Quote\Application\Appointment\BookableSlotsView;
 use App\Quote\Application\Appointment\MyAppointments;
@@ -129,6 +133,29 @@ abstract class AppointmentsController extends AbstractController
         $back = $request->request->getString('retour');
 
         return $this->redirect(str_starts_with($back, '/espace-') && !str_starts_with($back, '//') ? $back : $this->generateUrl($this->space().'_appointments'), Response::HTTP_SEE_OTHER);
+    }
+
+    /** C03.6 « Ajouter à mon agenda » : le rendez-vous en fichier iCalendar (Google, Outlook, Apple). */
+    protected function ics(Request $request, string $id): Response
+    {
+        $a = $this->queries->ask(new AppointmentOf($this->userId(), $id));
+        if (!$a instanceof AppointmentView || !$a->isActive()) {
+            throw new NotFoundHttpException();
+        }
+        $with = 'artisan' === $this->party() ? $a->clientName() : $a->artisanName;
+        $feed = new IcalFeedView($a->artisanId, $with, [[
+            'uid' => 'rdv-'.$a->id,
+            'start' => $a->startsAt,
+            'end' => $a->endsAt,
+            'summary' => \sprintf('Rendez-vous avec %s (TrouveMoi)%s', $with, 'proposed' === $a->status ? ' — à confirmer' : ''),
+            'all_day' => false,
+        ]]);
+
+        return new Response(IcalWriter::write($feed, $this->clock->now(), $request->getHost()), Response::HTTP_OK, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="rendez-vous-trouvemoi.ics"',
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 
     protected function userId(): string

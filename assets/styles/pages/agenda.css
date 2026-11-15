@@ -155,6 +155,9 @@
     .tm-rdv-cancel summary::-webkit-details-marker { display: none; }
     .tm-rdv-cancel summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
     .tm-rdv-cancel form { display: grid; gap: 8px; margin-top: 8px; min-width: min(22rem, 100%); }
+    .tm-rdv-cancel form .tm-button { justify-self: start; }
+    /* C03B : « Annuler l'acceptation » en lien texte, comme la maquette 12:2 */
+    .tm-accepted__revoke summary { height: auto; padding: 0; border: 0; color: var(--color-link); font-size: 15px; text-decoration: underline; }
     .tm-rdv-done { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
     .tm-rdv-done p { margin: 0; font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
     .tm-rdv__help { display: flex; align-items: flex-start; gap: 10px; margin: 0; padding: 14px 16px; border-radius: 12px; background: var(--tm-blue-soft); font-size: 13px; line-height: 19px; color: var(--tm-ink); }

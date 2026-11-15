@@ -24,7 +24,7 @@ enum QuoteStatus: string
         'draft' => ['sent'],
         'sent' => ['viewed', 'accepted', 'refused', 'not_selected', 'expired', 'withdrawn', 'request_cancelled'],
         'viewed' => ['accepted', 'refused', 'not_selected', 'expired', 'request_cancelled'],
-        'accepted' => [],
+        'accepted' => ['refused'], // RG-072 : acceptation annulée par le client (motif)
         'refused' => [],
         'not_selected' => [],
         'expired' => [],

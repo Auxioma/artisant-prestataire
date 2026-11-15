@@ -186,6 +186,17 @@ final class Quote extends AggregateRoot
         $this->decide(QuoteStatus::Refused, $reason, $now);
     }
 
+    /** RG-072 — le client annule son acceptation (motif) : le devis devient « refusé », l'artisan est prévenu (E-35). */
+    public function cancelAcceptance(string $reason, \DateTimeImmutable $now): void
+    {
+        $this->guard(QuoteStatus::Accepted, 'Seul un devis accepté peut voir son acceptation annulée.');
+        $reason = trim($reason);
+        if ('' === $reason) {
+            throw new QuoteRuleViolation('Indiquez le motif de l’annulation.');
+        }
+        $this->decide(QuoteStatus::Refused, mb_substr('Acceptation annulée — '.$reason, 0, self::REASON_MAX), $now);
+    }
+
     /** Un autre devis a été accepté sur la demande. */
     public function markNotSelected(\DateTimeImmutable $now): void
     {
