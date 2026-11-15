@@ -241,6 +241,14 @@
                     <p class="tm-profile__paused"><twig:Icon name="clock" size="xs" />{{ p.name }} ne prend pas de nouvelles demandes pour le moment.</p>
                     {% if tm_route_exists('request_new') %}<twig:Button href="{{ path('request_new') }}" variant="secondary" icon="fileEuro" iconPosition="start">Demander des devis à d’autres professionnels</twig:Button>{% endif %}
                 {% elseif tm_route_exists('request_new') %}<twig:Button href="{{ path('request_new', {pro: p.profileId}) }}" icon="fileEuro" iconPosition="start">Demander un devis</twig:Button>{% endif %}
+                {% if tm_route_exists('client_favorite_toggle') and is_granted('ROLE_CLIENT') %}
+                    <form method="post" action="{{ path('client_favorite_toggle', {artisan: p.profileId}) }}" class="tm-profile__favorite">
+                        <input type="hidden" name="_token" value="{{ csrf_token('favorites') }}">
+                        <input type="hidden" name="favori" value="{{ is_favorite ? '0' : '1' }}">
+                        <input type="hidden" name="retour" value="{{ app.request.requestUri }}">
+                        <twig:Button type="submit" variant="tertiary" icon="{{ is_favorite ? 'heartFilled' : 'heart' }}" iconPosition="start" aria-pressed="{{ is_favorite ? 'true' : 'false' }}">{{ is_favorite ? 'Retirer de mes favoris' : 'Ajouter à mes favoris' }}</twig:Button>
+                    </form>
+                {% endif %}
                 {% if tm_route_exists('client_message_new') and not is_granted('ROLE_ARTISAN') %}<twig:Button href="{{ path('client_message_new', {artisan: p.profileId}) }}" variant="secondary" icon="msg" iconPosition="start">Poser une question</twig:Button>{% endif %}
                 {% if p.phoneAvailable %}
                     <div class="tm-profile__phone" data-controller="phone-reveal">

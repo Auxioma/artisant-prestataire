@@ -157,6 +157,7 @@ services:
     App\Messaging\Application\Query\ConversationReader: '@App\Messaging\Infrastructure\Persistence\DbalConversationReader'
 
     # Ports du module Search (artisans)
+    App\Search\Application\Favorite\Favorites: '@App\Search\Infrastructure\Favorite\DbalFavorites'
     App\Search\Application\Artisan\ArtisanSearchIndex: '@App\Search\Infrastructure\Artisan\DbalArtisanSearchIndex'
 
     # Ports du module Billing

@@ -17,10 +17,12 @@ use App\Catalog\Application\Query\JobIndexEntry;
 use App\Search\Application\Artisan\ArtisanHit;
 use App\Search\Application\Artisan\ArtisanSearchResult;
 use App\Search\Application\Artisan\SearchArtisans;
+use App\Search\Application\Favorite\Favorites;
 use App\Search\UI\Twig\ArtisanUrlExtension;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Messaging\ArtisanResponseTime;
 use App\Shared\Application\Review\PublicReviews;
+use App\Shared\Application\Security\CurrentUser;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -38,7 +40,7 @@ final class ArtisanProfilePageController extends AbstractController
     private const string UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
     private const int SIMILAR = 3;
 
-    public function __construct(private readonly QueryBus $queries)
+    public function __construct(private readonly QueryBus $queries, private readonly Favorites $favorites, private readonly CurrentUser $user)
     {
     }
 
@@ -72,6 +74,7 @@ final class ArtisanProfilePageController extends AbstractController
             'reviews' => $this->queries->ask(new PublicReviews($id, $request->query->getString('tri', 'recents'), $request->query->getString('note', 'toutes'), max(PublicReviews::PAGE, $request->query->getInt('avis', PublicReviews::PAGE)))),
             'review_sorts' => PublicReviews::SORTS,
             'review_filters' => PublicReviews::FILTERS,
+            'is_favorite' => null !== $this->user->id() && $this->favorites->has($this->user->id(), $id),
         ]);
     }
 
