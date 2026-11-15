@@ -7,25 +7,13 @@
 {% props variant = 'visitor', active = null, accountName = null, unreadMessages = 0, unreadNotifications = 0, credits = null, quitHref = null %}
 {# Lien de déconnexion à jeton CSRF de session : seulement pour un utilisateur connecté (planches de démonstration : '#') #}
 {% set logout_href = app.user ? logout_path('main') : '#' %}
-{% set nav = [
-    {key: 'home', label: 'Accueil', href: tm_path('public_home')},
-    {key: 'categories', label: 'Catégories', mega: true},
-    {key: 'pros', label: 'Nos professionnels', href: tm_path('search_directory')},
-    {key: 'how', label: 'Comment ça marche ?', href: tm_path('content_how_it_works')},
-    {key: 'help', label: 'Aide / FAQ', href: tm_path('content_faq')},
-] %}
-{% set accountItems = variant == 'artisan' ? [
-    {label: 'Tableau de bord', icon: 'grid', href: tm_path('pro_dashboard')},
-    {label: 'Demandes', icon: 'file', href: tm_path('pro_requests')},
-    {label: 'Mes devis', icon: 'briefcase', href: tm_path('pro_quotes')},
-    {label: 'Abonnement', icon: 'star', href: tm_path('pro_subscription')},
-    {label: 'Mon profil public', icon: 'user', href: tm_path('pro_profile')},
-] : [
-    {label: 'Tableau de bord', icon: 'grid', href: tm_path('client_dashboard')},
-    {label: 'Mes demandes', icon: 'file', href: tm_path('client_requests')},
-    {label: 'Favoris', icon: 'heart', href: tm_path('client_favorites')},
-    {label: 'Profil', icon: 'user', href: tm_path('client_profile')},
-] %}
+{# BO10.5 — menus administrables (tm_menu) ; `active` (clé de page) reste reconnu pour les liens historiques #}
+{% set active_paths = {home: tm_path('public_home'), pros: tm_path('search_directory'), how: tm_path('content_how_it_works'), help: tm_path('content_faq')} %}
+{% set current_path = active_paths[active] ?? (app.request ? app.request.pathInfo : null) %}
+{% set nav = tm_menu('main')|map(i => i.special == 'categories'
+    ? {key: 'categories', label: i.label, mega: true}
+    : {key: i.href == current_path ? active : i.href, label: i.label, href: i.href, newTab: i.newTab}) %}
+{% set accountItems = tm_menu(variant == 'artisan' ? 'account_pro' : 'account_client', variant == 'artisan' ? 'artisan' : 'client')|filter(i => i.href is not null)|map(i => {label: i.label, icon: i.icon ?? 'file', href: i.href}) %}
 {% set connected = variant in ['client', 'artisan'] %}
 {# P01.1 : méga-menu vide (aucune catégorie active) → élément masqué #}
 {% set categories = tm_main_categories() %}
@@ -70,7 +58,8 @@
                                     </div>
                                 </div>
                             {% else %}
-                                <a class="tm-nav-link{{ active == item.key ? ' is-active' }}" href="{{ item.href }}"{% if active == item.key %} aria-current="page"{% endif %}>{{ item.label }}</a>
+                                {% set is_current = item.href == current_path %}
+                                <a class="tm-nav-link{{ is_current ? ' is-active' }}" href="{{ item.href }}"{% if is_current %} aria-current="page"{% endif %}{% if item.newTab %} target="_blank" rel="noopener"{% endif %}>{{ item.label }}</a>
                             {% endif %}
                         </li>
                     {% endfor %}

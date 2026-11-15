@@ -534,3 +534,11 @@
     .tm-faq-admin__topics a { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--tm-navy); text-decoration: none; }
     .tm-faq-admin__topics a:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 6px; }
 }
+
+/* BO10.5 « Menus » */
+@layer components {
+    .tm-menus-admin { display: grid; gap: var(--space-4); }
+    @media (min-width: 1280px) {
+        .tm-menus-admin { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+    }
+}

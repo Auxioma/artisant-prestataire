@@ -3,31 +3,11 @@
     (CDC §2.1 ; la variante marine #0A1F5C hors palette n'est pas retenue — P-29). Vague décorative de la variante claire (388:17040).
     Mobile : colonnes en accordéon (ouvertes sans JavaScript), newsletter pleine largeur.
 #}
+{# BO10.5 — colonnes administrables (tm_menu) #}
 {% set columns = [
-    {title: 'Liens utiles', links: [
-        {label: 'Catégories', href: tm_path('catalog_categories')},
-        {label: 'Nos professionnels', href: tm_path('search_directory')},
-        {label: 'Les mieux notés', href: tm_path('search_top_rated')},
-        {label: 'Disponibilités', href: tm_path('search_availability')},
-        {label: 'Offres & promotions', href: tm_path('search_offers')},
-        {label: 'Tarifs professionnels', href: tm_path('content_pricing')},
-        {label: 'Blog', href: tm_path('content_blog')},
-    ]},
-    {title: 'Informations', links: [
-        {label: 'CGU', href: tm_path('identity_legal_document', {slug: 'cgu'})},
-        {label: 'CGV', href: tm_path('identity_legal_document', {slug: 'cgv'})},
-        {label: 'Confidentialité', href: tm_path('identity_legal_document', {slug: 'confidentialite'})},
-        {label: 'Mentions légales', href: tm_path('identity_legal_document', {slug: 'mentions-legales'})},
-        {label: 'Cookies', href: tm_path('identity_legal_document', {slug: 'cookies'})},
-        {label: 'Gérer mes cookies', consent: true},
-        {label: 'Plan du site', href: tm_path('content_sitemap')},
-    ]},
-    {title: 'Aide', links: [
-        {label: 'Comment ça marche ?', href: tm_path('content_how_it_works')},
-        {label: 'Aide / FAQ', href: tm_path('content_faq')},
-        {label: 'Contact', href: tm_path('content_contact')},
-        {label: 'Créer mon compte pro', href: tm_path('identity_register_pro')},
-    ]},
+    {title: 'Liens utiles', links: tm_menu('footer_useful')},
+    {title: 'Informations', links: tm_menu('footer_info')},
+    {title: 'Aide', links: tm_menu('footer_help')},
 ] %}
 <footer {{ attributes.defaults({class: 'tm-footer'}) }}>
     <svg class="tm-footer__wave" viewBox="0 0 1440 70" preserveAspectRatio="none" aria-hidden="true" focusable="false">
@@ -58,10 +38,10 @@
                     <ul class="tm-footer__links">
                         {% for link in column.links %}
                             <li>
-                                {% if link.consent is defined %}
+                                {% if link.special == 'cookies' %}
                                     <button type="button" class="tm-footer__link" data-cookie-consent-open aria-haspopup="dialog">{{ link.label }}</button>
                                 {% else %}
-                                    <a class="tm-footer__link" href="{{ link.href }}">{{ link.label }}</a>
+                                    <a class="tm-footer__link" href="{{ link.href }}"{% if link.newTab %} target="_blank" rel="noopener"{% endif %}>{{ link.label }}</a>
                                 {% endif %}
                             </li>
                         {% endfor %}
