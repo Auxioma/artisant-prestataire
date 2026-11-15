@@ -13,6 +13,8 @@ use Doctrine\DBAL\Connection;
 
 final readonly class DbalConversationRepository implements ConversationRepository
 {
+    private const string ERASED_BODY = 'Message supprimé : le compte de son auteur a été effacé.';
+
     public function __construct(private Connection $connection)
     {
     }
@@ -112,5 +114,21 @@ final readonly class DbalConversationRepository implements ConversationRepositor
             null === $r['last_message_at'] ? null : new \DateTimeImmutable(DbalValue::string($r['last_message_at'])),
             new \DateTimeImmutable(DbalValue::string($r['created_at'])),
         );
+    }
+
+    public function scrubMessagesOf(string $userId): array
+    {
+        return $this->connection->transactional(static function (Connection $c) use ($userId): array {
+            $files = array_map(DbalValue::string(...), $c->fetchFirstColumn(
+                'DELETE FROM messaging.attachment a USING messaging.message m WHERE a.message_id = m.id AND m.sender_user_id = :u RETURNING a.file_id',
+                ['u' => $userId],
+            ));
+            $c->executeStatement("SELECT set_config('app.message_scrub', 'on', true)");
+            $c->executeStatement('UPDATE messaging.message SET body = :b, original_sealed = NULL WHERE sender_user_id = :u', ['b' => self::ERASED_BODY, 'u' => $userId]);
+            $c->executeStatement("SELECT set_config('app.message_scrub', 'off', true)");
+            $c->executeStatement('UPDATE messaging.participant SET note = NULL WHERE user_id = :u', ['u' => $userId]);
+
+            return $files;
+        });
     }
 }

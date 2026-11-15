@@ -86,4 +86,9 @@ final readonly class DbalKnownDevices implements KnownDevices
     {
         $this->connection->executeStatement('DELETE FROM identity.session_device WHERE user_id = :u', ['u' => $userId]);
     }
+
+    public function forgetIdleBefore(\DateTimeImmutable $before): int
+    {
+        return (int) $this->connection->executeStatement('DELETE FROM identity.session_device WHERE last_seen_at < :b', ['b' => $before->format(\DATE_ATOM)]);
+    }
 }

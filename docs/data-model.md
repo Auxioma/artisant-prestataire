@@ -268,3 +268,11 @@ Les IP sont stockées **hachées** (HMAC avec un sel tournant) sauf dans l'Audit
 | `page` (T-801b) | id, slug (UQ, minuscules-tirets), title, meta_title, meta_description, noindex, draft (jsonb : blocs `{id, type, data}`), live + live_at (version en ligne), pending + pending_at (version programmée, visible dès son heure), created_at, updated_at, updated_by | **CK** version et date vont ensemble ; usage d'une image recherché dans les trois versions |
 | `menu_item` (T-801d) | id, menu (`main`, `footer_useful`, `footer_info`, `footer_help`, `account_client`, `account_pro`), label, link (`route:nom?p=v`, `/chemin`, `https://…`, `special:categories|cookies`), icon, new_tab, audience (`all`/`visitor`/`client`/`artisan`), position, active, updated_at | **CK** libellé non vide ; amorcé par la migration avec les menus existants |
 | `ui_label` (T-801e) | key (`rubrique.cle`), locale (`fr`), default_text (relevé dans les gabarits), text (modifié, facultatif), updated_at, updated_by | **PK** (key, locale) ; texte modifié non vide |
+
+### Rétention (T-808a)
+
+| Table | Colonnes | Contraintes |
+|---|---|---|
+| `request.quote_request.archived_at` | date d'archivage (contenu libre, adresse, pièces jointes effacés) | IX demandes closes archivables |
+| `admin.audit_anchor` | id, purged_through_seq, last_hash, purged_count, purged_at | point de reprise de la vérification de la chaîne après purge ; `admin.audit_log` : suppression autorisée seulement avec `app.audit_retention` posé dans la transaction |
+| `messaging.message` | texte remplaçable seulement avec `app.message_scrub` (effacement RGPD) | sinon non modifiable |
