@@ -25,20 +25,20 @@ final readonly class DbalArtisanSearchIndex implements ArtisanSearchIndex
         $this->connection->executeStatement(
             <<<'SQL'
                 INSERT INTO search.artisan_search_view (artisan_id, user_id, name, short_description, logo_file_id, main_job_id, job_ids, commune_insee, commune_name,
-                    department_code, location, labels, completion, verified_at, updated_at)
+                    department_code, location, labels, completion, verified_at, available_soon, updated_at)
                 VALUES (:id, :user, :name, :description, :logo, :main, CAST(:jobs AS uuid[]), :insee, :commune, :department,
                     CASE WHEN CAST(:lat AS double precision) IS NULL THEN NULL ELSE ST_SetSRID(ST_MakePoint(CAST(:lng AS double precision), CAST(:lat AS double precision)), 4326)::geography END,
-                    CAST(:labels AS text[]), :completion, :verified, now())
+                    CAST(:labels AS text[]), :completion, :verified, :available, now())
                 ON CONFLICT (artisan_id) DO UPDATE SET user_id = EXCLUDED.user_id, name = EXCLUDED.name, short_description = EXCLUDED.short_description,
                     logo_file_id = EXCLUDED.logo_file_id, main_job_id = EXCLUDED.main_job_id, job_ids = EXCLUDED.job_ids, commune_insee = EXCLUDED.commune_insee,
                     commune_name = EXCLUDED.commune_name, department_code = EXCLUDED.department_code, location = EXCLUDED.location, labels = EXCLUDED.labels,
-                    completion = EXCLUDED.completion, verified_at = EXCLUDED.verified_at, updated_at = now()
+                    completion = EXCLUDED.completion, verified_at = EXCLUDED.verified_at, available_soon = EXCLUDED.available_soon, updated_at = now()
                 SQL,
             [
                 'id' => $a->profileId, 'user' => $a->userId, 'name' => $a->name, 'description' => $a->shortDescription, 'logo' => $a->logoFileId,
                 'main' => $a->mainJobId, 'jobs' => self::pgArray($a->jobIds), 'insee' => $a->communeInsee, 'commune' => $a->communeName,
                 'department' => $a->departmentCode, 'lat' => $a->latitude, 'lng' => $a->longitude, 'labels' => self::pgArray($a->labels),
-                'completion' => $a->completion, 'verified' => $a->verifiedAt->format(\DATE_ATOM),
+                'completion' => $a->completion, 'verified' => $a->verifiedAt->format(\DATE_ATOM), 'available' => $a->availableSoon ? 'true' : 'false',
             ],
         );
     }

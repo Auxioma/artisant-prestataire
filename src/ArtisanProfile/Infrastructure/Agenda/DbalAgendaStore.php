@@ -152,6 +152,55 @@ final readonly class DbalAgendaStore implements AgendaStore
         );
     }
 
+    public function availableSoon(string $artisanId, int $days): bool
+    {
+        if (1 !== preg_match(self::UUID, $artisanId)) {
+            return false;
+        }
+
+        return true === $this->connection->fetchOne(
+            <<<'SQL'
+                SELECT NOT coalesce(g.paused, false) AND EXISTS (
+                    SELECT 1 FROM artisan.availability_slot s WHERE s.artisan_id = p.id AND s.status = 'open'
+                      AND s.starts_at >= now() + make_interval(hours => coalesce(g.min_notice_hours, :notice))
+                      AND s.starts_at < now() + make_interval(days => :days))
+                FROM artisan.artisan_profile p LEFT JOIN artisan.agenda_settings g ON g.artisan_id = p.id WHERE p.id = :a
+                SQL,
+            ['a' => $artisanId, 'notice' => AgendaSettings::DEFAULT_NOTICE_HOURS, 'days' => $days],
+        );
+    }
+
+    public function saveIcalToken(string $artisanId, ?string $hash, \DateTimeImmutable $at): void
+    {
+        $this->connection->executeStatement(
+            <<<'SQL'
+                INSERT INTO artisan.agenda_settings (artisan_id, ical_token_hash, ical_token_created_at, updated_at) VALUES (:a, :h, CAST(:c AS timestamptz), :at)
+                ON CONFLICT (artisan_id) DO UPDATE SET ical_token_hash = excluded.ical_token_hash, ical_token_created_at = excluded.ical_token_created_at, updated_at = excluded.updated_at
+                SQL,
+            ['a' => $artisanId, 'h' => $hash, 'c' => null === $hash ? null : $at->format(self::TS), 'at' => $at->format(self::TS)],
+        );
+    }
+
+    public function icalTokenCreatedAt(string $artisanId): ?\DateTimeImmutable
+    {
+        $at = $this->connection->fetchOne('SELECT ical_token_created_at FROM artisan.agenda_settings WHERE artisan_id = :a', ['a' => $artisanId]);
+
+        return \is_string($at) ? new \DateTimeImmutable($at) : null;
+    }
+
+    public function artisanByIcalHash(string $hash): ?array
+    {
+        if (1 !== preg_match('/^[0-9a-f]{64}$/', $hash)) {
+            return null;
+        }
+        $r = $this->connection->fetchAssociative(
+            'SELECT p.id, coalesce(p.trade_name, p.company_name, \'TrouveMoi\') AS name FROM artisan.agenda_settings g JOIN artisan.artisan_profile p ON p.id = g.artisan_id WHERE g.ical_token_hash = :h',
+            ['h' => $hash],
+        );
+
+        return false === $r ? null : ['artisan_id' => DbalValue::string($r['id']), 'name' => DbalValue::string($r['name'])];
+    }
+
     public function artisansWithRules(): array
     {
         return array_map(static fn (mixed $id): string => DbalValue::string($id), $this->connection->fetchFirstColumn('SELECT DISTINCT artisan_id FROM artisan.availability_rule ORDER BY artisan_id'));

@@ -40,7 +40,7 @@ final readonly class AgendaHandler implements CommandHandler
     ) {
     }
 
-    public function __invoke(SaveWeeklyRules|SaveAgendaSettings|PauseAvailability|AddAbsence|RemoveAbsence|RefreshAgendas $command): void
+    public function __invoke(SaveWeeklyRules|SaveAgendaSettings|PauseAvailability|AddAbsence|RemoveAbsence|RefreshAgendas|IssueIcalLink $command): void
     {
         if ($command instanceof RefreshAgendas) {
             foreach ($this->store->artisansWithRules() as $artisanId) {
@@ -52,6 +52,11 @@ final readonly class AgendaHandler implements CommandHandler
         }
         $artisanId = $this->store->artisanOfUser($command->userId) ?? throw new AgendaRuleViolation('Agenda réservé aux professionnels.');
         $now = $this->clock->now();
+        if ($command instanceof IssueIcalLink) {
+            $this->store->saveIcalToken($artisanId, null === $command->token ? null : hash('sha256', $command->token), $now);
+
+            return;
+        }
         if ($command instanceof SaveWeeklyRules) {
             $this->rules($artisanId, $command);
         } elseif ($command instanceof SaveAgendaSettings) {

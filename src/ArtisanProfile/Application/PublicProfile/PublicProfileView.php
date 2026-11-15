@@ -57,6 +57,8 @@ final readonly class PublicProfileView
         public array $services = [],
         public ?OpeningHours $hours = null,
         public array $portfolio = [],
+        public bool $availableSoon = false,
+        public bool $acceptsDirectRequests = true,
     ) {
     }
 }

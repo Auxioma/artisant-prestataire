@@ -16,3 +16,4 @@ framework:
         newsletter:      { policy: fixed_window,   limit: 5,  interval: '1 hour' }
         cookie_consent:  { policy: sliding_window, limit: 30, interval: '1 hour' }
         stripe_webhook:  { policy: sliding_window, limit: 300, interval: '1 minute' }
+        ical_feed:       { policy: sliding_window, limit: 60, interval: '1 hour' } # PR06.3 : lien iCal privé, par IP

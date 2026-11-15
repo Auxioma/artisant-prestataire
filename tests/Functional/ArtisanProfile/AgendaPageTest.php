@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\ArtisanProfile;
 
+use App\ArtisanProfile\Application\PublicProfile\PublicArtisanProfile;
+use App\ArtisanProfile\Application\PublicProfile\PublicProfileView;
+use App\ArtisanProfile\Application\Search\SearchableArtisan;
+use App\ArtisanProfile\Application\Search\SearchableArtisanOf;
 use App\ArtisanProfile\Application\Verification\ApproveArtisan;
+use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Infrastructure\Persistence\DbalValue;
 use App\Tests\Support\ArtisanDossier;
 use App\Tests\Support\StorageSamples;
@@ -113,5 +118,63 @@ final class AgendaPageTest extends WebTestCase
         $page = $this->client->followRedirect();
         self::assertSame('false', $page->filter('.tm-agenda__toggle')->attr('aria-checked'));
         self::assertStringContainsString('Mode pause', $page->filter('.tm-agenda__next')->text());
+    }
+
+    public function testPrivateIcalLinkBadgeAndPause(): void
+    {
+        $this->client->request('GET', '/espace-pro/agenda?onglet=horaires');
+        $token = (string) $this->client->getCrawler()->filter('form#horaires input[name="_token"]')->attr('value');
+        $this->client->request('POST', '/espace-pro/agenda/horaires', ['_token' => $token, 'plages' => [1 => [['debut' => '08:00', 'fin' => '12:00']]], 'copier' => '1', 'duree' => '60', 'prevenance' => '24']);
+        $this->client->request('GET', '/espace-pro/agenda?onglet=indisponibilites');
+        $day = new \DateTimeImmutable('+10 days');
+        $this->client->submit($this->client->getCrawler()->filter('#ajout-absence')->form(), ['debut' => $day->format('Y-m-d'), 'type' => 'leave', 'libelle' => 'Formation, Rouen (fictif)']);
+
+        // RG-013 : badge « Disponible » (créneau sous 7 jours, prévenance comprise), retiré en mode pause.
+        $queries = self::getContainer()->get(QueryBus::class);
+        \assert($queries instanceof QueryBus);
+        $artisan = $queries->ask(new SearchableArtisanOf($this->artisan));
+        self::assertInstanceOf(SearchableArtisan::class, $artisan);
+        self::assertTrue($artisan->availableSoon);
+
+        // Lien iCal : montré une fois, révocable.
+        $page = $this->client->request('GET', '/espace-pro/agenda/synchronisation');
+        self::assertStringContainsString('Aucun lien actif', $page->filter('.tm-agenda__sync')->text());
+        $this->client->submit($page->selectButton('Créer mon lien iCal')->form());
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('no-store', (string) $this->client->getResponse()->headers->get('Cache-Control'));
+        $url = (string) $this->client->getCrawler()->filter('#ical-url')->attr('value');
+        self::assertMatchesRegularExpression('#/agenda/[0-9a-f]{48}\.ics$#', $url);
+        self::assertSame(1, DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM artisan.agenda_settings WHERE ical_token_hash = :h', ['h' => hash('sha256', (string) preg_replace('#^.*/agenda/([0-9a-f]{48})\.ics$#', '$1', $url))])), 'seule l’empreinte est conservée');
+        $path = (string) parse_url($url, \PHP_URL_PATH);
+
+        $this->client->request('GET', $path);
+        self::assertResponseIsSuccessful();
+        self::assertStringStartsWith('text/calendar', (string) $this->client->getResponse()->headers->get('Content-Type'));
+        $ics = (string) $this->client->getResponse()->getContent();
+        self::assertStringStartsWith("BEGIN:VCALENDAR\r\n", $ics);
+        self::assertStringContainsString('SUMMARY:Formation\, Rouen (fictif) (TrouveMoi)', $ics);
+        self::assertStringContainsString('DTSTART;VALUE=DATE:'.$day->format('Ymd'), $ics);
+        self::assertStringNotContainsString('Atelier Fictif@', $ics);
+
+        $page = $this->client->request('GET', '/espace-pro/agenda/synchronisation');
+        self::assertStringContainsString('Lien privé actif depuis', $page->filter('.tm-agenda__sync')->text());
+        self::assertCount(0, $page->filter('#ical-url'), 'jamais réaffiché');
+        $this->client->submit($page->selectButton('Révoquer le lien')->form());
+        $this->client->request('GET', $path);
+        self::assertResponseStatusCodeSame(404);
+
+        // Mode pause : ni badge ni demande directe.
+        $page = $this->client->request('GET', '/espace-pro/agenda');
+        $this->client->submit($page->filter('.tm-agenda__status form')->form());
+        $artisan = $queries->ask(new SearchableArtisanOf($this->artisan));
+        self::assertInstanceOf(SearchableArtisan::class, $artisan);
+        self::assertFalse($artisan->availableSoon);
+        $profile = $queries->ask(new PublicArtisanProfile($this->artisan));
+        self::assertInstanceOf(PublicProfileView::class, $profile);
+        self::assertFalse($profile->acceptsDirectRequests);
+        $this->client->request('GET', '/pro/'.$this->artisan);
+        $fiche = $this->client->followRedirect();
+        self::assertStringContainsString('ne prend pas de nouvelles demandes', $fiche->filter('.tm-profile__contact')->text());
+        self::assertCount(0, $fiche->filter('.tm-profile__contact a[href*="pro="]'));
     }
 }

@@ -9,6 +9,7 @@
     description="{{ a.shortDescription }}"
     :rating="a.reviewsCount > 0 ? a.ratingAverage : null"
     :reviewsCount="a.reviewsCount"
+    :available="a.available"
     photo="{{ a.hasLogo ? path('public_artisan_logo', {id: a.profileId}) : null }}"
     photoAlt="Logo de {{ a.name }}"
     :headingLevel="3" />

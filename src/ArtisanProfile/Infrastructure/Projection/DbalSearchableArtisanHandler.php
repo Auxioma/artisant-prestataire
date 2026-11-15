@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\ArtisanProfile\Infrastructure\Projection;
 
+use App\ArtisanProfile\Application\Port\AgendaStore;
 use App\ArtisanProfile\Application\Search\PublicArtisanIds;
 use App\ArtisanProfile\Application\Search\SearchableArtisan;
 use App\ArtisanProfile\Application\Search\SearchableArtisanOf;
 use App\Shared\Application\Bus\QueryHandler;
+use App\Shared\Application\Settings\SettingKey;
+use App\Shared\Application\Settings\SettingsProvider;
 use App\Shared\Infrastructure\Persistence\DbalValue;
 use Doctrine\DBAL\Connection;
 
@@ -19,7 +22,7 @@ final readonly class DbalSearchableArtisanHandler implements QueryHandler
 {
     private const string PUBLIC = "p.status = 'verified' AND p.hidden_at IS NULL";
 
-    public function __construct(private Connection $connection)
+    public function __construct(private Connection $connection, private SettingsProvider $settings, private AgendaStore $agenda)
     {
     }
 
@@ -80,6 +83,7 @@ final readonly class DbalSearchableArtisanHandler implements QueryHandler
             $labels,
             DbalValue::int($row['completion_rate']),
             new \DateTimeImmutable(DbalValue::string($row['verified_at'])),
+            $this->agenda->availableSoon($query->profileId, $this->settings->int(SettingKey::AvailabilityBadgeDays)),
         );
     }
 }

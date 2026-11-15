@@ -139,4 +139,6 @@
     .tm-profile__gallery figure { position: relative; margin: 0; }
     .tm-profile__gallery img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-md); }
     .tm-profile__gallery figcaption { position: absolute; inset-inline-start: var(--space-2); inset-block-start: var(--space-2); padding: 2px var(--space-2); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-heading); font: var(--type-caption); }
+    /* T-702c — artisan en mode pause (PR06.1) : plus de demande directe */
+    .tm-profile__paused { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 14px; line-height: 20px; color: var(--color-text-muted); }
 }

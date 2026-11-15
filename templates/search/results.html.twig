@@ -106,6 +106,7 @@
                                 description="{{ a.shortDescription }}"
                                 :rating="a.reviewsCount > 0 ? hit.bayesRating : null"
                                 :reviewsCount="a.reviewsCount"
+                                :available="a.available"
                                 photo="{{ a.hasLogo ? path('public_artisan_logo', {id: a.profileId}) : null }}"
                                 photoAlt="{{ a.hasLogo ? 'Logo de ' ~ a.name : '' }}" />
                         </li>

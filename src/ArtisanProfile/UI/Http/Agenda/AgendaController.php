@@ -7,6 +7,8 @@ namespace App\ArtisanProfile\UI\Http\Agenda;
 use App\ArtisanProfile\Application\Agenda\AddAbsence;
 use App\ArtisanProfile\Application\Agenda\AgendaCalendar;
 use App\ArtisanProfile\Application\Agenda\AgendaCalendarView;
+use App\ArtisanProfile\Application\Agenda\IcalLinkStatus;
+use App\ArtisanProfile\Application\Agenda\IssueIcalLink;
 use App\ArtisanProfile\Application\Agenda\PauseAvailability;
 use App\ArtisanProfile\Application\Agenda\RemoveAbsence;
 use App\ArtisanProfile\Application\Agenda\SaveAgendaSettings;
@@ -28,19 +30,22 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 /**
  * PR06 du CDC / PR16 Figma (383:17652) — /espace-pro/agenda « Mes disponibilités » : planning (semaine, mois, liste),
- * horaires récurrents et réglages, indisponibilités, jours fériés, statut (mode pause). Écarts : P-110, P-111.
+ * horaires récurrents et réglages, indisponibilités, jours fériés, synchronisation (lien iCal privé, PR06.3), statut (mode
+ * pause). Écarts : P-110, P-111, P-112.
  */
 #[Route('/espace-pro/agenda')]
 final class AgendaController extends AbstractController
 {
-    public const array TABS = ['planning' => 'Mon planning', 'horaires' => 'Horaires récurrents', 'indisponibilites' => 'Indisponibilités', 'feries' => 'Jours fériés'];
+    public const array TABS = ['planning' => 'Mon planning', 'horaires' => 'Horaires récurrents', 'indisponibilites' => 'Indisponibilités', 'feries' => 'Jours fériés', 'synchronisation' => 'Synchronisation'];
     private const array VIEWS = ['semaine' => 'Semaine', 'mois' => 'Mois', 'liste' => 'Liste'];
     private const string CSRF = 'pro_agenda';
     /** Plages proposées par jour dans le formulaire des horaires récurrents. */
     private const int RANGES_PER_DAY = 3;
+    private const int ICAL_TOKEN_BYTES = 24;
 
     public function __construct(
         private readonly QueryBus $queries,
@@ -53,6 +58,40 @@ final class AgendaController extends AbstractController
 
     #[Route('', name: 'pro_availability', methods: ['GET'])]
     public function index(Request $request): Response
+    {
+        return $this->page($request);
+    }
+
+    /** PR06.3 — onglet Synchronisation (raccourci « Synchroniser avec Google Agenda ou Outlook »). */
+    #[Route('/synchronisation', name: 'pro_agenda_sync', methods: ['GET'])]
+    public function sync(Request $request): Response
+    {
+        $request->query->set('onglet', 'synchronisation');
+
+        return $this->page($request);
+    }
+
+    /** Nouveau lien iCal privé (l'ancien cesse de fonctionner) : affiché une seule fois, jamais mis en cache. */
+    #[Route('/synchronisation/lien', name: 'pro_agenda_ical_issue', methods: ['POST'])]
+    public function issueIcal(Request $request): Response
+    {
+        $userId = $this->checked($request);
+        if ('revoke' === $request->request->getString('action')) {
+            $this->commands->dispatch(new IssueIcalLink($userId, null));
+            $this->addFlash('success', 'Lien iCal révoqué : vos agendas externes ne reçoivent plus vos rendez-vous.');
+
+            return $this->redirectToRoute('pro_agenda_sync', [], Response::HTTP_SEE_OTHER);
+        }
+        $token = bin2hex(random_bytes(self::ICAL_TOKEN_BYTES));
+        $this->commands->dispatch(new IssueIcalLink($userId, $token));
+        $request->query->set('onglet', 'synchronisation');
+        $response = $this->page($request, $this->generateUrl('agenda_ical', ['token' => $token], UrlGeneratorInterface::ABSOLUTE_URL));
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
+    }
+
+    private function page(Request $request, ?string $icalUrl = null): Response
     {
         $tab = \array_key_exists($request->query->getString('onglet'), self::TABS) ? $request->query->getString('onglet') : 'planning';
         $view = \array_key_exists($request->query->getString('vue'), self::VIEWS) ? $request->query->getString('vue') : 'semaine';
@@ -93,6 +132,8 @@ final class AgendaController extends AbstractController
             'kinds' => array_combine(array_map(static fn (AbsenceKind $k): string => $k->value, AbsenceKind::cases()), array_map(static fn (AbsenceKind $k): string => $k->label(), AbsenceKind::cases())),
             'holidays' => FrenchHolidays::of((int) $today->format('Y')) + FrenchHolidays::of((int) $today->format('Y') + 1),
             'csrf_id' => self::CSRF,
+            'ical_url' => $icalUrl,
+            'ical_since' => $this->queries->ask(new IcalLinkStatus($this->userId())),
         ]);
     }
 

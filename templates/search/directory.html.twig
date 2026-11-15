@@ -63,7 +63,8 @@
                                 :reviewsCount="a.reviewsCount"
                                 photo="{{ a.hasLogo ? path('public_artisan_logo', {id: a.profileId}) : null }}"
                                 photoAlt="Logo de {{ a.name }}"
-                                :verified="true" />
+                                :verified="true"
+                                :available="a.available" />
                         </li>
                     {% endfor %}
                 </ul>

@@ -107,6 +107,9 @@ final readonly class RequestDraftEditor implements CommandHandler
         }
         if (null !== $command->targetArtisanId) {
             $artisan = $this->artisan($command->targetArtisanId) ?? throw new DraftRejected('Ce professionnel n’est pas disponible pour une demande directe.');
+            if (!$artisan->acceptsDirectRequests) {
+                throw new DraftRejected('Ce professionnel ne prend pas de nouvelles demandes pour le moment : déposez une demande ouverte aux professionnels de votre secteur.');
+            }
             $changes['target_artisan_id'] = $artisan->profileId;
             $changes['broadcast_to_others'] = $this->settings->bool(SettingKey::RequestsDirectBroadcastDefault);
             if (null === $command->jobId && (null === $draft->jobId || !\in_array($draft->jobId, $artisan->jobIds, true))) {

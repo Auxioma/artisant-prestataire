@@ -12,7 +12,8 @@ final readonly class SearchableArtisan
 {
     /**
      * @param list<string> $jobIds
-     * @param list<string> $labels libellés des qualifications déclarées (filtre « Labels », RG-032 : « vérifié » après contrôle)
+     * @param list<string> $labels        libellés des qualifications déclarées (filtre « Labels », RG-032 : « vérifié » après contrôle)
+     * @param bool         $availableSoon RG-013 : un créneau ouvert dans les `availability.badge_days` jours (prévenance comprise), hors mode pause
      */
     public function __construct(
         public string $profileId,
@@ -30,6 +31,7 @@ final readonly class SearchableArtisan
         public array $labels,
         public int $completion,
         public \DateTimeImmutable $verifiedAt,
+        public bool $availableSoon = false,
     ) {
     }
 }

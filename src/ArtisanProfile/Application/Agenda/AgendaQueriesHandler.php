@@ -17,13 +17,23 @@ final readonly class AgendaQueriesHandler implements QueryHandler
     private const int MINUTE = 60;
     /** Recherche du prochain créneau ouvert. */
     private const string NEXT_WINDOW = '+60 days';
+    /** Historique exporté dans le lien iCal. */
+    private const string FEED_PAST = '-30 days';
 
     public function __construct(private AgendaStore $store, private Clock $clock)
     {
     }
 
-    public function __invoke(AgendaCalendar $query): ?AgendaCalendarView
+    public function __invoke(AgendaCalendar|IcalFeed|IcalLinkStatus $query): AgendaCalendarView|IcalFeedView|\DateTimeImmutable|null
     {
+        if ($query instanceof IcalLinkStatus) {
+            $artisanId = $this->store->artisanOfUser($query->userId);
+
+            return null === $artisanId ? null : $this->store->icalTokenCreatedAt($artisanId);
+        }
+        if ($query instanceof IcalFeed) {
+            return $this->feed($query);
+        }
         $artisanId = $this->store->artisanOfUser($query->userId);
         if (null === $artisanId) {
             return null;
@@ -70,6 +80,28 @@ final readonly class AgendaQueriesHandler implements QueryHandler
         }
 
         return new AgendaCalendarView($artisanId, $settings, $this->store->rules($artisanId), $this->store->absences($artisanId, $now), $days, $this->nextOpen($artisanId, $now, $settings->minNoticeHours));
+    }
+
+    /** Rendez-vous des 30 derniers jours et à venir, absences en cours et futures. */
+    private function feed(IcalFeed $query): ?IcalFeedView
+    {
+        $artisan = $this->store->artisanByIcalHash(hash('sha256', $query->token));
+        if (null === $artisan) {
+            return null;
+        }
+        $now = $this->clock->now();
+        $since = $now->modify(self::FEED_PAST);
+        $events = [];
+        foreach ($this->store->slots($artisan['artisan_id'], $since, $now->modify(self::NEXT_WINDOW)) as [$start, $end, $status]) {
+            if ('open' !== $status) {
+                $events[] = ['uid' => 'slot-'.$start->getTimestamp().'-'.$artisan['artisan_id'], 'start' => $start, 'end' => $end, 'summary' => ['held' => 'Rendez-vous proposé (TrouveMoi)', 'booked' => 'Rendez-vous (TrouveMoi)'][$status] ?? 'Indisponible (TrouveMoi)', 'all_day' => false];
+            }
+        }
+        foreach ($this->store->absences($artisan['artisan_id'], $since) as $a) {
+            $events[] = ['uid' => 'absence-'.$a->id, 'start' => $a->from, 'end' => $a->to->modify('+1 day'), 'summary' => ($a->label ?? $a->kind->label()).' (TrouveMoi)', 'all_day' => true];
+        }
+
+        return new IcalFeedView($artisan['artisan_id'], $artisan['name'], $events);
     }
 
     private function nextOpen(string $artisanId, \DateTimeImmutable $now, int $noticeHours): ?\DateTimeImmutable

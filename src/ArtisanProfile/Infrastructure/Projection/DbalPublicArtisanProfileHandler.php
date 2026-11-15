@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\ArtisanProfile\Infrastructure\Projection;
 
+use App\ArtisanProfile\Application\Port\AgendaStore;
 use App\ArtisanProfile\Application\Port\PortfolioStore;
 use App\ArtisanProfile\Application\PublicProfile\ArtisanPhone;
 use App\ArtisanProfile\Application\PublicProfile\PublicArtisanProfile;
@@ -14,6 +15,8 @@ use App\ArtisanProfile\Domain\Profile\PublicPresentation;
 use App\ArtisanProfile\Domain\Profile\ServiceOffer;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Bus\QueryHandler;
+use App\Shared\Application\Settings\SettingKey;
+use App\Shared\Application\Settings\SettingsProvider;
 use App\Shared\Domain\Time\Clock;
 use App\Shared\Infrastructure\Persistence\DbalValue;
 use Doctrine\DBAL\Connection;
@@ -36,7 +39,7 @@ final readonly class DbalPublicArtisanProfileHandler implements QueryHandler
     ];
     private const string SIRENE_CHECK = 'SIRET actif au répertoire Sirene';
 
-    public function __construct(private Connection $connection, private QueryBus $queries, private Clock $clock, private PortfolioStore $portfolio)
+    public function __construct(private Connection $connection, private QueryBus $queries, private Clock $clock, private PortfolioStore $portfolio, private AgendaStore $agenda, private SettingsProvider $settings)
     {
     }
 
@@ -135,6 +138,8 @@ final readonly class DbalPublicArtisanProfileHandler implements QueryHandler
             services: $this->services($row['services']),
             hours: OpeningHours::fromArray(self::map($row['opening_hours'])),
             portfolio: $this->portfolio->projects($profileId, true),
+            availableSoon: $this->agenda->availableSoon($profileId, $this->settings->int(SettingKey::AvailabilityBadgeDays)),
+            acceptsDirectRequests: !$this->agenda->settings($profileId)->paused,
         );
     }
 

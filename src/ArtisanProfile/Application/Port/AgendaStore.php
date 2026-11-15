@@ -62,6 +62,18 @@ interface AgendaStore
      */
     public function slots(string $artisanId, \DateTimeImmutable $from, \DateTimeImmutable $to): array;
 
+    /** RG-013 : un créneau ouvert dans les `$days` prochains jours, prévenance comprise, et l'artisan n'est pas en pause. */
+    public function availableSoon(string $artisanId, int $days): bool;
+
+    /** PR06.3 — empreinte SHA-256 du jeton du lien iCal privé (null : lien révoqué). */
+    public function saveIcalToken(string $artisanId, ?string $hash, \DateTimeImmutable $at): void;
+
+    /** Date de création du lien iCal en service, ou null. */
+    public function icalTokenCreatedAt(string $artisanId): ?\DateTimeImmutable;
+
+    /** @return array{artisan_id: string, name: string}|null artisan dont le lien iCal porte cette empreinte */
+    public function artisanByIcalHash(string $hash): ?array;
+
     /** @return list<string> artisans qui ont au moins une plage récurrente */
     public function artisansWithRules(): array;
 

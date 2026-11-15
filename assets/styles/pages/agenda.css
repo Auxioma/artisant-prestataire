@@ -111,6 +111,12 @@
     .tm-agenda__switch-form p { margin: 0; font-size: 14px; color: var(--tm-ink); }
     .tm-agenda__holiday-list li { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--tm-line); font-size: 14px; color: var(--tm-navy); }
 
+    /* Synchronisation (lien iCal privé) */
+    .tm-agenda__sync { gap: var(--space-3); }
+    .tm-agenda__ical { display: grid; gap: 8px; padding: 12px; border-radius: 10px; background: var(--color-warning-bg); }
+    .tm-agenda__ical p { margin: 0; font-size: 14px; color: var(--tm-navy); }
+    .tm-agenda__ical-state { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; color: var(--tm-navy); }
+
     /* Colonne */
     .tm-agenda__side h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 17px; color: var(--tm-navy); }
     .tm-agenda__side h2 svg { color: var(--tm-orange); }

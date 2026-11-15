@@ -41,6 +41,7 @@
                                 <p class="tm-profile__fine">Le badge ne garantit pas la qualité des travaux ; il atteste de l’existence de l’entreprise et de ses justificatifs à la date du contrôle.</p>
                             </div>
                         </details>
+                        {% if p.availableSoon %}<twig:Badge variant="available" />{% endif %}
                         <twig:Badge variant="new">Nouveau</twig:Badge>
                         <span class="tm-profile__no-review">Aucun avis pour le moment</span>
                     </div>
@@ -192,7 +193,10 @@
         <aside class="tm-profile__aside" id="contact" aria-labelledby="contact-title">
             <div class="tm-profile__contact">
                 <h2 id="contact-title">Contacter {{ p.name }}</h2>
-                {% if tm_route_exists('request_new') %}<twig:Button href="{{ path('request_new', {pro: p.profileId}) }}" icon="fileEuro" iconPosition="start">Demander un devis</twig:Button>{% endif %}
+                {% if not p.acceptsDirectRequests %}
+                    <p class="tm-profile__paused"><twig:Icon name="clock" size="xs" />{{ p.name }} ne prend pas de nouvelles demandes pour le moment.</p>
+                    {% if tm_route_exists('request_new') %}<twig:Button href="{{ path('request_new') }}" variant="secondary" icon="fileEuro" iconPosition="start">Demander des devis à d’autres professionnels</twig:Button>{% endif %}
+                {% elseif tm_route_exists('request_new') %}<twig:Button href="{{ path('request_new', {pro: p.profileId}) }}" icon="fileEuro" iconPosition="start">Demander un devis</twig:Button>{% endif %}
                 {% if tm_route_exists('client_message_new') and not is_granted('ROLE_ARTISAN') %}<twig:Button href="{{ path('client_message_new', {artisan: p.profileId}) }}" variant="secondary" icon="msg" iconPosition="start">Poser une question</twig:Button>{% endif %}
                 {% if p.phoneAvailable %}
                     <div class="tm-profile__phone" data-controller="phone-reveal">
@@ -240,6 +244,7 @@
                                 location="{{ a.communeName ? a.communeName ~ (a.departmentCode ? ' (' ~ a.departmentCode ~ ')') : '' }}"
                                 :rating="a.reviewsCount > 0 ? a.ratingAverage : null"
                                 :reviewsCount="a.reviewsCount"
+                                :available="a.available"
                                 photo="{{ a.hasLogo ? path('public_artisan_logo', {id: a.profileId}) : null }}"
                                 photoAlt="Logo de {{ a.name }}"
                                 :verified="true" />
