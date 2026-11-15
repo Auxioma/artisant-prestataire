@@ -107,4 +107,9 @@ final readonly class DbalInAppNotifications implements InAppNotifications
     {
         return DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM notification.in_app WHERE user_id = :u AND read_at IS NULL', ['u' => $userId]));
     }
+
+    public function forget(string $userId): void
+    {
+        $this->connection->executeStatement('DELETE FROM notification.in_app WHERE user_id = :u', ['u' => $userId]);
+    }
 }

@@ -10,6 +10,7 @@ use App\Identity\Domain\User\UserId;
 use App\Identity\Domain\User\UserRepository;
 use App\Identity\Domain\User\UserStatus;
 use App\Shared\Domain\ValueObject\Email;
+use App\Shared\Infrastructure\Persistence\DbalValue;
 use Doctrine\ORM\EntityManagerInterface;
 
 final readonly class DoctrineUserRepository implements UserRepository
@@ -57,5 +58,13 @@ final readonly class DoctrineUserRepository implements UserRepository
             'UPDATE identity.user_account SET last_login_at = GREATEST(coalesce(last_login_at, :at), :at) WHERE id = :id',
             ['at' => $at->format('Y-m-d H:i:sP'), 'id' => $id->value],
         );
+    }
+
+    public function dueForErasure(\DateTimeImmutable $before): array
+    {
+        return array_map(static fn (mixed $id): UserId => new UserId(DbalValue::string($id)), $this->em->getConnection()->fetchFirstColumn(
+            "SELECT id FROM identity.user_account WHERE status = 'deletion_requested' AND deletion_requested_at <= :before ORDER BY deletion_requested_at",
+            ['before' => $before->format(\DATE_ATOM)],
+        ));
     }
 }

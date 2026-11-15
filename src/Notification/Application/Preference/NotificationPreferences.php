@@ -16,4 +16,7 @@ interface NotificationPreferences
     public function forChannel(string $userId, string $channel): array;
 
     public function save(string $userId, NotificationTopic $topic, string $channel, bool $enabled, \DateTimeImmutable $at): void;
+
+    /** RG-090 : préférences d'un compte effacé. */
+    public function forget(string $userId): void;
 }

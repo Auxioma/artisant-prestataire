@@ -24,4 +24,11 @@ interface QuoteRequestRepository
 
     /** RG-065 — une demande de même empreinte (métier + adresse) envoyée depuis `$since`, hors annulées et refusées. */
     public function hasDuplicateSince(DuplicateKey $key, \DateTimeImmutable $since): bool;
+
+    /**
+     * RG-090 : demandes du client encore actives (RequestStatus::ACTIVE).
+     *
+     * @return list<QuoteRequestId>
+     */
+    public function activeOfClient(string $clientId): array;
 }

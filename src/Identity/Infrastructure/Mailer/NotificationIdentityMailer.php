@@ -9,6 +9,7 @@ use App\Identity\Application\Port\IdentityMailer;
 use App\Notification\Application\Notification;
 use App\Notification\Application\Notifier;
 use App\Shared\Domain\ValueObject\Email;
+use Symfony\Component\HttpFoundation\UriSigner;
 use Symfony\Component\Routing\Exception\RouteNotFoundException;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
@@ -18,7 +19,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  */
 final readonly class NotificationIdentityMailer implements IdentityMailer
 {
-    public function __construct(private Notifier $notifier, private UrlGeneratorInterface $urls)
+    public function __construct(private Notifier $notifier, private UrlGeneratorInterface $urls, private UriSigner $signer)
     {
     }
 
@@ -104,6 +105,17 @@ final readonly class NotificationIdentityMailer implements IdentityMailer
             'validite_jours' => $validityDays,
             'expiration' => $expiresAt,
         ], $this->urls->generate('client_data')));
+    }
+
+    public function sendDeletionRequested(Email $to, string $firstName, string $userId, \DateTimeImmutable $effectiveAt): void
+    {
+        $cancel = $this->signer->sign($this->urls->generate('identity_deletion_cancel', ['user' => $userId], UrlGeneratorInterface::ABSOLUTE_URL), $effectiveAt);
+        $this->notify('E-08', $to, ['prenom' => $firstName, 'date_effacement' => $effectiveAt, 'lien_annulation' => $cancel, 'lien_aide' => $this->absolute('content_contact')]);
+    }
+
+    public function sendAccountDeleted(Email $to, string $firstName): void
+    {
+        $this->notify('E-09', $to, ['prenom' => $firstName, 'lien_aide' => $this->absolute('content_contact')]);
     }
 
     private function absolute(string $route): string

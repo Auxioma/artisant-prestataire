@@ -68,6 +68,14 @@ final readonly class DbalDataExports implements DataExports
         $this->connection->executeStatement("UPDATE identity.data_export SET status = 'expired', file_id = NULL WHERE id = :id", ['id' => $id]);
     }
 
+    public function forget(string $userId): array
+    {
+        $files = array_map(DbalValue::string(...), $this->connection->fetchFirstColumn('SELECT file_id FROM identity.data_export WHERE user_id = :u AND file_id IS NOT NULL', ['u' => $userId]));
+        $this->connection->executeStatement('DELETE FROM identity.data_export WHERE user_id = :u', ['u' => $userId]);
+
+        return $files;
+    }
+
     /** @param array<string, mixed> $r */
     private static function view(array $r): DataExportView
     {

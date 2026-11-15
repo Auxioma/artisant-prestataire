@@ -27,4 +27,7 @@ interface InAppNotifications
     public function link(string $userId, string $id): ?string;
 
     public function purgeBefore(\DateTimeImmutable $before): int;
+
+    /** RG-090 : notifications d'un compte effacé. */
+    public function forget(string $userId): void;
 }

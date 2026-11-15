@@ -58,6 +58,15 @@ final readonly class DoctrineQuoteRequestRepository implements QuoteRequestRepos
         ));
     }
 
+    public function activeOfClient(string $clientId): array
+    {
+        return array_map(static fn (mixed $id): QuoteRequestId => new QuoteRequestId(DbalValue::string($id)), $this->em->getConnection()->fetchFirstColumn(
+            'SELECT id FROM request.quote_request WHERE client_id = :client AND status IN (:statuses) ORDER BY submitted_at',
+            ['client' => $clientId, 'statuses' => array_map(static fn (RequestStatus $s): string => $s->value, RequestStatus::ACTIVE)],
+            ['statuses' => ArrayParameterType::STRING],
+        ));
+    }
+
     public function hasDuplicateSince(DuplicateKey $key, \DateTimeImmutable $since): bool
     {
         return false !== $this->em->getConnection()->fetchOne(

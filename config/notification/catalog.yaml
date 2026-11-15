@@ -42,10 +42,12 @@ notifications:
         label: "Demande de suppression de compte enregistrée"
         recipient: "Tous"
         channels: [email]
+        variables: [prenom, date_effacement, lien_annulation, lien_aide]
     'E-09':
         label: "Suppression de compte effective"
         recipient: "Tous"
         channels: [email]
+        variables: [prenom, lien_aide]
     'E-10':
         label: "Demande de devis envoyée (récapitulatif)"
         recipient: "Client"

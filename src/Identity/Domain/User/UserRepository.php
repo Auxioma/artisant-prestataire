@@ -23,4 +23,11 @@ interface UserRepository
      * clic, plusieurs appareils) sont légitimes et ne doivent pas échouer ; la date la plus récente est conservée.
      */
     public function recordLogin(UserId $id, \DateTimeImmutable $at): void;
+
+    /**
+     * RG-090 : comptes dont la suppression a été demandée avant `$before` (délai de rétractation écoulé).
+     *
+     * @return list<UserId>
+     */
+    public function dueForErasure(\DateTimeImmutable $before): array;
 }

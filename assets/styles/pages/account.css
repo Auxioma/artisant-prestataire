@@ -128,3 +128,10 @@
     .tm-account__card > p { margin: 0; font-size: 15px; color: var(--tm-navy); }
     .tm-account__actions--start { justify-content: flex-start; }
 }
+
+/* C07.4 « Supprimer mon compte » */
+@layer components {
+    .tm-account__danger { border-color: var(--tm-red-soft); }
+    .tm-account__danger .tm-account__title .tm-icon { color: var(--tm-red); }
+    .tm-account__consequences { display: grid; gap: 6px; margin: 0; padding-left: 20px; font-size: 15px; color: var(--tm-navy); }
+}

@@ -83,4 +83,9 @@ final readonly class DbalFavorites implements Favorites
 
         return '' === $raw ? [] : array_values(array_filter(explode(',', $raw), static fn (string $id): bool => 1 === preg_match(self::UUID, $id)));
     }
+
+    public function forget(string $userId): void
+    {
+        $this->connection->executeStatement('DELETE FROM search.favorite WHERE user_id = :u', ['u' => $userId]);
+    }
 }

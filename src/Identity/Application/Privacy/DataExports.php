@@ -21,4 +21,11 @@ interface DataExports
     public function expiredBefore(\DateTimeImmutable $now): array;
 
     public function markExpired(string $id): void;
+
+    /**
+     * RG-090 : supprime les demandes d'export d'un compte effacé.
+     *
+     * @return list<string> fichiers encore présents, à détruire
+     */
+    public function forget(string $userId): array;
 }

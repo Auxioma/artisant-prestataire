@@ -20,4 +20,7 @@ interface Favorites
      * @return list<FavoriteView>
      */
     public function of(string $userId): array;
+
+    /** RG-090 : tous les favoris d'un compte effacé. */
+    public function forget(string $userId): void;
 }

@@ -113,6 +113,23 @@ final class ClientProfile
         $this->updatedAt = $now;
     }
 
+    /** RG-090 : effacement — ne restent que le code postal (statistiques) et les dates ; renvoie la photo à détruire. */
+    public function erase(\DateTimeImmutable $now): ?string
+    {
+        $avatar = $this->avatarFileId;
+        $this->type = ClientType::Individual;
+        $this->companyName = null;
+        $this->siret = null;
+        $this->siretVerified = false;
+        $this->avatarFileId = null;
+        $this->searchRadiusKm = null;
+        $this->interests = [];
+        $this->newsletterOptInAt = null;
+        $this->updatedAt = $now;
+
+        return $avatar;
+    }
+
     public function avatarFileId(): ?string
     {
         return $this->avatarFileId;

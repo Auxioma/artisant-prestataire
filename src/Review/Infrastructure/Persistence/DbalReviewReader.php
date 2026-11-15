@@ -16,7 +16,7 @@ final readonly class DbalReviewReader implements ReviewReader
     private const string VIEW = <<<'SQL'
         SELECT v.*, r.number AS request_number, r.title AS request_title, cm.name AS city,
                coalesce(p.trade_name, p.company_name, 'Professionnel') AS artisan_name,
-               coalesce(uc.first_name, 'Client') AS client_first_name, left(uc.last_name, 1) AS client_last_initial,
+               CASE WHEN uc.status = 'anonymized' THEN 'Client vérifié' ELSE coalesce(uc.first_name, 'Client') END AS client_first_name, CASE WHEN uc.status = 'anonymized' THEN NULL ELSE left(uc.last_name, 1) END AS client_last_initial,
                coalesce((SELECT jsonb_agg(f.id ORDER BY ph.ord) FROM jsonb_array_elements_text(v.photos) WITH ORDINALITY ph(id, ord)
                          JOIN shared.stored_file f ON f.id = ph.id::uuid AND f.status = 'available'), '[]'::jsonb) AS available_photos
         FROM review.review v

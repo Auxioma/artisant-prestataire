@@ -81,4 +81,9 @@ final readonly class DbalKnownDevices implements KnownDevices
             ['u' => $userId, 'h' => $deviceHash],
         );
     }
+
+    public function forget(string $userId): void
+    {
+        $this->connection->executeStatement('DELETE FROM identity.session_device WHERE user_id = :u', ['u' => $userId]);
+    }
 }

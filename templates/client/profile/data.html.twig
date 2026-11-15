@@ -1,6 +1,7 @@
 {#-
     C07.4 « Mes données » : onglet de C07 (Figma 231:12840, mêmes cartes — pas de maquette dédiée, P-125).
-    « Télécharger mes données » : archive JSON + PDF lisible, générée sous 24 h, lien valable 7 jours (E-07).
+    « Télécharger mes données » : archive JSON + PDF lisible, générée sous 24 h, lien valable 7 jours (E-07) ;
+    « Supprimer mon compte » : conséquences listées, modale avec mot de passe (RG-090, E-08). Écarts : P-125, P-126.
 -#}
 {% extends 'client/_space.html.twig' %}
 {% set space_active = 'profile' %}
@@ -32,5 +33,30 @@
             <p class="tm-caption">Une demande par 24 heures. Le lien de téléchargement reste valable 7 jours, puis l’archive est détruite.</p>
         {% endif %}
     </section>
+    <section class="tm-account__card tm-account__danger" aria-labelledby="delete_title">
+        <h2 id="delete_title" class="tm-account__title"><twig:Icon name="alert" class="tm-icon--inherit" />Supprimer mon compte</h2>
+        <p>Votre compte est désactivé dès la demande, puis effacé définitivement après {{ grace_days }} jours ; vous pouvez annuler pendant ce délai grâce au lien reçu par e-mail.</p>
+        <ul class="tm-account__consequences">
+            <li>Vos demandes en cours sont annulées et les professionnels concernés en sont informés.</li>
+            <li>Vos données personnelles (identité, coordonnées, photo, favoris, préférences) sont effacées.</li>
+            <li>Vos avis restent publiés sous la mention « Client vérifié », sans votre nom.</li>
+            <li>Seules les preuves exigées par la loi sont conservées (acceptation des conditions, journaux de sécurité pendant un an).</li>
+        </ul>
+        <div class="tm-account__actions tm-account__actions--start">
+            <twig:Button variant="danger" icon="x" iconPosition="start" data-controller="modal-opener" data-modal-opener-dialog-value="suppression-compte" data-action="modal-opener#open">Supprimer mon compte</twig:Button>
+        </div>
+        <noscript><p class="tm-caption">Activez JavaScript pour confirmer la suppression, ou contactez-nous.</p></noscript>
+    </section>
+    <twig:Modal id="suppression-compte" title="Supprimer définitivement mon compte ?">
+        <form method="post" action="{{ path('client_account_delete') }}" class="tm-account__stack" novalidate>
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            <p class="tm-body-sm">Votre compte sera désactivé immédiatement et effacé dans {{ grace_days }} jours. Saisissez votre mot de passe pour confirmer.</p>
+            {% include 'client/profile/_password.html.twig' with {id: 'delete_password', name: 'password', label: 'Mot de passe', autocomplete: 'current-password', error: null} %}
+            <div class="tm-account__actions">
+                <twig:Button type="button" variant="secondary" data-action="modal#close">Garder mon compte</twig:Button>
+                <twig:Button type="submit" variant="danger">Supprimer mon compte</twig:Button>
+            </div>
+        </form>
+    </twig:Modal>
 </div>
 {% endblock %}

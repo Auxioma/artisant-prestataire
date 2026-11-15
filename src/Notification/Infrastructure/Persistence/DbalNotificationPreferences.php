@@ -43,4 +43,9 @@ final readonly class DbalNotificationPreferences implements NotificationPreferen
             ['u' => $userId, 't' => $topic->value, 'c' => $channel, 'e' => $enabled ? 'true' : 'false', 'at' => $at->format(\DATE_ATOM)],
         );
     }
+
+    public function forget(string $userId): void
+    {
+        $this->connection->executeStatement('DELETE FROM notification.preference WHERE user_id = :u', ['u' => $userId]);
+    }
 }

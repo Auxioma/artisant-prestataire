@@ -31,6 +31,9 @@ use App\Shared\Domain\Text\FrenchNumber;
  */
 final readonly class NotifyQuoteDecision implements EventHandler
 {
+    /** Motif affiché à l'artisan quand le client annule sa demande ou supprime son compte (RG-121, RG-090). */
+    private const string REQUEST_CANCELLED = 'demande annulée par le client';
+
     public function __construct(
         private QuoteRepository $quotes,
         private QuoteRequestRepository $requests,
@@ -44,7 +47,7 @@ final readonly class NotifyQuoteDecision implements EventHandler
     public function __invoke(QuoteStatusChanged $event): void
     {
         $to = QuoteStatus::tryFrom($event->to);
-        if (!\in_array($to, [QuoteStatus::Viewed, QuoteStatus::Accepted, QuoteStatus::Refused, QuoteStatus::NotSelected], true)
+        if (!\in_array($to, [QuoteStatus::Viewed, QuoteStatus::Accepted, QuoteStatus::Refused, QuoteStatus::NotSelected, QuoteStatus::RequestCancelled], true)
             || (QuoteStatus::NotSelected === $to && !$this->settings->bool(SettingKey::QuotesAutoNotifyNotSelected))) {
             return;
         }
@@ -62,7 +65,8 @@ final readonly class NotifyQuoteDecision implements EventHandler
             return;
         }
         if (QuoteStatus::Accepted !== $to) {
-            $this->mailer->quoteDeclined($artisan->email, $artisan->firstName, $account->userId, $event->requestId, $number, $request->number(), QuoteStatus::Refused === $to, $quote->decisionReason());
+            $cancelled = QuoteStatus::RequestCancelled === $to;
+            $this->mailer->quoteDeclined($artisan->email, $artisan->firstName, $account->userId, $event->requestId, $number, $request->number(), QuoteStatus::Refused === $to || $cancelled, $cancelled ? self::REQUEST_CANCELLED : $quote->decisionReason());
 
             return;
         }

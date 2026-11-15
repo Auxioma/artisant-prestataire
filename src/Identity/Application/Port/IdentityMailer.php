@@ -41,4 +41,10 @@ interface IdentityMailer
 
     /** E-07 : archive « Mes données » prête (lien vers l'espace, valable jusqu'à `$expiresAt`). */
     public function sendDataExportReady(Email $to, string $firstName, string $userId, int $validityDays, \DateTimeImmutable $expiresAt): void;
+
+    /** E-08 : demande de suppression enregistrée, date d'effacement et lien d'annulation (valable jusqu'à cette date). */
+    public function sendDeletionRequested(Email $to, string $firstName, string $userId, \DateTimeImmutable $effectiveAt): void;
+
+    /** E-09 : compte effacé (envoyé à l'adresse d'origine, avant anonymisation). */
+    public function sendAccountDeleted(Email $to, string $firstName): void;
 }

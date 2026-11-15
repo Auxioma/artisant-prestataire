@@ -30,4 +30,7 @@ interface KnownDevices
     public function revoke(string $userId, ?string $deviceId, ?string $keepHash, \DateTimeImmutable $at): int;
 
     public function isRevoked(string $userId, string $deviceHash): bool;
+
+    /** RG-090 : effacement des appareils d'un compte supprimé. */
+    public function forget(string $userId): void;
 }
