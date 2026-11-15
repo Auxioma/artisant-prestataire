@@ -385,6 +385,29 @@
         .tm-fav__actions { flex-direction: column; align-items: stretch; }
     }
 
+    /* C08 « Notifications » : barre, filtres, liste (non lues en gras, pastille) */
+    .tm-notif { display: grid; gap: var(--space-4); }
+    .tm-notif__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+    .tm-notif__bar p { margin: 0; }
+    .tm-notif__filters { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tm-notif__filters a { display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px; border: 1px solid var(--tm-line); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--tm-navy); font-size: 15px; font-weight: var(--font-weight-medium); text-decoration: none; }
+    .tm-notif__filters a[aria-current="page"] { border-color: var(--tm-blue); background: var(--tm-blue-soft); color: var(--tm-blue); }
+    .tm-notif__filters a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-notif__list { margin: 0; padding: 0; overflow: hidden; border: 1px solid var(--tm-line); border-radius: 12px; background: var(--color-surface); list-style: none; }
+    .tm-notif__list li + li { border-top: 1px solid var(--tm-line); }
+    .tm-notif__list a { display: flex; align-items: center; gap: 14px; padding: 16px 20px; color: var(--tm-navy); text-decoration: none; }
+    .tm-notif__list a:focus-visible { outline: none; box-shadow: inset var(--focus-ring); }
+    .tm-notif__list .is-unread a { background: var(--tm-blue-soft); }
+    .tm-notif__icon { display: inline-grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: 50%; background: var(--color-surface); color: var(--tm-blue); }
+    .tm-notif__icon.is-rendez-vous { color: var(--tm-orange); }
+    .tm-notif__icon.is-avis { color: var(--tm-green); }
+    .tm-notif__icon.is-compte { color: var(--tm-muted); }
+    .tm-notif__text { display: grid; flex: 1; min-width: 0; gap: 2px; }
+    .tm-notif__body { font-size: 15px; line-height: 21px; overflow-wrap: anywhere; }
+    .tm-notif__list .is-unread .tm-notif__body { font-weight: var(--font-weight-semibold); }
+    .tm-notif__text time { font-size: 13px; color: var(--tm-ink); }
+    .tm-notif__dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--tm-blue); }
+
     /* Colonne */
     .tm-agenda__side h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 17px; color: var(--tm-navy); }
     .tm-agenda__side h2 svg { color: var(--tm-orange); }

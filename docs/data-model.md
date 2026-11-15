@@ -208,7 +208,7 @@ Registre commun à tous les fichiers (justificatifs, photos de demande, d'avis e
 | `template` | code (`E-01`…`E-48`, `I-01`), label, recipient, channels (`email`/`in_app`/`sms`), variables, subject, preheader, body_html, body_text, in_app_body (syntaxe Twig en **bac à sable**), active, version, customized, updated_at, updated_by | **CK** e-mail actif ⇒ objet + corps HTML et texte ; chargé par `app:notification:sync` (un modèle `customized` n'est jamais écrasé) |
 | `template_version` | code, version, contenus, created_at, created_by | **PK** (code, version) · ajout seul (trigger) |
 | `delivery` | id, code, template_version, channel, user_id, recipient_hash, recipient_masked (`c***@domaine`), status (`queued`/`sent`/`delivered`/`opened`/`bounced`/`complained`/`failed`/`skipped`), provider_message_id, error, created_at, updated_at | **aucune adresse en clair** · IX (created_at), (user_id), (recipient_hash), (provider_message_id) |
-| `in_app` | id, user_id, code, body, link (chemin interne), created_at, read_at | IX non lues par utilisateur |
+| `in_app` | id, user_id, code, body, link (chemin interne seul, ≤ 500 caractères, URL absolue ramenée au chemin — T-705b), created_at, read_at | IX non lues par utilisateur ; centre C08 ; purge nocturne > 90 jours |
 
 ## 2bis. Mapping Doctrine (T-112)
 
