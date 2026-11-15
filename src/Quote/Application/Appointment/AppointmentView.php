@@ -31,7 +31,14 @@ final readonly class AppointmentView
         public ?string $note,
         public ?string $cancelledBy,
         public ?string $cancelReason,
+        public ?string $clientLastName = null,
     ) {
+    }
+
+    /** Nom du client (prénom et nom : coordonnées révélées à l'acceptation du devis, RG-022bis). */
+    public function clientName(): string
+    {
+        return trim(($this->clientFirstName ?? 'Client').' '.($this->clientLastName ?? ''));
     }
 
     public function statusLabel(): string

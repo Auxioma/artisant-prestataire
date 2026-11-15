@@ -18,7 +18,7 @@ final readonly class DbalAppointmentReader implements AppointmentReader, Appoint
     private const string PARTIES = <<<'SQL'
         SELECT q.id AS quote_id, coalesce(q.number, '') AS quote_number, q.status AS quote_status, r.id AS request_id, r.number AS request_number, r.title AS request_title,
                cm.name AS city, p.id AS artisan_id, p.user_id AS artisan_user_id, coalesce(p.trade_name, p.company_name, 'Professionnel') AS artisan_name,
-               ua.email AS artisan_email, ua.first_name AS artisan_first_name, r.client_id AS client_user_id, uc.email AS client_email, uc.first_name AS client_first_name
+               ua.email AS artisan_email, ua.first_name AS artisan_first_name, r.client_id AS client_user_id, uc.email AS client_email, uc.first_name AS client_first_name, uc.last_name AS client_last_name
         FROM quote.quote q
         JOIN request.quote_request r ON r.id = q.request_id
         JOIN artisan.artisan_profile p ON p.id = q.artisan_id
@@ -117,6 +117,28 @@ final readonly class DbalAppointmentReader implements AppointmentReader, Appoint
         return false === $r ? $zero : array_map(static fn (mixed $v): int => DbalValue::int($v), array_intersect_key($r, $zero)) + $zero;
     }
 
+    public function toSchedule(string $artisanUserId): array
+    {
+        if (1 !== preg_match(self::UUID, $artisanUserId)) {
+            return [];
+        }
+
+        return array_map(static fn (array $r): array => [
+            'quote_id' => DbalValue::string($r['quote_id']),
+            'request_id' => DbalValue::string($r['request_id']),
+            'request_number' => DbalValue::string($r['request_number']),
+            'request_title' => DbalValue::nullableString($r['request_title']),
+            'client_name' => trim(DbalValue::nullableString($r['client_first_name']).' '.DbalValue::nullableString($r['client_last_name'])),
+            'city' => DbalValue::nullableString($r['city']),
+        ], $this->connection->fetchAllAssociative(
+            'SELECT x.* FROM ('.self::PARTIES.") x JOIN request.quote_request rr ON rr.id = x.request_id
+             WHERE x.artisan_user_id = :u AND x.quote_status = 'accepted' AND rr.status = 'awarded'
+               AND NOT EXISTS (SELECT 1 FROM quote.appointment a WHERE a.quote_id = x.quote_id AND a.status IN ('proposed', 'confirmed', 'completed'))
+             ORDER BY x.request_number",
+            ['u' => $artisanUserId],
+        ));
+    }
+
     /** @param array<string, mixed> $r */
     private static function view(array $r): AppointmentView
     {
@@ -146,6 +168,7 @@ final readonly class DbalAppointmentReader implements AppointmentReader, Appoint
             DbalValue::nullableString($r['note']),
             DbalValue::nullableString($r['cancelled_by']),
             DbalValue::nullableString($r['cancel_reason']),
+            DbalValue::nullableString($r['client_last_name']),
         );
     }
 }

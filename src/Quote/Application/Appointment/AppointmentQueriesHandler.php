@@ -27,6 +27,7 @@ final readonly class AppointmentQueriesHandler implements QueryHandler
                 $this->reader->forUser($query->userId, $query->party, $filter, trim($query->query), $now),
                 $this->reader->counts($query->userId, $query->party, $now),
                 $this->reader->forUser($query->userId, $query->party, 'upcoming', '', $now),
+                'artisan' === $query->party ? $this->reader->toSchedule($query->userId) : [],
             );
         }
         $parties = $this->parties->ofQuote($query->quoteId);

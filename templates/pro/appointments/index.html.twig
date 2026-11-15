@@ -1,0 +1,123 @@
+{#-
+    PR06 « Mes rendez-vous » (Figma 232:13148) : en-tête, indicateurs (aujourd'hui, semaine, mois, à confirmer, à
+    planifier), affichage liste / calendrier (agenda), recherche, onglets, tableau (date et heure, client et téléphone,
+    chantier, lieu, statut, actions) ; colonne : agenda du jour, actions rapides. Devis acceptés à planifier. Écarts : P-116.
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'appointments' %}
+{% block title %}Mes rendez-vous — Espace pro — TrouveMoi{% endblock %}
+{% set party = 'artisan' %}
+{% set retour = app.request.requestUri %}
+{% set day_names = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'] %}
+{% set months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'] %}
+{% block space_content %}
+<div class="tm-agenda tm-rdv tm-prdv">
+    <header class="tm-agenda__head">
+        <div class="tm-pro-head">
+            <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="calendar" class="tm-icon--inherit" /></span>
+            <div>
+                <h1>Mes rendez-vous</h1>
+                <p>Planifiez, suivez et gérez tous vos rendez-vous clients et chantiers.</p>
+            </div>
+        </div>
+        <twig:Button href="#a-planifier" icon="plus" iconPosition="start">Ajouter un rendez-vous</twig:Button>
+    </header>
+
+    <div class="tm-agenda__main">
+        <ul class="tm-agenda__kpis tm-prdv__kpis" aria-label="Indicateurs">
+            <li class="is-green"><twig:Icon name="calCheck" class="tm-icon--inherit" /><span><strong>{{ view.countIn('day', today) }}</strong>Rendez-vous aujourd’hui</span></li>
+            <li class="is-blue"><twig:Icon name="calendar" class="tm-icon--inherit" /><span><strong>{{ view.countIn('week', today) }}</strong>Cette semaine</span></li>
+            <li class="is-violet"><twig:Icon name="calendar" class="tm-icon--inherit" /><span><strong>{{ view.countIn('month', today) }}</strong>Ce mois-ci</span></li>
+            <li class="is-orange"><twig:Icon name="alert" class="tm-icon--inherit" /><span><strong>{{ view.counts.pending }}</strong>À confirmer</span></li>
+            <li class="is-red"><twig:Icon name="x" class="tm-icon--inherit" /><span><strong>{{ view.toSchedule|length }}</strong>À planifier</span></li>
+        </ul>
+
+        <div class="tm-agenda__bar">
+            <nav class="tm-agenda__views" aria-label="Affichage">
+                <a href="{{ path('pro_appointments') }}" aria-current="page"><twig:Icon name="menu" size="xs" class="tm-icon--inherit" />Vue liste</a>
+                <a href="{{ path('pro_availability') }}"><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />Vue calendrier</a>
+                <a href="{{ path('pro_availability', {vue: 'liste'}) }}"><twig:Icon name="grid" size="xs" class="tm-icon--inherit" />Vue planning</a>
+            </nav>
+        </div>
+        <form method="get" class="tm-rdv__search" role="search">
+            {% if tab != 'a-venir' %}<input type="hidden" name="onglet" value="{{ tab }}">{% endif %}
+            <div class="tm-field__control"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><label class="tm-visually-hidden" for="rdv-q">Rechercher un rendez-vous</label><input class="tm-field__input" id="rdv-q" name="q" type="search" value="{{ q }}" placeholder="Rechercher un rendez-vous (client, chantier…)"></div>
+        </form>
+        <nav class="tm-pro-tabs tm-agenda__tabs" aria-label="Filtrer les rendez-vous">
+            {% for key, label in {'a-venir': 'À venir', passes: 'Passés', annules: 'Annulés'} %}
+                <a href="{{ path('pro_appointments', key == 'a-venir' ? {} : {onglet: key}) }}"{% if tab == key %} aria-current="page"{% endif %}>{{ label }} ({{ view.counts[{'a-venir': 'upcoming', passes: 'past', annules: 'cancelled'}[key]] }})</a>
+            {% endfor %}
+        </nav>
+
+        {% if view.rows is empty %}
+            <div class="tm-pro-card"><twig:EmptyState title="{{ {'a-venir': 'Aucun rendez-vous à venir', passes: 'Aucun rendez-vous passé', annules: 'Aucun rendez-vous annulé'}[tab] }}" text="Proposez un créneau de votre agenda à vos clients dont le devis est accepté." icon="calendar" /></div>
+        {% else %}
+            <div class="tm-prdv__scroll">
+                <table class="tm-prdv__table">
+                    <caption class="tm-visually-hidden">Rendez-vous</caption>
+                    <thead><tr><th scope="col">Date &amp; heure</th><th scope="col">Client</th><th scope="col">Chantier / Objet</th><th scope="col">Lieu</th><th scope="col">Statut</th><th scope="col">Actions</th></tr></thead>
+                    <tbody>
+                        {% for a in view.rows %}
+                            <tr>
+                                <td><span class="tm-prdv__date"><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" /><span><strong>{{ day_names[a.startsAt|date('N', 'Europe/Paris') - 1] }} {{ a.startsAt|date('j', 'Europe/Paris') }} {{ months[a.startsAt|date('n', 'Europe/Paris') - 1] }}</strong>{{ a.startsAt|date('H:i', 'Europe/Paris') }} – {{ a.endsAt|date('H:i', 'Europe/Paris') }}</span></span></td>
+                                <td><strong>{{ a.clientName() }}</strong>{% if phones[a.clientUserId] ?? null %}<a class="tm-prdv__phone" href="tel:{{ phones[a.clientUserId]|replace({' ': ''}) }}"><twig:Icon name="phone" size="xs" class="tm-icon--inherit" />{{ phones[a.clientUserId] }}</a>{% endif %}</td>
+                                <td><strong>{{ a.requestTitle ?? ('Demande ' ~ a.requestNumber) }}</strong><span class="tm-caption">Devis {{ a.quoteNumber }}{% if a.note %} · {{ a.note }}{% endif %}</span></td>
+                                <td>{{ a.city ?? '—' }}</td>
+                                <td><span class="tm-rdv__status is-{{ a.status }}"><twig:Icon name="{{ a.status == 'proposed' ? 'hourglass' : (a.status in ['cancelled', 'expired'] ? 'x' : 'check') }}" size="xs" class="tm-icon--inherit" />{{ a.status == 'proposed' ? (a.awaits(party) ? 'À confirmer' : 'Proposé au client') : a.statusLabel() }}</span>{% if a.cancelReason %}<span class="tm-caption">{{ a.cancelReason }}</span>{% endif %}</td>
+                                <td>
+                                    <div class="tm-prdv__icons">
+                                        <a href="{{ path('pro_request', {id: a.requestId}) }}" title="Voir la demande"><twig:Icon name="eye" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Voir la demande</span></a>
+                                        {% if tm_route_exists('pro_message_new') %}<a href="{{ path('pro_message_new', {demande: a.requestId}) }}" title="Écrire au client"><twig:Icon name="msg" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Écrire au client</span></a>{% endif %}
+                                    </div>
+                                    {{ include('appointments/_actions.html.twig', {appointment: a}) }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="tm-caption">{{ view.rows|length }} rendez-vous affiché{{ view.rows|length > 1 ? 's' }}</p>
+        {% endif %}
+
+        <section class="tm-pro-card tm-prdv__todo" id="a-planifier" aria-labelledby="planifier-titre">
+            <h2 id="planifier-titre" class="tm-agenda__title"><twig:Icon name="plus" size="sm" class="tm-icon--inherit" />Devis acceptés à planifier</h2>
+            {% if view.toSchedule is empty %}
+                <p class="tm-caption">Tous vos devis acceptés ont un rendez-vous. Les nouveaux apparaîtront ici dès leur acceptation.</p>
+            {% else %}
+                <ul>
+                    {% for t in view.toSchedule %}
+                        <li>
+                            <span><strong>{{ t.client_name }}</strong> — {{ t.request_title ?? ('Demande ' ~ t.request_number) }}{% if t.city %} · {{ t.city }}{% endif %}</span>
+                            <twig:Button href="{{ path('pro_appointment_new', {devis: t.quote_id}) }}" variant="secondary" icon="calendar" iconPosition="start">Proposer un créneau</twig:Button>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+    </div>
+
+    <aside class="tm-agenda__side">
+        <section class="tm-pro-card tm-prdv__day" aria-labelledby="jour-titre">
+            <h2 id="jour-titre"><twig:Icon name="calendar" size="sm" class="tm-icon--inherit" />Mon agenda du jour</h2>
+            <p class="tm-caption">{{ ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'][today|date('N', 'Europe/Paris') - 1] }} {{ today|date('j', 'Europe/Paris') }} {{ months[today|date('n', 'Europe/Paris') - 1] }} {{ today|date('Y', 'Europe/Paris') }}</p>
+            {% set todays = view.on(today) %}
+            {% if todays is empty %}
+                <p class="tm-caption">Aucun rendez-vous aujourd’hui.</p>
+            {% else %}
+                <ul>
+                    {% for a in todays %}<li><time>{{ a.startsAt|date('H:i', 'Europe/Paris') }}</time><span class="is-{{ a.status }}"><strong>{{ a.clientName() }}</strong>{{ a.requestTitle ?? ('Demande ' ~ a.requestNumber) }}</span></li>{% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+        <section class="tm-pro-card tm-agenda__quick" aria-labelledby="actions-titre">
+            <h2 id="actions-titre"><twig:Icon name="zap" size="sm" class="tm-icon--inherit" />Actions rapides</h2>
+            <ul>
+                <li><a href="#a-planifier"><twig:Icon name="plus" size="xs" class="tm-icon--inherit" />Planifier un rendez-vous</a></li>
+                {% if tm_route_exists('pro_agenda_sync') %}<li><a href="{{ path('pro_agenda_sync') }}"><twig:Icon name="refresh" size="xs" class="tm-icon--inherit" />Synchroniser mon agenda</a></li>{% endif %}
+                <li><a href="{{ path('pro_availability') }}"><twig:Icon name="calCheck" size="xs" class="tm-icon--inherit" />Gérer mes disponibilités</a></li>
+            </ul>
+        </section>
+        {{ include('appointments/_month.html.twig', {route: 'pro_appointments'}) }}
+    </aside>
+</div>
+{% endblock %}

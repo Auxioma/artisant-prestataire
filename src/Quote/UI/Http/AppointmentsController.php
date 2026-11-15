@@ -66,7 +66,17 @@ abstract class AppointmentsController extends AbstractController
             'today' => $this->clock->now()->setTimezone($zone),
             'space' => $this->space(),
             'csrf_id' => self::CSRF,
-        ]);
+        ] + $this->extra($view));
+    }
+
+    /**
+     * Données propres à l'espace (téléphones des clients côté artisan…).
+     *
+     * @return array<string, mixed>
+     */
+    protected function extra(MyAppointmentsView $view): array
+    {
+        return [];
     }
 
     protected function book(Request $request): Response

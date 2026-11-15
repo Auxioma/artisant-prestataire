@@ -197,6 +197,36 @@
         .tm-rdv__buttons, .tm-rdv__card .tm-rdv-actions, .tm-rdv__reason { grid-column: 1 / -1; }
     }
 
+    /* PR06 « Mes rendez-vous » (artisan) : tableau, agenda du jour, devis à planifier */
+    .tm-agenda__kpis .is-red { background: var(--tm-red-soft); }
+    .tm-agenda__kpis .is-red > svg { color: var(--tm-red); }
+    .tm-prdv__scroll { position: relative; overflow-x: auto; border: 1px solid var(--tm-line); border-radius: 12px; background: var(--color-surface); }
+    .tm-prdv__table { width: 100%; min-width: 52rem; border-collapse: collapse; font-size: 13px; color: var(--tm-navy); }
+    .tm-prdv__table th { padding: 10px 12px; background: var(--tm-bg); font-weight: var(--font-weight-semibold); text-align: left; }
+    .tm-prdv__table td { padding: 10px 12px; border-top: 1px solid var(--tm-line); vertical-align: top; }
+    .tm-prdv__table td > strong, .tm-prdv__table td > .tm-caption, .tm-prdv__phone { display: block; }
+    .tm-prdv__date { display: flex; gap: 8px; white-space: nowrap; }
+    .tm-prdv__table td:nth-child(2) > strong { white-space: nowrap; }
+    .tm-prdv__date svg { margin-top: 2px; color: var(--tm-blue); }
+    .tm-prdv__date strong { display: block; }
+    .tm-prdv__phone { display: flex; align-items: center; gap: 4px; margin-top: 2px; color: var(--tm-ink); text-decoration: none; }
+    .tm-prdv__table .tm-rdv__status { white-space: nowrap; }
+    .tm-prdv__icons { display: flex; gap: 6px; margin-bottom: 6px; }
+    .tm-prdv__icons a { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; color: var(--tm-blue); }
+    .tm-prdv__icons a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-prdv__table .tm-rdv-actions .tm-button { min-height: 34px; padding-inline: 12px; font-size: 13px; }
+    .tm-prdv__todo { gap: var(--space-3); }
+    .tm-prdv__todo h2 { display: flex; align-items: center; gap: 8px; }
+    .tm-prdv__todo ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .tm-prdv__todo li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border: 1px solid var(--tm-line); border-radius: 10px; font-size: 14px; color: var(--tm-navy); }
+    .tm-prdv__day { gap: 8px; }
+    .tm-prdv__day ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .tm-prdv__day li { display: grid; grid-template-columns: 3rem minmax(0, 1fr); align-items: center; gap: 8px; }
+    .tm-prdv__day time { font-weight: var(--font-weight-bold); color: var(--tm-navy); }
+    .tm-prdv__day li > span { display: grid; padding: 8px 10px; border-radius: 8px; background: var(--color-success-bg); font-size: 12px; color: var(--tm-ink); }
+    .tm-prdv__day li > span.is-proposed { background: var(--tm-orange-soft); }
+    .tm-prdv__day strong { font-size: 13px; color: var(--tm-navy); }
+
     /* Colonne */
     .tm-agenda__side h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 17px; color: var(--tm-navy); }
     .tm-agenda__side h2 svg { color: var(--tm-orange); }
