@@ -1,0 +1,70 @@
+{#-
+    C07.2 « Sécurité » : onglet de C07 (Figma 231:12840, mêmes cartes et onglets — pas de maquette dédiée, P-124) :
+    adresse e-mail (confirmation par lien), mot de passe, appareils connectés.
+-#}
+{% extends 'client/_space.html.twig' %}
+{% set space_active = 'profile' %}
+{% set space_title = 'Sécurité' %}
+{% set space_subtitle = 'Adresse e-mail, mot de passe et appareils connectés.' %}
+{% block title %}Sécurité — Espace client — TrouveMoi{% endblock %}
+{% block space_content %}
+<div class="tm-account">
+    <h1 class="tm-visually-hidden">Sécurité du compte</h1>
+    {% include 'client/profile/_tabs.html.twig' with {current: 'securite'} %}
+    {% if errors is not empty %}<div class="tm-callout tm-account__error" role="alert">Modification non enregistrée : corrigez le champ signalé.</div>{% endif %}
+    <div class="tm-account__duo">
+        <section class="tm-account__card" aria-labelledby="email_title">
+            <h2 id="email_title" class="tm-account__title"><twig:Icon name="mail" class="tm-icon--inherit" />Adresse e-mail</h2>
+            <p class="tm-account__current">Adresse actuelle : <strong>{{ profile.email }}</strong>{% if profile.emailVerified %} <span class="tm-account__verified"><twig:Icon name="checkC" size="xs" class="tm-icon--inherit" />Vérifiée</span>{% endif %}</p>
+            <form method="post" action="{{ path('client_security_email') }}" class="tm-account__stack" novalidate>
+                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                <twig:Field id="newEmail" name="newEmail" type="email" label="Nouvelle adresse e-mail" required autocomplete="email" maxlength="254" value="{{ values.newEmail ?? null }}" error="{{ errors.newEmail ?? null }}" help="Un lien de confirmation lui sera envoyé ; l’adresse actuelle reste valable d’ici là." />
+                {% include 'client/profile/_password.html.twig' with {id: 'emailPassword', name: 'emailPassword', label: 'Mot de passe actuel', autocomplete: 'current-password', error: errors.emailPassword ?? null} %}
+                <twig:Button type="submit" variant="primary">Changer d’adresse e-mail</twig:Button>
+            </form>
+        </section>
+        <section class="tm-account__card" aria-labelledby="password_title">
+            <h2 id="password_title" class="tm-account__title"><twig:Icon name="lock" class="tm-icon--inherit" />Mot de passe</h2>
+            <form method="post" action="{{ path('client_security_password') }}" class="tm-account__stack" novalidate>
+                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                <input type="text" name="username" value="{{ profile.email }}" autocomplete="username" hidden>
+                {% include 'client/profile/_password.html.twig' with {id: 'currentPassword', name: 'currentPassword', label: 'Mot de passe actuel', autocomplete: 'current-password', error: errors.currentPassword ?? null} %}
+                {% include 'client/profile/_password.html.twig' with {id: 'newPassword', name: 'newPassword', label: 'Nouveau mot de passe', autocomplete: 'new-password', error: errors.newPassword ?? null} %}
+                {% include 'client/profile/_password.html.twig' with {id: 'confirmPassword', name: 'confirmPassword', label: 'Confirmer le nouveau mot de passe', autocomplete: 'new-password', error: errors.confirmPassword ?? null} %}
+                <p class="tm-caption">Au moins {{ tm_setting_int('auth.password_min_length') }} caractères ; une phrase de plusieurs mots est idéale. Vos autres appareils devront se reconnecter.</p>
+                <twig:Button type="submit" variant="primary">Changer de mot de passe</twig:Button>
+            </form>
+        </section>
+    </div>
+    <section class="tm-account__card" aria-labelledby="devices_title">
+        <h2 id="devices_title" class="tm-account__title"><twig:Icon name="shield" class="tm-icon--inherit" />Appareils connectés</h2>
+        {% if devices is empty %}
+            <p class="tm-caption">Aucun appareil enregistré.</p>
+        {% else %}
+            <ul class="tm-account__devices">
+                {% for d in devices %}
+                    <li>
+                        <span class="tm-account__pastille" aria-hidden="true"><twig:Icon name="logIn" class="tm-icon--inherit" /></span>
+                        <span class="tm-account__device">
+                            <span><strong>{{ d.description }}</strong>{% if d.current %} <span class="tm-account__type-badge">Cet appareil</span>{% endif %}</span>
+                            <span class="tm-caption">Dernière connexion le {{ d.lastSeen|date('d/m/Y à H:i', 'Europe/Paris') }} · première le {{ d.firstSeen|date('d/m/Y', 'Europe/Paris') }}</span>
+                        </span>
+                        {% if not d.current %}
+                            <form method="post" action="{{ path('client_security_devices') }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="device" value="{{ d.id }}">
+                                <twig:Button type="submit" variant="secondary">Déconnecter<span class="tm-visually-hidden"> {{ d.description }}</span></twig:Button>
+                            </form>
+                        {% endif %}
+                    </li>
+                {% endfor %}
+            </ul>
+            {% if devices|length > 1 %}
+                <form method="post" action="{{ path('client_security_devices') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="device" value="">
+                    <twig:Button type="submit" variant="secondary" icon="power" iconPosition="start">Déconnecter tous les autres appareils</twig:Button>
+                </form>
+            {% endif %}
+        {% endif %}
+    </section>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{#- A02 : inscription tentée avec l'adresse d'un compte existant (anti-énumération). -#}
+{% extends 'email/_layout.html.twig' %}
+{% block content %}
+    <p>Bonjour {{ first_name }},</p>
+    <p>Quelqu’un — sans doute vous — a essayé de créer un compte TrouveMoi avec cette adresse. Vous en avez déjà un : il suffit de vous connecter.</p>
+    {{ include('email/_button.html.twig', {href: login_link, label: 'Me connecter'}) }}
+    <p>Mot de passe oublié ? <a href="{{ reset_link }}" style="color:{{ palette.link }};">Réinitialisez-le</a>.</p>
+    <p style="color:{{ palette.muted }};">Ce n’était pas vous ? Aucune action n’est nécessaire : votre compte n’a pas été modifié.</p>
+{% endblock %}

@@ -99,3 +99,26 @@
         .tm-account__cols { grid-template-columns: 317fr 463fr 330fr; }
     }
 }
+
+/* C07.2 « Sécurité » et C07.3 « Mes paramètres » (mêmes cartes que C07) */
+@layer components {
+    .tm-account__duo { display: grid; gap: 14px; }
+    .tm-account__stack { display: grid; gap: 12px; }
+    .tm-account__stack .tm-button { justify-self: start; }
+    .tm-account__current { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0; color: var(--tm-navy); overflow-wrap: anywhere; }
+    .tm-account__devices { display: grid; margin: 0; padding: 0; list-style: none; }
+    .tm-account__devices li { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 0; }
+    .tm-account__devices li + li { border-top: 1px solid var(--tm-line); }
+    .tm-account__device { display: grid; flex: 1; min-width: 180px; gap: 2px; color: var(--tm-navy); }
+    .tm-account__matrix-wrap { position: relative; overflow-x: auto; }
+    .tm-account__matrix { width: 100%; border-collapse: collapse; font-size: 15px; color: var(--tm-navy); }
+    .tm-account__matrix th, .tm-account__matrix td { padding: 12px 10px; border-bottom: 1px solid var(--tm-line); text-align: center; }
+    .tm-account__matrix th[scope="row"], .tm-account__matrix thead th:first-child { text-align: left; font-weight: var(--font-weight-medium); }
+    .tm-account__matrix thead th { font-size: 14px; font-weight: var(--font-weight-semibold); color: var(--tm-ink); }
+    .tm-account__matrix .is-locked th { color: var(--tm-ink); }
+    .tm-account__matrix .is-locked input { opacity: .55; }
+
+    @media (min-width: 1024px) {
+        .tm-account__duo { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+}

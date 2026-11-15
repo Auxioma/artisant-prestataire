@@ -1,0 +1,8 @@
+{#- E-06 : alerte à l'ancienne adresse après un changement d'e-mail. -#}
+{% extends 'email/_layout.html.twig' %}
+{% block content %}
+    <p>Bonjour {{ first_name }},</p>
+    <p>L’adresse e-mail de votre compte TrouveMoi a été remplacée le {{ changed_at|date('d/m/Y à H:i', 'Europe/Paris') }}. Cette adresse ne recevra plus nos messages.</p>
+    <p><strong>Ce n’était pas vous ?</strong> Votre compte est peut-être compromis : contactez-nous sans attendre.</p>
+    {{ include('email/_button.html.twig', {href: help_link, label: 'Contacter le support'}) }}
+{% endblock %}

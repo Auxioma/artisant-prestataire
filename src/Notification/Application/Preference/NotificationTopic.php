@@ -14,11 +14,18 @@ enum NotificationTopic: string
     case NewQuotes = 'nouveaux_devis';
     case RequestFollowUp = 'suivi_demandes';
     case AppointmentReminders = 'rappels_rdv';
+    case Messages = 'messages';
+    case Reviews = 'avis';
+
+    /** Canaux réglables (le SMS arrive avec le lot V2). */
+    public const array CHANNELS = ['email', 'in_app'];
 
     private const array CODES = [
         'nouveaux_devis' => ['E-12', 'E-12b'],
         'suivi_demandes' => ['E-10', 'E-19', 'E-19b'],
         'rappels_rdv' => ['E-15'],
+        'messages' => ['E-17'],
+        'avis' => ['E-16', 'E-18'],
     ];
 
     public static function of(string $code): ?self
@@ -44,6 +51,20 @@ enum NotificationTopic: string
             self::NewQuotes => 'Nouveaux devis',
             self::RequestFollowUp => 'Suivi de mes demandes',
             self::AppointmentReminders => 'Rappels de rendez-vous',
+            self::Messages => 'Nouveaux messages',
+            self::Reviews => 'Avis (invitations, publication)',
         };
+    }
+
+    /** Interrupteurs de la carte « Mes notifications » de C07 (Figma 231:12840) ; la matrice complète est sur « Mes paramètres ». */
+    public function onProfile(): bool
+    {
+        return \in_array($this, [self::NewQuotes, self::RequestFollowUp, self::AppointmentReminders], true);
+    }
+
+    /** @return list<self> */
+    public static function profileTopics(): array
+    {
+        return array_values(array_filter(self::cases(), static fn (self $t): bool => $t->onProfile()));
     }
 }

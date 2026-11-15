@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Identity\Infrastructure\Security;
 
 use App\Identity\Application\Login\RecordLogin;
+use App\Identity\Application\Port\KnownDevices;
 use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Integration\ExternalServiceUnavailable;
@@ -29,7 +30,7 @@ use Symfony\Component\Security\Http\Event\LoginSuccessEvent;
  */
 final readonly class LoginSubscriber implements EventSubscriberInterface
 {
-    public const string DEVICE_COOKIE = 'tm_device';
+    public const string DEVICE_COOKIE = KnownDevices::COOKIE;
     public const string SESSION_TRACK = 'identity.login_track';
     private const int DEVICE_COOKIE_DAYS = 400;
     private const string CAPTCHA_FIELD = 'cf-turnstile-response';

@@ -45,23 +45,23 @@ final readonly class NotificationDispatcher implements Notifier
         }
 
         if ($template->has('email') && null !== $notification->email) {
-            if ($this->optedOut($notification)) {
+            if ($this->optedOut($notification, NotificationPreferences::EMAIL)) {
                 $this->log->record($this->ids->next(), $template->code, $template->version, 'email', $notification->userId, $notification->email, 'skipped', null, 'désactivé par le destinataire', $this->clock->now());
             } else {
                 $this->sendEmail($template, $notification);
             }
         }
-        if ($template->has('in_app') && null !== $notification->userId) {
+        if ($template->has('in_app') && null !== $notification->userId && !$this->optedOut($notification, NotificationPreferences::IN_APP)) {
             $this->addInApp($template, $notification);
         }
     }
 
     /** C07 : sujet coupé par le titulaire (les messages indispensables n'ont pas de sujet et partent toujours). */
-    private function optedOut(Notification $notification): bool
+    private function optedOut(Notification $notification, string $channel): bool
     {
         $topic = NotificationTopic::of($notification->code);
 
-        return null !== $topic && null !== $notification->userId && !$this->preferences->enabled($notification->userId, $topic, NotificationPreferences::EMAIL);
+        return null !== $topic && null !== $notification->userId && !$this->preferences->enabled($notification->userId, $topic, $channel);
     }
 
     private function sendEmail(Template $template, Notification $notification): void

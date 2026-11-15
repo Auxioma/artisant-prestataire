@@ -38,7 +38,7 @@
                 {% if profile.emailVerified %}<span class="tm-account__verified"><twig:Icon name="checkC" size="xs" class="tm-icon--inherit" />Compte vérifié</span>{% endif %}
             </div>
             <ul class="tm-account__contact">
-                <li><twig:Icon name="mail" size="sm" class="tm-icon--inherit" /><span>{{ profile.email }}</span>{% if tm_route_exists('client_security') %}<a href="{{ path('client_security') }}" class="tm-account__edit" title="Modifier"><twig:Icon name="edit" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden">Modifier l’adresse e-mail</span></a>{% endif %}</li>
+                <li><twig:Icon name="mail" size="sm" class="tm-icon--inherit" /><span>{{ profile.email }}</span><a href="{{ path('client_security') }}" class="tm-account__edit" title="Modifier"><twig:Icon name="edit" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden">Modifier l’adresse e-mail</span></a></li>
                 <li><twig:Icon name="phone" size="sm" class="tm-icon--inherit" /><span>{{ profile.phoneDisplay() ?? 'Téléphone à renseigner' }}</span></li>
                 <li><twig:Icon name="pin" size="sm" class="tm-icon--inherit" /><span>{{ profile.place() }}</span><a href="#postalCode" class="tm-account__edit" title="Modifier"><twig:Icon name="edit" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden">Modifier l’adresse</span></a></li>
             </ul>
@@ -77,13 +77,7 @@
         </div>
     </section>
 
-    <nav class="tm-account__tabs" aria-label="Rubriques du profil">
-        <a href="{{ path('client_profile') }}" aria-current="page"><twig:Icon name="user" size="sm" class="tm-icon--inherit" />Mes informations</a>
-        <a href="#preferences"><twig:Icon name="sliders" size="sm" class="tm-icon--inherit" />Mes préférences</a>
-        {% if tm_route_exists('client_security') %}<a href="{{ path('client_security') }}"><twig:Icon name="shield" size="sm" class="tm-icon--inherit" />Sécurité</a>{% else %}<span aria-disabled="true" title="Bientôt disponible"><twig:Icon name="shield" size="sm" class="tm-icon--inherit" />Sécurité<span class="tm-visually-hidden"> (bientôt disponible)</span></span>{% endif %}
-        <a href="{{ path('client_reviews') }}"><twig:Icon name="star" size="sm" class="tm-icon--inherit" />Mes avis</a>
-        <a href="#activite"><twig:Icon name="bars" size="sm" class="tm-icon--inherit" />Mon activité</a>
-    </nav>
+    {% include 'client/profile/_tabs.html.twig' with {current: 'informations'} %}
 
     <form method="post" action="{{ path('client_profile') }}" class="tm-account__form" novalidate>
         <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
@@ -96,7 +90,7 @@
                         <twig:Field id="lastName" name="lastName" label="Nom" required maxlength="50" autocomplete="family-name" value="{{ v.lastName ?? profile.lastName }}" error="{{ errors.lastName ?? null }}" />
                     </div>
                     <div class="tm-account__pair">
-                        <twig:Field id="email" name="email_display" label="E-mail" required readonly value="{{ profile.email }}" help="{{ tm_route_exists('client_security') ? 'Modifiable dans « Sécurité ».' : null }}" />
+                        <twig:Field id="email" name="email_display" label="E-mail" required readonly value="{{ profile.email }}" help="Modifiable dans « Sécurité »." />
                         <twig:Field id="phone" name="phone" type="tel" label="Téléphone" required autocomplete="tel" inputmode="tel" maxlength="20" value="{{ v.phone ?? profile.phoneDisplay() }}" error="{{ errors.phone ?? null }}" />
                     </div>
                 </section>
@@ -128,7 +122,7 @@
                     </fieldset>
                     <fieldset class="tm-account__fieldset">
                         <legend>Mes notifications</legend>
-                        <p class="tm-caption">Par e-mail. Les messages indispensables (sécurité, devis accepté, rendez-vous proposé ou confirmé) sont toujours envoyés ; tout reste visible dans vos notifications.</p>
+                        <p class="tm-caption">Par e-mail (tous les canaux : <a href="{{ path('client_settings') }}">Mes paramètres</a>). Les messages indispensables (sécurité, devis accepté, rendez-vous proposé ou confirmé) sont toujours envoyés.</p>
                         {% for t in topics %}
                             {% set on = submitted is not null ? (v.notifications[t.value] is defined) : email_preferences[t.value] %}
                             <div class="tm-account__toggle"><twig:Icon name="bell" size="sm" class="tm-icon--inherit" /><twig:Switch id="notif_{{ t.value }}" name="notifications[{{ t.value }}]" label="{{ t.label() }}" checked="{{ on }}" /></div>

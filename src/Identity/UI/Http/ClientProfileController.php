@@ -77,7 +77,7 @@ final class ClientProfileController extends AbstractController
                     $request->request->getBoolean('newsletter'),
                 ));
                 $topics = [];
-                foreach (NotificationTopic::cases() as $topic) {
+                foreach (NotificationTopic::profileTopics() as $topic) {
                     $topics[$topic->value] = isset($notifications[$topic->value]);
                 }
                 $this->commands->dispatch(new ChangeEmailPreferences($userId, $topics));
@@ -112,7 +112,7 @@ final class ClientProfileController extends AbstractController
             'submitted' => $submitted,
             'errors' => $errors,
             'interests' => ClientInterest::cases(),
-            'topics' => NotificationTopic::cases(),
+            'topics' => NotificationTopic::profileTopics(),
             'email_preferences' => $emailPreferences,
             'activity' => $activity,
             'badges' => [

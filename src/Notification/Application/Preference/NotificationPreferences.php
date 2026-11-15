@@ -8,6 +8,7 @@ namespace App\Notification\Application\Preference;
 interface NotificationPreferences
 {
     public const string EMAIL = 'email';
+    public const string IN_APP = 'in_app';
 
     public function enabled(string $userId, NotificationTopic $topic, string $channel): bool;
 

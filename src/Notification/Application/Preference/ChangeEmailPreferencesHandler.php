@@ -16,7 +16,7 @@ final readonly class ChangeEmailPreferencesHandler implements CommandHandler
     public function __invoke(ChangeEmailPreferences $command): void
     {
         $now = $this->clock->now();
-        foreach (NotificationTopic::cases() as $topic) {
+        foreach (NotificationTopic::profileTopics() as $topic) {
             if (\array_key_exists($topic->value, $command->topics)) {
                 $this->preferences->save($command->userId, $topic, NotificationPreferences::EMAIL, $command->topics[$topic->value], $now);
             }
