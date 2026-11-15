@@ -259,3 +259,9 @@ Les IP sont stockées **hachées** (HMAC avec un sel tournant) sauf dans l'Audit
 | Table | Colonnes | Contraintes |
 |---|---|---|
 | `report` | id, subject_type (`avis`/`profil`/`demande`), subject_id, subject_title, subject_excerpt (instantané, preuve), subject_owner_id, reporter_id (FK compte, mis à vide à l'effacement), reason, details, status (`open`/`dismissed`/`actioned`), decided_by, decided_at, decision_note (réponse au signalant), created_at | **CK** ouvert ⇔ non décidé ; **UQ** un signalement ouvert par signalant et par contenu ; IX file des ouverts |
+
+### Schéma `content` — médiathèque (T-801a)
+
+| Table | Colonnes | Contraintes |
+|---|---|---|
+| `media` | id, file_id (FK `shared.stored_file`, usage `media`, public), title, alt (obligatoire), focal (`tl`…`br`), width, height, variants (jsonb : format → largeur → fichier), status (`processing`/`ready`/`failed`), created_by, created_at, updated_at | **CK** texte alternatif non vide ; **UQ** fichier ; `stored_file` : type `image/avif` |

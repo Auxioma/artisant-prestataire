@@ -11,6 +11,8 @@ enum FileType: string
     case Png = 'image/png';
     case Webp = 'image/webp';
     case Pdf = 'application/pdf';
+    /** Variante produite par l'application (médiathèque BO10.7) : jamais acceptée en dépôt. */
+    case Avif = 'image/avif';
     /** Archive produite par l'application (export RGPD) : jamais acceptée en dépôt. */
     case Zip = 'application/zip';
 
@@ -22,6 +24,7 @@ enum FileType: string
             self::Webp => 'webp',
             self::Pdf => 'pdf',
             self::Zip => 'zip',
+            self::Avif => 'avif',
         };
     }
 

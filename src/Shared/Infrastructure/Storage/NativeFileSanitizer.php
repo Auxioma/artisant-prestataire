@@ -61,7 +61,7 @@ final readonly class NativeFileSanitizer implements FileSanitizer
             FileType::Jpeg => @imagecreatefromjpeg($path),
             FileType::Png => @imagecreatefrompng($path),
             FileType::Webp => @imagecreatefromwebp($path),
-            FileType::Pdf, FileType::Zip => false,
+            FileType::Pdf, FileType::Zip, FileType::Avif => false,
         };
         if (false === $image) {
             throw new RejectedUpload(RejectedUpload::UNREADABLE);
