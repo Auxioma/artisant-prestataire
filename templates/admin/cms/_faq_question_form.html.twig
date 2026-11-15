@@ -1,0 +1,24 @@
+{#- Question de l'aide : `q` (FaqAdminQuestion ou null pour une création dans la rubrique courante). -#}
+{% set k = q ? q.id : 'new' %}
+<form method="post" action="{{ path('admin_cms_faq_action') }}" class="tm-media-form" data-turbo="false">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="question_save"><input type="hidden" name="topic" value="{{ current.id }}">{% if q %}<input type="hidden" name="id" value="{{ q.id }}">{% endif %}
+    <twig:Field id="question_text_{{ k }}" name="data[question]" label="Question" required maxlength="200" value="{{ q ? q.question : '' }}" />
+    <div class="tm-field">
+        <label class="tm-field__label" for="question_answer_{{ k }}">Réponse *</label>
+        <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="question_answer_{{ k }}" name="data[answer]" rows="6" maxlength="20000" required>{{ q ? q.answerHtml : '' }}</textarea></div>
+        <p class="tm-caption">HTML simple : &lt;p&gt;, listes, liens, gras ; tout le reste est retiré.</p>
+    </div>
+    <div class="tm-field">
+        <label class="tm-field__label" for="question_audience_{{ k }}">Public</label>
+        <div class="tm-field__control"><select class="tm-field__input" id="question_audience_{{ k }}" name="data[audience]">{% for v, l in audiences %}<option value="{{ v }}"{{ q and q.audience == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select></div>
+    </div>
+    {% if q %}
+        <div class="tm-field">
+            <label class="tm-field__label" for="question_topic_{{ k }}">Rubrique</label>
+            <div class="tm-field__control"><select class="tm-field__input" id="question_topic_{{ k }}" name="data[topic]">{% for t in topics %}<option value="{{ t.id }}"{{ q.topicId == t.id ? ' selected' }}>{{ t.title }}</option>{% endfor %}</select></div>
+        </div>
+        <twig:Field id="question_slug_{{ k }}" name="data[slug]" label="Adresse" maxlength="120" value="{{ q.slug }}" />
+        <label class="tm-check"><input class="tm-check__input" type="checkbox" name="published" value="1"{% if q.published %} checked{% endif %}><span>Publiée sur le site</span></label>
+    {% endif %}
+    <twig:Button type="submit" variant="secondary">{{ q ? 'Enregistrer' : 'Ajouter la question' }}</twig:Button>
+</form>

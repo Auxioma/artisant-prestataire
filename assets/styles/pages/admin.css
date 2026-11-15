@@ -525,3 +525,12 @@
         .tm-cms--page { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
     }
 }
+
+/* BO10.4 « FAQ / Aide » */
+@layer components {
+    .tm-faq-admin__topics { display: grid; gap: 4px; margin: 0 0 16px; padding: 0; list-style: none; }
+    .tm-faq-admin__topics li { display: grid; gap: 4px; padding: 10px 12px; border-radius: 10px; }
+    .tm-faq-admin__topics li.is-current { background: var(--tm-ice); }
+    .tm-faq-admin__topics a { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; color: var(--tm-navy); text-decoration: none; }
+    .tm-faq-admin__topics a:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 6px; }
+}
