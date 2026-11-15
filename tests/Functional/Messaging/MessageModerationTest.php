@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Messaging;
 
+use App\Administration\Infrastructure\Settings\DbalSettingsProvider;
 use App\ArtisanProfile\Application\Verification\ApproveArtisan;
 use App\Billing\Application\Credit\CreditLedger;
 use App\Identity\Application\Command\RegisterUser;
 use App\Messaging\Application\Conversation\ReportMessage;
+use App\Messaging\Application\Conversation\SendMessage;
 use App\Messaging\Application\Conversation\StartConversation;
 use App\Messaging\Application\Query\ConversationReader;
 use App\Quote\Application\Editor\SaveQuoteDraft;
@@ -22,6 +24,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Contracts\Cache\CacheInterface;
 
 /**
  * BO05 « Messages signalés » (T-701d2) : file avec contexte, lecture journalisée de l'original scellé, classement,
@@ -128,5 +131,31 @@ final class MessageModerationTest extends WebTestCase
         $reader = self::getContainer()->get(ConversationReader::class);
         \assert($reader instanceof ConversationReader);
         self::assertFalse($reader->thread(self::CLIENT, self::CONVERSATION)?->messages[0]->removed);
+    }
+
+    /** T-706b — BO05.3 : expressions de contournement éditables ; message au-delà du seuil signalé automatiquement. */
+    public function testWorkaroundKeywordsAndAutomaticFlag(): void
+    {
+        $page = $this->client->request('GET', '/admin/moderation/regles');
+        self::assertStringContainsString('whatsapp', (string) $page->filter('#contact_keywords')->text());
+        $this->client->submit($page->selectButton('Enregistrer les expressions')->form(), ['contact_keywords' => "whatsapp\nAppelez-moi directement\n"]);
+        self::assertResponseRedirects('/admin/moderation/regles');
+        $cache = self::getContainer()->get('cache.settings');
+        $settings = self::getContainer()->get(DbalSettingsProvider::class);
+        \assert($cache instanceof CacheInterface && $settings instanceof DbalSettingsProvider);
+        $cache->delete(DbalSettingsProvider::CACHE_KEY);
+        $settings->reset();
+
+        // Message de l'artisan avant acceptation : coordonnées (30) + contournement (30) ≥ seuil 50 → signalé.
+        $this->dossierDispatch(new SendMessage(self::DOSSIER_USER, self::CONVERSATION, '0190f5e4-0000-7000-8000-0000000fd712', 'Écrivez-moi sur WhatsApp au 06 12 34 56 78, appelez-moi directement.'));
+        self::assertSame('auto:60', DbalValue::string($this->connection->fetchOne("SELECT report_reason FROM messaging.message WHERE id = '0190f5e4-0000-7000-8000-0000000fd712'")));
+        // Message ordinaire : non signalé.
+        $this->dossierDispatch(new SendMessage(self::DOSSIER_USER, self::CONVERSATION, '0190f5e4-0000-7000-8000-0000000fd713', 'Je passe mardi matin comme convenu.'));
+        self::assertNull($this->connection->fetchOne("SELECT reported_at FROM messaging.message WHERE id = '0190f5e4-0000-7000-8000-0000000fd713'"));
+
+        $page = $this->client->request('GET', '/admin/moderation/messages?element=0190f5e4-0000-7000-8000-0000000fd712');
+        self::assertStringContainsString('Messages signalés (2)', $page->filter('.tm-admin-tabs')->text());
+        self::assertStringContainsString('Détection automatique (score 60/100)', $page->filter('.tm-moderation__detail')->text());
+        self::assertStringContainsString('signalé par Détection automatique', $page->filter('.tm-moderation__detail')->text());
     }
 }

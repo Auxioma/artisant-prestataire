@@ -24,4 +24,7 @@ interface ParticipantStates
 
     /** Signalement d'un message par un participant (une fois). */
     public function report(string $messageId, string $userId, string $reason, \DateTimeImmutable $at): bool;
+
+    /** BO05.3 — signalement automatique (score de risque au-delà du seuil), sans signalant. */
+    public function flag(string $messageId, string $reason, \DateTimeImmutable $at): void;
 }

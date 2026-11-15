@@ -7,6 +7,7 @@ namespace App\Tests\Unit\QuoteRequest;
 use App\QuoteRequest\Application\Port\RequestRiskInput;
 use App\QuoteRequest\Application\Port\RequestRiskSignals;
 use App\QuoteRequest\Application\Risk\RequestRiskScorer;
+use App\Shared\Application\Moderation\ContactSignals;
 use App\Shared\Application\Settings\SettingKey;
 use App\Tests\Support\InMemorySettingsProvider;
 use PHPUnit\Framework\TestCase;
@@ -65,7 +66,9 @@ final class RequestRiskScorerTest extends TestCase
             }
         };
 
-        return new RequestRiskScorer($history, $settings ?? new InMemorySettingsProvider());
+        $settings ??= new InMemorySettingsProvider();
+
+        return new RequestRiskScorer($history, $settings, new ContactSignals($settings));
     }
 
     /** @param array<string, string|list<string>> $answers */

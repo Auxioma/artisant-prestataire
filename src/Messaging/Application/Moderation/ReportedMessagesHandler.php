@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Messaging\Application\Moderation;
 
+use App\Messaging\Application\Conversation\MessageRiskScorer;
 use App\Messaging\Application\Conversation\ReportMessage;
 use App\Messaging\Application\Port\MessageModeration;
 use App\Shared\Application\Audit\AuditTrail;
@@ -44,7 +45,7 @@ final readonly class ReportedMessagesHandler implements QueryHandler
             $r['masked'],
             $r['has_attachment'],
             $r['reason'],
-            ReportMessage::REASONS[$r['reason']] ?? $r['reason'],
+            MessageRiskScorer::label($r['reason']) ?? ReportMessage::REASONS[$r['reason']] ?? $r['reason'],
             $r['sent_at'],
             $r['reported_at'],
             $r['request_number'],

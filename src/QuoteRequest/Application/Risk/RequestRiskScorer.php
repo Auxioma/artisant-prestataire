@@ -8,6 +8,7 @@ use App\QuoteRequest\Application\Port\RequestRisk;
 use App\QuoteRequest\Application\Port\RequestRiskAssessor;
 use App\QuoteRequest\Application\Port\RequestRiskInput;
 use App\QuoteRequest\Application\Port\RequestRiskSignals;
+use App\Shared\Application\Moderation\ContactSignals;
 use App\Shared\Application\Settings\SettingKey;
 use App\Shared\Application\Settings\SettingsProvider;
 use App\Shared\Domain\Text\ContactDetector;
@@ -21,7 +22,7 @@ final readonly class RequestRiskScorer implements RequestRiskAssessor
 {
     private const int MAX_SCORE = 100;
 
-    public function __construct(private RequestRiskSignals $history, private SettingsProvider $settings)
+    public function __construct(private RequestRiskSignals $history, private SettingsProvider $settings, private ContactSignals $contacts)
     {
     }
 
@@ -32,7 +33,7 @@ final readonly class RequestRiskScorer implements RequestRiskAssessor
             $texts = [...$texts, ...(\is_array($answer) ? $answer : [$answer])];
         }
         $text = implode("\n", $texts);
-        $found = ContactDetector::find($text);
+        $found = $this->contacts->find($text);
 
         $signals = [];
         if ($this->hasForbiddenTerm($text)) {
@@ -41,7 +42,7 @@ final readonly class RequestRiskScorer implements RequestRiskAssessor
         if (\in_array(ContactDetector::LINK, $found, true)) {
             $signals[] = RequestRiskSignal::Link;
         }
-        if (\in_array(ContactDetector::EMAIL, $found, true) || \in_array(ContactDetector::PHONE, $found, true)) {
+        if (\in_array(ContactDetector::EMAIL, $found, true) || \in_array(ContactDetector::PHONE, $found, true) || \in_array(ContactSignals::KEYWORD, $found, true)) {
             $signals[] = RequestRiskSignal::Contact;
         }
         $similarSince = $input->at->modify(\sprintf('-%d days', $this->settings->int(SettingKey::ModerationRequestSimilarityDays)));

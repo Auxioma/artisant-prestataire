@@ -66,4 +66,12 @@ final readonly class DbalParticipantStates implements ParticipantStates
             ['u' => $userId, 'at' => $at->format(\DATE_ATOM), 'r' => $reason, 'id' => $messageId],
         );
     }
+
+    public function flag(string $messageId, string $reason, \DateTimeImmutable $at): void
+    {
+        $this->connection->executeStatement(
+            'UPDATE messaging.message SET reported_at = :at, report_reason = :r WHERE id = :id AND reported_at IS NULL',
+            ['at' => $at->format(\DATE_ATOM), 'r' => $reason, 'id' => $messageId],
+        );
+    }
 }

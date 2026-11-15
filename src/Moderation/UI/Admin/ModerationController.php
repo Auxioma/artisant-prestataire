@@ -177,6 +177,7 @@ final class ModerationController extends AbstractController
             'message_reasons' => DecideReportedMessage::REASONS,
             'reasons' => DecideProfileReview::REASONS,
             'forbidden_terms' => $this->settings->stringList(SettingKey::ModerationForbiddenTerms),
+            'contact_keywords' => $this->settings->stringList(SettingKey::ModerationContactKeywords),
             'thresholds' => array_map(fn (SettingKey $k): array => ['key' => $k->value, 'label' => $k->definition()->label, 'value' => $this->settings->int($k)], self::THRESHOLDS),
             'request_threshold' => $this->settings->int(SettingKey::ModerationRequestRiskThreshold),
             'review_threshold' => $this->settings->int(SettingKey::ModerationReviewRiskThreshold),
@@ -263,9 +264,12 @@ final class ModerationController extends AbstractController
     {
         $this->assertCsrf($request);
         try {
-            if ('terms' === $request->request->getString('form')) {
-                $terms = array_values(array_unique(array_filter(array_map('trim', preg_split('/\R/', $request->request->getString('forbidden_terms')) ?: []), static fn (string $t): bool => '' !== $t)));
-                $this->commands->dispatch(new ChangeSetting(SettingKey::ModerationForbiddenTerms->value, $terms, $this->adminId(), self::REASON));
+            $form = $request->request->getString('form');
+            if ('terms' === $form || 'keywords' === $form) {
+                $field = 'terms' === $form ? 'forbidden_terms' : 'contact_keywords';
+                $terms = array_values(array_unique(array_filter(array_map('trim', preg_split('/\R/', $request->request->getString($field)) ?: []), static fn (string $t): bool => '' !== $t)));
+                $key = 'terms' === $form ? SettingKey::ModerationForbiddenTerms : SettingKey::ModerationContactKeywords;
+                $this->commands->dispatch(new ChangeSetting($key->value, $terms, $this->adminId(), self::REASON));
             } else {
                 foreach (self::THRESHOLDS as $key) {
                     $this->commands->dispatch(new ChangeSetting($key->value, $request->request->getInt(str_replace('.', '_', $key->value)), $this->adminId(), self::REASON));

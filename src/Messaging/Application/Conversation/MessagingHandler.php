@@ -45,6 +45,7 @@ final readonly class MessagingHandler implements CommandHandler
         private FileUploader $uploader,
         private EventBus $events,
         private Clock $clock,
+        private MessageRiskScorer $risk,
     ) {
     }
 
@@ -141,7 +142,9 @@ final readonly class MessagingHandler implements CommandHandler
     {
         $body = trim(str_replace("\r\n", "\n", $body));
         $sealed = null;
-        if ('' !== $body && $this->masking($conversation)) {
+        $masking = $this->masking($conversation);
+        $risk = '' === $body ? 0 : $this->risk->score($body, $masking);
+        if ('' !== $body && $masking) {
             [$masked, $found] = ContactDetector::mask($body);
             if ([] !== $found) {
                 $sealed = $this->secrets->seal($body);
@@ -150,6 +153,9 @@ final readonly class MessagingHandler implements CommandHandler
         }
         $conversation->post(new Message($messageId, $userId, $body, $sealed, $now, $attachment?->id, $attachment?->originalName));
         $this->conversations->save($conversation);
+        if ($this->risk->exceedsThreshold($risk)) {
+            $this->participants->flag($messageId, MessageRiskScorer::reason($risk), $now);
+        }
         foreach ([$conversation->clientUserId(), $conversation->artisanUserId()] as $participant) {
             $this->participants->ensure($conversation->id()->value, $participant);
         }

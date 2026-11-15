@@ -246,7 +246,7 @@
             </article>
             <article class="tm-moderation__card">
                 <h3>Détection de coordonnées</h3>
-                <p class="tm-caption">Téléphone, email, URL → masquage avant acceptation (RG-080)</p>
+                <p class="tm-caption">Téléphone, email, URL + {{ contact_keywords|length }} expression{{ contact_keywords|length > 1 ? 's' }} de contournement → masquage ou refus avant acceptation (RG-080)</p>
                 {% if tab != 'regles' %}<a href="{{ path('admin_moderation_tab', {onglet: 'regles'}) }}#coordonnees">Modifier</a>{% endif %}
             </article>
             <article class="tm-moderation__card">
@@ -269,10 +269,18 @@
                     </div>
                     <twig:Button type="submit" variant="secondary">Enregistrer les mots interdits</twig:Button>
                 </form>
-                <div id="coordonnees">
+                <form method="post" action="{{ path('admin_moderation_rules') }}" id="coordonnees" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <input type="hidden" name="form" value="keywords">
                     <h3 class="tm-card-title">Détection de coordonnées</h3>
-                    <p class="tm-body">Adresses e-mail, numéros de téléphone français et internationaux, liens et noms de domaine : refusés dans les profils et les demandes, masqués dans la messagerie avant l’acceptation d’un devis (RG-080). Les motifs de détection font partie du code et de ses tests : une modification passe par l’équipe technique.</p>
-                </div>
+                    <p class="tm-body">Motifs intégrés : adresses e-mail (y compris « arobase », « (at) »), numéros de téléphone français et internationaux, liens et noms de domaine — refusés dans les profils et les demandes, masqués dans la messagerie avant l’acceptation d’un devis (RG-080).</p>
+                    <div class="tm-field">
+                        <label class="tm-field__label" for="contact_keywords">Expressions de contournement — une par ligne</label>
+                        <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="contact_keywords" name="contact_keywords" rows="8" aria-describedby="keywords_help">{{ contact_keywords|join("\n") }}</textarea></div>
+                        <p class="tm-field__help" id="keywords_help">Messageries externes, coordonnées en toutes lettres… (sans accent ni casse) : refusées dans les profils, signal de risque des demandes, des avis et des messages.</p>
+                    </div>
+                    <twig:Button type="submit" variant="secondary">Enregistrer les expressions</twig:Button>
+                </form>
                 <form method="post" action="{{ path('admin_moderation_rules') }}" id="seuils" data-turbo="false">
                     <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
                     <input type="hidden" name="form" value="thresholds">

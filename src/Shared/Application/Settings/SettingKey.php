@@ -115,6 +115,7 @@ enum SettingKey: string
     case ModerationReviewRiskThreshold = 'moderation.review_risk_threshold';
     case ModerationMessageRiskThreshold = 'moderation.message_risk_threshold';
     case ModerationForbiddenTerms = 'moderation.forbidden_terms';
+    case ModerationContactKeywords = 'moderation.contact_keywords';
     case ModerationProfileSampleRate = 'moderation.profile_sample_rate';
     case MessagesMaskContactsBeforeAccept = 'messages.mask_contacts_before_accept';
     case MessagesRetentionYears = 'messages.retention_years';
@@ -284,6 +285,7 @@ enum SettingKey: string
             self::ModerationReviewRiskThreshold => $d(T::Integer, 60, 'Seuil de mise en modération d\'un avis (/100)', 0, 100, proposed: true),
             self::ModerationMessageRiskThreshold => $d(T::Integer, 50, 'Seuil de mise en modération d\'un message (/100)', 0, 100, proposed: true),
             self::ModerationForbiddenTerms => $d(T::StringList, [], 'Termes interdits dans les profils et contenus publics (RG-031)', proposed: true),
+            self::ModerationContactKeywords => $d(T::StringList, ['whatsapp', 'telegram', 'snapchat', 'messenger', 'viber', 'mon numéro', 'mon portable', 'mon adresse mail', 'hors plateforme', 'en direct sans trouvemoi'], 'Expressions de contournement (coordonnées en toutes lettres, messageries externes)', proposed: true),
             self::ModerationProfileSampleRate => $d(T::Integer, 10, 'Part des modifications de profil relues par un humain (%, RG-031)', 0, 100, proposed: true),
             self::MessagesMaskContactsBeforeAccept => $d(T::Boolean, true, 'Masquage des coordonnées avant acceptation'),
             self::MessagesRetentionYears => $d(T::Integer, 3, 'Conservation des messages (années)', 1, 10),

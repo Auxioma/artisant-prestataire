@@ -25,7 +25,7 @@ final readonly class DbalMessageModeration implements MessageModeration
             'SELECT m.id, m.conversation_id, m.body, m.original_sealed IS NOT NULL AS masked, m.report_reason, m.created_at, m.reported_at,'
             .' EXISTS (SELECT 1 FROM messaging.attachment x WHERE x.message_id = m.id) AS has_attachment,'
             .' (m.sender_user_id = c.artisan_user_id) AS from_artisan, r.number,'
-            .' '.\sprintf(self::AUTHOR, 'm.sender_user_id').' AS sender_name, '.\sprintf(self::AUTHOR, 'm.reported_by').' AS reporter_name'
+            .' '.\sprintf(self::AUTHOR, 'm.sender_user_id').' AS sender_name, CASE WHEN m.reported_by IS NULL THEN \'Détection automatique\' ELSE '.\sprintf(self::AUTHOR, 'm.reported_by').' END AS reporter_name'
             .' FROM messaging.message m JOIN messaging.conversation c ON c.id = m.conversation_id'
             .' JOIN artisan.artisan_profile a ON a.id = c.artisan_id JOIN identity.user_account u ON u.id = c.client_user_id'
             .' LEFT JOIN request.quote_request r ON r.id = c.request_id'

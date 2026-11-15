@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Review\Application\Review;
 
+use App\Shared\Application\Moderation\ContactSignals;
 use App\Shared\Application\Settings\SettingKey;
 use App\Shared\Application\Settings\SettingsProvider;
-use App\Shared\Domain\Text\ContactDetector;
 
 /**
  * RG-035 — score de risque d'un avis ou d'une réponse (0–100) : mots interdits (BO05.3), coordonnées ou liens,
@@ -22,7 +22,7 @@ final readonly class ReviewRiskScorer
     private const float SHOUTING_RATIO = 0.6;
     private const int MAX = 100;
 
-    public function __construct(private SettingsProvider $settings)
+    public function __construct(private SettingsProvider $settings, private ContactSignals $contacts)
     {
     }
 
@@ -36,7 +36,7 @@ final readonly class ReviewRiskScorer
                 break;
             }
         }
-        if ([] !== ContactDetector::mask($text)[1]) {
+        if ([] !== $this->contacts->find($text)) {
             $score += self::CONTACT;
         }
         $letters = preg_replace('/[^\p{L}]/u', '', $text) ?? '';
