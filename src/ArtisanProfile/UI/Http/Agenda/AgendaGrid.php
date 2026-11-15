@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\ArtisanProfile\UI\Http\Agenda;
 
 use App\ArtisanProfile\Application\Agenda\AgendaDay;
+use App\ArtisanProfile\Domain\Agenda\AbsenceKind;
 use App\ArtisanProfile\Domain\Agenda\WeeklyRule;
 
 /**
@@ -44,7 +45,7 @@ final class AgendaGrid
                 if ($last <= $first) {
                     continue;
                 }
-                $grid[$first][$c] = ['rows' => $last - $first, 'state' => $state, 'label' => $label, 'range' => 'closed' === $state || 'off' === $state ? null : WeeklyRule::format($s).' – '.WeeklyRule::format($e)];
+                $grid[$first][$c] = ['rows' => $last - $first, 'state' => $state, 'label' => $label, 'range' => \in_array($state, ['closed', 'off', 'leave'], true) ? null : WeeklyRule::format($s).' – '.WeeklyRule::format($e)];
                 for ($i = $first + 1; $i < $last; ++$i) {
                     $grid[$i][$c] = null;
                 }
@@ -63,7 +64,7 @@ final class AgendaGrid
     private static function segments(AgendaDay $day, int $from, int $to): array
     {
         if ($day->closed) {
-            return [[$from, $to, 'closed', null !== $day->absence ? ($day->absence->label ?? $day->absence->kind->label()) : ($day->holiday ?? 'Indisponible')]];
+            return [[$from, $to, AbsenceKind::Leave === $day->absence?->kind ? 'leave' : 'closed', null !== $day->absence ? ($day->absence->label ?? $day->absence->kind->label()) : ($day->holiday ?? 'Indisponible')]];
         }
         if ([] === $day->open && [] === $day->busy) {
             return [[$from, $to, 'off', $day->holiday ?? 'Indisponible']];

@@ -41,7 +41,7 @@
     .tm-agenda__views a[aria-current="page"] { background: var(--tm-navy); color: var(--color-text-inverse); }
 
     /* Grille semaine : une ligne par pas, cellules fusionnées par plage */
-    .tm-agenda__scroll { overflow-x: auto; border: 1px solid var(--tm-line); border-radius: 12px; }
+    .tm-agenda__scroll { position: relative; overflow-x: auto; border: 1px solid var(--tm-line); border-radius: 12px; }
     .tm-agenda__week { width: 100%; min-width: 46rem; border-collapse: collapse; table-layout: fixed; font-size: 12px; color: var(--tm-navy); }
     .tm-agenda__week thead th { padding: 8px 4px; border-bottom: 1px solid var(--tm-line); background: var(--tm-bg); font-size: 13px; line-height: 16px; text-align: center; }
     .tm-agenda__week thead th span { display: block; font-weight: var(--font-weight-medium); color: var(--tm-ink); }
@@ -62,6 +62,8 @@
     .tm-agenda__week td.is-held { background: var(--tm-orange-soft); }
     .tm-agenda__slot.is-held svg { color: var(--tm-orange); }
     .tm-agenda__week td.is-closed, .tm-agenda__week td.is-off { background: var(--tm-red-soft); }
+    .tm-agenda__week td.is-leave { background: var(--tm-orange-soft); }
+    .tm-agenda__slot.is-leave svg { color: var(--tm-orange); }
     .tm-agenda__slot.is-closed svg, .tm-agenda__slot.is-off svg { color: var(--tm-red); }
 
     /* Mois */
@@ -117,10 +119,27 @@
     .tm-agenda__ical p { margin: 0; font-size: 14px; color: var(--tm-navy); }
     .tm-agenda__ical-state { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; color: var(--tm-navy); }
 
+    /* PR19 « Mes congés » : tableau, mon année, conseil */
+    .tm-leave .tm-agenda__planning h2, .tm-leave__table h2 { display: flex; align-items: center; gap: 8px; }
+    .tm-leave__table { gap: var(--space-3); }
+    .tm-agenda__main > *, .tm-agenda__main > * > * { min-width: 0; }
+    .tm-leave__scroll { position: relative; overflow-x: auto; border: 1px solid var(--tm-line); border-radius: 10px; }
+    .tm-leave__scroll table { width: 100%; min-width: 40rem; border-collapse: collapse; font-size: 13px; color: var(--tm-navy); }
+    .tm-leave__scroll th { padding: 10px 12px; background: var(--tm-bg); font-weight: var(--font-weight-semibold); text-align: left; }
+    .tm-leave__scroll td { padding: 10px 12px; border-top: 1px solid var(--tm-line); vertical-align: middle; white-space: nowrap; }
+    .tm-leave__type { display: inline-flex; align-items: center; gap: 6px; }
+    .tm-leave__type svg { color: var(--tm-blue); }
+    .tm-leave__year dl { display: grid; gap: 8px; margin: 0; }
+    .tm-leave__year dl > div { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--tm-ink); }
+    .tm-leave__year dd { margin: 0; font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
+    .tm-leave__year dl > .is-total { padding: 10px 12px; border-radius: 10px; background: var(--color-success-bg); color: var(--tm-navy); font-weight: var(--font-weight-semibold); }
+    .tm-leave__tip p { margin: 0; font-size: 13px; line-height: 20px; color: var(--tm-ink); }
+    .tm-leave__tip h2 svg { color: var(--tm-gold); }
+
     /* Colonne */
     .tm-agenda__side h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 17px; color: var(--tm-navy); }
     .tm-agenda__side h2 svg { color: var(--tm-orange); }
-    .tm-agenda__status, .tm-agenda__quick, .tm-agenda__legend { gap: 12px; }
+    .tm-agenda__status, .tm-agenda__quick, .tm-agenda__legend, .tm-leave__year, .tm-leave__tip { gap: 12px; }
     .tm-agenda__toggle { display: flex; align-items: center; gap: 12px; padding: 0; border: 0; border-radius: 8px; background: none; color: var(--tm-ink); font: inherit; font-size: 13px; line-height: 18px; text-align: left; cursor: pointer; }
     .tm-agenda__toggle-track { position: relative; flex: none; width: 44px; height: 24px; border-radius: 12px; background: var(--color-border-strong); }
     .tm-agenda__toggle-track span { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--color-surface); transition: transform .15s; }

@@ -177,4 +177,33 @@ final class AgendaPageTest extends WebTestCase
         self::assertStringContainsString('ne prend pas de nouvelles demandes', $fiche->filter('.tm-profile__contact')->text());
         self::assertCount(0, $fiche->filter('.tm-profile__contact a[href*="pro="]'));
     }
+
+    public function testLeavePageListsAndRemovesLeave(): void
+    {
+        $page = $this->client->request('GET', '/espace-pro/conges');
+        self::assertResponseIsSuccessful();
+        self::assertSame('Mes congés', $page->filter('h1')->text());
+        self::assertStringContainsString('Aucun congé à venir', $page->filter('.tm-leave__table')->text());
+
+        $from = new \DateTimeImmutable('monday next week');
+        $this->client->submit($page->filter('#declarer')->form(), ['debut' => $from->format('Y-m-d'), 'fin' => $from->modify('+4 days')->format('Y-m-d'), 'type' => 'leave', 'libelle' => 'Vacances (fictif)']);
+        self::assertResponseRedirects('/espace-pro/conges', 303);
+        $page = $this->client->followRedirect();
+        self::assertStringContainsString('Vacances (fictif)', $page->filter('.tm-leave__table tbody')->text());
+        self::assertStringContainsString('5 jours', $page->filter('.tm-leave__table tbody')->text());
+        self::assertStringContainsString('1', $page->filter('.tm-agenda__kpis .is-orange strong')->text());
+        $week = $this->client->request('GET', '/espace-pro/conges?date='.$from->format('Y-m-d'));
+        self::assertStringContainsString('Vacances (fictif)', $week->filter('.tm-agenda__week')->text());
+
+        $this->connection->executeStatement("INSERT INTO artisan.availability_absence (id, artisan_id, starts_on, ends_on, kind, label, created_at) VALUES ('0190f5e4-0000-7000-8000-0000000ae7aa', :a, current_date - 20, current_date - 18, 'leave', 'Pont (fictif)', now())", ['a' => $this->artisan]);
+        $history = $this->client->request('GET', '/espace-pro/conges?onglet=historique');
+        self::assertStringContainsString('Pont (fictif)', $history->filter('.tm-leave__table')->text());
+        self::assertCount(0, $history->filter('.tm-leave__table tbody form'), 'pas de suppression du passé');
+
+        $page = $this->client->request('GET', '/espace-pro/conges');
+        $this->client->submit($page->filter('.tm-leave__table tbody form')->form());
+        self::assertResponseRedirects('/espace-pro/conges', 303);
+        self::assertStringContainsString('Aucun congé à venir', $this->client->followRedirect()->filter('.tm-leave__table')->text());
+        self::assertCount(1, $this->client->request('GET', '/espace-pro/conges?onglet=feries')->filter('.tm-agenda__holiday-list'));
+    }
 }

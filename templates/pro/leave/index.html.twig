@@ -1,0 +1,162 @@
+{#-
+    PR19 « Mes congés » (Figma 387:17558), adapté à un artisan indépendant : en-tête (Voir mon calendrier, Déclarer un
+    congé), onglets Mes congés / Historique / Jours fériés, indicateurs de l'année, planning de la semaine, tableau des
+    congés et absences ; colonne : mon année, actions rapides, conseil. Pas de solde ni de validation (P-110, P-113).
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'leave' %}
+{% block title %}Mes congés — Espace pro — TrouveMoi{% endblock %}
+{% set day_names = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'] %}
+{% set months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'] %}
+{% macro d(date, months) %}{{ date|date('j', 'Europe/Paris') }} {{ months[date|date('n', 'Europe/Paris') - 1] }} {{ date|date('Y', 'Europe/Paris') }}{% endmacro %}
+{% import _self as m %}
+{% block space_content %}
+<div class="tm-agenda tm-leave">
+    <header class="tm-agenda__head">
+        <div class="tm-pro-head">
+            <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="umbrella" class="tm-icon--inherit" /></span>
+            <div>
+                <h1>Mes congés</h1>
+                <p>Planifiez vos absences : aucun créneau n’est proposé aux clients pendant vos congés.</p>
+            </div>
+        </div>
+        <div class="tm-agenda__actions">
+            <twig:Button href="{{ path('pro_availability') }}" variant="secondary" icon="calendar" iconPosition="start">Voir mon calendrier</twig:Button>
+            <twig:Button href="#declarer" icon="plus" iconPosition="start">Déclarer un congé</twig:Button>
+        </div>
+    </header>
+
+    <nav class="tm-pro-tabs tm-agenda__tabs" aria-label="Rubriques des congés">
+        {% for key, label in tabs %}
+            <a href="{{ path('pro_leave', key == 'a-venir' ? {} : {onglet: key}) }}"{% if tab == key %} aria-current="page"{% endif %}><twig:Icon name="{{ {'a-venir': 'umbrella', historique: 'refresh', feries: 'calendar'}[key] }}" size="xs" class="tm-icon--inherit" />{{ label }}</a>
+        {% endfor %}
+    </nav>
+
+    <div class="tm-agenda__main">
+        <ul class="tm-agenda__kpis" aria-label="Mon année {{ stats.year }}">
+            <li class="is-green"><twig:Icon name="calCheck" class="tm-icon--inherit" /><span><strong>{{ stats.taken }} jour{{ stats.taken > 1 ? 's' }}</strong>posé{{ stats.taken > 1 ? 's' }} en {{ stats.year }}</span></li>
+            <li class="is-blue"><twig:Icon name="umbrella" class="tm-icon--inherit" /><span><strong>{{ stats.planned }} jour{{ stats.planned > 1 ? 's' }}</strong>prévu{{ stats.planned > 1 ? 's' }} d’ici la fin de l’année</span></li>
+            <li class="is-orange"><twig:Icon name="clock" class="tm-icon--inherit" /><span><strong>{{ stats.periods }}</strong>congé{{ stats.periods > 1 ? 's' }} à venir</span></li>
+            <li class="is-violet"><twig:Icon name="calendar" class="tm-icon--inherit" /><span><strong>{{ stats.holidays_left }} jour{{ stats.holidays_left > 1 ? 's' }}</strong>férié{{ stats.holidays_left > 1 ? 's' }} restant{{ stats.holidays_left > 1 ? 's' }}</span></li>
+        </ul>
+
+        {% if tab == 'feries' %}
+            <section class="tm-pro-card tm-agenda__holidays" aria-labelledby="feries-titre">
+                <h2 id="feries-titre" class="tm-agenda__title">Jours fériés à venir</h2>
+                <p class="tm-caption">{{ calendar.settings.closedOnHolidays ? 'Aucun créneau n’est ouvert les jours fériés.' : 'Vos horaires s’appliquent aussi les jours fériés.' }} <a href="{{ path('pro_availability', {onglet: 'feries'}) }}">Modifier ce réglage</a></p>
+                <ul class="tm-agenda__holiday-list">
+                    {% for date, label in holidays %}<li><span>{{ label }}</span><span>{{ day_names[date|date('N', 'Europe/Paris') - 1] }} {{ m.d(date, months) }}</span></li>{% endfor %}
+                </ul>
+            </section>
+        {% else %}
+            <section class="tm-pro-card tm-agenda__planning" aria-labelledby="planning-titre">
+                <h2 id="planning-titre" class="tm-agenda__title"><twig:Icon name="calendar" size="sm" class="tm-icon--inherit" />Mon planning de congés</h2>
+                <div class="tm-agenda__bar">
+                    <div class="tm-agenda__period">
+                        <a href="{{ path('pro_leave', {date: from|date_modify('-7 days')|date('Y-m-d', 'Europe/Paris')}) }}"><twig:Icon name="chevL" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Semaine précédente</span></a>
+                        <span>Semaine du {{ from|date('j', 'Europe/Paris') }}{{ from|date('n', 'Europe/Paris') != to|date('n', 'Europe/Paris') ? ' ' ~ months[from|date('n', 'Europe/Paris') - 1] }} au {{ m.d(to, months) }}</span>
+                        <a href="{{ path('pro_leave', {date: from|date_modify('+7 days')|date('Y-m-d', 'Europe/Paris')}) }}"><twig:Icon name="chevR" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Semaine suivante</span></a>
+                    </div>
+                    <nav class="tm-agenda__views" aria-label="Affichage">
+                        <a href="{{ path('pro_leave', {date: from|date('Y-m-d', 'Europe/Paris')}) }}" aria-current="page"><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />Semaine</a>
+                        <a href="{{ path('pro_availability', {vue: 'mois', date: from|date('Y-m-d', 'Europe/Paris')}) }}"><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />Mois</a>
+                        <a href="{{ path('pro_availability', {vue: 'liste', date: from|date('Y-m-d', 'Europe/Paris')}) }}"><twig:Icon name="menu" size="xs" class="tm-icon--inherit" />Liste</a>
+                    </nav>
+                </div>
+                <div class="tm-agenda__scroll">
+                    <table class="tm-agenda__week">
+                        <caption class="tm-visually-hidden">Congés et disponibilités de la semaine</caption>
+                        <thead><tr><th scope="col">Horaires</th>{% for day in calendar.days %}<th scope="col"{% if day.isToday(today) %} class="is-today"{% endif %}>{{ day_names[loop.index0] }} {{ day.date|date('j', 'Europe/Paris') }}<span>{{ months[day.date|date('n', 'Europe/Paris') - 1]|capitalize }}</span></th>{% endfor %}</tr></thead>
+                        <tbody>
+                            {% for row in grid.rows %}
+                                <tr{% if row.time %} class="is-hour"{% endif %}>
+                                    <th scope="row">{{ row.time }}</th>
+                                    {% for cell in row.cells %}
+                                        {% if cell is not null %}
+                                            {% if cell.state == 'empty' %}<td></td>{% else %}
+                                                <td rowspan="{{ cell.rows }}" class="tm-agenda__slot is-{{ cell.state }}"><div><twig:Icon name="{{ {open: 'checkC', busy: 'users', held: 'hourglass', closed: 'calendar', off: 'calendar', leave: 'umbrella'}[cell.state] }}" size="xs" class="tm-icon--inherit" /><strong>{{ cell.label }}</strong>{% if cell.range %}<span>{{ cell.range }}</span>{% endif %}</div></td>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            {% set rows = tab == 'historique' ? past : upcoming %}
+            <section class="tm-pro-card tm-leave__table" aria-labelledby="liste-titre">
+                <h2 id="liste-titre" class="tm-agenda__title"><twig:Icon name="calendar" size="sm" class="tm-icon--inherit" />{{ tab == 'historique' ? 'Congés et absences passés' : 'Mes congés et absences' }}</h2>
+                {% if rows is empty %}
+                    <p class="tm-caption">{{ tab == 'historique' ? 'Aucune absence passée.' : 'Aucun congé à venir.' }}</p>
+                {% else %}
+                    <div class="tm-leave__scroll">
+                        <table>
+                            <thead><tr><th scope="col">Période</th><th scope="col">Type</th><th scope="col">Durée</th><th scope="col">Statut</th><th scope="col">Motif</th><th scope="col"><span class="tm-visually-hidden">Actions</span></th></tr></thead>
+                            <tbody>
+                                {% for a in rows %}
+                                    {% set ongoing = a.from|date('Y-m-d', 'Europe/Paris') <= today|date('Y-m-d', 'Europe/Paris') and a.to|date('Y-m-d', 'Europe/Paris') >= today|date('Y-m-d', 'Europe/Paris') %}
+                                    <tr>
+                                        <td>{{ a.from == a.to ? 'Le ' ~ m.d(a.from, months) : 'Du ' ~ m.d(a.from, months) ~ ' au ' ~ m.d(a.to, months) }}</td>
+                                        <td><span class="tm-leave__type"><twig:Icon name="{{ a.kind.value == 'leave' ? 'umbrella' : 'calendar' }}" size="xs" class="tm-icon--inherit" />{{ a.kind.label() }}</span></td>
+                                        <td>{{ a.days() }} jour{{ a.days() > 1 ? 's' }}</td>
+                                        <td><span class="tm-agenda__tag {{ tab == 'historique' ? 'is-off' : (ongoing ? 'is-leave' : 'is-open') }}">{{ tab == 'historique' ? 'Passé' : (ongoing ? 'En cours' : 'À venir') }}</span></td>
+                                        <td>{{ a.label ?? '—' }}</td>
+                                        <td>
+                                            {% if tab != 'historique' %}
+                                                <form method="post" action="{{ path('pro_agenda_absence_delete', {id: a.id}) }}">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                                                    <input type="hidden" name="retour" value="{{ path('pro_leave') }}">
+                                                    <button type="submit" class="tm-agenda__delete"><twig:Icon name="x" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden">Supprimer ce congé</span></button>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+
+                <form method="post" action="{{ path('pro_agenda_absence_add') }}" class="tm-agenda__absence-form" id="declarer">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <input type="hidden" name="retour" value="{{ path('pro_leave') }}">
+                    <h3 class="tm-agenda__title">Déclarer un congé</h3>
+                    <div class="tm-agenda__settings">
+                        <div class="tm-field"><label class="tm-field__label" for="debut">Du</label><div class="tm-field__control"><input class="tm-field__input" type="date" id="debut" name="debut" required min="{{ today|date('Y-m-d', 'Europe/Paris') }}"></div></div>
+                        <div class="tm-field"><label class="tm-field__label" for="fin">Au (inclus)</label><div class="tm-field__control"><input class="tm-field__input" type="date" id="fin" name="fin" min="{{ today|date('Y-m-d', 'Europe/Paris') }}"></div></div>
+                        <div class="tm-field"><label class="tm-field__label" for="type">Type</label><div class="tm-field__control"><select class="tm-field__input" id="type" name="type">{% for v, l in kinds %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div></div>
+                        <div class="tm-field"><label class="tm-field__label" for="libelle">Motif (facultatif)</label><div class="tm-field__control"><input class="tm-field__input" id="libelle" name="libelle" maxlength="80" placeholder="Vacances, formation…"></div></div>
+                    </div>
+                    <twig:Button type="submit" icon="plus" iconPosition="start">Déclarer</twig:Button>
+                </form>
+            </section>
+        {% endif %}
+    </div>
+
+    <aside class="tm-agenda__side">
+        <section class="tm-pro-card tm-leave__year" aria-labelledby="annee-titre">
+            <h2 id="annee-titre"><twig:Icon name="calendar" size="sm" class="tm-icon--inherit" />Mon année {{ stats.year }}</h2>
+            <dl>
+                <div><dt>Jours de congé posés</dt><dd>{{ stats.taken }} j</dd></div>
+                <div><dt>Jours prévus</dt><dd>{{ stats.planned }} j</dd></div>
+                <div><dt>Jours fériés restants</dt><dd>{{ stats.holidays_left }} j</dd></div>
+                <div class="is-total"><dt>Prochaine absence</dt><dd>{{ next ? m.d(next.from, months) : '—' }}</dd></div>
+            </dl>
+        </section>
+        <section class="tm-pro-card tm-agenda__quick" aria-labelledby="actions-titre">
+            <h2 id="actions-titre"><twig:Icon name="zap" size="sm" class="tm-icon--inherit" />Actions rapides</h2>
+            <ul>
+                <li><a href="#declarer"><twig:Icon name="plus" size="xs" class="tm-icon--inherit" />Déclarer un congé</a></li>
+                <li><a href="{{ path('pro_availability', {onglet: 'indisponibilites'}) }}#ajout-absence"><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />Déclarer une absence</a></li>
+                <li><a href="{{ path('pro_leave', {onglet: 'feries'}) }}"><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />Voir les jours fériés</a></li>
+            </ul>
+        </section>
+        <section class="tm-pro-card tm-leave__tip" aria-labelledby="conseil-titre">
+            <h2 id="conseil-titre"><twig:Icon name="bulb" size="sm" class="tm-icon--inherit" />Conseil TrouveMoi</h2>
+            <p>Anticipez vos absences pour garder un planning de chantier fluide : déclarez vos congés dès que possible et prévenez vos clients en cours via la messagerie.</p>
+        </section>
+    </aside>
+</div>
+{% endblock %}

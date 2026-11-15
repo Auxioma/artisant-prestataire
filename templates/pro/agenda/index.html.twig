@@ -80,7 +80,7 @@
                                                 {% if cell is not null %}
                                                     {% if cell.state == 'empty' %}<td></td>{% else %}
                                                         <td rowspan="{{ cell.rows }}" class="tm-agenda__slot is-{{ cell.state }}">
-                                                            <div><twig:Icon name="{{ {open: 'checkC', busy: 'users', held: 'hourglass', closed: 'calendar', off: 'calendar'}[cell.state] }}" size="xs" class="tm-icon--inherit" /><strong>{{ cell.label }}</strong>{% if cell.range %}<span>{{ cell.range }}</span>{% endif %}</div>
+                                                            <div><twig:Icon name="{{ {open: 'checkC', busy: 'users', held: 'hourglass', closed: 'calendar', off: 'calendar', leave: 'umbrella'}[cell.state] }}" size="xs" class="tm-icon--inherit" /><strong>{{ cell.label }}</strong>{% if cell.range %}<span>{{ cell.range }}</span>{% endif %}</div>
                                                         </td>
                                                     {% endif %}
                                                 {% endif %}
