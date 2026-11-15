@@ -1,0 +1,123 @@
+{#-
+    C06 « Mes avis » (Figma 230:13056) : onglets À donner / Publiés, prestations à évaluer (« Donner mon avis »),
+    formulaire (note globale, sous-notes, titre, avis 50–2 000 avec compteur, photos (5), date de prestation pré-remplie,
+    recommandation, information sur la modération), avis déposés (statut, motif, réponse de l'artisan, Modifier,
+    Supprimer). Écarts : P-118.
+-#}
+{% extends 'client/_space.html.twig' %}
+{% set space_active = 'profile' %}
+{% set space_title = 'Mes avis' %}
+{% set space_subtitle = 'Consultez et gérez les avis déposés sur vos professionnels.' %}
+{% block title %}Mes avis — Espace client — TrouveMoi{% endblock %}
+{% macro stars(name, label, value, big) %}
+    <fieldset class="tm-stars-input{{ big ? ' tm-stars-input--big' }}">
+        <legend>{{ label }}</legend>
+        <div>
+            {% for n in 5..1 %}
+                <input type="radio" id="{{ name }}-{{ n }}" name="{{ name }}" value="{{ n }}"{% if value == n %} checked{% endif %}{% if big %} required{% endif %}>
+                <label for="{{ name }}-{{ n }}"><twig:Icon name="starFilled" class="tm-icon--inherit" /><span class="tm-visually-hidden">{{ n }} étoile{{ n > 1 ? 's' }}</span></label>
+            {% endfor %}
+        </div>
+    </fieldset>
+{% endmacro %}
+{% import _self as m %}
+{% block space_content %}
+<div class="tm-reviews">
+    <nav class="tm-reviews__tabs" aria-label="Mes avis">
+        <a href="{{ path('client_reviews') }}"{% if tab == 'a-donner' %} aria-current="page"{% endif %}>À donner ({{ view.toGive|filter(t => t.open)|length }})</a>
+        <a href="{{ path('client_reviews', {onglet: 'publies'}) }}"{% if tab == 'publies' %} aria-current="page"{% endif %}>Publiés ({{ view.mine|length }})</a>
+    </nav>
+
+    {% if tab == 'a-donner' %}
+        {% for t in view.toGive %}
+            <section class="tm-pro-card tm-reviews__give" aria-label="Prestation de {{ t.artisan_name }}">
+                {% if t.logo %}<img class="tm-msg-avatar" src="{{ path('public_artisan_logo', {id: t.logo}) }}" alt="" width="48" height="48">{% else %}<span class="tm-msg-avatar tm-msg-avatar--initials" aria-hidden="true">{{ t.artisan_name|slice(0, 2)|upper }}</span>{% endif %}
+                <div>
+                    <p class="tm-reviews__who">{{ t.artisan_name }} · {{ t.request_title ?? ('Demande ' ~ t.request_number) }}</p>
+                    <p class="tm-caption">Prestation du {{ t.opens|date('d/m/Y', 'Europe/Paris') }} · avis possible jusqu’au {{ t.closes|date('d/m/Y', 'Europe/Paris') }}</p>
+                </div>
+                {% if t.open %}<twig:Button href="{{ path('client_review_new', {demande: t.request_id}) }}#avis">Donner mon avis</twig:Button>{% else %}<p class="tm-caption">Avis possible à partir du {{ t.opens|date('d/m/Y', 'Europe/Paris') }}</p>{% endif %}
+            </section>
+        {% else %}
+            {% if not form %}<div class="tm-pro-card"><twig:EmptyState title="Aucune prestation à évaluer" text="Après une prestation réalisée par un professionnel dont vous avez accepté le devis, vous pourrez déposer un avis certifié." icon="star" /></div>{% endif %}
+        {% endfor %}
+    {% endif %}
+
+    {% if form %}
+        {% set r = form.review %}
+        {% set i = input %}
+        <form method="post" enctype="multipart/form-data" class="tm-pro-card tm-reviews__form" id="avis" data-controller="char-count" data-char-count-max-value="{{ text_max }}">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            <h2>Votre avis sur {{ form.artisan_name }}</h2>
+            {% if form.error %}<p class="tm-field__error" role="alert"><twig:Icon name="alert" size="xs" />{{ form.error }}</p>{% endif %}
+            {% if r and r.status == 'changes_requested' and r.moderatorNote %}<p class="tm-reviews__note"><twig:Icon name="info" size="sm" class="tm-icon--inherit" />Demande de la modération : {{ r.moderatorNote }}</p>{% endif %}
+            {{ m.stars('note', 'Note globale *', i.note ?? (r.rating ?? null), true) }}
+            <div class="tm-reviews__subs">
+                {% for key, label in criteria %}{{ m.stars('sous_' ~ key, label, i['sous_' ~ key] ?? (r.subRatings[key] ?? null), false) }}{% endfor %}
+            </div>
+            <div class="tm-field">
+                <label class="tm-field__label" for="titre">Titre *</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="titre" name="titre" maxlength="100" required value="{{ i.titre ?? (r.title ?? '') }}"></div>
+            </div>
+            <div class="tm-field">
+                <label class="tm-field__label" for="avis-texte">Votre avis *</label>
+                <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="avis-texte" name="avis" rows="6" minlength="{{ text_min }}" maxlength="{{ text_max }}" required aria-describedby="avis-aide" data-char-count-target="input" data-action="input->char-count#update">{{ i.avis ?? (r.text ?? '') }}</textarea></div>
+                <p class="tm-field__help" id="avis-aide">Au moins {{ text_min }} caractères · <span data-char-count-target="count">{{ (i.avis ?? (r.text ?? ''))|length }} / {{ text_max|number_format(0, ',', ' ') }}</span></p>
+            </div>
+            <div class="tm-reviews__row">
+                <div class="tm-field" data-controller="attachment-pick" data-attachment-pick-label-value="Photos">
+                    <label class="tm-reviews__photos-label" for="photos"><twig:Icon name="camera" size="xs" class="tm-icon--inherit" />Ajouter des photos ({{ photos_max }} max)</label>
+                    <input class="tm-reviews__file" type="file" id="photos" name="photos[]" accept="image/jpeg,image/png,image/webp" multiple data-attachment-pick-target="input" data-action="attachment-pick#pick">
+                    <p class="tm-reviews__chosen" data-attachment-pick-target="name" hidden></p>
+                </div>
+                <div class="tm-field">
+                    <label class="tm-field__label" for="date_prestation">Date de prestation (pré-remplie)</label>
+                    <div class="tm-field__control"><input class="tm-field__input" type="date" id="date_prestation" name="date_prestation" value="{{ i.date_prestation ?? form.service|date('Y-m-d', 'Europe/Paris') }}" max="{{ 'now'|date('Y-m-d', 'Europe/Paris') }}"></div>
+                </div>
+            </div>
+            {% if r and r.photos is not empty %}
+                <fieldset class="tm-reviews__kept">
+                    <legend>Photos déjà jointes (décochez pour retirer)</legend>
+                    {% for f in r.photos %}<label><input type="checkbox" name="garder[]" value="{{ f }}" checked><img src="{{ path('review_photo', {review: r.id, file: f}) }}" alt="Photo {{ loop.index }}" width="72" height="72"></label>{% endfor %}
+                </fieldset>
+            {% endif %}
+            <fieldset class="tm-reviews__recommend">
+                <legend>Recommanderiez-vous ce professionnel ?</legend>
+                {% set rec = i.recommande ?? (r and r.recommends is not null ? (r.recommends ? 'oui' : 'non') : 'oui') %}
+                <label><input type="radio" name="recommande" value="oui"{% if rec == 'oui' %} checked{% endif %}> Oui</label>
+                <label><input type="radio" name="recommande" value="non"{% if rec == 'non' %} checked{% endif %}> Non</label>
+            </fieldset>
+            <p class="tm-reviews__info"><twig:Icon name="info" size="sm" class="tm-icon--inherit" />{{ view.moderationMode == 'a_priori' ? 'Votre avis est vérifié avant publication (modération a priori, délai cible 48 h).' : 'Votre avis est publié aussitôt, puis contrôlé ; certains avis sont vérifiés avant publication.' }} Modifiable pendant {{ view.editDays }} jours ou jusqu’à la réponse de l’artisan.</p>
+            <div class="tm-agenda__actions">
+                <twig:Button type="submit">{{ r ? 'Enregistrer les modifications' : 'Publier mon avis' }}</twig:Button>
+                {% if r %}<twig:Button href="{{ path('client_reviews', {onglet: 'publies'}) }}" variant="secondary">Annuler</twig:Button>{% endif %}
+            </div>
+        </form>
+    {% endif %}
+
+    <section class="tm-pro-card tm-reviews__mine" aria-labelledby="publies-titre">
+        <h2 id="publies-titre">Avis publiés</h2>
+        {% for r in view.mine %}
+            <article class="tm-reviews__item">
+                <p class="tm-reviews__head"><strong>{{ r.artisanName }} · {{ r.rating }}/5</strong><span class="tm-reviews__status is-{{ r.status }}">{% if r.status == 'pending' %}<twig:Icon name="clock" size="xs" class="tm-icon--inherit" />{% elseif r.status == 'published' %}<span class="tm-reviews__dot" aria-hidden="true"></span>{% endif %}{{ r.statusLabel() }}</span></p>
+                {% if r.title %}<p class="tm-reviews__title">{{ r.title }}</p>{% endif %}
+                <p class="tm-reviews__text">{{ r.text }}</p>
+                {% if r.reasonLabel() %}<p class="tm-reviews__reason">Motif : {{ r.reasonLabel() }} — voir notre politique des avis.</p>{% endif %}
+                {% if r.status == 'changes_requested' and r.moderatorNote %}<p class="tm-reviews__reason">Demande de la modération : {{ r.moderatorNote }}</p>{% endif %}
+                {% if r.reply and r.replyStatus == 'published' %}<div class="tm-reviews__reply"><p class="tm-caption">Réponse de l’artisan</p><p>« {{ r.reply }} »</p></div>{% endif %}
+                <div class="tm-reviews__links">
+                    {% if not r.reply and r.status != 'hidden' %}<a href="{{ path('client_review_edit', {id: r.id}) }}#avis">Modifier</a>{% endif %}
+                    <span class="tm-reviews__delete">
+                        <form method="post" action="{{ path('client_review_delete', {id: r.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                            <button type="submit">Supprimer</button>
+                        </form>
+                    </span>
+                </div>
+            </article>
+        {% else %}
+            <p class="tm-caption">Vous n’avez encore déposé aucun avis.</p>
+        {% endfor %}
+    </section>
+</div>
+{% endblock %}

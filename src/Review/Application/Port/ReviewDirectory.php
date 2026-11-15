@@ -30,4 +30,14 @@ interface ReviewDirectory
      * @return array{avg: ?float, count: int}
      */
     public function publishedStats(string $artisanId): array;
+
+    /**
+     * E-16 — demandes avec un devis accepté et sans avis, et l'état de leurs invitations.
+     *
+     * @return list<array{request_id: string, client_user_id: string, client_email: ?string, client_first_name: ?string, artisan_name: string, accepted_at: \DateTimeImmutable, service_at: ?\DateTimeImmutable, invited_at: ?\DateTimeImmutable, reminded_at: ?\DateTimeImmutable, artisan_reminded_at: ?\DateTimeImmutable}>
+     */
+    public function invitationCandidates(): array;
+
+    /** @param 'invited_at'|'reminded_at'|'artisan_reminded_at' $column */
+    public function markInvitation(string $requestId, string $column, \DateTimeImmutable $at): void;
 }

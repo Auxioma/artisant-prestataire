@@ -15,6 +15,9 @@ use App\Shared\Application\Bus\CommandHandler;
 use App\Shared\Application\Bus\EventBus;
 use App\Shared\Application\Settings\SettingKey;
 use App\Shared\Application\Settings\SettingsProvider;
+use App\Shared\Application\Storage\FileUploader;
+use App\Shared\Application\Storage\RejectedUpload;
+use App\Shared\Domain\Storage\FilePurpose;
 use App\Shared\Domain\Time\Clock;
 
 /**
@@ -30,6 +33,7 @@ final readonly class ReviewHandler implements CommandHandler
         private ReviewDirectory $directory,
         private ReviewRiskScorer $risk,
         private SettingsProvider $settings,
+        private FileUploader $uploader,
         private EventBus $events,
         private Clock $clock,
     ) {
@@ -85,7 +89,18 @@ final readonly class ReviewHandler implements CommandHandler
         if ($serviceDate > $now) {
             throw new ReviewRuleViolation('La date de prestation ne peut pas être dans le futur.');
         }
-        $content = new ReviewContent($command->rating, $command->subRatings, null === $command->title || '' === trim($command->title) ? null : trim($command->title), trim(str_replace("\r\n", "\n", $command->text)), $serviceDate, $command->recommends, $command->photos);
+        $kept = null === $existing ? [] : array_values(array_intersect($command->photos, $existing->content()->photos));
+        if (\count($kept) + \count($command->uploads) > ReviewContent::PHOTOS_MAX) {
+            throw new ReviewRuleViolation(\sprintf('%d photos au plus.', ReviewContent::PHOTOS_MAX));
+        }
+        $title = null === $command->title || '' === trim($command->title) ? null : trim($command->title);
+        $text = trim(str_replace("\r\n", "\n", $command->text));
+        // Contrôle du contenu avant de stocker les photos : pas de fichier orphelin pour un avis refusé.
+        new ReviewContent($command->rating, $command->subRatings, $title, $text, $serviceDate, $command->recommends, $kept);
+        foreach ($command->uploads as $upload) {
+            $kept[] = $this->upload($upload['path'], $upload['name']);
+        }
+        $content = new ReviewContent($command->rating, $command->subRatings, $title, $text, $serviceDate, $command->recommends, $kept);
         $score = $this->risk->score(($content->title ?? '').' '.$content->text);
         if (null !== $existing) {
             $existing->edit($command->userId, $content, $score, $this->risk->needsReview($score), $this->settings->int(SettingKey::ReviewsEditDays), $now);
@@ -97,6 +112,18 @@ final readonly class ReviewHandler implements CommandHandler
         $review = Review::submit(new ReviewId($command->reviewId), $command->requestId, $quote['quote_id'], $command->userId, $quote['artisan_id'], $content, $score, $this->risk->needsReview($score), $now);
         $this->reviews->save($review);
         $this->events->publish(...$review->releaseEvents());
+    }
+
+    /** C06.2 — photo d'avis : type réel contrôlé, quarantaine puis antivirus ; affichée une fois saine. */
+    private function upload(string $path, ?string $name): string
+    {
+        try {
+            return $this->uploader->upload($path, $name, FilePurpose::ReviewPhoto)->id;
+        } catch (RejectedUpload $e) {
+            throw new ReviewRuleViolation(match ($e->reason) {
+                RejectedUpload::TYPE_NOT_ALLOWED => 'Photo non acceptée : formats JPG, PNG ou WEBP.', RejectedUpload::TOO_LARGE => \sprintf('Photo trop lourde (%d Mo au plus).', $this->settings->int(SettingKey::RequestsMaxFileMb)), RejectedUpload::IMAGE_TOO_LARGE => 'Image trop grande : réduisez sa résolution.', default => 'Cette photo n’a pas pu être acceptée.',
+            });
+        }
     }
 
     private function artisan(string $userId): string

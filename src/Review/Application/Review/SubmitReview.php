@@ -10,8 +10,9 @@ use App\Shared\Application\Bus\Command;
 final readonly class SubmitReview implements Command
 {
     /**
-     * @param array<string, int> $subRatings
-     * @param list<string>       $photos
+     * @param array<string, int>                       $subRatings
+     * @param list<string>                             $photos     photos déjà jointes à conserver (modification)
+     * @param list<array{path: string, name: ?string}> $uploads    nouvelles photos reçues (fichiers temporaires)
      */
     public function __construct(
         public string $userId,
@@ -24,6 +25,7 @@ final readonly class SubmitReview implements Command
         public ?string $serviceDate,
         public ?bool $recommends,
         public array $photos = [],
+        public array $uploads = [],
     ) {
     }
 }

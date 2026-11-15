@@ -90,4 +90,44 @@ final readonly class DbalReviewDirectory implements ReviewDirectory
 
         return ['avg' => 0 === $count || false === $r || null === $r['avg'] ? null : round((float) DbalValue::string($r['avg']), 2), 'count' => $count];
     }
+
+    public function invitationCandidates(): array
+    {
+        $d = static fn (mixed $v): ?\DateTimeImmutable => null === $v ? null : new \DateTimeImmutable(DbalValue::string($v));
+
+        return array_map(static fn (array $r): array => [
+            'request_id' => DbalValue::string($r['request_id']),
+            'client_user_id' => DbalValue::string($r['client_id']),
+            'client_email' => DbalValue::nullableString($r['email']),
+            'client_first_name' => DbalValue::nullableString($r['first_name']),
+            'artisan_name' => DbalValue::string($r['artisan_name']),
+            'accepted_at' => new \DateTimeImmutable(DbalValue::string($r['decided_at'])),
+            'service_at' => $d($r['service_at']),
+            'invited_at' => $d($r['invited_at']),
+            'reminded_at' => $d($r['reminded_at']),
+            'artisan_reminded_at' => $d($r['artisan_reminded_at']),
+        ], $this->connection->fetchAllAssociative(
+            <<<'SQL'
+                SELECT r.id AS request_id, r.client_id, u.email, u.first_name, q.decided_at, i.invited_at, i.reminded_at, i.artisan_reminded_at,
+                       coalesce(p.trade_name, p.company_name, 'Professionnel') AS artisan_name,
+                       (SELECT max(a.starts_at) FROM quote.appointment a WHERE a.quote_id = q.id AND (a.status = 'completed' OR (a.status = 'confirmed' AND a.starts_at <= now()))) AS service_at
+                FROM request.quote_request r
+                JOIN quote.quote q ON q.request_id = r.id AND q.status = 'accepted' AND q.decided_at IS NOT NULL
+                JOIN artisan.artisan_profile p ON p.id = q.artisan_id
+                LEFT JOIN identity.user_account u ON u.id = r.client_id AND u.status = 'active'
+                LEFT JOIN review.invitation i ON i.request_id = r.id
+                WHERE NOT EXISTS (SELECT 1 FROM review.review v WHERE v.request_id = r.id) AND (i.reminded_at IS NULL)
+                ORDER BY q.decided_at
+                SQL,
+        ));
+    }
+
+    public function markInvitation(string $requestId, string $column, \DateTimeImmutable $at): void
+    {
+        $column = \in_array($column, ['invited_at', 'reminded_at', 'artisan_reminded_at'], true) ? $column : 'invited_at';
+        $this->connection->executeStatement(
+            'INSERT INTO review.invitation (request_id, '.$column.') VALUES (:r, :at) ON CONFLICT (request_id) DO UPDATE SET '.$column.' = excluded.'.$column,
+            ['r' => $requestId, 'at' => $at->format('Y-m-d\\TH:i:sP')],
+        );
+    }
 }

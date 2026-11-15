@@ -57,10 +57,22 @@ final readonly class NotificationReviewMailer implements ReviewMailer
         ], $link));
     }
 
-    private function link(string $route): string
+    public function invitation(string $email, ?string $firstName, string $userId, string $artisanName, string $requestId, bool $reminder): void
+    {
+        $link = $this->link('client_review_new', ['demande' => $requestId]);
+        $this->notifier->notify(new Notification('E-16', $email, $userId, [
+            'prenom' => $firstName ?? '',
+            'artisan' => $artisanName,
+            'relance' => $reminder ? 'oui' : 'non',
+            'lien' => $link,
+        ], $link));
+    }
+
+    /** @param array<string, string> $params */
+    private function link(string $route, array $params = []): string
     {
         try {
-            return $this->urls->generate($route, [], UrlGeneratorInterface::ABSOLUTE_URL);
+            return $this->urls->generate($route, $params, UrlGeneratorInterface::ABSOLUTE_URL);
         } catch (RouteNotFoundException) {
             return $this->urls->generate('public_home', [], UrlGeneratorInterface::ABSOLUTE_URL);
         }

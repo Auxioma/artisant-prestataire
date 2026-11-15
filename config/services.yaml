@@ -204,6 +204,7 @@ services:
     App\Review\Domain\Review\ReviewRepository: '@App\Review\Infrastructure\Persistence\DbalReviewRepository'
     App\Review\Application\Port\ReviewDirectory: '@App\Review\Infrastructure\Persistence\DbalReviewDirectory'
     App\Review\Application\Port\ReviewMailer: '@App\Review\Infrastructure\Mailer\NotificationReviewMailer'
+    App\Review\Application\Query\ReviewReader: '@App\Review\Infrastructure\Persistence\DbalReviewReader'
     App\Quote\Domain\Appointment\AppointmentRepository: '@App\Quote\Infrastructure\Appointment\DbalAppointmentRepository'
     App\Quote\Application\Appointment\AppointmentReader: '@App\Quote\Infrastructure\Appointment\DbalAppointmentReader'
     App\Quote\Application\Appointment\AppointmentParties: '@App\Quote\Infrastructure\Appointment\DbalAppointmentReader'

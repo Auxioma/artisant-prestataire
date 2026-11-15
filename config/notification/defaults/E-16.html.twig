@@ -1,0 +1,4 @@
+<p>Bonjour {{ prenom }},</p>
+<p>{% if relance == 'oui' %}Vous n’avez pas encore donné votre avis sur <strong>{{ artisan }}</strong>. Il ne vous faut que deux minutes.{% else %}Votre prestation avec <strong>{{ artisan }}</strong> est terminée : comment s’est-elle passée ?{% endif %}</p>
+<p>Votre avis est certifié : seuls les clients ayant accepté un devis via TrouveMoi peuvent en déposer un.</p>
+{{ bouton(lien, 'Donner mon avis') }}
