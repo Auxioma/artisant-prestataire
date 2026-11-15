@@ -1,0 +1,137 @@
+{#-
+    BO13 « Paramètres de la plateforme » (Figma 186:5725) : rubriques (BO13.1), réglages typés de la rubrique avec leur
+    clé en aide, carte Paiement (Stripe) réservée au super-admin (clés masquées, mode), journal des modifications
+    avant / après. Les secrets restent dans le coffre : lecture seule ici. Écarts : P-137.
+-#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'settings' %}
+{% set can_edit = is_granted('admin.settings.edit') %}
+{% block title %}{{ view.label }} — Paramètres{% endblock %}
+{% macro value(v) %}{% if v is same as(true) %}oui{% elseif v is same as(false) %}non{% elseif v is null %}—{% elseif v is iterable %}{% for k, i in v %}{{ k is same as(loop.index0) ? i : k ~ ' ' ~ i }}{{ loop.last ? '' : ', ' }}{% endfor %}{% else %}{{ v }}{% endif %}{% endmacro %}
+{% import _self as m %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Paramètres de la plateforme', crumbs: ['Système'], subtitle: 'Chaque modification est journalisée (valeur avant / après)', save_form: can_edit and view.fields is not empty ? 'bo13-form' : null}) }}
+
+    <div class="tm-bo13">
+        <nav class="tm-admin-panel tm-bo13-rubrics" aria-labelledby="bo13-rubrics">
+            <h2 id="bo13-rubrics" class="tm-card-title">Rubriques</h2>
+            <ul>
+                {% for key, label in rubrics %}
+                    <li><a href="{{ path('admin_settings', {rubric: key}) }}" class="tm-bo13-rubric{{ key == view.rubric ? ' is-active' }}"{% if key == view.rubric %} aria-current="page"{% endif %}>{{ label }}{% if key == 'paiement' %} <twig:Icon name="lock" size="xs" class="tm-icon--inherit" />{% endif %}</a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+
+        <div class="tm-bo13-main">
+            <section class="tm-admin-panel" aria-labelledby="bo13-title">
+                <h2 id="bo13-title" class="tm-card-title">{{ view.label }}</h2>
+                {% if view.fields is empty %}
+                    <p class="tm-bo13-empty">
+                        {% if view.rubric == 'identite' %}Raison sociale, SIRET, adresse et directeur de la publication figurent dans les mentions légales, modifiables dans CMS › Pages.
+                        {% elseif view.rubric == 'cartographie' %}Le fournisseur de fonds de carte n’est pas encore choisi : la carte des résultats est en attente (aucun réglage pour l’instant).
+                        {% else %}Aucun outil de mesure d’audience n’est branché : rien n’est déposé sans consentement (voir Cookies / CMP).{% endif %}
+                    </p>
+                {% else %}
+                    <form method="post" id="bo13-form" action="{{ path('admin_settings_save', {rubric: view.rubric}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('admin_settings_' ~ view.rubric) }}">
+                        <fieldset class="tm-bo13-fields" {{ can_edit ? '' : 'disabled' }}>
+                            <legend class="tm-visually-hidden">{{ view.label }}</legend>
+                            {% for f in view.fields %}
+                                {% set id = 'bo13_' ~ f.key|replace({'.': '_'}) %}
+                                {% set help %}{{ f.key }}{% if f.min is not null or f.max is not null %} · {{ f.min ?? '…' }} à {{ f.max ?? '…' }}{% endif %}{% if f.proposed %} · valeur proposée, à valider{% endif %}{% endset %}
+                                {% if f.type == 'bool' %}
+                                    <div class="tm-bo13-check">
+                                        <input type="hidden" name="v[{{ f.key }}]" value="0">
+                                        <input type="checkbox" id="{{ id }}" name="v[{{ f.key }}]" value="1"{{ f.value ? ' checked' }} aria-describedby="{{ id }}_h">
+                                        <label for="{{ id }}">{{ f.label }}</label>
+                                        <span class="tm-caption" id="{{ id }}_h">{{ help }}</span>
+                                    </div>
+                                {% elseif f.type == 'weight_map' %}
+                                    <fieldset class="tm-bo13-wide">
+                                        <legend class="tm-field__label">{{ f.label }}</legend>
+                                        <div class="tm-bo13-weights">
+                                            {% for c in f.choices %}
+                                                <div class="tm-field"><label class="tm-field__label" for="{{ id }}_{{ c }}">{{ c }}</label>
+                                                    <div class="tm-field__control"><input class="tm-field__input" type="number" step="0.01" min="0" id="{{ id }}_{{ c }}" name="v[{{ f.key }}][{{ c }}]" value="{{ f.value[c] ?? '' }}" required></div></div>
+                                            {% endfor %}
+                                        </div>
+                                        <p class="tm-caption">{{ help }}</p>
+                                    </fieldset>
+                                {% elseif f.type == 'string_list' and f.choices %}
+                                    <fieldset class="tm-bo13-wide">
+                                        <legend class="tm-field__label">{{ f.label }}</legend>
+                                        <div class="tm-bo13-choices">
+                                            {% for c in f.choices %}
+                                                <label class="tm-bo13-choice"><input type="checkbox" name="v[{{ f.key }}][]" value="{{ c }}"{{ c in f.value ? ' checked' }}> {{ c }}</label>
+                                            {% endfor %}
+                                        </div>
+                                        <p class="tm-caption">{{ help }}</p>
+                                    </fieldset>
+                                {% else %}
+                                    <div class="tm-field{{ f.type == 'string_list' ? ' tm-bo13-wide' }}">
+                                        <label class="tm-field__label" for="{{ id }}">{{ f.label }}{% if f.type in ['int', 'choice', 'int_list'] %} <span class="tm-field__required" aria-hidden="true">*</span>{% endif %}</label>
+                                        <div class="tm-field__control">
+                                            {% if f.type == 'choice' %}
+                                                <select class="tm-field__input" id="{{ id }}" name="v[{{ f.key }}]" aria-describedby="{{ id }}_h">{% for c in f.choices %}<option value="{{ c }}"{{ c == f.value ? ' selected' }}>{{ c }}</option>{% endfor %}</select>
+                                            {% elseif f.type == 'string_list' %}
+                                                <textarea class="tm-field__input tm-field__textarea" id="{{ id }}" name="v[{{ f.key }}]" rows="4" aria-describedby="{{ id }}_h">{{ f.value|join("\n") }}</textarea>
+                                            {% elseif f.type == 'int_list' %}
+                                                <input class="tm-field__input" id="{{ id }}" name="v[{{ f.key }}]" value="{{ f.value|join(', ') }}" inputmode="numeric" required aria-describedby="{{ id }}_h">
+                                            {% elseif f.type == 'nullable_url' %}
+                                                <input class="tm-field__input" type="url" id="{{ id }}" name="v[{{ f.key }}]" value="{{ f.value }}" placeholder="https://" aria-describedby="{{ id }}_h">
+                                            {% elseif f.type == 'nullable_decimal' %}
+                                                <input class="tm-field__input" type="number" step="0.01" id="{{ id }}" name="v[{{ f.key }}]" value="{{ f.value }}" aria-describedby="{{ id }}_h">
+                                            {% else %}
+                                                <input class="tm-field__input" type="number" id="{{ id }}" name="v[{{ f.key }}]" value="{{ f.value }}"{% if f.min is not null %} min="{{ f.min }}"{% endif %}{% if f.max is not null %} max="{{ f.max }}"{% endif %}{{ f.type == 'int' ? ' required' }} aria-describedby="{{ id }}_h">
+                                            {% endif %}
+                                        </div>
+                                        <p class="tm-caption" id="{{ id }}_h">{{ help }}{% if f.type == 'string_list' %} · une valeur par ligne{% elseif f.type == 'int_list' %} · valeurs séparées par des virgules{% endif %}</p>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </fieldset>
+                        {% if can_edit %}<div class="tm-bo13-actions"><twig:Button type="submit" variant="secondary">Enregistrer la rubrique</twig:Button></div>{% endif %}
+                    </form>
+                {% endif %}
+                {% if view.rubric == 'emails' %}
+                    <p class="tm-caption tm-bo13-note">Transport d’envoi : <strong>{{ mailer ?? 'non configuré' }}</strong> — identifiants dans le coffre de secrets, jamais affichés.</p>
+                {% endif %}
+            </section>
+
+            <section class="tm-admin-panel" aria-labelledby="bo13-stripe">
+                <h2 id="bo13-stripe" class="tm-card-title">Paiement (Stripe) — réservé super-admin</h2>
+                <div class="tm-bo13-fields">
+                    {% for k, l in {public: 'Clé publique', secret: 'Clé secrète', webhook: 'Secret de signature des webhooks'} %}
+                        <div class="tm-field">
+                            <label class="tm-field__label" for="bo13_stripe_{{ k }}">{{ l }}{% if stripe.mode %} ({{ stripe.mode == 'live' ? 'production' : 'test' }}){% endif %}</label>
+                            <div class="tm-field__control"><input class="tm-field__input" id="bo13_stripe_{{ k }}" value="{{ stripe[k] ?? 'Non renseignée' }}" readonly></div>
+                            <p class="tm-caption">Gérée dans le coffre de secrets du serveur, visible uniquement par le super-admin</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="tm-bo13-modes" aria-label="Mode Stripe">
+                    <span class="tm-bo13-mode{{ stripe.mode == 'live' ? ' is-on' }}">Production</span>
+                    <span class="tm-bo13-mode{{ stripe.mode == 'test' ? ' is-on' }}">Test</span>
+                </div>
+            </section>
+
+            <section class="tm-admin-panel" aria-labelledby="bo13-log">
+                <h2 id="bo13-log" class="tm-card-title">Journal des modifications</h2>
+                {% if view.history is empty %}
+                    <p class="tm-bo13-empty">Aucune modification enregistrée pour cette rubrique.</p>
+                {% else %}
+                    <ul class="tm-bo13-log">
+                        {% for h in view.history %}
+                            <li>
+                                <time datetime="{{ h.at|date('c') }}">{{ h.at|date('d/m/Y H:i') }}</time>
+                                <span>{{ h.admin ?? 'Système' }}</span>
+                                <strong>{{ h.key }}</strong>
+                                <span class="tm-bo13-diff">{{ m.value(h.before) }} → {{ m.value(h.after) }}{% if h.before == h.after %} (inchangé){% endif %}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </section>
+        </div>
+    </div>
+{% endblock %}

@@ -11,4 +11,5 @@
         <h1>{{ title }}</h1>
         {% if subtitle|default(null) %}<p class="tm-admin-head__sub">{{ subtitle }}</p>{% endif %}
     </div>
+    {% if save_form|default(null) %}<twig:Button type="submit" form="{{ save_form }}">Enregistrer</twig:Button>{% endif %}
 </div>
