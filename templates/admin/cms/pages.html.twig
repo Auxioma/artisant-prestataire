@@ -1,0 +1,46 @@
+{#- BO10.2 « Pages » (pas de maquette dédiée, P-130) : liste, statut, création. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'cms' %}
+{% set can_edit = is_granted('admin.cms.edit') %}
+{% set status_labels = {draft: 'Brouillon', published: 'Publiée', scheduled: 'Programmée'} %}
+{% block title %}Pages — CMS{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Pages', crumbs: ['Contenus', 'CMS'], subtitle: pages|length ~ ' page' ~ (pages|length > 1 ? 's') ~ ' éditoriale' ~ (pages|length > 1 ? 's')}) }}
+    {{ include('admin/cms/_tabs.html.twig', {current: 'pages'}) }}
+    <div class="tm-admin-grid">
+        {% if can_edit %}
+            <section class="tm-admin-panel" aria-labelledby="create-title">
+                <h2 id="create-title" class="tm-card-title">Nouvelle page</h2>
+                <form method="post" action="{{ path('admin_cms_page_create') }}" class="tm-media-form" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <twig:Field id="page_title" name="title" label="Titre de la page" required maxlength="120" />
+                    <twig:Field id="page_slug" name="slug" label="Adresse (facultative)" maxlength="80" help="/pages/… — par défaut, tirée du titre." />
+                    <twig:Button type="submit" icon="plus" iconPosition="start">Créer la page</twig:Button>
+                </form>
+            </section>
+        {% endif %}
+        <section class="tm-admin-panel" aria-labelledby="list-title">
+            <h2 id="list-title" class="tm-card-title">Pages</h2>
+            {% if pages is empty %}
+                <twig:EmptyState title="Aucune page" text="Créez une page puis composez-la avec des blocs (texte, image, appel à l’action, cartes, FAQ, professionnels, bannière)." icon="file" />
+            {% else %}
+                <div class="tm-admin-table-wrap">
+                    <table class="tm-admin-table">
+                        <thead><tr><th scope="col">Titre</th><th scope="col">Adresse</th><th scope="col">Statut</th><th scope="col">Modifiée le</th></tr></thead>
+                        <tbody>
+                            {% for p in pages %}
+                                {% set st = p.status(now) %}
+                                <tr>
+                                    <th scope="row"><a href="{{ path('admin_cms_page', {id: p.id}) }}">{{ p.title }}</a></th>
+                                    <td><code>/pages/{{ p.slug }}</code></td>
+                                    <td><span class="tm-admin-status is-{{ st }}">{{ status_labels[st] }}</span>{% if st != 'draft' and p.hasUnpublishedChanges(now) %} <span class="tm-caption">· modifications non publiées</span>{% endif %}</td>
+                                    <td>{{ p.updatedAt|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

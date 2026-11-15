@@ -1,0 +1,31 @@
+{#- Champ d'un bloc de page (PageBlockType::fields) : name, field, value, id, media, topics. -#}
+{% set req = field.required ?? false %}
+{% if field.type in ['textarea', 'html'] %}
+    <div class="tm-field">
+        <label class="tm-field__label" for="{{ id }}">{{ field.label }}{% if req %} *{% endif %}</label>
+        <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="{{ id }}" name="{{ name }}" rows="{{ field.type == 'html' ? 8 : 3 }}" maxlength="{{ field.max }}"{% if req %} required{% endif %}>{{ value }}</textarea></div>
+        {% if field.type == 'html' %}<p class="tm-caption">Balises acceptées : &lt;p&gt;, &lt;h3&gt;, &lt;ul&gt;/&lt;ol&gt;/&lt;li&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;a href&gt; ; tout le reste est retiré.</p>{% endif %}
+    </div>
+{% elseif field.type == 'int' %}
+    <div class="tm-field">
+        <label class="tm-field__label" for="{{ id }}">{{ field.label }}</label>
+        <div class="tm-field__control"><input class="tm-field__input" type="number" id="{{ id }}" name="{{ name }}" value="{{ value }}" min="{{ field.min }}" max="{{ field.max }}" required></div>
+    </div>
+{% elseif field.type in ['choice', 'media', 'faq_topic'] %}
+    {% set choices = field.type == 'choice' ? field.choices : {} %}
+    {% if field.type == 'media' %}{% for m in media %}{% set choices = choices|merge({(m.id): m.title ~ ' — « ' ~ m.alt ~ ' »'}) %}{% endfor %}{% endif %}
+    {% if field.type == 'faq_topic' %}{% for t in topics %}{% set choices = choices|merge({(t.slug): t.title}) %}{% endfor %}{% endif %}
+    <div class="tm-field">
+        <label class="tm-field__label" for="{{ id }}">{{ field.label }}{% if req %} *{% endif %}</label>
+        <div class="tm-field__control"><select class="tm-field__input" id="{{ id }}" name="{{ name }}">
+            {% if field.type != 'choice' %}<option value="">{{ req ? '— Choisir —' : 'Aucune' }}</option>{% endif %}
+            {% for key, label in choices %}<option value="{{ key }}"{% if key ~ '' == value ~ '' %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select></div>
+        {% if field.type == 'media' and media is empty %}<p class="tm-caption">Déposez d’abord une image dans la <a href="{{ path('admin_cms_media') }}">médiathèque</a>.</p>{% endif %}
+    </div>
+{% else %}
+    <div class="tm-field">
+        <label class="tm-field__label" for="{{ id }}">{{ field.label }}{% if req %} *{% endif %}</label>
+        <div class="tm-field__control"><input class="tm-field__input" type="text" id="{{ id }}" name="{{ name }}" value="{{ value }}" maxlength="{{ field.max }}"{% if req %} required{% endif %}></div>
+    </div>
+{% endif %}

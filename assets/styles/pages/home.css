@@ -256,3 +256,29 @@
         .tm-help__columns { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
     }
 }
+
+/* BO10.2 — pages éditoriales à blocs (/pages/{adresse}) */
+@layer components {
+    .tm-page { display: grid; gap: var(--space-8); padding-bottom: var(--space-12); }
+    .tm-page__head { padding-top: var(--space-8); }
+    .tm-page__head h1 { margin: 0; color: var(--tm-navy); }
+    .tm-page__block h2 { margin: 0 0 var(--space-4); color: var(--tm-navy); }
+    .tm-page__prose { max-width: 760px; color: var(--tm-ink); font-size: 17px; line-height: 1.6; }
+    .tm-page__prose a { color: var(--color-link); }
+    .tm-page__image { margin: 0; }
+    .tm-page__image .tm-media { max-width: 760px; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 16px; }
+    .tm-page__image.is-full .tm-media { max-width: none; border-radius: 0; aspect-ratio: 21 / 9; }
+    .tm-page__image figcaption { max-width: 760px; margin-top: 8px; font-size: 14px; color: var(--tm-muted); }
+    .tm-page__cta { display: grid; justify-items: start; gap: var(--space-3); padding: var(--space-6); border-radius: 16px; background: var(--tm-ice); }
+    .tm-page__cta h2, .tm-page__cta p { margin: 0; }
+    .tm-page__cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
+    .tm-page__card { display: grid; align-content: start; gap: 8px; padding: var(--space-4); border: 1px solid var(--tm-line); border-radius: 14px; background: var(--color-surface); box-shadow: var(--shadow-card); }
+    .tm-page__card h3, .tm-page__card p { margin: 0; }
+    .tm-page__card-media { aspect-ratio: 16 / 10; overflow: hidden; border-radius: 10px; }
+    .tm-page__banner { position: relative; display: grid; min-height: 320px; overflow: hidden; background: var(--tm-navy); color: var(--color-text-inverse); }
+    .tm-page__banner-media { position: absolute; inset: 0; opacity: .45; }
+    .tm-page__banner-text { position: relative; display: grid; align-content: center; justify-items: start; gap: var(--space-3); padding-block: var(--space-8); }
+    .tm-page__banner-text h2 { margin: 0; color: inherit; }
+    .tm-page__banner-text p { margin: 0; max-width: 640px; }
+    .tm-cms-preview-flag { margin: 0; padding: 8px 16px; background: var(--color-warning-bg); color: var(--color-warning-text); font-weight: var(--font-weight-semibold); text-align: center; }
+}
