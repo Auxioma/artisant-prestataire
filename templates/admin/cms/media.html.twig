@@ -1,0 +1,71 @@
+{#- BO10.7 « Médiathèque » (pas de maquette dédiée, P-129) : dépôt, texte alternatif obligatoire, point focal, variantes WebP / AVIF. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'cms' %}
+{% set can_edit = is_granted('admin.cms.edit') %}
+{% block title %}Médiathèque — CMS{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Médiathèque', crumbs: ['Contenus', 'CMS'], subtitle: media|length ~ ' image' ~ (media|length > 1 ? 's') ~ ' · variantes WebP et AVIF générées automatiquement'}) }}
+    {{ include('admin/cms/_tabs.html.twig', {current: 'medias'}) }}
+
+    <div class="tm-admin-grid">
+        {% if can_edit %}
+            <section class="tm-admin-panel" aria-labelledby="upload-title">
+                <h2 id="upload-title" class="tm-card-title">Déposer une image</h2>
+                <form method="post" action="{{ path('admin_cms_media_upload') }}" enctype="multipart/form-data" class="tm-media-form" novalidate data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <div class="tm-field{{ errors.file is defined ? ' tm-field--error' }}">
+                        <label class="tm-field__label" for="media_file">Image (JPG, PNG ou WebP)<abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+                        <input class="tm-field__file" type="file" id="media_file" name="file" accept="image/jpeg,image/png,image/webp" required{% if errors.file is defined %} aria-invalid="true" aria-describedby="media_file_error"{% endif %}>
+                        {% if errors.file is defined %}<p class="tm-field__error" id="media_file_error">{{ errors.file }}</p>{% endif %}
+                    </div>
+                    <twig:Field id="media_alt" name="alt" label="Texte alternatif" required maxlength="250" value="{{ values.alt ?? null }}" error="{{ errors.alt ?? null }}" help="Décrivez ce que montre l’image pour les personnes qui ne la voient pas (RGAA)." />
+                    <twig:Field id="media_title" name="title" label="Titre (usage interne)" maxlength="120" value="{{ values.title ?? null }}" help="Par défaut : le nom du fichier." />
+                    <div class="tm-field">
+                        <label class="tm-field__label" for="media_focal">Point focal (cadrage)</label>
+                        <div class="tm-field__control"><select class="tm-field__input" id="media_focal" name="focal">{% for k, l in focals %}<option value="{{ k }}"{{ (values.focal ?? 'cc') == k ? ' selected' }}>{{ l }}</option>{% endfor %}</select></div>
+                        <p class="tm-field__help">Partie de l’image conservée quand elle est recadrée (bannières, cartes, mobile).</p>
+                    </div>
+                    <twig:Button type="submit" icon="upload" iconPosition="start">Déposer</twig:Button>
+                </form>
+            </section>
+        {% endif %}
+        <section class="tm-admin-panel" aria-labelledby="library-title">
+            <h2 id="library-title" class="tm-card-title">Images</h2>
+            {% if media is empty %}
+                <twig:EmptyState title="Aucune image" text="Les images déposées ici sont utilisables dans les pages et les blocs du site." icon="upload" />
+            {% else %}
+                <ul class="tm-media-grid">
+                    {% for m in media %}
+                        <li class="tm-media-card">
+                            <div class="tm-media-card__thumb">
+                                {% if m.ready %}<twig:Media id="{{ m.id }}" sizes="240px" />{% else %}<span class="tm-caption">{{ m.status == 'failed' ? 'Conversion impossible' : 'Analyse et conversion en cours…' }}</span>{% endif %}
+                            </div>
+                            <p class="tm-media-card__title">{{ m.title }}</p>
+                            <p class="tm-caption">{% if m.width %}{{ m.width }} × {{ m.height }} px · {% endif %}{{ m.widths('avif')|length + m.widths('webp')|length }} variante{{ (m.widths('avif')|length + m.widths('webp')|length) > 1 ? 's' }} · {{ m.createdAt|date('d/m/Y', 'Europe/Paris') }}</p>
+                            <p class="tm-media-card__alt"><span class="tm-visually-hidden">Texte alternatif : </span>« {{ m.alt }} »</p>
+                            <p class="tm-caption">Identifiant : <code>{{ m.id }}</code></p>
+                            {% if can_edit %}
+                                <details class="tm-media-card__edit">
+                                    <summary>Modifier</summary>
+                                    <form method="post" action="{{ path('admin_cms_media_update', {id: m.id}) }}" class="tm-media-form" data-turbo="false">
+                                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                                        <twig:Field id="alt_{{ m.id }}" name="alt" label="Texte alternatif" required maxlength="250" value="{{ m.alt }}" />
+                                        <twig:Field id="title_{{ m.id }}" name="title" label="Titre" maxlength="120" value="{{ m.title }}" />
+                                        <div class="tm-field">
+                                            <label class="tm-field__label" for="focal_{{ m.id }}">Point focal</label>
+                                            <div class="tm-field__control"><select class="tm-field__input" id="focal_{{ m.id }}" name="focal">{% for k, l in focals %}<option value="{{ k }}"{{ m.focal == k ? ' selected' }}>{{ l }}</option>{% endfor %}</select></div>
+                                        </div>
+                                        <div class="tm-admin-actions">
+                                            <twig:Button type="submit" variant="secondary" name="action" value="update">Enregistrer</twig:Button>
+                                            <twig:Button type="submit" variant="danger" name="action" value="delete">Supprimer</twig:Button>
+                                        </div>
+                                    </form>
+                                </details>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

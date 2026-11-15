@@ -492,3 +492,17 @@
     .tm-reconcile .tm-admin-table-wrap { background: var(--color-surface); border-radius: 8px; color: var(--tm-navy); }
     .tm-reconcile .tm-link-button { padding: 0; border: 0; background: none; color: var(--color-link); font: inherit; font-weight: var(--font-weight-semibold); text-decoration: underline; cursor: pointer; }
 }
+
+/* BO10.7 « Médiathèque » */
+@layer components {
+    .tm-media-form { display: grid; gap: 14px; }
+    .tm-media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
+    .tm-media-card { display: grid; align-content: start; gap: 6px; min-width: 0; padding: 12px; border: 1px solid var(--tm-line); border-radius: 12px; background: var(--color-surface); }
+    .tm-media-card p { margin: 0; overflow-wrap: anywhere; }
+    .tm-media-card__thumb { display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 8px; background: var(--tm-ice); text-align: center; }
+    .tm-media-card__thumb .tm-media, .tm-media-card__thumb img { width: 100%; height: 100%; }
+    .tm-media-card__title { font-weight: var(--font-weight-semibold); color: var(--tm-navy); }
+    .tm-media-card__alt { font-size: 13px; font-style: italic; color: var(--tm-ink); }
+    .tm-media-card__edit summary { cursor: pointer; color: var(--color-link); font-weight: var(--font-weight-semibold); }
+    .tm-media-card__edit[open] summary { margin-bottom: 10px; }
+}

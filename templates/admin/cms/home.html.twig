@@ -9,6 +9,8 @@
         ? 'En ligne : version ' ~ live.number ~ ', publiée le ' ~ live.publishAt|date('d/m/Y à H:i', 'Europe/Paris')
         : 'Aucune version publiée : le contenu initial du cahier des charges est affiché.'}) }}
 
+    {{ include('admin/cms/_tabs.html.twig', {current: 'accueil'}) }}
+
     <div class="tm-cms-toolbar">
         <a class="tm-button tm-button--secondary" href="{{ path('admin_cms_history') }}">Historique et restauration</a>
         <a class="tm-button tm-button--secondary" href="{{ path('admin_cms_preview') }}">Aperçu desktop / mobile</a>

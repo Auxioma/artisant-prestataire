@@ -1,0 +1,17 @@
+{#
+    BO10.7 — image de la médiathèque : <picture> AVIF puis WebP en largeurs multiples, dimensions intrinsèques (pas de
+    décalage de mise en page), texte alternatif saisi en back-office, cadrage par point focal (classes tm-focal--*).
+    <twig:Media id="…" sizes="(min-width: 1024px) 50vw, 100vw" />
+#}
+{% props id, sizes = '100vw', loading = 'lazy', alt = null %}
+{% set m = tm_media(id) %}
+{% if m %}
+    <picture {{ attributes.defaults({class: 'tm-media tm-focal--' ~ m.focal}) }}>
+        {% for format in ['avif', 'webp'] %}
+            {% set widths = m.widths(format) %}
+            {% if widths is not empty %}<source type="image/{{ format }}" sizes="{{ sizes }}" srcset="{% for w in widths %}{{ path('content_media', {id: m.id, width: w, format: format}) }} {{ w }}w{{ not loop.last ? ', ' }}{% endfor %}">{% endif %}
+        {% endfor %}
+        {% set fallback = m.widths('webp')|last %}
+        <img src="{{ path('content_media', {id: m.id, width: fallback, format: 'webp'}) }}" alt="{{ alt ?? m.alt }}" width="{{ m.width }}" height="{{ m.height }}" loading="{{ loading }}" decoding="async"{% if loading == 'eager' %} fetchpriority="high"{% endif %}>
+    </picture>
+{% endif %}
