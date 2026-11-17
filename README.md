@@ -1,6 +1,6 @@
 # TrouveMoi.com — Artisans & Prestataires
 
-Plateforme de mise en relation entre clients et artisans vérifiés. Stack : Symfony 7.4 LTS · PHP 8.4 · PostgreSQL 16 + PostGIS · Redis · Meilisearch.
+Plateforme de mise en relation entre clients et artisans vérifiés. Stack : Symfony 8.1 · PHP 8.4 · PostgreSQL 16 + PostGIS · Redis · Meilisearch.
 Architecture : monolithe modulaire en Clean Architecture et CQRS. Voir [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) et l'[index de la documentation](docs/README.md).
 
 ## Démarrer (Docker)

@@ -19,7 +19,7 @@ On écarte les micro-services : le volume du MVP (lancement en Normandie) ne les
                                     │ HTTPS (CDN, HSTS, CSP nonce)  │
               www.trouvemoi.com     │                               │   admin.trouvemoi.com (2FA, IP allowlist opt.)
                     ┌───────────────▼───────────────────────────────▼─────────────────────┐
-                    │                 FrankenPHP / php-fpm — Symfony 7.4 LTS               │
+                    │                 FrankenPHP / php-fpm — Symfony 8.1                   │
                     │  UI (contrôleurs, formulaires, voters, composants Twig, webhooks)    │
                     │  Application (commands / queries / handlers, ports)                  │
                     │  Domain (agrégats, VO, règles RG, événements)                        │
@@ -156,7 +156,7 @@ Inscription → Sirene (SIRET valide, actif, unique) → justificatifs (upload �
 | Sujet | Choix | ADR |
 |---|---|---|
 | Style d'architecture | Monolithe modulaire, Clean Architecture, CQRS, Deptrac | 0001 |
-| Versions | PHP 8.4, Symfony 7.4 LTS (support jusqu'en nov. 2028 / sécurité nov. 2029) | 0002 |
+| Versions | PHP 8.4, Symfony 8.1 (support jusqu'en janv. 2027) ; montée mineure tous les 6 mois jusqu'à 8.4 LTS (nov. 2027) | 0002 |
 | Persistance | Doctrine ORM, mapping XML, UUID v7, un schéma PostgreSQL par module | 0003 |
 | Recherche géographique / plein texte | PostGIS = source de vérité géo (RG-021) ; Meilisearch = autocomplétion et plein texte (RG-010) | 0004 |
 | Machines à états | Enums + transitions dans les agrégats ; Symfony Workflow non utilisé dans le domaine | 0005 |

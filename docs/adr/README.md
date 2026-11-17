@@ -6,7 +6,7 @@ Tous les ADR sont **Proposés** tant que l'Étape 0 n'est pas validée.
 | # | Titre | Statut |
 |---|---|---|
 | [0001](0001-monolithe-modulaire-clean-architecture.md) | Monolithe modulaire, Clean Architecture, CQRS, Deptrac | Proposé |
-| [0002](0002-versions-php-symfony.md) | PHP 8.4 + Symfony 7.4 LTS | Proposé |
+| [0002](0002-versions-php-symfony.md) | PHP 8.4 + Symfony 8.1 (révisé le 2026-11-17, cap 8.4 LTS) | Accepté |
 | [0003](0003-persistance-doctrine-xml-uuid-v7.md) | Doctrine ORM mapping XML, UUID v7, schémas par module | Proposé |
 | [0004](0004-postgis-vs-meilisearch.md) | PostGIS pour la géo, Meilisearch pour le texte | Proposé |
 | [0005](0005-machines-a-etats.md) | Machines à états : enums dans les agrégats plutôt que Symfony Workflow | Proposé |
