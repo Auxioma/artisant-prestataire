@@ -10,3 +10,8 @@ paths = [
   '''^docker/seaweedfs/s3\.json$''',
   '''^compose\.yaml$''',
 ]
+# Fausse clé Stripe du test de masquage des logs (PiiMaskingProcessorTest) : valeur exacte uniquement,
+# toute autre clé reste détectée, y compris dans ce fichier.
+regexes = [
+  '''^sk_live_51HxYzAbCdEf$''',
+]
