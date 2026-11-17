@@ -1,0 +1,178 @@
+/* TM / Input (59:219), TM / Select (93:1511), TM / Checkbox & Radio (93:1510). */
+@layer components {
+    .tm-field {
+        display: grid;
+        align-content: start;
+        gap: 6px;
+    }
+
+    /* Conteneur des champs d'un formulaire composé : espacement vertical régulier */
+    .tm-form-fields { display: grid; gap: var(--space-5); }
+
+    .tm-fieldset {
+        display: grid;
+        gap: 6px;
+        min-width: 0;
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+
+    .tm-fieldset > legend { padding: 0; margin-bottom: 6px; }
+
+    .tm-field__label {
+        display: inline-flex;
+        gap: var(--space-1);
+        font: var(--type-label);
+        color: var(--color-heading);
+    }
+
+    .tm-field__required {
+        color: var(--color-danger-text);
+        text-decoration: none;
+    }
+
+    .tm-field__control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: var(--input-height);
+        padding-inline: var(--space-4);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        background: var(--color-surface);
+        color: var(--color-text-muted);
+    }
+
+    .tm-field__control:focus-within {
+        border: 2px solid var(--color-border-strong);
+        padding-inline: calc(var(--space-4) - 1px);
+        box-shadow: var(--focus-ring);
+    }
+
+    .tm-field__input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        padding: 0;
+        background: transparent;
+        font: var(--type-body);
+        color: var(--color-text);
+        outline: none;
+    }
+
+    .tm-field__input::placeholder { color: var(--color-text-muted); opacity: 1; }
+    .tm-field__input:focus-visible { box-shadow: none; }
+    .tm-field__status { display: none; }
+
+    .tm-field__help,
+    .tm-field__error,
+    .tm-field__success {
+        margin: 0;
+        font: var(--type-caption);
+        color: var(--color-text-muted);
+    }
+
+    .tm-field__error { display: flex; gap: var(--space-1); color: var(--color-danger-text); }
+    .tm-field__error ul { margin: 0; padding: 0; list-style: none; }
+    .tm-field__success { color: var(--color-success-text); }
+
+    .tm-field__control:has(textarea) { align-items: stretch; padding-block: var(--space-2); }
+    .tm-field__control:has(textarea) .tm-field__textarea { width: 100%; border: 0; padding: 0; }
+
+    .tm-field--error .tm-field__control { border: 2px solid var(--tm-red); padding-inline: calc(var(--space-4) - 1px); }
+    .tm-field--error .tm-field__status { display: block; color: var(--color-danger-text); }
+    .tm-field--success .tm-field__control { border-color: var(--tm-green); }
+    .tm-field--success .tm-field__status { display: block; color: var(--color-success-text); }
+
+    .tm-field--disabled .tm-field__control,
+    .tm-field--readonly .tm-field__control { background: var(--color-surface-alt); }
+    .tm-field--disabled { opacity: 0.6; }
+    .tm-field--disabled .tm-field__input { cursor: not-allowed; }
+
+    /* Select natif stylé (préfixe « Trier : » facultatif) */
+    .tm-select {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-2);
+        min-height: var(--control-height);
+        padding-inline: var(--space-4) var(--space-3);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
+        background: var(--color-surface);
+    }
+
+    .tm-select:focus-within { box-shadow: var(--focus-ring); border-color: var(--color-border-strong); }
+    .tm-select__prefix { font: var(--type-body-sm); color: var(--color-text-muted); }
+
+    .tm-select__input {
+        appearance: none;
+        border: 0;
+        padding: 0 calc(var(--icon-size-xs) + var(--space-2)) 0 0;
+        background: transparent;
+        font: var(--type-body-strong);
+        color: var(--color-heading);
+        cursor: pointer;
+    }
+
+    .tm-select__input:focus-visible { box-shadow: none; outline: none; }
+
+    .tm-select__chevron {
+        position: absolute;
+        right: var(--space-3);
+        pointer-events: none;
+    }
+
+    /* Case à cocher et bouton radio : contrôle natif stylé, zone cliquable ≥ 44 px (contrôle + libellé) */
+    .tm-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        min-height: var(--control-height);
+        padding-block: 10px;
+        font: var(--type-body-sm);
+        color: var(--color-text);
+        cursor: pointer;
+    }
+
+    .tm-check__input {
+        appearance: none;
+        flex: none;
+        display: grid;
+        place-content: center;
+        width: 20px;
+        height: 20px;
+        margin: 0;
+        border: 1.5px solid var(--tm-muted);
+        border-radius: 4px;
+        background: var(--color-surface);
+        color: var(--color-text-inverse);
+        cursor: inherit;
+    }
+
+    .tm-check__input[type='radio'] { border-radius: var(--radius-pill); }
+
+    .tm-check__input:checked { border-color: var(--secondary); background: var(--secondary); }
+
+    .tm-check__input[type='checkbox']:checked::before {
+        content: '';
+        width: 10px;
+        height: 6px;
+        margin-top: -2px;
+        border: solid currentColor;
+        border-width: 0 0 2px 2px;
+        transform: rotate(-45deg);
+    }
+
+    .tm-check__input[type='radio']:checked { background: var(--color-surface); border-width: 6px; }
+    .tm-check__input:focus-visible { box-shadow: var(--focus-ring); border-radius: 4px; }
+    .tm-check__input[type='radio']:focus-visible { border-radius: var(--radius-pill); }
+
+    .tm-check:has(.tm-check__input:disabled) { opacity: 0.4; cursor: not-allowed; }
+
+    /* « Verrouillé » : filtre toujours actif, non décochable (P02.3) */
+    .tm-check--locked { cursor: default; }
+    .tm-check--locked:has(.tm-check__input:disabled) { opacity: 1; }
+    .tm-check--locked .tm-check__input:checked { border-color: var(--tm-muted); background: var(--tm-muted); }
+}

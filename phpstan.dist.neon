@@ -1,0 +1,29 @@
+includes:
+    - vendor/phpstan/phpstan/conf/bleedingEdge.neon
+
+parameters:
+    level: max
+    paths:
+        - src
+        - tests
+        - migrations
+        - tools/phpstan
+    tmpDir: var/phpstan
+    treatPhpDocTypesAsCertain: false
+    symfony:
+        containerXmlPath: var/cache/dev/App_KernelDevDebugContainer.xml
+    ignoreErrors:
+        # Banc de concurrence (T-504c) : processus enfants hors PHPUnit, qui lisent le conteneur de test
+        # (`test.service_container`, services privés accessibles) — inconnu de l'extension Symfony.
+        -
+            identifiers: [symfonyContainer.privateService, symfonyContainer.serviceNotFound]
+            path: tests/Concurrency/*
+        -
+            identifier: symfonyContainer.privateService
+            path: tests/Support/ArtisanDossier.php
+    doctrine:
+        allowNullablePropertyForRequiredField: false
+        objectManagerLoader: tests/phpstan/object-manager.php
+
+rules:
+    - App\Tools\PHPStan\NoBusinessLiteralRule

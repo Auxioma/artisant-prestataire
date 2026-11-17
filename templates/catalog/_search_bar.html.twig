@@ -1,0 +1,16 @@
+{#- Barre de recherche pré-remplie (P04.1, P05.1) : métier et lieu, saisie assistée, envoie vers P02. -#}
+<form method="get" action="{{ path('public_search') }}" class="tm-search__bar tm-catalog__bar" role="search" data-turbo="false">
+    <div class="tm-search__field" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="metier">
+        <label class="tm-search__label" for="catalog_job">Métier</label>
+        <input class="tm-search__input" id="catalog_job" type="text" value="{{ job ? job.name }}" placeholder="Plombier, électricien…" autocomplete="off" maxlength="80" data-autocomplete-target="input" data-action="input->autocomplete#suggest">
+        <input type="hidden" name="metier" value="{{ job ? job.slug }}" data-autocomplete-target="value">
+        <ul class="tm-area__suggestions" role="listbox" aria-label="Métiers proposés" hidden data-autocomplete-target="list"></ul>
+    </div>
+    <div class="tm-search__field" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="lieu">
+        <label class="tm-search__label" for="catalog_place">Où ?</label>
+        <input class="tm-search__input" id="catalog_place" name="lieu_libelle" type="text" value="{{ place ? place.name ~ (place.postalCodes is not empty ? ' (' ~ place.postalCodes|first ~ ')') }}" placeholder="Ville ou code postal" autocomplete="off" maxlength="80" required data-autocomplete-target="input" data-action="input->autocomplete#suggest">
+        <input type="hidden" name="lieu" value="{{ place ? place.insee }}" data-autocomplete-target="value">
+        <ul class="tm-area__suggestions" role="listbox" aria-label="Communes proposées" hidden data-autocomplete-target="list"></ul>
+    </div>
+    <twig:Button type="submit" variant="search" icon="search" iconPosition="start">Rechercher</twig:Button>
+</form>

@@ -1,0 +1,80 @@
+/* TM / Carte artisan (66:144) — verticale + squelette ; survol : ombre hover et translation −2 px. */
+@layer components {
+    .tm-card-artisan {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-card);
+        transition: box-shadow var(--duration-base) var(--easing-standard), transform var(--duration-base) var(--easing-standard);
+    }
+
+    .tm-card-artisan:hover,
+    .tm-card-artisan:focus-within {
+        box-shadow: var(--shadow-hover);
+        transform: translateY(var(--hover-lift));
+    }
+
+    .tm-card-artisan__media {
+        position: relative;
+        aspect-ratio: 4 / 3;
+        overflow: hidden; /* sans débordement, aspect-ratio céderait à la taille intrinsèque de la photo */
+        background: var(--background-light);
+    }
+
+    .tm-card-artisan__media img { width: 100%; height: 100%; object-fit: cover; }
+
+    .tm-card-artisan__placeholder {
+        display: grid;
+        place-items: center;
+        height: 100%;
+        color: var(--color-link);
+    }
+
+    .tm-card-artisan__placeholder .tm-icon { width: 40px; height: 40px; color: inherit; }
+
+    .tm-card-artisan__favorite {
+        position: absolute;
+        z-index: 1;
+        top: var(--space-3);
+        right: 10px;
+        display: grid;
+        place-items: center;
+        width: var(--control-height);
+        height: var(--control-height);
+        border: 0;
+        border-radius: var(--radius-pill);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-card);
+        color: var(--color-icon-ui);
+        cursor: pointer;
+    }
+
+    .tm-card-artisan__favorite[aria-pressed='true'] { color: var(--danger); }
+    .tm-card-artisan__body { display: grid; gap: var(--space-2); padding: var(--space-4); }
+    .tm-card-artisan__badges { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    /* Le lien du nom couvre toute la carte (cible large), sans imbriquer d'éléments interactifs */
+    .tm-card-artisan__name { font: var(--type-card-title); color: var(--color-heading); }
+    .tm-card-artisan__link { color: inherit; text-decoration: none; }
+    .tm-card-artisan__link::after { content: ''; position: absolute; inset: 0; }
+    .tm-card-artisan__link:focus-visible { box-shadow: none; }
+    .tm-card-artisan:has(.tm-card-artisan__link:focus-visible) { box-shadow: var(--focus-ring); }
+
+    .tm-card-artisan__trades { font: var(--type-body-sm); color: var(--color-text); }
+    .tm-card-artisan__rating { display: flex; align-items: center; gap: var(--space-1); }
+    .tm-card-artisan__stars { display: flex; gap: 1px; color: var(--color-star); }
+    .tm-card-artisan__stars .tm-icon { width: 14px; height: 14px; color: inherit; }
+    .tm-card-artisan__star--empty { opacity: 0.35; }
+    .tm-card-artisan__score { font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-card-artisan__reviews { font: var(--type-caption); color: var(--color-text-muted); }
+    .tm-card-artisan__location { display: flex; align-items: center; gap: 6px; font: var(--type-caption); color: var(--color-text); }
+    .tm-card-artisan__location .tm-icon { width: 16px; height: 16px; }
+
+    .tm-card-artisan--skeleton { box-shadow: none; }
+    .tm-card-artisan--skeleton:hover { box-shadow: none; transform: none; }
+    .tm-card-artisan--skeleton .tm-card-artisan__body { gap: 10px; }
+}

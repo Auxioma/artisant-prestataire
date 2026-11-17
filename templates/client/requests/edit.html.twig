@@ -1,0 +1,106 @@
+{#-
+    C02 « Modifier » / « Ajouter un complément » (RG-066) dans l'espace client : sans devis reçu, la demande se modifie
+    (métier et adresse restent ceux de l'envoi) ; ensuite, seul un complément peut être ajouté, visible des artisans.
+    Champs au style du tunnel P11 (Figma 194:8981). Écarts : P-75.
+-#}
+{% extends 'client/_space.html.twig' %}
+{% set space_active = 'requests' %}
+{% set space_title = 'Mes demandes' %}
+{% set space_subtitle = 'Suivez et gérez toutes vos demandes de devis, prestations et rendez-vous.' %}
+{% block title %}Modifier la demande {{ quote.number }} — Espace client — TrouveMoi{% endblock %}
+{% set p = form == 'edit' ? posted : null %}
+{% macro value(p, key, current) %}{{ p is not null ? (p[key] ?? '') : current }}{% endmacro %}
+{% import _self as m %}
+{% block space_content %}
+<div class="tm-cedit">
+    <p class="tm-cedit__back"><a href="{{ path('client_requests') }}"><twig:Icon name="chevL" size="xs" class="tm-icon--inherit" />Mes demandes</a></p>
+    <header class="tm-pro-head">
+        <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="file" class="tm-icon--inherit" /></span>
+        <div>
+            <h1>{{ editable ? 'Modifier ma demande' : 'Compléter ma demande' }}</h1>
+            <p>Demande n° {{ quote.number }}{{ details.title ? ' · ' ~ details.title }}</p>
+        </div>
+    </header>
+
+    {% if editable %}
+        <section class="tm-card-panel tm-cedit__card" aria-labelledby="edit-title">
+            <h2 id="edit-title" class="tm-card-title">Votre projet</h2>
+            <p class="tm-caption">Tant qu’aucun devis n’est reçu, vous pouvez modifier votre demande. Le métier et l’adresse ne changent pas : pour les modifier, dupliquez la demande.</p>
+            {% if error and form == 'edit' %}<p class="tm-field__error" role="alert"><twig:Icon name="alert" size="xs" />{{ error }}</p>{% endif %}
+            <form method="post" action="{{ path('client_request_edit', {id: quote.id.value}) }}" class="tm-cedit__form" data-turbo="false">
+                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                <input type="hidden" name="form" value="edit">
+                <div class="tm-field"><label class="tm-field__label" for="title">Titre de votre demande</label>
+                    <div class="tm-field__control"><input class="tm-field__input" id="title" name="title" maxlength="{{ limits.title }}" value="{{ m.value(p, 'title', details.title) }}"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="summary">Votre besoin en une phrase</label>
+                    <div class="tm-field__control"><input class="tm-field__input" id="summary" name="summary" maxlength="{{ limits.summary }}" value="{{ m.value(p, 'summary', details.summary) }}"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="description">Description <span aria-hidden="true">*</span></label>
+                    <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="description" name="description" rows="6" required minlength="30" maxlength="{{ limits.description }}">{{ m.value(p, 'description', details.description) }}</textarea></div>
+                    <p class="tm-field__help">30 caractères minimum. Pour votre sécurité, n’indiquez pas vos coordonnées.</p></div>
+                <div class="tm-cedit__row">
+                    <div class="tm-field"><label class="tm-field__label" for="budget_range">Budget indicatif</label>
+                        <div class="tm-field__control"><select class="tm-field__input" id="budget_range" name="budget_range">
+                            <option value="">Non précisé</option>
+                            {% set budget = m.value(p, 'budget_range', details.budgetRange)|trim %}
+                            {% for b in budgets %}<option value="{{ b.value }}"{{ budget == b.value ? ' selected' }}>{{ b.label }}</option>{% endfor %}
+                        </select></div></div>
+                    <div class="tm-field"><label class="tm-field__label" for="occupant_status">Vous êtes</label>
+                        <div class="tm-field__control"><select class="tm-field__input" id="occupant_status" name="occupant_status">
+                            <option value="">Non précisé</option>
+                            {% set occupant = m.value(p, 'occupant_status', details.occupantStatus.value ?? '')|trim %}
+                            {% for o in occupants %}<option value="{{ o.value }}"{{ occupant == o.value ? ' selected' }}>{{ o.label }}</option>{% endfor %}
+                        </select></div></div>
+                </div>
+                <div class="tm-cedit__row">
+                    <div class="tm-field"><label class="tm-field__label" for="timing">Délai souhaité <span aria-hidden="true">*</span></label>
+                        <div class="tm-field__control"><select class="tm-field__input" id="timing" name="timing" required>
+                            {% set timing = m.value(p, 'timing', details.timing.value)|trim %}
+                            {% for t in timings %}<option value="{{ t.value }}"{{ timing == t.value ? ' selected' }}>{{ t.label }}</option>{% endfor %}
+                        </select></div></div>
+                    <div class="tm-field"><label class="tm-field__label" for="desired_date">Date précise</label>
+                        <div class="tm-field__control"><input class="tm-field__input" type="date" id="desired_date" name="desired_date" value="{{ m.value(p, 'desired_date', details.desiredDate ? details.desiredDate|date('Y-m-d') : '') }}"></div>
+                        <p class="tm-field__help">Uniquement avec le délai « Date précise ».</p></div>
+                </div>
+                <fieldset class="tm-field">
+                    <legend class="tm-field__label">Créneaux préférés</legend>
+                    {% set chosen = p is not null ? (p.preferred_slots ?? []) : details.preferredSlots|map(s => s.value) %}
+                    <div class="tm-cedit__slots">
+                        {% for s in slots %}<label class="tm-cedit__slot"><input type="checkbox" name="preferred_slots[]" value="{{ s.value }}"{{ s.value in chosen ? ' checked' }}><span>{{ s.label }}</span></label>{% endfor %}
+                    </div>
+                </fieldset>
+                <div class="tm-cedit__actions">
+                    <twig:Button type="submit">Enregistrer les modifications</twig:Button>
+                    <twig:Button href="{{ path('client_requests') }}" variant="soft">Annuler</twig:Button>
+                </div>
+            </form>
+        </section>
+    {% elseif not addable %}
+        <twig:EmptyState title="Cette demande ne peut plus être modifiée" text="Elle est close : dupliquez-la depuis « Mes demandes » pour en déposer une nouvelle." icon="file">
+            <twig:Button href="{{ path('client_requests') }}" variant="secondary">Mes demandes</twig:Button>
+        </twig:EmptyState>
+    {% endif %}
+
+    {% if addable %}
+        <section class="tm-card-panel tm-cedit__card" aria-labelledby="addendum-title">
+            <h2 id="addendum-title" class="tm-card-title">Compléments</h2>
+            <p class="tm-caption">{{ editable ? 'Vous pouvez aussi ajouter une précision sans modifier votre demande.' : 'Vous avez reçu un devis : ajoutez une précision plutôt que de modifier la demande. Elle est visible des professionnels.' }}</p>
+            {% if addenda is not empty %}
+                <ol class="tm-cedit__addenda">
+                    {% for a in addenda %}<li><p class="tm-caption">Ajouté le {{ a.createdAt|date('d/m/Y à H:i', 'Europe/Paris') }}</p><p>{{ a.body|nl2br }}</p></li>{% endfor %}
+                </ol>
+            {% endif %}
+            {% if addenda|length < addenda_max %}
+                {% if error and form == 'addendum' %}<p class="tm-field__error" role="alert"><twig:Icon name="alert" size="xs" />{{ error }}</p>{% endif %}
+                <form method="post" action="{{ path('client_request_edit', {id: quote.id.value}) }}" class="tm-cedit__form" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <input type="hidden" name="form" value="addendum">
+                    <div class="tm-field"><label class="tm-field__label" for="body">Ajouter un complément</label>
+                        <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="body" name="body" rows="3" minlength="10" maxlength="{{ addendum_max }}" required>{{ form == 'addendum' ? posted.body ?? '' }}</textarea></div>
+                        <p class="tm-field__help">Sans coordonnées · {{ addenda_max - addenda|length }} complément{{ addenda_max - addenda|length > 1 ? 's' }} possible{{ addenda_max - addenda|length > 1 ? 's' }}.</p></div>
+                    <div class="tm-cedit__actions"><twig:Button type="submit" variant="secondary" icon="plus" iconPosition="start">Ajouter le complément</twig:Button></div>
+                </form>
+            {% endif %}
+        </section>
+    {% endif %}
+</div>
+{% endblock %}

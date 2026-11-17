@@ -1,0 +1,80 @@
+{#- A04 — Connexion (Figma 15:3, formulaire 393:16629). Connexion sociale masquée tant qu'A07 n'est pas activé (P-42). -#}
+{% extends 'base.html.twig' %}
+
+{% block title %}Se connecter — TrouveMoi{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {% if captcha %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="{{ csp_nonce('script') }}"></script>{% endif %}
+{% endblock %}
+
+{% block body %}
+<div class="tm-auth-page">
+    <twig:PageBanner title="Se connecter" subtitle="Accédez à votre espace TrouveMoi en toute sécurité." image="images/auth/a02-banner" />
+
+    <div class="tm-container tm-signup">
+        <aside class="tm-signup__aside tm-card-panel" aria-labelledby="espace-titre">
+            <h2 id="espace-titre" class="tm-section-title">Votre espace TrouveMoi</h2>
+            <ul class="tm-check-list tm-check-list--large">
+                <li><twig:Icon name="checkC" size="sm" />Suivez vos demandes et devis</li>
+                <li><twig:Icon name="checkC" size="sm" />Gérez vos projets et rendez-vous</li>
+                <li><twig:Icon name="checkC" size="sm" />Échangez avec vos clients / pros</li>
+                <li><twig:Icon name="checkC" size="sm" />Accédez à vos documents (devis, factures)</li>
+                <li><twig:Icon name="checkC" size="sm" />Mettez à jour votre profil et vos services</li>
+            </ul>
+            <img class="tm-signup__photo" src="{{ asset('images/auth/a02-femme-tel@1x.webp') }}" alt="" width="478" height="210" loading="lazy">
+            <div class="tm-member-box">
+                <twig:Icon name="crown" class="tm-member-box__icon" />
+                <p><strong>Déjà membre ?</strong><br>Retrouvez tous vos outils, vos projets et vos contacts en un seul espace.</p>
+            </div>
+        </aside>
+
+        <section class="tm-signup__form tm-card-panel" aria-labelledby="connexion-titre">
+            <h2 id="connexion-titre" class="tm-signup__title tm-login__title"><twig:Icon name="user" class="tm-login__title-icon" />Se connecter</h2>
+            <p class="tm-body">Accédez à votre compte TrouveMoi</p>
+
+            <form method="post" action="{{ path('identity_login') }}" class="tm-signup__fields" data-turbo="false" novalidate>
+                {% if error %}
+                    <div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ error }}</p></div>
+                {% endif %}
+                <div class="tm-field{{ error ? ' tm-field--error' }}">
+                    <label class="tm-field__label" for="login_email">E-mail<abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+                    <div class="tm-field__control">
+                        <twig:Icon name="mail" size="sm" class="tm-icon--inherit" />
+                        <input class="tm-field__input" id="login_email" name="_username" type="email" value="{{ last_username }}" autocomplete="username" placeholder="Votre adresse e-mail" required maxlength="254"{% if not last_username %} autofocus{% endif %}>
+                    </div>
+                </div>
+                <div class="tm-field{{ error ? ' tm-field--error' }}" data-controller="password">
+                    <label class="tm-field__label" for="login_password">Mot de passe<abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+                    <div class="tm-field__control">
+                        <twig:Icon name="lock" size="sm" class="tm-icon--inherit" />
+                        <input class="tm-field__input" id="login_password" name="_password" type="password" autocomplete="current-password" placeholder="Votre mot de passe" required maxlength="128" data-password-target="input"{% if last_username %} autofocus{% endif %}>
+                        <button type="button" class="tm-field__toggle" data-action="password#toggle" data-password-target="toggle" aria-controls="login_password" aria-pressed="false" aria-label="Afficher le mot de passe">
+                            <twig:Icon name="eye" size="sm" class="tm-icon--inherit" data-password-target="showIcon" />
+                            <twig:Icon name="eyeOff" size="sm" class="tm-icon--inherit" data-password-target="hideIcon" hidden />
+                        </button>
+                    </div>
+                </div>
+                <div class="tm-login__options">
+                    <label class="tm-check" for="login_remember">
+                        <input class="tm-check__input" id="login_remember" type="checkbox" name="_remember_me" value="on">
+                        <span>Se souvenir de moi <span class="tm-caption">({{ tm_setting_int('auth.remember_me_days') }} jours)</span></span>
+                    </label>
+                    <a href="{{ tm_path('identity_password_forgotten') }}"><strong>Mot de passe oublié ?</strong></a>
+                </div>
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                {% if target_path %}<input type="hidden" name="_target_path" value="{{ target_path }}">{% endif %}
+                {% if captcha %}
+                    <p class="tm-body-sm">Plusieurs tentatives ont échoué : merci de confirmer que vous n’êtes pas un robot.</p>
+                    <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-action="login" data-size="flexible" data-language="fr"></div>
+                {% endif %}
+                <twig:Button type="submit" icon="logIn" iconPosition="start" block>Se connecter</twig:Button>
+            </form>
+
+            <p class="tm-signup__login tm-body">Vous n’avez pas encore de compte ? <a href="{{ path('identity_register_choice') }}"><strong>Créer mon compte</strong></a></p>
+        </section>
+    </div>
+
+    {{ include('auth/_how_it_works.html.twig', {reassurance: [['shield', 'Données sécurisées et confidentielles'], ['lock', 'Un accès simple et rapide'], ['zap', 'Un espace complet et intuitif'], ['handshake', 'Une communauté de confiance']]}) }}
+</div>
+{% endblock %}

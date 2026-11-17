@@ -1,0 +1,9 @@
+<p>Bonjour {{ prenom }},</p>
+{% if inacheve %}
+<p>Votre inscription professionnelle n’est pas encore terminée. Votre progression est enregistrée : reprenez là où vous vous êtes arrêté, il ne reste que quelques minutes.</p>
+{% else %}
+<p>Votre dossier est bien envoyé, mais il manque encore des pièces obligatoires pour que notre équipe puisse le vérifier :</p>
+<p><strong>{{ pieces }}</strong></p>
+{% endif %}
+<p>Dès la validation de votre compte, vous recevrez vos devis offerts pour répondre aux demandes de votre zone.</p>
+{{ bouton(lien, inacheve ? 'Reprendre mon inscription' : 'Déposer mes pièces') }}

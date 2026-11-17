@@ -1,0 +1,20 @@
+{#
+    Bannière de page (Figma « Bannière de page », A02 393:16166) : photo, voile blanc dégradé, titre, sous-titre,
+    trait orange manuscrit et vague de transition. La photo est décorative (alt vide) : le titre porte le sens.
+    <twig:PageBanner title="Créer mon compte" subtitle="…" image="images/auth/a02-banner" />
+#}
+{% props title, subtitle = null, image %}
+<header {{ attributes.defaults({class: 'tm-page-banner'}) }}>
+    <img class="tm-page-banner__image" src="{{ asset(image ~ '@1x.webp') }}" alt="" width="1440" height="380" fetchpriority="high" decoding="async">
+    <div class="tm-page-banner__veil"></div>
+    <div class="tm-container tm-page-banner__content">
+        <h1 class="tm-page-banner__title">{{ title }}</h1>
+        {% if subtitle %}<p class="tm-page-banner__subtitle">{{ subtitle }}</p>{% endif %}
+        <svg class="tm-page-banner__stroke" width="240" height="12" viewBox="0 0 240 12" fill="none" aria-hidden="true" focusable="false">
+            <path d="M2 9C72 2 168 2 238 6" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+    </div>
+    <svg class="tm-page-banner__wave" viewBox="0 0 1440 46" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <path d="M0 22C360 52 900 -6 1440 20V46H0V22Z" fill="currentColor"/>
+    </svg>
+</header>

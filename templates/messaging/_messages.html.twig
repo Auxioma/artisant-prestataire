@@ -1,0 +1,66 @@
+{#-
+    C04.2 — messages d'un fil, groupés par jour ; statut « lu » (✓✓) sur mes messages, signalement des messages reçus ;
+    pièce jointe (Figma 232:13464 : carte nom, poids, téléchargement ; vignette pour une image) une fois analysée.
+-#}
+{% set today = 'now'|date('Y-m-d', 'Europe/Paris') %}
+{% set yesterday = '-1 day'|date('Y-m-d', 'Europe/Paris') %}
+{% set day = null %}
+{% for m in thread.messages %}
+    {% set d = m.at|date('Y-m-d', 'Europe/Paris') %}
+    {% if d != day %}
+        {% set day = d %}
+        <p class="tm-msg-day"><span>{{ d == today ? 'Aujourd’hui' : (d == yesterday ? 'Hier' : m.at|date('d/m/Y', 'Europe/Paris')) }}</span></p>
+    {% endif %}
+    <div class="tm-msg{{ m.mine ? ' is-mine' }}"{% if loop.last %} id="dernier"{% endif %}>
+        {% if not m.mine %}
+            {% if thread.counterpartLogoProfileId %}<img class="tm-msg-avatar tm-msg-avatar--sm" src="{{ path('public_artisan_logo', {id: thread.counterpartLogoProfileId}) }}" alt="" width="32" height="32" loading="lazy">{% else %}<span class="tm-msg-avatar tm-msg-avatar--sm tm-msg-avatar--initials" aria-hidden="true">{{ thread.initials() }}</span>{% endif %}
+        {% endif %}
+        <div class="tm-msg__bubble">
+            {% if m.removed %}<p class="tm-msg__body tm-msg__removed"><twig:Icon name="shield" size="xs" class="tm-icon--inherit" />Message retiré par la modération.</p>{% elseif m.body %}<p class="tm-msg__body">{{ m.body|nl2br }}</p>{% endif %}
+            {% if m.attachment %}
+                {% set a = m.attachment %}
+                {% set weight = a.size >= 1048576 ? (a.size / 1048576)|number_format(1, ',', ' ') ~ ' Mo' : max(1, (a.size / 1024)|round) ~ ' Ko' %}
+                {% if a.available %}
+                    {% set url = path(space ~ '_conversation_attachment', {id: thread.id, file: a.fileId}) %}
+                    {% if a.image %}<a class="tm-msg-file__thumb" href="{{ url }}" target="_blank" rel="noopener"><img src="{{ url }}" alt="{{ a.label }}" loading="lazy"></a>{% endif %}
+                    <a class="tm-msg-file" href="{{ url }}"{% if a.image %} target="_blank" rel="noopener"{% else %} download{% endif %}>
+                        <twig:Icon name="file" size="sm" class="tm-icon--inherit" />
+                        <span class="tm-msg-file__text"><strong>{{ a.label }}</strong><span>{{ weight }}</span></span>
+                        <twig:Icon name="download" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">{{ a.image ? 'Ouvrir' : 'Télécharger' }}</span>
+                    </a>
+                {% else %}
+                    <p class="tm-msg-file is-pending">
+                        <twig:Icon name="{{ a.status == 'quarantined' ? 'hourglass' : 'alert' }}" size="sm" class="tm-icon--inherit" />
+                        <span class="tm-msg-file__text"><strong>{{ a.label }}</strong><span>{{ a.status == 'quarantined' ? 'Analyse antivirus en cours…' : 'Pièce jointe refusée par l’analyse de sécurité' }}</span></span>
+                    </p>
+                {% endif %}
+            {% endif %}
+            <p class="tm-msg__meta">
+                <time datetime="{{ m.at|date('c') }}">{{ m.at|date('H:i', 'Europe/Paris') }}</time>
+                {% if m.mine %}<span class="tm-msg__read{{ m.readByCounterpart ? ' is-read' }}">{{ m.readByCounterpart ? '✓✓' : '✓' }}<span class="tm-visually-hidden">{{ m.readByCounterpart ? ' Lu' : ' Envoyé' }}</span></span>{% endif %}
+                {% if m.masked %}<span class="tm-msg__masked">Coordonnées masquées</span>{% endif %}
+            </p>
+            {% if not m.mine and not m.removed %}
+                {% if m.reportedByMe %}
+                    <p class="tm-msg__reported">Signalé à la modération</p>
+                {% else %}
+                    <details class="tm-msg__report">
+                        <summary>Signaler<span class="tm-visually-hidden"> ce message</span></summary>
+                        <form method="post" action="{{ path(space ~ '_conversation_action', {id: thread.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('messaging') }}">
+                            <input type="hidden" name="action" value="report">
+                            <input type="hidden" name="message" value="{{ m.id }}">
+                            <label class="tm-visually-hidden" for="motif-{{ m.id }}">Motif du signalement</label>
+                            <select id="motif-{{ m.id }}" name="motif" class="tm-select__input">
+                                {% for k, l in {spam: 'Démarchage ou publicité', abuse: 'Propos injurieux ou menaçants', fraud: 'Tentative de fraude', contact: 'Contournement de la plateforme', other: 'Autre'} %}<option value="{{ k }}">{{ l }}</option>{% endfor %}
+                            </select>
+                            <button type="submit" class="tm-link-button">Envoyer le signalement</button>
+                        </form>
+                    </details>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+{% else %}
+    <p class="tm-msg-list__empty">Aucun message.</p>
+{% endfor %}

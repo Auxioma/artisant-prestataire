@@ -1,0 +1,24 @@
+{#- Tunnel d'inscription professionnelle A03 (Figma 228:11720 / 228:11875) : en-tête tunnel, étape n/7, carte + aide. -#}
+{% extends 'base.html.twig' %}
+{% set header_variant = 'tunnel' %}
+
+{% block body %}
+<div class="tm-auth-page tm-pro-signup" data-controller="analytics" data-analytics-auto-event-value="pro_signup_step" data-analytics-auto-type-value="{{ step }}">
+    <header class="tm-container tm-pro-signup__intro">
+        <p class="tm-overline">Inscription professionnelle · Étape {{ step }}/{{ steps|length }}</p>
+        <h1>{% block step_title %}{% endblock %}</h1>
+        <p class="tm-body">{% block step_subtitle %}{% endblock %}</p>
+        <twig:Stepper :steps="steps" :current="step" label="Étapes de l’inscription professionnelle" />
+    </header>
+    <div class="tm-container tm-pro-signup__grid">
+        <section class="tm-card-panel tm-pro-signup__main" aria-labelledby="etape-titre">
+            <h2 id="etape-titre" class="tm-visually-hidden">{{ block('step_title') }}</h2>
+            {% block step_content %}{% endblock %}
+        </section>
+        <aside class="tm-pro-signup__why" aria-labelledby="pourquoi-titre">
+            <h2 id="pourquoi-titre" class="tm-card-title">Pourquoi ces informations ?</h2>
+            <ul class="tm-check-list">{% block step_why %}{% endblock %}</ul>
+        </aside>
+    </div>
+</div>
+{% endblock %}

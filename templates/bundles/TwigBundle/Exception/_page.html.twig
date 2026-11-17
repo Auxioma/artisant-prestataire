@@ -1,0 +1,19 @@
+{#- P18.1 — page d'erreur : picto, message, recherche, catégories populaires et accueil ; événement error_page_view (code, URL d'origine). -#}
+<section class="tm-container tm-error-page" data-controller="analytics" data-analytics-auto-event-value="error_page_view"
+         data-analytics-auto-params-value="{{ {code: code, url: app.request.pathInfo|slice(0, 200)}|json_encode }}">
+    <span class="tm-error-page__picto" aria-hidden="true"><twig:Icon name="{{ icon }}" /></span>
+    <p class="tm-error-page__code">Erreur {{ code }}</p>
+    <h1>{{ title }}</h1>
+    <p class="tm-error-page__text">{{ text }}</p>
+    {% if search ?? true %}
+        {% include 'catalog/_search_bar.html.twig' with {job: null, place: null} only %}
+        {% set categories = tm_main_categories()|slice(0, 6) %}
+        {% if categories is not empty %}
+            <nav aria-label="Catégories populaires">
+                <h2 class="tm-error-page__subtitle">Catégories populaires</h2>
+                <ul class="tm-error-page__links">{% for c in categories %}<li><a href="{{ c.href }}">{{ c.name }}</a></li>{% endfor %}</ul>
+            </nav>
+        {% endif %}
+    {% endif %}
+    <twig:Button href="{{ path('public_home') }}" variant="secondary" icon="home" iconPosition="start">Retour à l’accueil</twig:Button>
+</section>

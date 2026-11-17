@@ -14,6 +14,9 @@
 | Justificatifs artisans (Kbis, assurance, **pièce d'identité**) | Critique (usurpation d'identité) | ArtisanProfile |
 | Crédits et abonnements | Haute (financier) | Billing |
 | Clés Stripe, Brevo, KEK de chiffrement | Critique | coffre de secrets |
+| KEK de chiffrement des fichiers (`STORAGE_KEKS`) | Critique | coffre de secrets uniquement ; versionnées (`kek_id` stocké avec chaque fichier), rotation par ajout d'une KEK courante ; la clé nulle de développement est refusée en production |
+| Clés Sirene (INSEE) et Turnstile (secrète) | Élevée | coffre de secrets (`INSEE_SIRENE_API_KEY`, `TURNSTILE_SECRET_KEY`) ; le dépôt ne contient que les clés de test publiques de Cloudflare |
+| Clés Meilisearch (recherche / administration) | Élevée | coffre de secrets ; clé de recherche limitée à l'action `search` sur les index `tm_*`, jamais exposée au navigateur (le front passe par `/api/suggestions`) ; clé d'administration réservée au worker et à `app:search:reindex` ; clé maître hors de l'application |
 | Avis certifiés, classement | Haute (réputation, obligations L111-7) | Review, Search |
 | Back-office | Critique (accès global) | Administration |
 
@@ -103,7 +106,7 @@ S = usurpation · T = altération · R = répudiation · I = divulgation · D = 
 ### Administration (BO01–BO16)
 | | Menace | Contrôles |
 |---|---|---|
-| S | Vol de compte admin | firewall et hôte séparés, 2FA TOTP obligatoire, liste blanche IP optionnelle, `SameSite=Strict`, timeout court, ré-authentification pour les actions sensibles |
+| S | Vol de compte admin | pare-feu et contexte de sécurité séparés, hôte dédié (`ADMIN_HOST`), 2FA TOTP obligatoire (aucun compte actif sans 2FA, secret chiffré, anti-rejeu, codes de secours HMAC à usage unique), activation par invitation à lien unique haché, limitation des tentatives, liste blanche IP optionnelle, timeout d'inactivité, ré-authentification pour les actions sensibles, journalisation des connexions et échecs (T-209) |
 | E | Escalade de rôle | permissions fines vérifiées par Voters, gestion des rôles réservée au super-admin, plafonds de gestes |
 | E | Abus d'impersonation | super-admin uniquement, bandeau, AuditLog, actions financières bloquées |
 | I | Exfiltration via exports | exports PII limités aux rôles de l'annexe E, journalisés, fichiers expirant (24 h), URL signée |
@@ -122,7 +125,7 @@ S = usurpation · T = altération · R = répudiation · I = divulgation · D = 
 |---|---|---|
 | T | Dépendance compromise | `composer.lock` versionné, `composer audit` bloquant, roave/security-advisories, Dependabot, versions d'image Docker figées par digest |
 | I | Secret commité | gitleaks (pre-commit + CI), coffre `secrets:set`, `.env.local` ignoré |
-| T | SSRF via appels sortants | `HttpClient` scoped par service avec `base_uri` fixe, `NoPrivateNetworkHttpClient`, timeouts, aucune URL fournie par l'utilisateur |
+| T | SSRF via appels sortants | `HttpClient` scoped par service avec `base_uri` fixe, `NoPrivateNetworkHttpClient` posé contre le transport par `ExternalHttpClientsPass` (après résolution de l'URL, donc aussi contre les redirections et le rebond DNS), timeouts, aucune URL fournie par l'utilisateur ; seuls des identifiants validés (SIRET Luhn, n° TVA) ou des paramètres de requête encodés varient — vérifié par `ExternalHttpClientsTest` |
 | T | Désérialisation Messenger | sérialiseur Symfony (JSON) avec types attendus, pas de `unserialize` PHP natif sur des données externes |
 
 ## 3. Mapping ASVS 4.0.3 niveau 2

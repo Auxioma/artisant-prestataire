@@ -1,0 +1,11 @@
+{#
+    Icône Lucide du sprite (assets/icons/sprite.svg, identifiants = noms Figma « TM / Icônes »).
+    Décorative par défaut (aria-hidden) ; fournir `label` si l'icône porte seule une information.
+    Exemple : <twig:Icon name="search" size="sm" />  ·  <twig:Icon name="alert" label="Erreur" />
+#}
+{% props name, label = null, size = null, trade = false %}
+<svg {{ attributes.defaults({class: 'tm-icon' ~ (size ? ' tm-icon--' ~ size) ~ (trade ? ' tm-icon--trade')}) }}
+     width="24" height="24"
+     {% if label %}role="img" aria-label="{{ label }}"{% else %}aria-hidden="true" focusable="false"{% endif %}>
+    <use href="{{ asset('icons/sprite.svg') }}#{{ name }}"></use>
+</svg>

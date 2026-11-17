@@ -1,0 +1,6 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Nous avons bien reçu votre demande de suppression de compte. Votre compte est désactivé dès maintenant ; il sera définitivement effacé le <strong>{{ date_effacement|date('d/m/Y', 'Europe/Paris') }}</strong>.</p>
+<p>Ce jour-là, vos demandes en cours seront annulées (les professionnels concernés en seront informés), vos données personnelles seront effacées et vos avis resteront publiés sous la mention « Client vérifié ».</p>
+<p><strong>Vous avez changé d’avis ?</strong> Vous pouvez annuler la suppression jusqu’à cette date :</p>
+{{ bouton(lien_annulation, 'Annuler la suppression') }}
+<p class="muted">Vous n’êtes pas à l’origine de cette demande ? Annulez-la avec le bouton ci-dessus, changez votre mot de passe puis <a href="{{ lien_aide }}">contactez-nous</a>.</p>

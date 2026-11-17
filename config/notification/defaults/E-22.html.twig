@@ -1,0 +1,12 @@
+<p>Bonjour {{ prenom }},</p>
+{% if refus %}
+<p>Après examen, le dossier de <strong>{{ entreprise }}</strong> n’a pas été retenu.</p>
+<p><strong>Motif :</strong> {{ motif }}</p>
+{% if message %}<p>{{ message }}</p>{% endif %}
+<p>Vous pensez qu’il s’agit d’une erreur ? Répondez-nous depuis la page de votre dossier : nous le réexaminerons.</p>
+{% else %}
+<p>Notre équipe a besoin d’un complément pour valider le dossier de <strong>{{ entreprise }}</strong> :</p>
+<p><strong>{{ message }}</strong></p>
+<p>Déposez la pièce demandée depuis votre dossier : la vérification reprendra dès sa réception.</p>
+{% endif %}
+{{ bouton(lien, refus ? 'Voir mon dossier' : 'Compléter mon dossier') }}

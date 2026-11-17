@@ -1,0 +1,18 @@
+{#- P17 — versions publiées d'un document légal, la plus récente d'abord. -#}
+{% extends 'base.html.twig' %}
+{% block title %}{{ type.label }} — versions — TrouveMoi{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, follow">{% endblock %}
+{% block body %}
+<article class="tm-container tm-legal">
+    <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: type.label, href: path('identity_legal_document', {slug: type.slug})}, {label: 'Versions'}]" />
+    <h1>{{ type.label }} : versions</h1>
+    <ul class="tm-legal__versions">
+        {% for v in versions %}
+            <li>
+                <a href="{{ loop.first ? path('identity_legal_document', {slug: type.slug}) : path('identity_legal_version', {slug: type.slug, version: v.version}) }}">Version {{ v.version }}</a>
+                — publiée le {{ v.publishedAt|date('d/m/Y', 'Europe/Paris') }}{{ loop.first ? ' (en vigueur)' }}{{ v.substantial ? ' · modification substantielle' }}
+            </li>
+        {% endfor %}
+    </ul>
+</article>
+{% endblock %}

@@ -1,0 +1,22 @@
+# ADR-0008 : deux espaces privés distincts. Rien n'est jamais servi depuis la quarantaine ni depuis public/.
+flysystem:
+    storages:
+        quarantine.storage:
+            asyncaws: { client: 'app.s3_client', bucket: '%env(S3_BUCKET_QUARANTINE)%' }
+            visibility: private
+            directory_visibility: private
+        documents.storage:
+            asyncaws: { client: 'app.s3_client', bucket: '%env(S3_BUCKET_DOCUMENTS)%' }
+            visibility: private
+            directory_visibility: private
+
+services:
+    app.s3_client:
+        class: AsyncAws\S3\S3Client
+        arguments:
+            - endpoint: '%env(S3_ENDPOINT)%'
+              region: '%env(S3_REGION)%'
+              accessKeyId: '%env(S3_ACCESS_KEY)%'
+              accessKeySecret: '%env(S3_SECRET_KEY)%'
+              pathStyleEndpoint: true
+              sendChunkedBody: false

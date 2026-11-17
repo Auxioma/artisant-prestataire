@@ -1,0 +1,5 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Le prélèvement de <strong>{{ montant }}</strong> pour votre forfait <strong>{{ forfait }}</strong> n’a pas abouti (tentative {{ tentative }}).</p>
+{% if prochaine_tentative %}<p>Une nouvelle tentative aura lieu le <strong>{{ prochaine_tentative }}</strong>.</p>{% endif %}
+<p>Pour continuer à envoyer des devis sans interruption, réglez la facture ou mettez à jour votre moyen de paiement : <a href="{{ paiement }}">régler la facture</a>.</p>
+{{ bouton(lien, 'Gérer mon abonnement') }}

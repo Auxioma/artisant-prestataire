@@ -1,0 +1,27 @@
+{#
+    TM / Breadcrumb (Figma 93:1516) — toutes les pages hors accueil, balisage BreadcrumbList (CDC §3.3, §7).
+    <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Plomberie', href: '…'}, {label: 'Le Havre'}]" />
+    Le dernier élément est la page courante (aria-current, non cliquable).
+#}
+{% props items %}
+<nav {{ attributes.defaults({class: 'tm-breadcrumb', 'aria-label': 'Fil d’Ariane'}) }}>
+    <ol class="tm-breadcrumb__list">
+        {% for item in items %}
+            <li class="tm-breadcrumb__item">
+                {% if not loop.last and item.href is defined and item.href %}
+                    <a class="tm-breadcrumb__link" href="{{ item.href }}">{{ item.label }}</a>
+                    <twig:Icon name="chevR" class="tm-breadcrumb__sep" />
+                {% else %}
+                    <span aria-current="page">{{ item.label }}</span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+</nav>
+{% set jsonld = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items|map((item, i) => {'@type': 'ListItem', position: i + 1, name: item.label}|merge(item.href is defined and item.href and item.href != '#' ? {item: (item.href starts with 'http' ? item.href : app.request.schemeAndHttpHost ~ item.href)} : {}))
+} %}
+{# |raw justifié : JSON produit par json_encode avec JSON_HEX_TAG/JSON_HEX_AMP (aucun « < » ni « & » brut), donnée non exécutée. #}
+{% if tm_schema('breadcrumb') %}<script type="application/ld+json" nonce="{{ csp_nonce('script') }}">{{ jsonld|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP'))|raw }}</script>{% endif %}

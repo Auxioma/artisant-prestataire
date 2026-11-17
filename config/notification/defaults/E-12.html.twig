@@ -1,0 +1,5 @@
+<p>Bonjour {{ prenom }},</p>
+{% if rappel|default(false) %}<p>Petit rappel : vous n’avez pas encore consulté ce devis.</p>
+{% endif %}<p><strong>{{ artisan }}</strong> vous a envoyé un devis pour votre demande <strong>n° {{ numero }}</strong>{% if metier %} ({{ metier }}){% endif %} : <strong>{{ montant }} TTC</strong>, valable jusqu’au {{ validite|date('d/m/Y', 'Europe/Paris') }}.</p>
+<p>Comparez les devis reçus et choisissez le professionnel qui vous convient : vos coordonnées ne lui sont communiquées qu’après votre acceptation.</p>
+{{ bouton(lien, 'Voir le devis') }}

@@ -1,0 +1,14 @@
+{#- Onglets de C07 (Figma 231:12840) ; `current` : informations, preferences, securite, donnees. -#}
+{% set tabs = [
+    {key: 'informations', route: 'client_profile', label: 'Mes informations', icon: 'user'},
+    {key: 'preferences', route: 'client_settings', label: 'Mes préférences', icon: 'sliders'},
+    {key: 'securite', route: 'client_security', label: 'Sécurité', icon: 'shield'},
+    {key: 'donnees', route: 'client_data', label: 'Mes données', icon: 'file'},
+    {key: 'avis', route: 'client_reviews', label: 'Mes avis', icon: 'star'},
+    {key: 'activite', route: 'client_profile', anchor: '#activite', label: 'Mon activité', icon: 'bars'},
+] %}
+<nav class="tm-account__tabs" aria-label="Rubriques du profil">
+    {% for t in tabs %}
+        <a href="{{ path(t.route) ~ (t.anchor ?? '') }}"{% if t.key == current %} aria-current="page"{% endif %}><twig:Icon name="{{ t.icon }}" size="sm" class="tm-icon--inherit" />{{ t.label }}</a>
+    {% endfor %}
+</nav>

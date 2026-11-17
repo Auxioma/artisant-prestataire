@@ -1,0 +1,86 @@
+{#-
+    C10 « Mes rendez-vous » (Figma 324:17351) : en-tête « Mes rendez-vous (n) », recherche, onglets À venir / Passés /
+    Annulés avec compteurs, cartes (artisan, ville, demande, date, horaire, statut, Voir le détail, Reprogrammer, Annuler,
+    Contacter), encart « Besoin de modifier un rendez-vous ? » ; colonne : mon prochain rendez-vous, mon agenda du mois.
+    Écarts : P-115.
+-#}
+{% extends 'client/_space.html.twig' %}
+{% set space_active = 'appointments' %}
+{% set space_title = 'Mes rendez-vous' %}
+{% set space_subtitle = 'Retrouvez, gérez et suivez tous vos rendez-vous avec vos professionnels.' %}
+{% block title %}Mes rendez-vous — Espace client — TrouveMoi{% endblock %}
+{% set party = 'client' %}
+{% set retour = app.request.requestUri %}
+{% block space_content %}
+<div class="tm-agenda tm-rdv">
+    <header class="tm-agenda__head">
+        <div class="tm-pro-head">
+            <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="calendar" class="tm-icon--inherit" /></span>
+            <div>
+                <h1>Mes rendez-vous{% if view.counts.upcoming > 0 %} ({{ view.counts.upcoming }}){% endif %}</h1>
+                <p>Visualisez vos rendez-vous à venir et passés, modifiez-les ou annulez-les.</p>
+            </div>
+        </div>
+        {% if tm_route_exists('client_requests') %}<twig:Button href="{{ path('client_requests') }}" icon="plus" iconPosition="start">Prendre un nouveau rendez-vous</twig:Button>{% endif %}
+    </header>
+
+    <div class="tm-agenda__main">
+        <form method="get" class="tm-rdv__search" role="search">
+            {% if tab != 'a-venir' %}<input type="hidden" name="onglet" value="{{ tab }}">{% endif %}
+            <div class="tm-field__control"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><label class="tm-visually-hidden" for="rdv-q">Rechercher un rendez-vous</label><input class="tm-field__input" id="rdv-q" name="q" type="search" value="{{ q }}" placeholder="Rechercher un rendez-vous (ex. : plomberie, jardin…)"></div>
+        </form>
+        <nav class="tm-pro-tabs tm-agenda__tabs" aria-label="Filtrer les rendez-vous">
+            {% for key, label in {'a-venir': 'À venir', passes: 'Passés', annules: 'Annulés'} %}
+                <a href="{{ path('client_appointments', key == 'a-venir' ? {} : {onglet: key}) }}"{% if tab == key %} aria-current="page"{% endif %}><twig:Icon name="{{ {'a-venir': 'calendar', passes: 'calCheck', annules: 'x'}[key] }}" size="xs" class="tm-icon--inherit" />{{ label }} ({{ view.counts[{'a-venir': 'upcoming', passes: 'past', annules: 'cancelled'}[key]] }})</a>
+            {% endfor %}
+        </nav>
+
+        {% if view.rows is empty %}
+            <div class="tm-pro-card"><twig:EmptyState title="{{ {'a-venir': 'Aucun rendez-vous à venir', passes: 'Aucun rendez-vous passé', annules: 'Aucun rendez-vous annulé'}[tab] }}" text="Après avoir accepté un devis, prenez rendez-vous avec le professionnel depuis votre demande." icon="calendar" /></div>
+        {% else %}
+            <ul class="tm-rdv__list">
+                {% for a in view.rows %}
+                    <li class="tm-pro-card tm-rdv__card">
+                        <div class="tm-rdv__who">
+                            <span class="tm-msg-avatar tm-msg-avatar--lg tm-msg-avatar--initials" aria-hidden="true">{{ a.artisanName|slice(0, 2)|upper }}</span>
+                            <div>
+                                <h2>{{ a.artisanName }}</h2>
+                                {% if a.city %}<p><twig:Icon name="pin" size="xs" class="tm-icon--inherit" />{{ a.city }}</p>{% endif %}
+                                <p><twig:Icon name="wrench" size="xs" class="tm-icon--inherit" />{{ a.requestTitle ?? ('Demande ' ~ a.requestNumber) }}</p>
+                            </div>
+                        </div>
+                        <div class="tm-rdv__when">
+                            <p><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />{{ ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'][a.startsAt|date('N', 'Europe/Paris') - 1] }} {{ a.startsAt|date('j', 'Europe/Paris') }} {{ ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'][a.startsAt|date('n', 'Europe/Paris') - 1] }} {{ a.startsAt|date('Y', 'Europe/Paris') }}</p>
+                            <p><twig:Icon name="clock" size="xs" class="tm-icon--inherit" />{{ a.startsAt|date('H\\hi', 'Europe/Paris') }} – {{ a.endsAt|date('H\\hi', 'Europe/Paris') }}</p>
+                        </div>
+                        <span class="tm-rdv__status is-{{ a.status }}"><twig:Icon name="{{ a.status == 'proposed' ? 'hourglass' : (a.status in ['cancelled', 'expired'] ? 'x' : 'check') }}" size="xs" class="tm-icon--inherit" />{{ a.status == 'proposed' ? (a.awaits(party) ? 'À confirmer' : 'En attente de confirmation') : a.statusLabel() }}</span>
+                        {% if a.cancelReason %}<p class="tm-rdv__reason">Motif : {{ a.cancelReason }}</p>{% endif %}
+                        <div class="tm-rdv__buttons">
+                            <twig:Button href="{{ path('client_request', {id: a.requestId}) }}" variant="secondary" icon="eye" iconPosition="start">Voir le détail</twig:Button>
+                            {% if tm_route_exists('client_message_new') %}<twig:Button href="{{ path('client_message_new', {demande: a.requestId, artisan: a.artisanId}) }}" variant="secondary" icon="msg" iconPosition="start">Contacter</twig:Button>{% endif %}
+                        </div>
+                        {{ include('appointments/_actions.html.twig', {appointment: a}) }}
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        <p class="tm-rdv__help"><twig:Icon name="calendar" size="sm" class="tm-icon--inherit" /><span><strong>Besoin de modifier un rendez-vous ?</strong> Vous pouvez reprogrammer ou annuler un rendez-vous confirmé jusqu’à 24 h avant l’heure prévue ; ensuite, prévenez le professionnel via la messagerie.</span></p>
+    </div>
+
+    <aside class="tm-agenda__side">
+        <section class="tm-pro-card tm-rdv__next" aria-labelledby="prochain-titre">
+            <h2 id="prochain-titre"><twig:Icon name="calendar" size="sm" class="tm-icon--inherit" />Mon prochain rendez-vous</h2>
+            {% set n = view.next() %}
+            {% if n %}
+                <p class="tm-rdv__next-name">{{ n.artisanName }}</p>
+                <p><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />{{ n.startsAt|date('d/m/Y', 'Europe/Paris') }}</p>
+                <p><twig:Icon name="clock" size="xs" class="tm-icon--inherit" />{{ n.startsAt|date('H\\hi', 'Europe/Paris') }} – {{ n.endsAt|date('H\\hi', 'Europe/Paris') }}</p>
+                <span class="tm-rdv__status is-{{ n.status }}">{{ n.status == 'proposed' ? 'En attente' : n.statusLabel() }}</span>
+            {% else %}
+                <p class="tm-caption">Aucun rendez-vous à venir.</p>
+            {% endif %}
+        </section>
+        {{ include('appointments/_month.html.twig', {route: 'client_appointments'}) }}
+    </aside>
+</div>
+{% endblock %}

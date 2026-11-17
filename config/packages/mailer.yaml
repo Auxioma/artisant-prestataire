@@ -1,3 +1,10 @@
 framework:
     mailer:
         dsn: '%env(MAILER_DSN)%'
+
+# Tests : aucun envoi réel (la variable MAILER_DSN de Docker viserait Mailpit) ; les messages restent observables
+# par les assertions de Symfony (assertEmailCount, getMailerMessages).
+when@test:
+    framework:
+        mailer:
+            dsn: 'null://null'

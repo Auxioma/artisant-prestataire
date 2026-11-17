@@ -1,6 +1,6 @@
 # ADR-0008 — Stockage et chiffrement des documents
 
-**Statut** : Proposé · **Date** : 2026-11-11
+**Statut** : Accepté (implémenté en T-116) · **Date** : 2026-11-11
 
 ## Contexte
 Justificatifs artisans (Kbis, assurances, pièce d'identité : Q16), photos de demande (RG-061), PDF de devis, pièces jointes de messagerie. Exigences : stockage privé, type réel vérifié, EXIF supprimé, antivirus, URLs signées ≤ 5 min, chiffrement au repos des justificatifs, journalisation de chaque consultation.
@@ -16,3 +16,10 @@ Justificatifs artisans (Kbis, assurances, pièce d'identité : Q16), photos de d
 ## Alternatives écartées
 - Chiffrement SSE-S3 seul : la clé est gérée par le fournisseur et ne protège pas contre la fuite des identifiants du bucket.
 - Chiffrement en base (bytea) : volumétrie et sauvegardes trop lourdes.
+
+## Mise en œuvre (T-116)
+- Registre commun `shared.stored_file` : les tables métier référencent `file_id` (voir data-model §2.9).
+- Ré-encodage par **GD** (extensions `gd` et `exif` ajoutées à l'image) plutôt qu'Imagick/libvips : surface d'attaque plus réduite, suffisant pour JPEG/PNG/WebP. HEIC non accepté (les navigateurs convertissent en JPEG à l'envoi).
+- Contrôle des PDF étendu aux flux compressés (FlateDecode, borné à 50 Mo décompressés) et aux noms obscurcis (`#xx`) ; liste : `/JS`, `/JavaScript`, `/Launch`, `/EmbeddedFile(s)`, `/RichMedia`, `/AA`, `/XFA`, `/SubmitForm`, `/ImportData`, `/GoToE` ; PDF chiffrés refusés. ClamAV complète ce filtre.
+- Contenu chiffré par blocs de 64 Kio (`secretstream`, troncature et ajout détectés).
+- Le chiffrement côté serveur S3 (SSE), le blocage de l'accès public et l'expiration automatique de la quarantaine sont des réglages de bucket provisionnés avec l'hébergeur (P-40).

@@ -1,0 +1,7 @@
+{% extends 'admin/security/_card.html.twig' %}
+{% block title %}Invitation expirée{% endblock %}
+{% block card %}
+    <h1 id="titre" class="tm-card-title">Ce lien d’invitation n’est plus valide</h1>
+    <p>Il a expiré, a déjà été utilisé ou a été remplacé par une invitation plus récente. Demandez un nouveau lien à un super-admin.</p>
+    <twig:Button href="{{ path('admin_login') }}" variant="secondary">Aller à la connexion</twig:Button>
+{% endblock %}

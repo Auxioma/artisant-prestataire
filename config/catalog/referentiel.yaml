@@ -1,0 +1,57 @@
+# Référentiel initial des services (BO06) — chargé par `bin/console app:catalog:import`.
+# Sources : CDC P01.5 (catégories par défaut) et méga-menu Figma V2 (202:9067) pour les métiers.
+# Import idempotent : un élément déjà présent (même slug) n'est jamais modifié — le back-office fait foi ensuite.
+# Justificatifs (Q16, à valider) : Kbis/avis INSEE + RC pro pour tous ; décennale pour le gros œuvre.
+defaults:
+    required_documents: [kbis, insurance_rc]
+
+categories:
+    - name: Rénovation & Construction
+      icon: home
+      featured: true
+      jobs:
+          - { name: Maçon, decennial: true }
+          - { name: Carreleur }
+          - { name: Plaquiste }
+          - { name: Rénovation complète, decennial: true }
+    - name: Électricité
+      icon: zap
+      featured: true
+      jobs:
+          - { name: Électricien }
+          - { name: Mise aux normes }
+          - { name: Tableau électrique }
+          - { name: Bornes de recharge }
+    - name: Plomberie
+      icon: wrench
+      featured: true
+      jobs:
+          # Synonyme donné en exemple par le CDC (P01.2) : « plombier » ↔ « chauffagiste sanitaire »
+          - { name: Plombier, synonyms: [Chauffagiste sanitaire] }
+          - { name: Dépannage sanitaire }
+          - { name: Chauffe-eau }
+          - { name: Salle de bains }
+          - { name: Débouchage }
+    - name: Peinture & Décoration
+      icon: paint
+      featured: true
+      jobs:
+          - { name: Peintre }
+          - { name: Ravalement de façade }
+          - { name: Papier peint }
+    - name: Chauffage & Climatisation
+      icon: flame
+      featured: true
+      jobs:
+          - { name: Chauffagiste }
+          - { name: Pompe à chaleur }
+          - { name: Climatisation }
+          - { name: Entretien chaudière }
+    - name: Jardin & Extérieur
+      icon: leaf
+      featured: true
+      jobs:
+          - { name: Paysagiste }
+          - { name: Élagage }
+          - { name: Terrasse }
+          - { name: Clôture }

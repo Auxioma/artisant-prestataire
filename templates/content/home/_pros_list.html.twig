@@ -1,0 +1,14 @@
+{#- Liste du bloc P01.6 (rendue aussi par /accueil/professionnels autour d'une commune). -#}
+{% if commune %}
+    <p class="tm-home-pros__place">
+        {% if widened %}Peu de professionnels {{ commune.name|a_lieu }} : voici ceux des environs{% else %}Autour de {{ commune.name }}{% endif %}
+        · <a href="#home_place" data-action="home-pros#change">modifier</a>
+    </p>
+{% endif %}
+{% if hits is empty %}
+    <p class="tm-catalog__fine">Les premiers professionnels vérifiés arrivent bientôt.</p>
+{% else %}
+    <ul class="tm-catalog__carousel">
+        {% for hit in hits %}<li data-action="click->analytics#track" data-analytics-event-param="pro_card_click">{% include 'catalog/_artisan_card.html.twig' with {hit: hit, job_names: job_names} only %}</li>{% endfor %}
+    </ul>
+{% endif %}

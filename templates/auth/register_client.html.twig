@@ -1,0 +1,102 @@
+{#- A02 — Inscription client (Figma 15:24). Écarts CDC > Figma documentés en P-42. -#}
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer mon compte client — TrouveMoi{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {# Turnstile (cadrage §5.8) : script tiers autorisé par la CSP, nécessaire à la sécurité (exempté de consentement) #}
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="{{ csp_nonce('script') }}"></script>
+{% endblock %}
+
+{% block body %}
+<div class="tm-auth-page">
+    <twig:PageBanner title="Créer mon compte" subtitle="Rejoignez TrouveMoi et accédez à tous les services de la plateforme." image="images/auth/a02-banner" />
+
+    <div class="tm-container tm-signup">
+        <aside class="tm-signup__aside tm-card-panel" aria-labelledby="pourquoi-titre">
+            <h2 id="pourquoi-titre" class="tm-section-title">Pourquoi créer un compte ?</h2>
+            <ul class="tm-check-list tm-check-list--large">
+                <li><twig:Icon name="checkC" size="sm" />Déposez une demande ou un projet</li>
+                <li><twig:Icon name="checkC" size="sm" />Obtenez des devis gratuits et rapides</li>
+                <li><twig:Icon name="checkC" size="sm" />Échangez directement avec les professionnels</li>
+                <li><twig:Icon name="checkC" size="sm" />Suivez vos projets et interventions</li>
+                <li><twig:Icon name="checkC" size="sm" />Laissez un avis et partagez votre expérience</li>
+            </ul>
+            <img class="tm-signup__photo" src="{{ asset('images/auth/a02-femme-tel@1x.webp') }}" alt="" width="478" height="210" loading="lazy">
+            <div class="tm-pro-promo">
+                <p class="tm-pro-promo__title"><twig:Icon name="crown" />Professionnel ?<br>Développez votre activité !</p>
+                <ul class="tm-check-list">
+                    <li><twig:Icon name="checkC" size="xs" />Créez votre vitrine professionnelle</li>
+                    <li><twig:Icon name="checkC" size="xs" />Recevez des demandes qualifiées</li>
+                    <li><twig:Icon name="checkC" size="xs" />Réalisez et envoyez vos devis</li>
+                    <li><twig:Icon name="checkC" size="xs" />Gérez vos chantiers et votre agenda</li>
+                    <li><twig:Icon name="checkC" size="xs" />Collectez des avis clients</li>
+                    <li><twig:Icon name="checkC" size="xs" />Gagnez en visibilité localement et nationalement</li>
+                </ul>
+            </div>
+        </aside>
+
+        <section class="tm-signup__form tm-card-panel" aria-labelledby="formulaire-titre">
+            <h2 id="formulaire-titre" class="tm-signup__title"><twig:Icon name="userPlus" />Créer mon compte</h2>
+
+            <nav class="tm-account-switch" aria-label="Type de compte">
+                <p class="tm-signup__subtitle">Choisissez votre type de compte</p>
+                <div class="tm-account-switch__options">
+                    {% if tm_route_exists('identity_register_pro') %}
+                        <a class="tm-account-switch__option" href="{{ path('identity_register_pro') }}">
+                            <twig:Icon name="wrench" /><strong>Je suis un professionnel</strong><span>Artisan, prestataire, entreprise…</span>
+                        </a>
+                    {% else %}
+                        <span class="tm-account-switch__option tm-account-switch__option--soon">
+                            <twig:Icon name="wrench" /><strong>Je suis un professionnel</strong><span>Inscription bientôt disponible</span>
+                        </span>
+                    {% endif %}
+                    <span class="tm-account-switch__option tm-account-switch__option--current" aria-current="page">
+                        <twig:Icon name="users" /><strong>Je suis un particulier</strong><span>Je recherche un professionnel ou je dépose un projet.</span>
+                    </span>
+                </div>
+            </nav>
+
+            {{ form_start(form, {attr: {novalidate: 'novalidate', 'data-controller': 'signup', 'data-turbo': 'false', class: 'tm-signup__fields'}}) }}
+                {{ form_errors(form) }}
+                <h3 class="tm-signup__subtitle">Mes informations</h3>
+                {{ form_row(form.clientType) }}
+                <div class="tm-form-grid">
+                    {{ form_row(form.companyName) }}
+                    {{ form_row(form.siret) }}
+                    {{ form_row(form.lastName) }}
+                    {{ form_row(form.firstName) }}
+                    {{ form_row(form.email) }}
+                    {{ form_row(form.phone) }}
+                    {{ form_row(form.postalCode) }}
+                    <div class="tm-form-grid__spacer" aria-hidden="true"></div>
+                    {{ include('auth/_password_row.html.twig', {field: form.password.first, gauge: true}) }}
+                    {{ include('auth/_password_row.html.twig', {field: form.password.second}) }}
+                </div>
+
+                {% set terms_errors = form.terms.vars.errors|length > 0 %}
+                <div class="tm-check-row">
+                    <label class="tm-check" for="{{ form.terms.vars.id }}">
+                        {{ form_widget(form.terms) }}
+                        <span>J’accepte les <a href="{{ path('identity_legal_document', {slug: 'cgu'}) }}" target="_blank" rel="noopener">Conditions Générales d’Utilisation (CGU)</a>
+                            et la <a href="{{ path('identity_legal_document', {slug: 'confidentialite'}) }}" target="_blank" rel="noopener">Politique de confidentialité</a>.<abbr class="tm-field__required" title="obligatoire">*</abbr>
+                            <span class="tm-visually-hidden">(s’ouvrent dans un nouvel onglet)</span></span>
+                    </label>
+                    {{ form_errors(form.terms) }}
+                </div>
+                {{ form_row(form.newsletter) }}
+                {{ form_widget(form.legalVersions) }}
+
+                <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-action="signup" data-size="flexible" data-language="fr"></div>
+
+                <twig:Button type="submit" variant="search" icon="userPlus" iconPosition="start" block>Créer mon compte</twig:Button>
+            {{ form_end(form) }}
+
+            <p class="tm-signup__login tm-body">Vous avez déjà un compte ? <a href="{{ tm_path('identity_login') }}"><strong>Se connecter</strong></a></p>
+        </section>
+    </div>
+
+    {{ include('auth/_how_it_works.html.twig', {reassurance: [['shield', 'Données sécurisées et confidentielles'], ['users', 'Un compte unique pour tous vos projets'], ['zap', 'Simple, rapide et gratuit'], ['handshake', 'Une communauté locale et nationale']]}) }}
+</div>
+{% endblock %}

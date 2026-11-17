@@ -1,0 +1,17 @@
+{#-
+    Bandeau persistant des espaces (A06, Figma 230:12623) tant que l'adresse n'est pas confirmée (RG-040).
+    Affiché pour tout utilisateur connecté non vérifié ; aucun rendu sinon.
+-#}
+{% set user = app.user %}
+{% if user is not null and user.emailVerified is defined and not user.emailVerified %}
+    <div class="tm-verify-banner" role="status">
+        <div class="tm-container tm-verify-banner__inner">
+            <twig:Icon name="mail" size="sm" class="tm-icon--inherit" />
+            <p class="tm-verify-banner__text">Confirmez votre email pour déposer une demande et accéder à la messagerie.</p>
+            <form method="post" action="{{ path('identity_resend_verification') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('email_verification_resend') }}">
+                <button type="submit" class="tm-link-button">Renvoyer l’email</button>
+            </form>
+        </div>
+    </div>
+{% endif %}

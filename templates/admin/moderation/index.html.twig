@@ -1,0 +1,298 @@
+{#- BO05 (Figma 186:2172) — modération : onglets, file + élément à modérer + décision, règles automatiques éditables (BO05.3). -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'moderation' %}
+{% block title %}Modération{% endblock %}
+
+{% macro ago(at, now) %}{% set h = ((now|date('U') - at|date('U')) / 3600)|round(0, 'floor') %}{{ h < 1 ? 'il y a moins d’1 h' : (h < 24 ? 'il y a ' ~ h ~ ' h' : 'il y a ' ~ (h / 24)|round(0, 'floor') ~ ' j') }}{% endmacro %}
+
+{% block body %}
+    <nav class="tm-admin-crumbs" aria-label="Fil d’Ariane">
+        <ol><li><a href="{{ path('admin_dashboard') }}">Back-office</a></li><li>Activité</li><li aria-current="page">Modération</li></ol>
+    </nav>
+    <div class="tm-admin-head">
+        <div>
+            <h1>Modération</h1>
+            <p class="tm-admin-head__sub">Délai cible : 48 h · motifs et délais publiés dans la politique des avis</p>
+        </div>
+    </div>
+    <nav class="tm-admin-tabs" aria-label="Files de modération">
+        {% for key, label in tabs %}
+            <a class="tm-admin-tab{{ key == tab ? ' is-active' }}" href="{{ path('admin_moderation_tab', {onglet: key}) }}"{{ key == tab ? ' aria-current="page"' }}>{{ label }}{% if counts[key] is defined %} ({{ counts[key] }}){% endif %}</a>
+        {% endfor %}
+    </nav>
+
+    {% if tab == 'contenus' %}
+        <div class="tm-moderation">
+            <section class="tm-admin-panel tm-moderation__queue" aria-labelledby="file-titre">
+                <h2 id="file-titre" class="tm-card-title">File des contenus</h2>
+                <ul>
+                    {% for item in contents %}
+                        <li class="tm-moderation__item{{ current and current.id == item.id ? ' is-current' }}">
+                            <a href="{{ path('admin_moderation_tab', {onglet: 'contenus', element: item.id}) }}"{{ current and current.id == item.id ? ' aria-current="true"' }}>
+                                <strong>{{ item.artisanName }} → {{ item.sectionLabel }}</strong>
+                                <span class="tm-caption">{{ _self.ago(item.createdAt, now) }}{{ (now|date('U') - item.createdAt|date('U')) > 172800 ? ' · SLA' }}</span>
+                            </a>
+                        </li>
+                    {% else %}
+                        <li><twig:EmptyState title="Aucun contenu à relire" text="L’échantillon de relecture (RG-031) est vide pour le moment." /></li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% if current %}
+                <section class="tm-admin-panel tm-moderation__detail" aria-labelledby="contenu-titre">
+                    <h2 id="contenu-titre" class="tm-card-title">Contenu à relire</h2>
+                    <p class="tm-caption">{{ current.artisanName }} · {{ current.sectionLabel }} · modifié le {{ current.createdAt|date('d/m/Y à H:i', 'Europe/Paris') }}</p>
+                    <dl class="tm-facts">
+                        {% for l in current.lines %}<div><dt>{{ l.label }}</dt><dd class="tm-pre">{{ l.value }}</dd></div>{% endfor %}
+                    </dl>
+                    <p class="tm-caption">Contenu déjà contrôlé automatiquement (coordonnées, termes interdits) : relecture humaine par échantillon (RG-031).</p>
+                    {% if is_granted('admin.moderation.edit') %}
+                        <form method="post" action="{{ path('admin_moderation_content', {id: current.id}) }}" class="tm-admin-decision" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                            <h3 class="tm-card-title">Décision</h3>
+                            <fieldset>
+                                <legend>Motif de retrait (normalisé) :</legend>
+                                <div class="tm-admin-chips">{% for v, l in reasons %}<label class="tm-admin-chip"><input type="radio" name="reason" value="{{ v }}"><span>{{ l }}</span></label>{% endfor %}</div>
+                            </fieldset>
+                            <div class="tm-admin-actions">
+                                <twig:Button type="submit" name="decision" value="approve">Valider</twig:Button>
+                                <twig:Button type="submit" variant="danger" name="decision" value="withdraw">Retirer du profil</twig:Button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </div>
+    {% elseif tab == 'signalements' and reports is not empty %}
+        <div class="tm-moderation">
+            <section class="tm-admin-panel tm-moderation__queue" aria-labelledby="file-signalements-titre">
+                <h2 id="file-signalements-titre" class="tm-card-title">Signalements à traiter</h2>
+                <ul>
+                    {% for item in reports %}
+                        <li class="tm-moderation__item{{ report and report.id == item.id ? ' is-current' }}">
+                            <a href="{{ path('admin_moderation_tab', {onglet: 'signalements', element: item.id}) }}"{{ report and report.id == item.id ? ' aria-current="true"' }}>
+                                <strong>{{ report_types.labels[item.type] ?? item.type }} · {{ item.title }}</strong>
+                                <span class="tm-caption">{{ item.reasonLabel() }}{{ item.similar > 1 ? ' · ' ~ item.similar ~ ' signalements' }} · {{ _self.ago(item.createdAt, now) }}{{ (now|date('U') - item.createdAt|date('U')) > 172800 ? ' · SLA' }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% if report %}
+                {% set rp = report %}
+                <section class="tm-admin-panel tm-moderation__detail" aria-labelledby="signalement-titre">
+                    <h2 id="signalement-titre" class="tm-card-title">{{ report_types.labels[rp.type] ?? rp.type }} signalé</h2>
+                    <dl class="tm-facts">
+                        <div><dt>Contenu</dt><dd><strong>{{ rp.title }}</strong></dd></div>
+                        <div><dt>Instantané au signalement</dt><dd class="tm-pre">{{ rp.excerpt }}</dd></div>
+                        <div><dt>Motif</dt><dd>{{ rp.reasonLabel() }}</dd></div>
+                        {% if rp.details %}<div><dt>Précisions</dt><dd class="tm-pre">{{ rp.details }}</dd></div>{% endif %}
+                        <div><dt>Signalé par</dt><dd>{{ rp.reporterName ?? 'Compte supprimé' }} · le {{ rp.createdAt|date('d/m/Y à H:i', 'Europe/Paris') }}</dd></div>
+                        <div><dt>Signalements ouverts sur ce contenu</dt><dd>{{ rp.similar }}</dd></div>
+                        <div><dt>Statut</dt><dd>À traiter</dd></div>
+                    </dl>
+                    {% set link = report_types.links[rp.id] ?? null %}
+                    {% if link and tm_route_exists(link.route) %}<p><a href="{{ path(link.route, link.parameters) }}">Ouvrir l’élément dans le back-office</a> (suspension, retrait…)</p>{% endif %}
+                    {% if is_granted('admin.moderation.edit') %}
+                        <form method="post" action="{{ path('admin_moderation_report', {id: rp.id}) }}" class="tm-admin-decision" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                            <input type="hidden" name="subject" value="{{ rp.subjectId }}">
+                            <h3 class="tm-card-title">Décision</h3>
+                            <div class="tm-field">
+                                <label class="tm-field__label" for="report_response">Réponse au signalant (facultative, envoyée par e-mail)</label>
+                                <div class="tm-field__control"><textarea class="tm-field__input tm-report__details" id="report_response" name="response" maxlength="1000" rows="3"></textarea></div>
+                            </div>
+                            {% if rp.type == 'avis' %}
+                                <fieldset>
+                                    <legend>Motif de masquage de l’avis (si « Masquer l’avis ») :</legend>
+                                    <div class="tm-admin-chips">{% for v, l in review_reasons %}<label class="tm-admin-chip"><input type="radio" name="hide_reason" value="{{ v }}"><span>{{ l }}</span></label>{% endfor %}</div>
+                                </fieldset>
+                            {% endif %}
+                            <div class="tm-admin-actions">
+                                <twig:Button type="submit" variant="secondary" name="decision" value="dismiss">Classer sans suite</twig:Button>
+                                {% if rp.type == 'avis' %}<twig:Button type="submit" variant="danger" name="decision" value="hide_review">Masquer l’avis</twig:Button>{% endif %}
+                                <twig:Button type="submit" name="decision" value="actioned">Marquer comme traité</twig:Button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </div>
+    {% elseif tab == 'avis' and reviews is not empty %}
+        <div class="tm-moderation">
+            <section class="tm-admin-panel tm-moderation__queue" aria-labelledby="file-avis-titre">
+                <h2 id="file-avis-titre" class="tm-card-title">Avis à modérer</h2>
+                <ul>
+                    {% for item in reviews %}
+                        <li class="tm-moderation__item{{ review and review.id == item.id ? ' is-current' }}">
+                            <a href="{{ path('admin_moderation_tab', {onglet: 'avis', element: item.id}) }}"{{ review and review.id == item.id ? ' aria-current="true"' }}>
+                                <strong>{{ item.kindLabel() }} · {{ item.artisanName }}</strong>
+                                <span class="tm-caption">{{ item.rating }}/5 · {{ item.author }} · {{ _self.ago(item.since, now) }}{{ (now|date('U') - item.since|date('U')) > 172800 ? ' · SLA' }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% if review %}
+                {% set rv = review %}
+                <section class="tm-admin-panel tm-moderation__detail" aria-labelledby="avis-titre">
+                    <h2 id="avis-titre" class="tm-card-title">{{ rv.kindLabel() }}</h2>
+                    <p class="tm-moderation__stars"><span class="tm-pr-stars" aria-hidden="true">{% for i in 1..5 %}<twig:Icon name="{{ i <= rv.rating ? 'starFilled' : 'star' }}" size="xs" class="tm-icon--inherit{{ i <= rv.rating ? ' is-on' }}" />{% endfor %}</span><strong>{{ rv.rating }}/5{% if rv.title %} · « {{ rv.title }} »{% endif %}</strong> — {{ rv.author }} sur {{ rv.artisanName }}</p>
+                    <p class="tm-pre">{{ rv.text }}</p>
+                    {% if rv.photos is not empty %}<p class="tm-pr__photos">{% for f in rv.photos %}<a href="{{ path('review_photo', {review: rv.id, file: f}) }}" target="_blank" rel="noopener">Photo {{ loop.index }}</a>{% endfor %}</p>{% endif %}
+                    <p class="tm-moderation__proof"><twig:Icon name="shield" size="xs" class="tm-icon--inherit" />Avis certifié : devis {{ rv.proof.quote ?? '—' }} accepté le {{ rv.proof.accepted ?? '—' }}{% if rv.proof.service is defined %} · RDV réalisé le {{ rv.proof.service }}{% endif %}{% if rv.requestId and tm_route_exists('admin_request') %} · <a href="{{ path('admin_request', {id: rv.requestId}) }}">Voir la prestation</a>{% endif %}</p>
+                    {% if rv.kind == 'reply' %}<dl class="tm-facts"><div><dt>Réponse de l’artisan</dt><dd class="tm-pre">{{ rv.reply }}</dd></div></dl>{% endif %}
+                    {% if rv.kind == 'report' %}<dl class="tm-facts"><div><dt>Signalé par l’artisan</dt><dd>{{ rv.reportReason }}</dd></div></dl>{% endif %}
+                    <div class="tm-moderation__facts">
+                        <dl class="tm-admin-panel"><h3 class="tm-card-title">Historique auteur</h3><div><dt>Avis déposés</dt><dd>{{ rv.history.reviews }}</dd></div><div><dt>Refus antérieurs</dt><dd>{{ rv.history.rejections }}</dd></div></dl>
+                        <dl class="tm-admin-panel"><h3 class="tm-card-title">Score de risque</h3><div><dt>Score global</dt><dd><span class="tm-moderation__risk{{ rv.riskScore >= review_threshold ? ' is-high' }}">{{ rv.riskScore }} / 100</span></dd></div><div><dt>Seuil de modération</dt><dd>{{ review_threshold }}</dd></div></dl>
+                    </div>
+                    {% if is_granted('admin.moderation.edit') %}
+                        <form method="post" action="{{ path('admin_moderation_review', {id: rv.id}) }}" class="tm-admin-decision" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                            <h3 class="tm-card-title">Décision</h3>
+                            <fieldset>
+                                <legend>Motif de refus ou de masquage (normalisé, communiqué à l’auteur) :</legend>
+                                <div class="tm-admin-chips">{% for v, l in review_reasons %}<label class="tm-admin-chip"><input type="radio" name="reason" value="{{ v }}"><span>{{ l }}</span></label>{% endfor %}</div>
+                            </fieldset>
+                            {% if rv.kind == 'reply' %}
+                                <div class="tm-admin-actions">
+                                    <twig:Button type="submit" name="decision" value="reply_publish">Publier la réponse</twig:Button>
+                                    <twig:Button type="submit" variant="danger" name="decision" value="reply_reject">Refuser la réponse</twig:Button>
+                                </div>
+                            {% else %}
+                                <div class="tm-field"><label class="tm-field__label" for="note-modif">Demande de modification (texte envoyé à l’auteur)</label><div class="tm-field__control"><input class="tm-field__input" id="note-modif" name="note" maxlength="500"></div></div>
+                                <div class="tm-admin-actions">
+                                    <twig:Button type="submit" name="decision" value="publish">{{ rv.kind == 'report' ? 'Maintenir en ligne' : 'Publier' }}</twig:Button>
+                                    {% if rv.kind == 'review' %}<twig:Button type="submit" variant="secondary" name="decision" value="changes">Demander une modification</twig:Button>
+                                    <twig:Button type="submit" variant="danger" name="decision" value="reject">Refuser</twig:Button>{% endif %}
+                                    <twig:Button type="submit" variant="danger" name="decision" value="hide">Masquer</twig:Button>
+                                </div>
+                            {% endif %}
+                        </form>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </div>
+    {% elseif tab == 'messages' and messages is not empty %}
+        <div class="tm-moderation">
+            <section class="tm-admin-panel tm-moderation__queue" aria-labelledby="file-messages-titre">
+                <h2 id="file-messages-titre" class="tm-card-title">Messages signalés</h2>
+                <ul>
+                    {% for item in messages %}
+                        <li class="tm-moderation__item{{ message and message.id == item.id ? ' is-current' }}">
+                            <a href="{{ path('admin_moderation_tab', {onglet: 'messages', element: item.id}) }}"{{ message and message.id == item.id ? ' aria-current="true"' }}>
+                                <strong>{{ item.senderName }} → {{ item.reasonLabel }}</strong>
+                                <span class="tm-caption">signalé {{ _self.ago(item.reportedAt, now) }}{{ (now|date('U') - item.reportedAt|date('U')) > 172800 ? ' · SLA' }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% if message %}
+                <section class="tm-admin-panel tm-moderation__detail" aria-labelledby="message-titre">
+                    <h2 id="message-titre" class="tm-card-title">Message signalé</h2>
+                    <p class="tm-caption">Écrit par {{ message.senderName }} ({{ message.senderRole == 'artisan' ? 'professionnel' : 'client' }}) le {{ message.sentAt|date('d/m/Y à H:i', 'Europe/Paris') }} · signalé par {{ message.reporterName }} le {{ message.reportedAt|date('d/m/Y à H:i', 'Europe/Paris') }}{% if message.requestNumber %} · demande {{ message.requestNumber }}{% endif %}</p>
+                    <dl class="tm-facts">
+                        <div><dt>Motif du signalement</dt><dd>{{ message.reasonLabel }}</dd></div>
+                        <div><dt>Message</dt><dd class="tm-pre">{{ message.body ?: '(pièce jointe seule)' }}</dd></div>
+                        {% if message.hasAttachment %}<div><dt>Pièce jointe</dt><dd>Oui — non affichée ici ; retirée avec le message.</dd></div>{% endif %}
+                        {% if original %}<div><dt>Original (coordonnées non masquées)</dt><dd class="tm-pre tm-moderation__original">{{ original }}</dd></div>{% endif %}
+                    </dl>
+                    {% if message.masked and not original and is_granted('admin.moderation.edit') %}
+                        <form method="post" action="{{ path('admin_moderation_message_original', {id: message.id}) }}" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                            <p class="tm-caption">Des coordonnées ont été masquées dans ce message. Leur lecture est journalisée (ADR-0014).</p>
+                            <twig:Button type="submit" variant="secondary" icon="eye" iconPosition="start">Voir l’original</twig:Button>
+                        </form>
+                    {% endif %}
+                    <h3 class="tm-card-title">Contexte du fil</h3>
+                    <ol class="tm-moderation__thread">
+                        {% for c in message.context %}
+                            <li{% if c.reported %} class="is-reported"{% endif %}><p class="tm-caption">{{ c.author }} · {{ c.at|date('d/m H:i', 'Europe/Paris') }}{{ c.reported ? ' · message signalé' }}</p><p class="tm-pre">{{ c.body ?: '(pièce jointe)' }}</p></li>
+                        {% endfor %}
+                    </ol>
+                    {% if is_granted('admin.moderation.edit') %}
+                        <form method="post" action="{{ path('admin_moderation_message', {id: message.id}) }}" class="tm-admin-decision" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                            <h3 class="tm-card-title">Décision</h3>
+                            <fieldset>
+                                <legend>Motif du retrait (normalisé) :</legend>
+                                <div class="tm-admin-chips">{% for v, l in message_reasons %}<label class="tm-admin-chip"><input type="radio" name="reason" value="{{ v }}"><span>{{ l }}</span></label>{% endfor %}</div>
+                            </fieldset>
+                            <div class="tm-admin-actions">
+                                <twig:Button type="submit" variant="secondary" name="decision" value="dismiss">Classer sans suite</twig:Button>
+                                <twig:Button type="submit" variant="danger" name="decision" value="remove">Retirer le message</twig:Button>
+                            </div>
+                        </form>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </div>
+    {% elseif tab != 'regles' %}
+        <section class="tm-admin-panel">
+            <twig:EmptyState title="{{ {avis: 'Aucun avis à modérer', messages: 'Aucun message signalé', signalements: 'Aucun signalement', offres: 'Aucune offre à modérer'}[tab] }}"
+                text="{{ {avis: 'Aucun avis ni réponse en attente, aucun avis signalé.', messages: 'Les messages signalés par les clients et les professionnels s’afficheront ici, avec le contexte du fil.', signalements: 'Les signalements (avis, message, profil, demande, offre) arrivent avec leurs lots.', offres: 'Les offres et promotions des artisans arrivent en V2 (modération a priori).'}[tab] }}" />
+        </section>
+    {% endif %}
+
+    <section class="tm-admin-panel tm-moderation__rules" aria-labelledby="regles-titre" id="regles">
+        <h2 id="regles-titre" class="tm-card-title">Règles automatiques (éditables)</h2>
+        <div class="tm-moderation__cards">
+            <article class="tm-moderation__card">
+                <h3>Mots interdits</h3>
+                <p class="tm-caption">{{ forbidden_terms|length }} terme{{ forbidden_terms|length > 1 ? 's' }}</p>
+                {% if tab != 'regles' %}<a href="{{ path('admin_moderation_tab', {onglet: 'regles'}) }}#mots">Modifier</a>{% endif %}
+            </article>
+            <article class="tm-moderation__card">
+                <h3>Détection de coordonnées</h3>
+                <p class="tm-caption">Téléphone, email, URL + {{ contact_keywords|length }} expression{{ contact_keywords|length > 1 ? 's' }} de contournement → masquage ou refus avant acceptation (RG-080)</p>
+                {% if tab != 'regles' %}<a href="{{ path('admin_moderation_tab', {onglet: 'regles'}) }}#coordonnees">Modifier</a>{% endif %}
+            </article>
+            <article class="tm-moderation__card">
+                <h3>Seuils anti-spam</h3>
+                <p class="tm-caption">Demande ≥ {{ request_threshold }} · Avis ≥ {{ review_threshold }} · Message ≥ {{ message_threshold }}</p>
+                {% if tab != 'regles' %}<a href="{{ path('admin_moderation_tab', {onglet: 'regles'}) }}#seuils">Modifier</a>{% endif %}
+            </article>
+        </div>
+
+        {% if tab == 'regles' and is_granted('admin.moderation.edit') %}
+            <div class="tm-moderation__forms">
+                <form method="post" action="{{ path('admin_moderation_rules') }}" id="mots" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <input type="hidden" name="form" value="terms">
+                    <h3 class="tm-card-title">Mots interdits</h3>
+                    <div class="tm-field">
+                        <label class="tm-field__label" for="forbidden_terms">Un terme par ligne</label>
+                        <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="forbidden_terms" name="forbidden_terms" rows="8" aria-describedby="forbidden_help">{{ forbidden_terms|join("\n") }}</textarea></div>
+                        <p class="tm-field__help" id="forbidden_help">Refusés dans les profils et contenus publics (RG-031) ; signal de risque des demandes (RG-063).</p>
+                    </div>
+                    <twig:Button type="submit" variant="secondary">Enregistrer les mots interdits</twig:Button>
+                </form>
+                <form method="post" action="{{ path('admin_moderation_rules') }}" id="coordonnees" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <input type="hidden" name="form" value="keywords">
+                    <h3 class="tm-card-title">Détection de coordonnées</h3>
+                    <p class="tm-body">Motifs intégrés : adresses e-mail (y compris « arobase », « (at) »), numéros de téléphone français et internationaux, liens et noms de domaine — refusés dans les profils et les demandes, masqués dans la messagerie avant l’acceptation d’un devis (RG-080).</p>
+                    <div class="tm-field">
+                        <label class="tm-field__label" for="contact_keywords">Expressions de contournement — une par ligne</label>
+                        <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="contact_keywords" name="contact_keywords" rows="8" aria-describedby="keywords_help">{{ contact_keywords|join("\n") }}</textarea></div>
+                        <p class="tm-field__help" id="keywords_help">Messageries externes, coordonnées en toutes lettres… (sans accent ni casse) : refusées dans les profils, signal de risque des demandes, des avis et des messages.</p>
+                    </div>
+                    <twig:Button type="submit" variant="secondary">Enregistrer les expressions</twig:Button>
+                </form>
+                <form method="post" action="{{ path('admin_moderation_rules') }}" id="seuils" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <input type="hidden" name="form" value="thresholds">
+                    <h3 class="tm-card-title">Seuils anti-spam</h3>
+                    <div class="tm-moderation__grid">
+                        {% for t in thresholds %}
+                            <twig:Field id="{{ t.key|replace({'.': '_'}) }}" name="{{ t.key|replace({'.': '_'}) }}" type="number" label="{{ t.label }}" value="{{ t.value }}" inputmode="numeric" />
+                        {% endfor %}
+                    </div>
+                    <twig:Button type="submit" variant="secondary">Enregistrer les seuils</twig:Button>
+                </form>
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

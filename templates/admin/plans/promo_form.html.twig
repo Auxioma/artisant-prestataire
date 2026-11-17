@@ -1,0 +1,54 @@
+{#-
+    BO08.3 — nouveau code promo (§4.3 ; pas de maquette dédiée : formulaire sur le modèle du formulaire de forfait) :
+    code, remise en % ou en montant HT, durée (une fois, N mois, toujours), forfaits éligibles, date de fin, utilisations
+    maximales globales et par compte, réservé aux nouveaux abonnés. Enregistré chez Stripe à la validation. P-102.
+-#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'plans' %}
+{% set p = posted ?? {} %}
+{% block title %}Nouveau code promo — Forfaits{% endblock %}
+{% block body %}
+    <nav class="tm-admin-crumbs" aria-label="Fil d’Ariane">
+        <ol><li><a href="{{ path('admin_dashboard') }}">Back-office</a></li><li><a href="{{ path('admin_plans') }}">Monétisation</a></li><li aria-current="page">Nouveau code promo</li></ol>
+    </nav>
+    <div class="tm-admin-head">
+        <div>
+            <h1>Nouveau code promo</h1>
+            <p class="tm-admin-head__sub">Le code est créé chez Stripe (coupon et code promo) ; ses conditions ne se modifient plus ensuite : désactivez-le pour en créer un autre.</p>
+        </div>
+    </div>
+    <section class="tm-admin-panel">
+        {% if error %}<p class="tm-field__error" role="alert"><twig:Icon name="alert" size="xs" />{{ error }}</p>{% endif %}
+        <form method="post" data-turbo="false" class="tm-plan-form">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            <div class="tm-plan-grid">
+                <div class="tm-field"><label class="tm-field__label" for="code">Code <span aria-hidden="true">*</span></label><div class="tm-field__control"><input class="tm-field__input" id="code" name="code" maxlength="30" required pattern="[A-Za-z0-9_\-]{3,30}" placeholder="Ex. : BIENVENUE" value="{{ p.code ?? '' }}" autocomplete="off"></div><p class="tm-field__help">3 à 30 caractères : lettres, chiffres, « - » ou « _ » (mis en majuscules).</p></div>
+                <fieldset class="tm-field tm-promo-type">
+                    <legend class="tm-field__label">Type de remise <span aria-hidden="true">*</span></legend>
+                    <label class="tm-check" for="type_percent"><input class="tm-check__input" type="radio" id="type_percent" name="discount_type" value="percent"{{ (p.discount_type ?? 'percent') == 'percent' ? ' checked' }}><span>Pourcentage</span></label>
+                    <label class="tm-check" for="type_amount"><input class="tm-check__input" type="radio" id="type_amount" name="discount_type" value="amount"{{ (p.discount_type ?? '') == 'amount' ? ' checked' }}><span>Montant HT (€)</span></label>
+                </fieldset>
+                <div class="tm-field"><label class="tm-field__label" for="value">Remise <span aria-hidden="true">*</span></label><div class="tm-field__control"><input class="tm-field__input" id="value" name="value" inputmode="decimal" required placeholder="20 (%) ou 10,00 (€)" value="{{ p.value ?? '' }}"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="duration">Durée <span aria-hidden="true">*</span></label><div class="tm-select"><select class="tm-select__input" id="duration" name="duration">{% for v, l in {once: 'Une fois (première échéance)', repeating: 'Pendant N mois', forever: 'Toujours'} %}<option value="{{ v }}"{{ (p.duration ?? 'once') == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="duration_months">Nombre de mois</label><div class="tm-field__control"><input class="tm-field__input" id="duration_months" name="duration_months" inputmode="numeric" placeholder="Si « pendant N mois » (1 à 36)" value="{{ p.duration_months ?? '' }}"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="valid_until">Valable jusqu’au</label><div class="tm-field__control"><input class="tm-field__input" id="valid_until" name="valid_until" type="date" value="{{ p.valid_until ?? '' }}"></div><p class="tm-field__help">Vide : sans date de fin.</p></div>
+                <div class="tm-field"><label class="tm-field__label" for="max_redemptions">Utilisations maximales</label><div class="tm-field__control"><input class="tm-field__input" id="max_redemptions" name="max_redemptions" inputmode="numeric" placeholder="Vide : illimité" value="{{ p.max_redemptions ?? '' }}"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="max_per_account">Utilisations par compte</label><div class="tm-field__control"><input class="tm-field__input" id="max_per_account" name="max_per_account" inputmode="numeric" placeholder="Vide : illimité" value="{{ p.max_per_account ?? '' }}"></div></div>
+            </div>
+            <fieldset class="tm-promo-plans">
+                <legend class="tm-field__label">Forfaits éligibles</legend>
+                {% for plan in plans %}
+                    <label class="tm-check" for="plan_{{ plan.id }}"><input class="tm-check__input" type="checkbox" id="plan_{{ plan.id }}" name="plans[]" value="{{ plan.id }}"{{ plan.id in (p.plans ?? []) ? ' checked' }}><span>{{ plan.terms.name }}</span></label>
+                {% else %}
+                    <p class="tm-caption">Aucun forfait publié pour le moment.</p>
+                {% endfor %}
+                <p class="tm-caption">Aucun forfait coché : le code vaut pour tous les forfaits.</p>
+            </fieldset>
+            <label class="tm-check" for="new_subscribers_only"><input class="tm-check__input" type="checkbox" id="new_subscribers_only" name="new_subscribers_only" value="1"{{ (p.new_subscribers_only ?? '') == '1' ? ' checked' }}><span>Réservé aux nouveaux abonnés (première souscription)</span></label>
+            <div class="tm-promo-actions">
+                <twig:Button href="{{ path('admin_plans') }}#promo" variant="secondary">Annuler</twig:Button>
+                <twig:Button type="submit" icon="check" iconPosition="start">Créer le code promo</twig:Button>
+            </div>
+        </form>
+    </section>
+{% endblock %}

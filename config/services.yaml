@@ -1,23 +1,368 @@
-# yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
-
-# This file is the entry point to configure your own services.
-# Files in the packages/ subdirectory configure your dependencies.
-# See also https://symfony.com/doc/current/service_container/import.html
-
-# Put parameters here that don't need to change on each machine where the app is deployed
-# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+# Conteneur de services — architecture modulaire (docs/ARCHITECTURE.md).
 parameters:
 
 services:
-    # default configuration for services in *this* file
     _defaults:
-        autowire: true      # Automatically injects dependencies in your services.
-        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        autowire: true
+        autoconfigure: true
 
-    # makes classes in src/ available to be used as services
-    # this creates a service per class whose id is the fully-qualified class name
+    # Les handlers Application n'utilisent aucun attribut framework : ils sont reliés aux bus par interface.
+    _instanceof:
+        App\Shared\Application\Bus\CommandHandler:
+            tags: [{ name: messenger.message_handler, bus: command.bus }]
+        App\Shared\Application\Bus\QueryHandler:
+            tags: [{ name: messenger.message_handler, bus: query.bus }]
+        App\Shared\Application\Bus\EventHandler:
+            tags: [{ name: messenger.message_handler, bus: event.bus }]
+        # C07.4 : sections de l'export RGPD fournies par chaque module.
+        App\Shared\Application\Privacy\PersonalDataSource:
+            tags: ['app.personal_data_source']
+        # BO05.2 : contenus signalables décrits par chaque module.
+        App\Shared\Application\Moderation\ReportableContent:
+            tags: ['app.reportable_content']
+
     App\:
         resource: '../src/'
+        exclude:
+            - '../src/Kernel.php'
+            - '../src/*/Domain/'
+            - '../src/*/Application/Command/*/*Command.php'
+            - '../src/*/Application/Query/*/*Query.php'
+            - '../src/Shared/Application/Settings/{SettingDefinition,InvalidSettingValue}.php'
+            - '../src/Catalog/Application/Geo/{RegionRecord,DepartmentRecord,CommuneRecord,CommuneRow,ImportReport}.php'
+            - '../src/Catalog/Infrastructure/Geo/{GeoApiGouvSource,JsonFileGeoSource,GeoApiPayloadParser}.php'
+            - '../src/Search/Application/Port/{JobDocument,PlaceDocument,SearchUnavailable}.php'
+            - '../src/Shared/Application/Integration/'
+            - '../src/Shared/Application/Storage/{StoredFile,WrappedKey,RejectedUpload,StoredFileNotFound}.php'
+            - '../src/Shared/Application/Storage/Port/SanitizedFile.php'
+            - '../src/Identity/Application/Password/WeakPassword.php'
+            - '../src/Identity/Application/Command/{EmailAlreadyRegistered,InvalidCurrentPassword}.php'
+            - '../src/Identity/Application/Legal/LegalDocumentVersion.php'
+            - '../src/Identity/Application/Registration/RegistrationRejected.php'
+            - '../src/Identity/Application/EmailVerification/{EmailToken,SecretToken,InvalidEmailToken}.php'
+            - '../src/Identity/Application/PasswordReset/{PasswordResetToken,ResetLinkUnusable}.php'
+            - '../src/Notification/Application/{Notification,Template,RenderedEmail}.php'
+            - '../src/ArtisanProfile/Application/Signup/{SignupRejected,CompanyLookupResult,SignupState,DocumentSlot}.php'
+            - '../src/Shared/Application/Identity/{UserContactDetails,AccountReviewDetails,AccountCreationRejected}.php'
+            - '../src/ArtisanProfile/Application/Verification/{QueueItem,DossierView}.php'
+            - '../src/Catalog/Application/Query/JobRequirement.php'
+            - '../src/Catalog/Application/Geo/Query/Coverage.php'
+            - '../src/Billing/Application/Credit/{CreditBalance,InsufficientCredits}.php'
+            - '../src/ArtisanProfile/Application/Admin/ArtisanListPage.php'
+            - '../src/ArtisanProfile/Application/Search/SearchableArtisan.php'
+            - '../src/Search/Application/Artisan/{SearchCandidate,ArtisanSearchResult,ArtisanHit}.php'
+            - '../src/Identity/Application/Admin/ClientListPage.php'
+            - '../src/ArtisanProfile/Domain/'
+            - '../src/Administration/Application/Team/{TeamRejected,InvitationToken,AdminMemberView}.php'
+            - '../src/Administration/Infrastructure/Security/AdminSecurityUser.php'
+            - '../src/Identity/Infrastructure/Security/SecurityUser.php'
+            - '../src/Shared/Infrastructure/DependencyInjection/'
+            - '../src/Catalog/Application/Geo/Port/GeocodedAddress.php'
+            - '../src/Billing/Application/Port/VatNumberCheck.php'
+            - '../src/Shared/Application/Billing/ArtisanBillingIdentityDetails.php'
+            - '../src/Billing/Application/Checkout/{BillingDetails,CheckoutRejected,CheckoutPreview}.php'
+            - '../src/Billing/Application/Webhook/{StripeEvent,InvalidWebhook}.php'
+            - '../src/Billing/Application/Invoice/{InvoiceRecord,InvoiceView,InvoiceAdminRow,CreditNoteRecord,RefundRejected}.php'
+            - '../src/Billing/Application/Promo/{PromoCodeView,PromoForm}.php'
+            - '../src/Billing/Application/Reconciliation/{ReconciliationRun,ReconciliationIssue}.php'
+            - '../src/Messaging/Application/Query/{ConversationRow,ConversationThread,ConversationsPage,ThreadMessage}.php'
+            - '../src/Billing/Application/Subscription/{ChangePreview,SubscriptionChangeRejected,LedgerLine,SubscriptionSummary,ProSubscriptionView}.php'
+            - '../src/Billing/Application/Port/{CheckoutRequest,CheckoutSession,PromotionCode,BillingAddress,SubscriptionState,PaymentMethodSummary,PromotionSpec,CreditNoteRequest,CreditNoteResult,InvoiceSnapshot}.php'
+            - '../src/Search/Application/Query/{Autocomplete,Suggestions}.php'
+            - '../src/QuoteRequest/Application/Port/{RequestRiskInput,RequestRisk}.php'
+            - '../src/QuoteRequest/Application/Dispatch/{DispatchTarget,DispatchSummary,PendingDigest}.php'
+            - '../src/QuoteRequest/Application/Pro/{ProArtisan,ProRequestCard,ProRequestPage,ProRequestView,ProRequestFilter}.php'
+            - '../src/QuoteRequest/Application/Maintenance/{ExpiryNotice,DraftReminder,ExpiredDraft}.php'
+            - '../src/QuoteRequest/Application/Client/{ClientRequestRow,ClientDraft,ClientRequestPage}.php'
+            - '../src/Quote/Application/Editor/{QuoteEditorView,QuoteForm}.php'
+            - '../src/Quote/Application/Pdf/QuotePdfDocument.php'
+            - '../src/Quote/Application/Revision/RevisionPreview.php'
+            - '../src/Quote/Application/Pro/{ProQuoteFilter,ProQuoteRow,ProQuotesPage,ProDashboardView}.php'
+            - '../src/Quote/Application/Admin/{AdminQuoteRow,AdminQuotesPage}.php'
+            - '../src/Billing/Application/Plan/PlanView.php'
+            - '../src/Quote/Application/Client/{ClientQuoteCard,ClientQuotes}.php'
+            - '../src/ArtisanProfile/Application/Account/ArtisanAccount.php'
+            - '../src/ArtisanProfile/Application/Quote/QuoteIssuerView.php'
+            - '../src/QuoteRequest/Application/Admin/{AdminRequestRow,AdminRequestPage,AdminRequestView}.php'
+            - '../src/QuoteRequest/Application/Moderation/ModerationRejected.php'
+            - '../src/Shared/Application/Moderation/{ProfileReviewItem,ModerationDecisionRejected}.php'
+            - '../src/QuoteRequest/Application/Draft/{DraftOwner,DraftAttachmentView,RequestDraftView,DraftRejected}.php'
+            - '../src/Catalog/Application/Questionnaire/JobQuestionnaireView.php'
 
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+    # Ports du noyau partagé
+    App\Shared\Domain\Time\Clock: '@App\Shared\Infrastructure\Time\SystemClock'
+    App\Shared\Domain\Identifier\IdGenerator: '@App\Shared\Infrastructure\Identifier\UuidV7Generator'
+    App\Shared\Application\Bus\CommandBus: '@App\Shared\Infrastructure\Messenger\MessengerCommandBus'
+    App\Shared\Application\Bus\QueryBus: '@App\Shared\Infrastructure\Messenger\MessengerQueryBus'
+    App\Shared\Application\Bus\EventBus: '@App\Shared\Infrastructure\Messenger\OutboxEventBus'
+    App\Shared\Application\Transaction\TransactionManager: '@App\Shared\Infrastructure\Persistence\DbalTransactionManager'
+    App\Shared\Application\Security\IpAnonymizer: '@App\Shared\Infrastructure\Security\HmacIpAnonymizer'
+    App\Shared\Application\Settings\SettingsProvider: '@App\Administration\Infrastructure\Settings\DbalSettingsProvider'
+    App\Shared\Application\Security\CurrentUser: '@App\Identity\Infrastructure\Security\SecurityCurrentUser'
+    App\Shared\Application\Security\CurrentAdministrator: '@App\Administration\Infrastructure\Security\SecurityCurrentAdministrator'
+    # Stockage de fichiers (ADR-0008)
+    App\Shared\Application\Storage\Port\ObjectStorage: '@App\Shared\Infrastructure\Storage\FlysystemObjectStorage'
+    App\Shared\Application\Storage\Port\FileSanitizer: '@App\Shared\Infrastructure\Storage\NativeFileSanitizer'
+    App\Shared\Application\Storage\Port\AntivirusScanner: '@App\Shared\Infrastructure\Storage\ClamAvScanner'
+    App\Shared\Application\Storage\Port\EnvelopeEncryption: '@App\Shared\Infrastructure\Storage\SodiumEnvelopeEncryption'
+    App\Shared\Application\Security\SecretBox: '@App\Shared\Infrastructure\Storage\SodiumEnvelopeEncryption'
+    App\Shared\Application\Storage\Port\StoredFileRepository: '@App\Shared\Infrastructure\Storage\DbalStoredFileRepository'
+
+    # Ports du module Administration
+    App\Administration\Application\Port\SettingStore: '@App\Administration\Infrastructure\Settings\DbalSettingStore'
+    App\Administration\Domain\Admin\AdminUserRepository: '@App\Administration\Infrastructure\Doctrine\Repository\DoctrineAdminUserRepository'
+    App\Administration\Application\Port\CurrentAdmin: '@App\Administration\Infrastructure\Security\SecurityCurrentAdmin'
+    App\Administration\Application\Port\Reauthentication: '@App\Administration\Infrastructure\Security\AdminReauthentication'
+    App\Administration\Application\Port\Totp: '@App\Administration\Infrastructure\Security\OtphpTotp'
+    App\Administration\Application\Port\AdminPasswordHasher: '@App\Administration\Infrastructure\Security\SymfonyAdminPasswordHasher'
+    App\Administration\Application\Port\AdminMailer: '@App\Administration\Infrastructure\Mailer\NotificationAdminMailer'
+    App\Administration\Application\Team\BackupCodes:
+        arguments: { $pepper: '%kernel.secret%' }
+    App\Shared\Application\Audit\AuditTrail: '@App\Administration\Infrastructure\Audit\DbalAuditTrail'
+
+    # Ports du module Catalog
+    App\Catalog\Domain\Category\CategoryRepository: '@App\Catalog\Infrastructure\Doctrine\Repository\DoctrineCategoryRepository'
+    App\Catalog\Domain\Job\JobRepository: '@App\Catalog\Infrastructure\Doctrine\Repository\DoctrineJobRepository'
+    App\Catalog\Application\Port\JobUsageCounter: '@App\Catalog\Infrastructure\InterimJobUsageCounter'
+    App\Catalog\Application\Geo\Port\GeoReferentialStore: '@App\Catalog\Infrastructure\Geo\DbalGeoReferentialStore'
+    App\Catalog\Application\Geo\Port\GeoReferentialSourceFactory: '@App\Catalog\Infrastructure\Geo\GeoSourceFactory'
+    App\Catalog\UI\Twig\CatalogExtension:
+        arguments: { $catalogCache: '@cache.catalog' }
+    App\Catalog\Infrastructure\Cache\InvalidateMainCategoriesCache:
+        arguments: { $catalogCache: '@cache.catalog' }
+
+    # Ports du module Content
+    App\Content\Application\Port\RedirectStore: '@App\Content\Infrastructure\Redirect\DbalRedirectStore'
+    App\Content\Application\Port\HomeVersions: '@App\Content\Infrastructure\Home\DbalHomeVersions'
+    App\Content\Application\Port\SeoMeta: '@App\Content\Infrastructure\Seo\DbalSeoMeta'
+    App\Content\Application\Port\NotFoundLog: '@App\Content\Infrastructure\Seo\DbalSeoMeta'
+    App\Content\Application\Port\FaqStore: '@App\Content\Infrastructure\Faq\DbalFaqStore'
+    App\Content\Application\Port\ContactMessages: '@App\Content\Infrastructure\Contact\DbalContactMessages'
+    App\Content\Application\Port\ContactMailer: '@App\Content\Infrastructure\Contact\NotificationContactMailer'
+
+    App\Catalog\Application\Geo\Port\AddressGeocoder: '@App\Catalog\Infrastructure\Geo\BanAddressGeocoder'
+    App\Shared\Application\Integration\CompanyRegistry: '@App\Shared\Infrastructure\Integration\Sirene\InseeSireneCompanyRegistry'
+    App\Billing\Application\Port\VatNumberChecker: '@App\Billing\Infrastructure\Vies\ViesVatNumberChecker'
+    App\Shared\Application\Security\HumanVerification: '@App\Identity\Infrastructure\Turnstile\TurnstileHumanVerification'
+
+    # Ports du module Notification (CDC §6, annexe F)
+    App\Notification\Application\Notifier: '@App\Notification\Application\NotificationDispatcher'
+    App\Notification\Application\Port\TemplateStore: '@App\Notification\Infrastructure\Persistence\DbalTemplateStore'
+    App\Notification\Application\Port\TemplateRenderer: '@App\Notification\Infrastructure\Template\SandboxedTemplateRenderer'
+    App\Notification\Application\Port\EmailSender: '@App\Notification\Infrastructure\Mailer\SymfonyMailerEmailSender'
+    App\Notification\Application\Port\DeliveryLog: '@App\Notification\Infrastructure\Persistence\DbalDeliveryLog'
+    App\Notification\Application\Port\InAppNotifications: '@App\Notification\Infrastructure\Persistence\DbalInAppNotifications'
+
+    # Ports du module Messaging (T-701)
+    App\Messaging\Domain\Conversation\ConversationRepository: '@App\Messaging\Infrastructure\Persistence\DbalConversationRepository'
+    App\Messaging\Application\Port\MessagingDirectory: '@App\Messaging\Infrastructure\Persistence\DbalMessagingDirectory'
+    App\Messaging\Application\Port\ParticipantStates: '@App\Messaging\Infrastructure\Persistence\DbalParticipantStates'
+    App\Messaging\Application\Port\MessageModeration: '@App\Messaging\Infrastructure\Persistence\DbalMessageModeration'
+    App\Messaging\Application\Port\QuickReplies: '@App\Messaging\Infrastructure\Persistence\DbalQuickReplies'
+    App\Messaging\Application\Port\MessagingMailer: '@App\Messaging\Infrastructure\Mailer\NotificationMessagingMailer'
+    App\Messaging\Application\Query\ConversationReader: '@App\Messaging\Infrastructure\Persistence\DbalConversationReader'
+
+    # Ports du module Search (artisans)
+    App\Search\Application\Favorite\Favorites: '@App\Search\Infrastructure\Favorite\DbalFavorites'
+    App\Search\Application\Artisan\ArtisanSearchIndex: '@App\Search\Infrastructure\Artisan\DbalArtisanSearchIndex'
+
+    # Ports du module Billing
+    App\Billing\Application\Credit\CreditLedger: '@App\Billing\Infrastructure\Credit\DbalCreditLedger'
+    App\Billing\Application\Credit\QuoteCreditAccount: '@App\Billing\Infrastructure\Credit\DbalCreditLedger'
+    App\Quote\Application\Admin\AdminQuoteReader: '@App\Quote\Infrastructure\Admin\DbalAdminQuoteReader'
+    App\Quote\Application\Pro\ProQuoteReader: '@App\Quote\Infrastructure\Pro\DbalProQuoteReader'
+    App\Billing\Domain\Plan\PlanRepository: '@App\Billing\Infrastructure\Plan\DbalPlanRepository'
+    App\Billing\Application\Alert\CreditAlertLog: '@App\Billing\Infrastructure\Alert\DbalCreditAlertLog'
+    App\Billing\Application\Alert\CreditAlertMailer: '@App\Billing\Infrastructure\Alert\NotificationCreditAlertMailer'
+    App\Billing\Domain\Credit\CreditAlertPolicy: ~
+    App\Billing\Application\Port\PaymentGateway: '@App\Billing\Infrastructure\Payment\StripePaymentGateway'
+    App\Billing\Domain\Subscription\SubscriptionRepository: '@App\Billing\Infrastructure\Subscription\DbalSubscriptionRepository'
+    App\Billing\Application\Subscription\SubscriptionReader: '@App\Billing\Infrastructure\Subscription\DbalSubscriptionReader'
+    App\Billing\Application\Checkout\BillingProfiles: '@App\Billing\Infrastructure\Checkout\DbalBillingProfiles'
+    App\Billing\Application\Subscription\SubscriptionPeriods: '@App\Billing\Infrastructure\Subscription\DbalSubscriptionPeriods'
+    App\Billing\Application\Subscription\SubscriptionMailer: '@App\Billing\Infrastructure\Subscription\NotificationSubscriptionMailer'
+    App\Billing\Application\Webhook\WebhookVerifier: '@App\Billing\Infrastructure\Webhook\StripeWebhookVerifier'
+    App\Billing\Application\Webhook\ProcessedEvents: '@App\Billing\Infrastructure\Webhook\DbalProcessedEvents'
+    App\Billing\Application\Invoice\Invoices: '@App\Billing\Infrastructure\Invoice\DbalInvoices'
+    App\Billing\Application\Promo\PromoCodes: '@App\Billing\Infrastructure\Promo\DbalPromoCodes'
+    App\Billing\Application\Reconciliation\ReconciliationStore: '@App\Billing\Infrastructure\Reconciliation\DbalReconciliationStore'
+    App\Billing\Application\Invoice\InvoiceArchive: '@App\Billing\Infrastructure\Invoice\ObjectStorageInvoiceArchive'
+    App\Billing\Application\Payment\StripePriceLinks: '@App\Billing\Infrastructure\Payment\DbalStripeLinks'
+    App\Billing\Application\Payment\StripeCustomerAccounts: '@App\Billing\Infrastructure\Payment\DbalStripeLinks'
+
+    # Ports du module QuoteRequest
+    App\QuoteRequest\Domain\Request\QuoteRequestRepository: '@App\QuoteRequest\Infrastructure\Doctrine\Repository\DoctrineQuoteRequestRepository'
+    App\QuoteRequest\Application\Port\RequestContentStore: '@App\QuoteRequest\Infrastructure\Persistence\DbalRequestContentStore'
+    App\QuoteRequest\Application\Port\RequestMailer: '@App\QuoteRequest\Infrastructure\Mailer\NotificationRequestMailer'
+    App\QuoteRequest\Application\Draft\DraftStore: '@App\QuoteRequest\Infrastructure\Draft\DbalDraftStore'
+    App\QuoteRequest\Application\Port\RequestRiskAssessor: '@App\QuoteRequest\Application\Risk\RequestRiskScorer'
+    App\QuoteRequest\Application\Admin\AdminRequestRows: '@App\QuoteRequest\Infrastructure\Admin\DbalAdminRequestRows'
+    App\QuoteRequest\Application\Port\RequestRiskSignals: '@App\QuoteRequest\Infrastructure\Risk\DbalRequestRiskSignals'
+    App\QuoteRequest\Application\Port\DispatchTargets: '@App\QuoteRequest\Infrastructure\Dispatch\DbalDispatchTargets'
+    App\QuoteRequest\Application\Port\RequestDispatches: '@App\QuoteRequest\Infrastructure\Dispatch\DbalRequestDispatches'
+    App\QuoteRequest\Application\Port\ProRequestReader: '@App\QuoteRequest\Infrastructure\Pro\DbalProRequestReader'
+    App\QuoteRequest\Application\Port\RequestMaintenanceStore: '@App\QuoteRequest\Infrastructure\Maintenance\DbalRequestMaintenanceStore'
+    App\QuoteRequest\Application\Port\ClientRequestReader: '@App\QuoteRequest\Infrastructure\Client\DbalClientRequestReader'
+    App\QuoteRequest\Application\Port\RequestAddenda: '@App\QuoteRequest\Infrastructure\Persistence\DbalRequestAddenda'
+
+    # Module Quote
+    App\Quote\Domain\Quote\QuoteRepository: '@App\Quote\Infrastructure\Persistence\DbalQuoteRepository'
+    # Ports du module Review (T-704)
+    App\Review\Domain\Review\ReviewRepository: '@App\Review\Infrastructure\Persistence\DbalReviewRepository'
+    App\Review\Application\Port\ReviewDirectory: '@App\Review\Infrastructure\Persistence\DbalReviewDirectory'
+    App\Review\Application\Port\ReviewMailer: '@App\Review\Infrastructure\Mailer\NotificationReviewMailer'
+    App\Review\Application\Query\ReviewReader: '@App\Review\Infrastructure\Persistence\DbalReviewReader'
+    App\Quote\Domain\Appointment\AppointmentRepository: '@App\Quote\Infrastructure\Appointment\DbalAppointmentRepository'
+    App\Quote\Application\Appointment\AppointmentReader: '@App\Quote\Infrastructure\Appointment\DbalAppointmentReader'
+    App\Quote\Application\Appointment\AppointmentParties: '@App\Quote\Infrastructure\Appointment\DbalAppointmentReader'
+    App\Quote\Application\Appointment\AppointmentMailer: '@App\Quote\Infrastructure\Mailer\NotificationAppointmentMailer'
+    App\Quote\Domain\Mention\MandatoryMentionsChecker: ~
+    App\Quote\Domain\Sending\QuoteSendingPolicy: ~
+    App\Quote\Application\Port\QuoteNumberAllocator: '@App\Quote\Infrastructure\Persistence\DbalQuoteNumberAllocator'
+    App\Quote\Application\Port\QuoteMailer: '@App\Quote\Infrastructure\Mailer\NotificationQuoteMailer'
+    App\Quote\Application\Port\QuoteDraftHolders: '@App\Quote\Infrastructure\Persistence\DbalQuoteDraftHolders'
+    App\Quote\Application\Port\QuotePdfRenderer: '@App\Quote\Infrastructure\Pdf\DompdfQuotePdfRenderer'
+    App\Quote\Application\Port\QuotePdfStore: '@App\Quote\Infrastructure\Pdf\ObjectStorageQuotePdfStore'
+    App\Quote\Infrastructure\Pdf\DompdfQuotePdfRenderer:
+        arguments:
+            $cacheDir: '%kernel.cache_dir%/dompdf'
+    App\Identity\Infrastructure\Privacy\ZipDataExportPackager:
+        arguments:
+            $cacheDir: '%kernel.cache_dir%/dompdf'
+
+    App\Catalog\Application\Questionnaire\QuestionnaireStore: '@App\Catalog\Infrastructure\Questionnaire\DbalQuestionnaireStore'
+
+    # Ports du module ArtisanProfile
+    App\ArtisanProfile\Domain\Profile\ArtisanProfileRepository: '@App\ArtisanProfile\Infrastructure\Doctrine\Repository\DoctrineArtisanProfileRepository'
+    App\ArtisanProfile\Domain\Document\ArtisanDocumentRepository: '@App\ArtisanProfile\Infrastructure\Doctrine\Repository\DoctrineArtisanDocumentRepository'
+    App\ArtisanProfile\Application\Port\CoverageProjection: '@App\ArtisanProfile\Infrastructure\Projection\DbalCoverageProjection'
+    App\ArtisanProfile\Application\Port\ProfileReviews: '@App\ArtisanProfile\Infrastructure\Projection\DbalProfileReviews'
+    App\ArtisanProfile\Application\Port\ProfileContent: '@App\ArtisanProfile\Infrastructure\Projection\DbalPortfolioStore'
+    App\ArtisanProfile\Application\Port\AgendaStore: '@App\ArtisanProfile\Infrastructure\Agenda\DbalAgendaStore'
+    App\ArtisanProfile\Application\Agenda\SlotReservations: '@App\ArtisanProfile\Infrastructure\Agenda\DbalSlotReservations'
+    App\ArtisanProfile\Application\Port\PortfolioStore: '@App\ArtisanProfile\Infrastructure\Projection\DbalPortfolioStore'
+    App\ArtisanProfile\Application\Port\VerificationDecisions: '@App\ArtisanProfile\Infrastructure\Projection\DbalVerificationDecisions'
+    App\ArtisanProfile\Application\Port\MaintenanceCandidates: '@App\ArtisanProfile\Infrastructure\Projection\DbalMaintenanceCandidates'
+    App\ArtisanProfile\Application\Port\ReminderLog: '@App\ArtisanProfile\Infrastructure\Projection\DbalReminderLog'
+    App\ArtisanProfile\Application\Port\SignupMailer: '@App\ArtisanProfile\Infrastructure\Mailer\NotificationSignupMailer'
+
+    # Ports du module Search
+    App\Search\Application\Port\AutocompleteIndex: '@App\Search\Infrastructure\Meilisearch\MeilisearchAutocompleteIndex'
+
+    # Ports du module Identity
+    App\Identity\Application\Port\ConsentLog: '@App\Identity\Infrastructure\Consent\DbalConsentLog'
+    App\Identity\Domain\User\UserRepository: '@App\Identity\Infrastructure\Doctrine\Repository\DoctrineUserRepository'
+    App\Identity\Application\Port\PasswordHasher: '@App\Identity\Infrastructure\Password\SymfonyPasswordHasher'
+    App\Identity\Application\Port\CompromisedPasswordChecker: '@App\Identity\Infrastructure\Password\HibpCompromisedPasswordChecker'
+    App\Identity\Domain\Client\ClientProfileRepository: '@App\Identity\Infrastructure\Doctrine\Repository\DoctrineClientProfileRepository'
+    App\Identity\Application\Port\LegalDocuments: '@App\Identity\Infrastructure\Legal\DbalLegalDocuments'
+    App\Identity\Application\Port\LegalAcceptanceLog: '@App\Identity\Infrastructure\Legal\DbalLegalAcceptanceLog'
+    App\Identity\Application\Port\DisposableEmailDetector: '@App\Identity\Infrastructure\Antifraud\FileDisposableEmailDetector'
+    App\Identity\Application\Port\EmailTokens: '@App\Identity\Infrastructure\EmailVerification\DbalEmailTokens'
+    App\Identity\Application\Port\IdentityMailer: '@App\Identity\Infrastructure\Mailer\NotificationIdentityMailer'
+    App\Identity\Application\Port\KnownDevices: '@App\Identity\Infrastructure\Login\DbalKnownDevices'
+    App\Identity\Application\Port\LoginProtection: '@App\Identity\Infrastructure\Security\SecurityLoginProtection'
+    App\Identity\Application\Port\PasswordResetTokens: '@App\Identity\Infrastructure\PasswordReset\DbalPasswordResetTokens'
+
+    App\Shared\Infrastructure\Messenger\MessengerCommandBus:
+        arguments: { $bus: '@command.bus' }
+    App\Shared\Infrastructure\Messenger\MessengerQueryBus:
+        arguments: { $bus: '@query.bus' }
+
+    App\Shared\Infrastructure\Messenger\OutboxEventBus:
+        arguments:
+            $messengerSerializer: '@messenger.transport.symfony_serializer'
+    App\Shared\Infrastructure\Messenger\OutboxRelay:
+        arguments:
+            $messengerSerializer: '@messenger.transport.symfony_serializer'
+            $eventBus: '@event.bus'
+
+    App\Administration\Infrastructure\Settings\DbalSettingsProvider:
+        arguments:
+            $settingsCache: '@cache.settings'
+    App\Administration\Infrastructure\Settings\InvalidateSettingsCache:
+        arguments:
+            $settingsCache: '@cache.settings'
+
+# Points d'entrée applicatifs accessibles aux tests d'intégration (aucun effet hors environnement test).
+
+    App\Identity\Application\Privacy\BuildDataExport:
+        arguments:
+            $sources: !tagged_iterator app.personal_data_source
+
+    App\Moderation\Application\Report\ReportHandler:
+        arguments:
+            $reportables: !tagged_iterator app.reportable_content
+
+when@test:
+    services:
+        # Prestataire de paiement : double en mémoire, jamais d'appel réseau en test (T-602).
+        App\Billing\Application\Port\PaymentGateway: '@App\Billing\Infrastructure\Payment\InMemoryPaymentGateway'
+        App\Billing\Infrastructure\Payment\InMemoryPaymentGateway:
+            public: true
+        test.command_bus:
+            alias: App\Shared\Application\Bus\CommandBus
+            public: true
+        test.query_bus:
+            alias: App\Shared\Application\Bus\QueryBus
+            public: true
+        # Dépôt des devis : sans consommateur avant les cas d'usage du lot 5 (T-502, T-504).
+        test.quote_repository:
+            alias: App\Quote\Domain\Quote\QuoteRepository
+            public: true
+        # Pipeline de fichiers : conservé dans le conteneur de test avant ses premiers usages (T-207, T-402).
+        test.storage.uploader:
+            alias: App\Shared\Application\Storage\FileUploader
+            public: true
+        test.storage.reader:
+            alias: App\Shared\Application\Storage\FileReader
+            public: true
+        test.storage.shredder:
+            alias: App\Shared\Application\Storage\FileShredder
+            public: true
+        test.storage.object_storage:
+            alias: App\Shared\Application\Storage\Port\ObjectStorage
+            public: true
+        test.storage.quarantine:
+            alias: quarantine.storage
+            public: true
+        test.storage.documents:
+            alias: documents.storage
+            public: true
+        App\Shared\Application\Security\HumanVerification:
+            class: App\Tests\Support\Fake\AcceptingHumanVerification
+        # Limites de débit : stockage en mémoire non réinitialisé entre requêtes (comme Redis en production) mais propre
+        # à chaque noyau de test (isolation entre tests, cf. bf78dc0).
+        cache.rate_limiter:
+            class: Symfony\Component\Cache\Adapter\ArrayAdapter
+        App\Shared\Application\Integration\CompanyRegistry:
+            class: App\Tests\Support\Fake\FakeCompanyRegistry
+        App\Billing\Application\Port\VatNumberChecker:
+            class: App\Tests\Support\Fake\FakeVatNumberChecker
+        App\Catalog\Application\Geo\Port\AddressGeocoder:
+            class: App\Tests\Support\Fake\FakeAddressGeocoder
+        # Antivirus de test (reconnaît la chaîne EICAR) ; ClamAvScanner réel couvert par ClamAvScannerTest.
+        App\Shared\Application\Storage\Port\AntivirusScanner:
+            class: App\Tests\Support\Fake\EicarAntivirusScanner
+        # Clients sortants inspectés par ExternalHttpClientsTest (anti-SSRF).
+        test.geo_api.client:
+            alias: geo_api.client
+            public: true
+        test.geocoding.client:
+            alias: geocoding.client
+            public: true
+        test.sirene.client:
+            alias: sirene.client
+            public: true
+        test.vies.client:
+            alias: vies.client
+            public: true
+        test.turnstile.client:
+            alias: turnstile.client
+            public: true
+        test.hibp.client:
+            alias: hibp.client
+            public: true
+        test.stripe.client:
+            alias: stripe.client
+            public: true

@@ -1,0 +1,35 @@
+{
+  "_fixture": "DONNÉES FICTIVES — format de réponse API Sirene 3.11 (/siret/{siret}) ; aucune entreprise réelle.",
+  "header": {"statut": 200, "message": "ok"},
+  "etablissement": {
+    "siren": "900000001",
+    "nic": "00017",
+    "siret": "90000000100017",
+    "statutDiffusionEtablissement": "O",
+    "dateCreationEtablissement": "2019-03-01",
+    "etablissementSiege": true,
+    "uniteLegale": {
+      "etatAdministratifUniteLegale": "A",
+      "statutDiffusionUniteLegale": "O",
+      "dateCreationUniteLegale": "2019-03-01",
+      "categorieJuridiqueUniteLegale": "5499",
+      "denominationUniteLegale": "PLOMBERIE FICTIVE DE TEST",
+      "nomUniteLegale": null,
+      "prenom1UniteLegale": null,
+      "activitePrincipaleUniteLegale": "43.22A"
+    },
+    "adresseEtablissement": {
+      "complementAdresseEtablissement": null,
+      "numeroVoieEtablissement": "12",
+      "indiceRepetitionEtablissement": "B",
+      "typeVoieEtablissement": "RUE",
+      "libelleVoieEtablissement": "DE L EXEMPLE",
+      "codePostalEtablissement": "14000",
+      "libelleCommuneEtablissement": "CAEN",
+      "codeCommuneEtablissement": "14118"
+    },
+    "periodesEtablissement": [
+      {"dateFin": null, "dateDebut": "2019-03-01", "etatAdministratifEtablissement": "A", "activitePrincipaleEtablissement": "43.22A"}
+    ]
+  }
+}

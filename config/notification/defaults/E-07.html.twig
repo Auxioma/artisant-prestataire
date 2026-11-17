@@ -1,0 +1,5 @@
+<p>Bonjour {{ prenom }},</p>
+<p>L’archive de vos données personnelles que vous avez demandée est prête. Elle contient un fichier lisible (PDF) et un fichier réutilisable (JSON).</p>
+<p>Pour votre sécurité, elle se télécharge uniquement depuis votre espace, une fois connecté, jusqu’au {{ expiration|date('d/m/Y à H:i', 'Europe/Paris') }} ({{ validite_jours }} jours). Elle sera ensuite détruite.</p>
+{{ bouton(lien, 'Télécharger mes données') }}
+<p class="muted">Vous n’êtes pas à l’origine de cette demande ? Changez votre mot de passe et contactez-nous.</p>

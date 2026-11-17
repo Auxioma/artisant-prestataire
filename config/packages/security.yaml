@@ -1,39 +1,103 @@
+# Cadrage §5.1 / ASVS V2 : Argon2id explicite (jamais « auto »).
+# Comptes clients et artisans : Identity (T-201). Formulaire de connexion, limitation et « se souvenir de moi » : T-204.
+# Pare-feu d'administration isolé (ADR-0013, T-209) : fournisseur distinct, 2FA TOTP obligatoire, hôte dédié optionnel
+# (ADMIN_HOST, contrôlé par AdminAccessSubscriber), inactivité et ré-authentification paramétrées.
 security:
-    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
-        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+            algorithm: argon2id
+            memory_cost: 65536   # 64 Mio (recommandation OWASP : ≥ 19 Mio)
+            time_cost: 4
 
-    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        users_in_memory: { memory: null }
+        app_users:
+            id: App\Identity\Infrastructure\Security\UserProvider
+        admin_users:
+            id: App\Administration\Infrastructure\Security\AdminUserProvider
 
     firewalls:
         dev:
-            # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler(/|$)|(_wdt|assets|build)/)
             security: false
+        # Back-office : contexte de sécurité distinct (une session client ou artisan n'y donne jamais accès).
+        admin:
+            pattern: ^/admin(/|$)
+            lazy: true
+            provider: admin_users
+            entry_point: form_login
+            form_login:
+                login_path: admin_login
+                check_path: admin_login
+                username_parameter: _username
+                password_parameter: _password
+                enable_csrf: true
+                csrf_token_id: admin_authenticate
+                default_target_path: admin_dashboard
+                always_use_default_target_path: false
+            # Cadrage §5.1 : limitation des tentatives (par identifiant et par IP) avant même la vérification du mot de passe.
+            login_throttling:
+                max_attempts: 5
+                interval: '15 minutes'
+            two_factor:
+                auth_form_path: admin_2fa_login
+                check_path: admin_2fa_check
+                default_target_path: admin_dashboard
+                prepare_on_login: true
+                prepare_on_access_denied: true
+                enable_csrf: true
+                csrf_token_id: admin_two_factor
+                auth_code_parameter_name: _auth_code
+            logout:
+                path: admin_logout
+                target: admin_login
+                enable_csrf: true
+                csrf_token_id: admin_logout
+                invalidate_session: true
         main:
             lazy: true
-            provider: users_in_memory
+            provider: app_users
+            user_checker: App\Identity\Infrastructure\Security\UserChecker
+            entry_point: form_login
+            # A04 : formulaire, CSRF, redirection en liste blanche (LoginSuccessHandler) ; RG-045 : LoginSubscriber
+            form_login:
+                login_path: identity_login
+                check_path: identity_login
+                username_parameter: _username
+                password_parameter: _password
+                enable_csrf: true
+                csrf_token_id: authenticate
+                success_handler: App\Identity\Infrastructure\Security\LoginSuccessHandler
+            # « Rester connecté » : cookie signé (empreinte + e-mail) — invalide dès un changement de mot de passe ou
+            # d'adresse. Durée : auth.remember_me_days (30 j par défaut) ; la valeur ci-dessous en est le plafond (P-44).
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 2592000
+                remember_me_parameter: _remember_me
+                signature_properties: ['password', 'email']
+                secure: auto
+                samesite: lax
+            logout:
+                path: identity_logout
+                target: public_home
+                enable_csrf: true
+                csrf_token_id: logout
+                invalidate_session: true
 
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
-
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
-
-    # Note: Only the *first* matching rule is applied
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        # Back-office : connexion et acceptation d'invitation publiques, code 2FA en cours, tout le reste réservé aux admins.
+        - { path: '^/admin/connexion$', roles: PUBLIC_ACCESS }
+        - { path: '^/admin/invitation/', roles: PUBLIC_ACCESS }
+        - { path: '^/admin/2fa', roles: IS_AUTHENTICATED_2FA_IN_PROGRESS }
+        - { path: '^/admin(/|$)', roles: ROLE_ADMIN }
+        # A03 : étapes 2 à 7 du tunnel professionnel réservées au compte artisan connecté (l'étape 1 est publique)
+        - { path: '^/inscription/pro/', roles: ROLE_ARTISAN }
+        - { path: '^/espace-pro(/|$)', roles: ROLE_ARTISAN }
+        - { path: '^/espace-client(/|$)', roles: ROLE_CLIENT }
 
 when@test:
     security:
         password_hashers:
-            # Password hashers are resource-intensive by design to ensure security.
-            # In tests, it's safe to reduce their cost to improve performance.
             Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
-                algorithm: auto
-                cost: 4 # Lowest possible value for bcrypt
-                time_cost: 3 # Lowest possible value for argon
-                memory_cost: 10 # Lowest possible value for argon
+                algorithm: argon2id
+                time_cost: 3
+                memory_cost: 10

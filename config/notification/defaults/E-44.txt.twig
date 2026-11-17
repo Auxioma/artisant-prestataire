@@ -1,0 +1,9 @@
+Bonjour {{ prenom }},
+
+Le prélèvement de {{ montant }} pour votre forfait {{ forfait }} n’a pas abouti (tentative {{ tentative }}).
+{% if prochaine_tentative %}Une nouvelle tentative aura lieu le {{ prochaine_tentative }}.{% endif %}
+
+
+Pour continuer à envoyer des devis sans interruption, réglez la facture ou mettez à jour votre moyen de paiement : {{ paiement }}
+
+Gérer mon abonnement : {{ lien }}

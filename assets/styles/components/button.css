@@ -1,0 +1,62 @@
+/* TM / Button (Figma 59:142) — 5 variantes × 5 états ; pilule 44 px, padding 20 px. */
+@layer components {
+    .tm-button {
+        --_bg: var(--gradient-orange);
+        --_bg-hover: var(--gradient-orange-hover);
+        --_fg: var(--primary);
+        --_border: transparent;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-2);
+        min-height: var(--control-height);
+        padding-inline: var(--button-padding-x);
+        border: 1.5px solid var(--_border);
+        border-radius: var(--radius-btn);
+        background: var(--_bg);
+        color: var(--_fg);
+        font: var(--type-button);
+        text-decoration: none;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background var(--duration-fast) var(--easing-standard), box-shadow var(--duration-fast) var(--easing-standard);
+    }
+
+    .tm-button:hover:not([aria-disabled='true'], :disabled) {
+        background: var(--_bg-hover);
+        text-decoration: none;
+    }
+
+    .tm-button:focus-visible {
+        box-shadow: var(--focus-ring);
+        border-radius: var(--radius-btn);
+    }
+
+    .tm-button--search { --_bg: var(--gradient-blue); --_bg-hover: var(--gradient-blue-hover); --_fg: var(--color-text-inverse); }
+    .tm-button--secondary { --_bg: var(--color-surface); --_bg-hover: var(--color-info-bg); --_fg: var(--color-link); --_border: var(--secondary); }
+    /* Figma P11 « ← Étape précédente » : fond bleu clair, sans bordure. */
+    .tm-button--soft { --_bg: var(--color-info-bg); --_bg-hover: var(--background-light); --_fg: var(--color-link); }
+    .tm-button--tertiary { --_bg: transparent; --_bg-hover: var(--color-info-bg); --_fg: var(--color-link); padding-inline: var(--space-3); }
+    .tm-button--danger { --_bg: var(--tm-red); --_bg-hover: var(--tm-red-hover); --_fg: var(--color-text-inverse); }
+    .tm-button--block { display: flex; width: 100%; }
+
+    .tm-button:disabled,
+    .tm-button[aria-disabled='true'] {
+        opacity: 0.4;
+        cursor: not-allowed;
+    }
+
+    /* Chargement : libellé conservé + spinner, non cliquable mais non grisé (Figma « Loading ») */
+    .tm-button[aria-busy='true'] {
+        opacity: 1;
+        cursor: progress;
+    }
+
+    .tm-button__spinner {
+        animation: tm-spin 0.9s linear infinite;
+    }
+
+    @keyframes tm-spin {
+        to { transform: rotate(360deg); }
+    }
+}

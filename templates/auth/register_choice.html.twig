@@ -1,0 +1,58 @@
+{#- A01 — Choix du type de compte (Figma 159:1765 / 159:1781). Cartes empilées sur mobile (CDC A01). -#}
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer mon compte — TrouveMoi{% endblock %}
+
+{% block body %}
+<div class="tm-auth-page">
+    <section class="tm-container tm-account-choice" aria-labelledby="choix-titre" data-controller="analytics">
+        <header class="tm-account-choice__intro">
+            <p class="tm-overline">Créer mon compte</p>
+            <h1 id="choix-titre" class="tm-visually-hidden">Choisissez votre type de compte</h1>
+            <p class="tm-body">Choisissez votre profil pour un parcours adapté. Vous pourrez toujours nous contacter en cas de doute.</p>
+        </header>
+
+        <div class="tm-account-choice__cards">
+            <article class="tm-choice-card">
+                <img class="tm-choice-card__image" src="{{ asset('images/auth/a01-client@1x.webp') }}" srcset="{{ asset('images/auth/a01-client@1x.webp') }} 1x, {{ asset('images/auth/a01-client@2x.webp') }} 2x" alt="" width="488" height="220" loading="lazy">
+                <div class="tm-choice-card__body">
+                    <h2 class="tm-choice-card__title"><span class="tm-choice-card__icon"><twig:Icon name="search" /></span>Je cherche un professionnel</h2>
+                    <p class="tm-body">Particulier ou entreprise cliente : trouvez un artisan vérifié et recevez jusqu’à {{ tm_setting_int('quotes.max_per_request') }} devis gratuits.</p>
+                    <ul class="tm-check-list">
+                        <li><twig:Icon name="check" size="xs" />Demande de devis gratuite et sans engagement</li>
+                        <li><twig:Icon name="check" size="xs" />Avis clients certifiés</li>
+                        <li><twig:Icon name="check" size="xs" />Vos coordonnées protégées</li>
+                    </ul>
+                    <twig:Button variant="secondary" href="{{ path('identity_register_client') }}" block
+                        data-action="analytics#track" data-analytics-event-param="signup_type_select" data-analytics-type-param="client">Continuer comme client</twig:Button>
+                </div>
+            </article>
+
+            <article class="tm-choice-card">
+                <img class="tm-choice-card__image" src="{{ asset('images/auth/a01-pro@1x.webp') }}" srcset="{{ asset('images/auth/a01-pro@1x.webp') }} 1x, {{ asset('images/auth/a01-pro@2x.webp') }} 2x" alt="" width="488" height="220" loading="lazy">
+                <div class="tm-choice-card__body">
+                    <h2 class="tm-choice-card__title"><span class="tm-choice-card__icon"><twig:Icon name="briefcase" /></span>Je suis artisan ou prestataire</h2>
+                    {% set free_credits = tm_setting_int('credits.free_on_signup') %}
+                    {% if free_credits > 0 %}<twig:Badge variant="promo">{{ free_credits }} devis offerts</twig:Badge>{% endif %}
+                    <p class="tm-body">Recevez des demandes qualifiées dans votre zone et envoyez vos devis en ligne.</p>
+                    <ul class="tm-check-list">
+                        <li><twig:Icon name="check" size="xs" />SIRET vérifié, badge « Vérifié »</li>
+                        <li><twig:Icon name="check" size="xs" />Agenda et disponibilités en ligne</li>
+                        <li><twig:Icon name="check" size="xs" />Sans carte bancaire au démarrage</li>
+                    </ul>
+                    {% if tm_route_exists('identity_register_pro') %}
+                        <twig:Button href="{{ path('identity_register_pro') }}" block
+                            data-action="analytics#track" data-analytics-event-param="signup_type_select" data-analytics-type-param="pro">Créer mon compte pro</twig:Button>
+                    {% else %}
+                        {# Parcours A03 livré au ticket T-207 : pas de lien mort #}
+                        <twig:Button block disabled>Créer mon compte pro</twig:Button>
+                        <p class="tm-caption">L’inscription des professionnels ouvre très prochainement.</p>
+                    {% endif %}
+                </div>
+            </article>
+        </div>
+
+        <p class="tm-account-choice__login tm-body-sm">Vous avez déjà un compte ? <a href="{{ tm_path('identity_login') }}">Se connecter</a></p>
+    </section>
+</div>
+{% endblock %}

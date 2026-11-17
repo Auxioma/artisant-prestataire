@@ -1,0 +1,43 @@
+{#- BO03.1 — liste des comptes professionnels. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'artisans' %}
+{% block title %}Artisans{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Artisans et vérification', crumbs: ['Utilisateurs'], subtitle: page.total|number_format(0, ',', ' ') ~ ' compte' ~ (page.total > 1 ? 's') ~ ' professionnel' ~ (page.total > 1 ? 's')}) }}
+    <nav class="tm-admin-tabs" aria-label="Sections artisans">
+        <a class="tm-admin-tab is-active" href="{{ path('admin_artisans') }}" aria-current="page">Liste des artisans ({{ page.total }})</a>
+        <a class="tm-admin-tab" href="{{ path('admin_artisans_queue') }}">File de vérification</a>
+        <span class="tm-admin-tab is-disabled">Justificatifs expirants <span class="tm-admin__soon">Bientôt</span></span>
+    </nav>
+    <section class="tm-admin-panel" aria-labelledby="liste-titre">
+        <h2 id="liste-titre" class="tm-visually-hidden">Liste des artisans</h2>
+        <form method="get" class="tm-users__filters" role="search">
+            <twig:Field id="q" name="q" type="search" label="Rechercher" value="{{ filters.q }}" placeholder="Raison sociale, nom commercial, SIRET" icon="search" />
+            <div class="tm-field"><label class="tm-field__label" for="statut">Statut</label><div class="tm-select"><select class="tm-select__input" id="statut" name="statut"><option value="">Tous</option>{% for v, l in {incomplete: 'Inscription en cours', pending_verification: 'À vérifier', verified: 'Vérifié', hidden: 'Masqué (assurance)', rejected: 'Refusé', suspended: 'Suspendu'} %}<option value="{{ v }}"{{ filters.statut == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div></div>
+            <twig:Button type="submit" variant="secondary" icon="search" iconPosition="start">Filtrer</twig:Button>
+        </form>
+        <div class="tm-admin-table-wrap">
+            <table class="tm-admin-table">
+                <thead><tr><th scope="col">Raison sociale</th><th scope="col">SIRET</th><th scope="col">Métiers</th><th scope="col">Dép.</th><th scope="col">Statut</th><th scope="col">Crédits</th><th scope="col">Complétude</th><th scope="col">Inscription</th></tr></thead>
+                <tbody>
+                {% for a in page.items %}
+                    <tr>
+                        <th scope="row"><a href="{{ path('admin_artisans_show', {id: a.id}) }}">{{ a.name }}</a></th>
+                        <td>{{ a.siret ?? '—' }}</td>
+                        <td>{{ a.jobs ?: '—' }}</td>
+                        <td>{{ a.department ?? '—' }}</td>
+                        <td>{{ include('admin/artisans/_status.html.twig', {status: a.status, hidden: a.hidden}) }}</td>
+                        <td>{{ a.credits is null ? '—' : a.credits|number_format(0, ',', ' ') }}</td>
+                        <td>{{ a.completion }} %</td>
+                        <td>{{ a.created_at|date('d/m/Y', 'Europe/Paris') }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="8">Aucun artisan ne correspond à ces critères.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {{ include('admin/_pagination.html.twig', {page: page, route: 'admin_artisans', params: filters}) }}
+        <p class="tm-caption">Forfait, note, nombre de devis : avec les lots Abonnements, Avis et Devis.</p>
+    </section>
+{% endblock %}

@@ -1,0 +1,301 @@
+{#-
+    PR06 du CDC / PR16 Figma (383:17652) — Mes disponibilités : en-tête (voir mon profil public, enregistrer), onglets
+    Mon planning / Horaires récurrents / Indisponibilités / Jours fériés, indicateurs de la semaine, planning (semaine en
+    grille horaire, mois, liste), prochain rendez-vous ; colonne : statut de disponibilité (mode pause), réglages rapides,
+    légende. Écarts : P-110, P-111.
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'availability' %}
+{% block title %}Mes disponibilités — Espace pro — TrouveMoi{% endblock %}
+{% set day_names = ['Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'] %}
+{% set months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'] %}
+{% set months_long = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] %}
+{% macro d(date, months) %}{{ date|date('j', 'Europe/Paris') }} {{ months[date|date('n', 'Europe/Paris') - 1] }}{% endmacro %}
+{% macro hours(minutes) %}{% set h = (minutes / 60)|round(1, 'floor') %}{{ h == h|round ? h|round : h|number_format(1, ',', ' ') }} h{% endmacro %}
+{% import _self as m %}
+{% set settings = calendar.settings %}
+{% set public_url = tm_route_exists('public_artisan_profile_short') ? path('public_artisan_profile_short', {id: calendar.artisanId}) : null %}
+{% block space_content %}
+<div class="tm-agenda">
+    <header class="tm-agenda__head">
+        <div class="tm-pro-head">
+            <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="calCheck" class="tm-icon--inherit" /></span>
+            <div>
+                <h1>Mes disponibilités</h1>
+                <p>Définissez vos plages de disponibilité, vos horaires d’intervention et vos absences.</p>
+            </div>
+        </div>
+        <div class="tm-agenda__actions">
+            {% if public_url %}<twig:Button href="{{ public_url }}" variant="secondary" icon="eye" iconPosition="start">Voir mon profil public</twig:Button>{% endif %}
+            {% if tab == 'horaires' %}<twig:Button type="submit" form="horaires" icon="check" iconPosition="start">Enregistrer les disponibilités</twig:Button>{% else %}<twig:Button href="{{ path('pro_availability', {onglet: 'horaires'}) }}" icon="check" iconPosition="start">Enregistrer les disponibilités</twig:Button>{% endif %}
+        </div>
+    </header>
+
+    <nav class="tm-pro-tabs tm-agenda__tabs" aria-label="Rubriques de l’agenda">
+        {% for key, label in tabs %}
+            <a href="{{ path('pro_availability', key == 'planning' ? {} : {onglet: key}) }}"{% if tab == key %} aria-current="page"{% endif %}><twig:Icon name="{{ {planning: 'calendar', horaires: 'clock', indisponibilites: 'calendar', feries: 'calendar', synchronisation: 'refresh'}[key] }}" size="xs" class="tm-icon--inherit" />{{ label }}</a>
+        {% endfor %}
+    </nav>
+
+    <div class="tm-agenda__main">
+            <ul class="tm-agenda__kpis" aria-label="Cette semaine">
+                <li class="is-green"><twig:Icon name="calCheck" class="tm-icon--inherit" /><span><strong>{{ week.availableDays() }} jour{{ week.availableDays() > 1 ? 's' }}</strong>Disponibles</span></li>
+                <li class="is-blue"><twig:Icon name="clock" class="tm-icon--inherit" /><span><strong>{{ m.hours(week.openHours() * 60) }}</strong>Disponibles / semaine</span></li>
+                <li class="is-orange"><twig:Icon name="briefcase" class="tm-icon--inherit" /><span><strong>{{ week.booked() }}</strong>Chantier{{ week.booked() > 1 ? 's' }} planifié{{ week.booked() > 1 ? 's' }}</span></li>
+                <li class="is-violet"><twig:Icon name="users" class="tm-icon--inherit" /><span><strong>{{ week.reserved() }}</strong>Créneau{{ week.reserved() > 1 ? 'x' }} réservé{{ week.reserved() > 1 ? 's' }}</span></li>
+            </ul>
+
+            {% if tab == 'planning' %}
+                <section class="tm-pro-card tm-agenda__planning" aria-labelledby="planning-titre">
+                    <h2 id="planning-titre" class="tm-visually-hidden">Mon planning</h2>
+                    <div class="tm-agenda__bar">
+                        <div class="tm-agenda__period">
+                            <a href="{{ path('pro_availability', {vue: view, date: prev|date('Y-m-d', 'Europe/Paris')}) }}"><twig:Icon name="chevL" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Période précédente</span></a>
+                            <span><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />{% if view == 'mois' %}{{ months_long[month|date('n', 'Europe/Paris') - 1]|capitalize }} {{ month|date('Y', 'Europe/Paris') }}{% else %}Semaine du {{ from|date('j', 'Europe/Paris') }}{{ from|date('n', 'Europe/Paris') != to|date('n', 'Europe/Paris') ? ' ' ~ months[from|date('n', 'Europe/Paris') - 1] }} au {{ m.d(to, months) }} {{ to|date('Y', 'Europe/Paris') }}{% endif %}</span>
+                            <a href="{{ path('pro_availability', {vue: view, date: next|date('Y-m-d', 'Europe/Paris')}) }}"><twig:Icon name="chevR" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Période suivante</span></a>
+                            {% if not (today >= from and today <= to) %}<a class="tm-agenda__today" href="{{ path('pro_availability', {vue: view}) }}">Aujourd’hui</a>{% endif %}
+                        </div>
+                        <nav class="tm-agenda__views" aria-label="Affichage">
+                            {% for key, label in views %}
+                                <a href="{{ path('pro_availability', {vue: key, date: from|date('Y-m-d', 'Europe/Paris')}) }}"{% if view == key %} aria-current="page"{% endif %}><twig:Icon name="{{ {semaine: 'calendar', mois: 'calendar', liste: 'menu'}[key] }}" size="xs" class="tm-icon--inherit" />{{ label }}</a>
+                            {% endfor %}
+                        </nav>
+                    </div>
+
+                    {% if view == 'semaine' %}
+                        <div class="tm-agenda__scroll">
+                            <table class="tm-agenda__week">
+                                <caption class="tm-visually-hidden">Disponibilités de la semaine, par tranche de {{ grid.step }} minutes</caption>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Horaires</th>
+                                        {% for day in calendar.days %}<th scope="col"{% if day.isToday(today) %} class="is-today"{% endif %}>{{ day_names[loop.index0] }} {{ day.date|date('j', 'Europe/Paris') }}<span>{{ months[day.date|date('n', 'Europe/Paris') - 1]|capitalize }}</span></th>{% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for row in grid.rows %}
+                                        <tr{% if row.time %} class="is-hour"{% endif %}>
+                                            <th scope="row">{{ row.time }}</th>
+                                            {% for cell in row.cells %}
+                                                {% if cell is not null %}
+                                                    {% if cell.state == 'empty' %}<td></td>{% else %}
+                                                        <td rowspan="{{ cell.rows }}" class="tm-agenda__slot is-{{ cell.state }}">
+                                                            <div><twig:Icon name="{{ {open: 'checkC', busy: 'users', held: 'hourglass', closed: 'calendar', off: 'calendar', leave: 'umbrella'}[cell.state] }}" size="xs" class="tm-icon--inherit" /><strong>{{ cell.label }}</strong>{% if cell.range %}<span>{{ cell.range }}</span>{% endif %}</div>
+                                                        </td>
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+
+                    {% if view == 'mois' %}
+                        <table class="tm-agenda__month">
+                            <caption class="tm-visually-hidden">Heures disponibles par jour</caption>
+                            <thead><tr>{% for n in day_names %}<th scope="col">{{ n }}</th>{% endfor %}</tr></thead>
+                            <tbody>
+                                {% for week_days in calendar.days|batch(7) %}
+                                    <tr>
+                                        {% for day in week_days %}
+                                            {% set state = day.closed ? 'closed' : (day.open is not empty ? 'open' : (day.busy is not empty ? 'busy' : 'off')) %}
+                                            <td class="is-{{ state }}{{ day.date|date('n', 'Europe/Paris') != month|date('n', 'Europe/Paris') ? ' is-other' }}{{ day.isToday(today) ? ' is-today' }}">
+                                                <a href="{{ path('pro_availability', {vue: 'semaine', date: day.date|date('Y-m-d', 'Europe/Paris')}) }}">
+                                                    <strong>{{ day.date|date('j', 'Europe/Paris') }}</strong>
+                                                    <span>{% if day.closed %}{{ day.absence ? (day.absence.label ?? day.absence.kind.label()) : day.holiday }}{% elseif day.open is not empty %}{{ m.hours(day.openMinutes()) }} libres{% elseif day.busy is not empty %}Complet{% else %}—{% endif %}</span>
+                                                </a>
+                                            </td>
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% endif %}
+
+                    <ol class="tm-agenda__list{{ view != 'liste' ? ' tm-agenda__list--mobile' }}" aria-label="Liste des jours">
+                        {% for day in calendar.days %}
+                            <li{% if day.isToday(today) %} class="is-today"{% endif %}>
+                                <p class="tm-agenda__list-day">{{ day_names[day.date|date('N', 'Europe/Paris') - 1] }} {{ m.d(day.date, months) }}{% if day.holiday %} · {{ day.holiday }}{% endif %}</p>
+                                {% if day.closed %}
+                                    <p class="tm-agenda__tag is-closed">{{ day.absence ? (day.absence.label ?? day.absence.kind.label()) : 'Fermé (jour férié)' }}</p>
+                                {% elseif day.open is empty and day.busy is empty %}
+                                    <p class="tm-agenda__tag is-off">Indisponible</p>
+                                {% else %}
+                                    <ul>
+                                        {% for r in day.open %}<li class="tm-agenda__tag is-open">Disponible {{ '%02d:%02d'|format(r[0] // 60, r[0] % 60) }} – {{ '%02d:%02d'|format(r[1] // 60, r[1] % 60) }}</li>{% endfor %}
+                                        {% for r in day.busy %}<li class="tm-agenda__tag is-busy">{{ {held: 'Proposé', booked: 'Rendez-vous', blocked: 'Bloqué'}[r[2]] }} {{ '%02d:%02d'|format(r[0] // 60, r[0] % 60) }} – {{ '%02d:%02d'|format(r[1] // 60, r[1] % 60) }}</li>{% endfor %}
+                                    </ul>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ol>
+
+                    {% if calendar.rules is empty %}
+                        <p class="tm-agenda__empty"><twig:Icon name="info" size="sm" class="tm-icon--inherit" />Aucun horaire défini : <a href="{{ path('pro_availability', {onglet: 'horaires'}) }}">définissez vos horaires types</a> pour ouvrir des créneaux aux clients.</p>
+                    {% endif %}
+                </section>
+
+                <section class="tm-pro-card tm-agenda__next" aria-labelledby="prochain-titre">
+                    <h2 id="prochain-titre"><twig:Icon name="calendar" size="sm" class="tm-icon--inherit" />Mon prochain créneau libre</h2>
+                    <p>{% if settings.paused %}Mode pause : aucun créneau n’est proposé aux clients.{% elseif calendar.nextOpen %}{{ day_names[calendar.nextOpen|date('N', 'Europe/Paris') - 1] }} {{ m.d(calendar.nextOpen, months) }} {{ calendar.nextOpen|date('Y', 'Europe/Paris') }} à {{ calendar.nextOpen|date('H:i', 'Europe/Paris') }} (prévenance de {{ settings.minNoticeHours }} h comprise){% else %}Aucun créneau libre pour l’instant.{% endif %}</p>
+                    {% if tm_route_exists('pro_appointments') %}<twig:Button href="{{ path('pro_appointments') }}" variant="secondary">Voir tous mes rendez-vous</twig:Button>{% endif %}
+                </section>
+            {% endif %}
+
+            {% if tab == 'horaires' %}
+                <form method="post" action="{{ path('pro_agenda_rules') }}" id="horaires" class="tm-pro-card tm-agenda__rules">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <h2 class="tm-agenda__title">Horaires récurrents</h2>
+                    <p class="tm-caption">Vos plages de chaque semaine (au quart d’heure). Elles sont découpées en créneaux proposés aux clients ; laissez un jour vide s’il est fermé.</p>
+                    <div class="tm-agenda__days">
+                        {% for weekday, label in days %}
+                            {% set existing = calendar.rulesOf(weekday) %}
+                            <fieldset class="tm-agenda__day">
+                                <legend>{{ label }}</legend>
+                                {% for i in 0..(ranges_per_day - 1) %}
+                                    {% set r = existing[i] ?? null %}
+                                    {% if r or i == existing|length %}
+                                        <div class="tm-agenda__range">
+                                            <label class="tm-visually-hidden" for="p{{ weekday }}-{{ i }}-d">{{ label }}, plage {{ i + 1 }} : début</label>
+                                            <input class="tm-field__input" type="time" step="900" id="p{{ weekday }}-{{ i }}-d" name="plages[{{ weekday }}][{{ i }}][debut]" value="{{ r ? '%02d:%02d'|format(r.start // 60, r.start % 60) }}">
+                                            <span aria-hidden="true">–</span>
+                                            <label class="tm-visually-hidden" for="p{{ weekday }}-{{ i }}-f">{{ label }}, plage {{ i + 1 }} : fin</label>
+                                            <input class="tm-field__input" type="time" step="900" id="p{{ weekday }}-{{ i }}-f" name="plages[{{ weekday }}][{{ i }}][fin]" value="{{ r ? '%02d:%02d'|format(r.end // 60, r.end % 60) }}">
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if weekday <= 5 %}<button type="submit" name="copier" value="{{ weekday }}" class="tm-agenda__copy">Appliquer du lundi au vendredi</button>{% endif %}
+                            </fieldset>
+                        {% endfor %}
+                    </div>
+                    <p class="tm-caption">Une plage de plus apparaît après l’enregistrement ({{ ranges_per_day }} par jour au plus).</p>
+                    <h3 class="tm-agenda__title">Réglages des créneaux</h3>
+                    <div class="tm-agenda__settings">
+                        <div class="tm-field">
+                            <label class="tm-field__label" for="duree">Durée d’un créneau</label>
+                            <div class="tm-field__control"><select class="tm-field__input" id="duree" name="duree">{% for v, l in slot_choices %}<option value="{{ v }}"{% if settings.slotMinutes == v %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+                        </div>
+                        <div class="tm-field">
+                            <label class="tm-field__label" for="prevenance">Délai de prévenance (heures)</label>
+                            <div class="tm-field__control"><input class="tm-field__input" type="number" id="prevenance" name="prevenance" min="0" max="{{ max_notice }}" value="{{ settings.minNoticeHours }}" inputmode="numeric" aria-describedby="prevenance-aide"></div>
+                            <p class="tm-field__help" id="prevenance-aide">Un client ne peut pas proposer de créneau qui commence plus tôt.</p>
+                        </div>
+                    </div>
+                    <twig:Button type="submit" icon="check" iconPosition="start">Enregistrer les disponibilités</twig:Button>
+                </form>
+            {% endif %}
+
+            {% if tab == 'indisponibilites' %}
+                <section class="tm-pro-card tm-agenda__absences" aria-labelledby="absences-titre">
+                    <h2 id="absences-titre" class="tm-agenda__title">Indisponibilités et absences</h2>
+                    {% if calendar.absences is empty %}
+                        <p class="tm-caption">Aucune absence à venir.</p>
+                    {% else %}
+                        <ul>
+                            {% for a in calendar.absences %}
+                                <li>
+                                    <span class="tm-agenda__tag {{ a.kind.value == 'leave' ? 'is-leave' : 'is-closed' }}">{{ a.kind.label() }}</span>
+                                    <span>{{ a.from == a.to ? 'Le ' ~ m.d(a.from, months) ~ ' ' ~ a.from|date('Y', 'Europe/Paris') : 'Du ' ~ m.d(a.from, months) ~ ' au ' ~ m.d(a.to, months) ~ ' ' ~ a.to|date('Y', 'Europe/Paris') }}{% if a.label %} · {{ a.label }}{% endif %} <span class="tm-caption">({{ a.days() }} jour{{ a.days() > 1 ? 's' }})</span></span>
+                                    <form method="post" action="{{ path('pro_agenda_absence_delete', {id: a.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                                        <input type="hidden" name="retour" value="{{ path('pro_availability', {onglet: 'indisponibilites'}) }}">
+                                        <button type="submit" class="tm-agenda__delete"><twig:Icon name="x" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden">Supprimer cette absence</span></button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    <form method="post" action="{{ path('pro_agenda_absence_add') }}" class="tm-agenda__absence-form" id="ajout-absence">
+                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                        <input type="hidden" name="retour" value="{{ path('pro_availability', {onglet: 'indisponibilites'}) }}">
+                        <h3 class="tm-agenda__title">Ajouter une indisponibilité</h3>
+                        <div class="tm-agenda__settings">
+                            <div class="tm-field"><label class="tm-field__label" for="debut">Du</label><div class="tm-field__control"><input class="tm-field__input" type="date" id="debut" name="debut" required min="{{ today|date('Y-m-d', 'Europe/Paris') }}"></div></div>
+                            <div class="tm-field"><label class="tm-field__label" for="fin">Au (inclus)</label><div class="tm-field__control"><input class="tm-field__input" type="date" id="fin" name="fin" min="{{ today|date('Y-m-d', 'Europe/Paris') }}"></div></div>
+                            <div class="tm-field"><label class="tm-field__label" for="type">Type</label><div class="tm-field__control"><select class="tm-field__input" id="type" name="type">{% for v, l in kinds %}<option value="{{ v }}"{% if v == 'unavailable' %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div></div>
+                            <div class="tm-field"><label class="tm-field__label" for="libelle">Motif (facultatif)</label><div class="tm-field__control"><input class="tm-field__input" id="libelle" name="libelle" maxlength="80" placeholder="Fermeture, chantier hors plateforme…"></div></div>
+                        </div>
+                        <twig:Button type="submit" icon="plus" iconPosition="start">Ajouter</twig:Button>
+                    </form>
+                </section>
+            {% endif %}
+
+            {% if tab == 'feries' %}
+                <section class="tm-pro-card tm-agenda__holidays" aria-labelledby="feries-titre">
+                    <h2 id="feries-titre" class="tm-agenda__title">Jours fériés</h2>
+                    <form method="post" action="{{ path('pro_agenda_holidays') }}" class="tm-agenda__switch-form">
+                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                        <input type="hidden" name="fermes" value="{{ settings.closedOnHolidays ? '0' : '1' }}">
+                        <p>{{ settings.closedOnHolidays ? 'Aucun créneau n’est ouvert les jours fériés.' : 'Vos horaires s’appliquent aussi les jours fériés.' }}</p>
+                        <twig:Button type="submit" variant="secondary">{{ settings.closedOnHolidays ? 'Travailler les jours fériés' : 'Fermer les jours fériés' }}</twig:Button>
+                    </form>
+                    <ul class="tm-agenda__holiday-list">
+                        {% for date, label in holidays %}
+                            {% if date >= today|date('Y-m-d', 'Europe/Paris') %}<li><span>{{ label }}</span><span>{{ day_names[date|date('N', 'Europe/Paris') - 1] }} {{ date|date('j', 'Europe/Paris') }} {{ months[date|date('n', 'Europe/Paris') - 1] }} {{ date|date('Y', 'Europe/Paris') }}</span></li>{% endif %}
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+
+            {% if tab == 'synchronisation' %}
+                <section class="tm-pro-card tm-agenda__sync" aria-labelledby="sync-titre">
+                    <h2 id="sync-titre" class="tm-agenda__title">Synchronisation de votre agenda</h2>
+                    <p class="tm-caption">Abonnez Google Agenda, Outlook ou Apple Calendrier à votre lien privé : vos rendez-vous TrouveMoi et vos absences y apparaissent (mise à jour selon la fréquence de votre application, en général quelques heures). Le lien ne contient aucune coordonnée de client.</p>
+                    {% if ical_url %}
+                        <div class="tm-agenda__ical" role="status">
+                            <p><strong>Votre nouveau lien privé</strong> — copiez-le maintenant : il ne sera plus affiché.</p>
+                            <label class="tm-visually-hidden" for="ical-url">Lien iCal privé</label>
+                            <input class="tm-field__input" id="ical-url" value="{{ ical_url }}" readonly>
+                            <p class="tm-caption">Ne le partagez pas : toute personne qui le possède voit vos rendez-vous.</p>
+                        </div>
+                    {% elseif ical_since %}
+                        <p class="tm-agenda__ical-state"><twig:Icon name="checkC" size="sm" class="tm-icon--inherit" />Lien privé actif depuis le {{ ical_since|date('d/m/Y', 'Europe/Paris') }}. Perdu ? Créez-en un nouveau : l’ancien cessera de fonctionner.</p>
+                    {% else %}
+                        <p class="tm-agenda__ical-state">Aucun lien actif.</p>
+                    {% endif %}
+                    <form method="post" action="{{ path('pro_agenda_ical_issue') }}" class="tm-agenda__actions">
+                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                        <twig:Button type="submit" name="action" value="issue" icon="refresh" iconPosition="start">{{ ical_since or ical_url ? 'Créer un nouveau lien' : 'Créer mon lien iCal' }}</twig:Button>
+                        {% if ical_since or ical_url %}<twig:Button type="submit" name="action" value="revoke" variant="secondary">Révoquer le lien</twig:Button>{% endif %}
+                    </form>
+                    <p class="tm-caption">La synchronisation dans les deux sens avec Google Agenda et Outlook arrivera dans une prochaine version.</p>
+                </section>
+            {% endif %}
+    </div>
+
+    <aside class="tm-agenda__side">
+        <section class="tm-pro-card tm-agenda__status" aria-labelledby="statut-titre">
+            <h2 id="statut-titre"><twig:Icon name="star" size="sm" class="tm-icon--inherit" />Statut de disponibilité</h2>
+            <form method="post" action="{{ path('pro_agenda_status') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                <input type="hidden" name="disponible" value="{{ settings.paused ? '1' : '0' }}">
+                <input type="hidden" name="retour" value="{{ app.request.requestUri }}">
+                <button type="submit" class="tm-agenda__toggle" role="switch" aria-checked="{{ settings.paused ? 'false' : 'true' }}">
+                    <span class="tm-agenda__toggle-track" aria-hidden="true"><span></span></span>
+                    <span>{{ settings.paused ? 'En pause : pas de demande directe ni de badge « Disponible »' : 'Je suis disponible pour de nouvelles demandes' }}</span>
+                </button>
+            </form>
+        </section>
+        <section class="tm-pro-card tm-agenda__quick" aria-labelledby="reglages-titre">
+            <h2 id="reglages-titre"><twig:Icon name="zap" size="sm" class="tm-icon--inherit" />Réglages rapides</h2>
+            <ul>
+                <li><a href="{{ path('pro_availability', {onglet: 'horaires'}) }}"><twig:Icon name="clock" size="xs" class="tm-icon--inherit" />Définir mes horaires types</a></li>
+                <li><a href="{{ path('pro_availability', {onglet: 'horaires'}) }}#horaires"><twig:Icon name="refresh" size="xs" class="tm-icon--inherit" />Appliquer à plusieurs jours</a></li>
+                <li><a href="{{ path('pro_availability', {onglet: 'indisponibilites'}) }}#ajout-absence"><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />Ajouter une indisponibilité</a></li>
+                {% if tm_route_exists('pro_leave') %}<li><a href="{{ path('pro_leave') }}"><twig:Icon name="umbrella" size="xs" class="tm-icon--inherit" />Déclarer mes congés</a></li>{% endif %}
+                {% if tm_route_exists('pro_agenda_sync') %}<li><a href="{{ path('pro_agenda_sync') }}"><twig:Icon name="refresh" size="xs" class="tm-icon--inherit" />Synchroniser avec Google Agenda ou Outlook</a></li>{% endif %}
+            </ul>
+        </section>
+        <section class="tm-pro-card tm-agenda__legend" aria-labelledby="legende-titre">
+            <h2 id="legende-titre"><twig:Icon name="star" size="sm" class="tm-icon--inherit" />Légende</h2>
+            <ul>
+                <li><span class="tm-agenda__swatch is-open" aria-hidden="true"></span><span><strong>Disponible</strong> (prise de rendez-vous possible)</span></li>
+                <li><span class="tm-agenda__swatch is-busy" aria-hidden="true"></span><span><strong>Rendez-vous / Chantier</strong> (occupé)</span></li>
+                <li><span class="tm-agenda__swatch is-closed" aria-hidden="true"></span><span><strong>Indisponible</strong> (fermé, congé, etc.)</span></li>
+            </ul>
+        </section>
+    </aside>
+</div>
+{% endblock %}

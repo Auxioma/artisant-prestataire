@@ -1,0 +1,51 @@
+{#- A06 — Validation d'e-mail (Figma 230:12568) : une carte par état ; en-tête « tunnel ». -#}
+{% extends 'base.html.twig' %}
+{% set header_variant = 'tunnel' %}
+{% set titles = {
+    verified: ['Adresse email confirmée', 'check', 'success'],
+    expired: ['Lien expiré', 'alert', 'danger'],
+    already_verified: ['Adresse déjà validée', 'info', 'info'],
+    invalid: ['Lien invalide', 'alert', 'danger'],
+    resent: ['Vérifiez votre boîte mail', 'mail', 'info'],
+} %}
+{% set current = titles[state] %}
+
+{% block title %}{{ current[0] }} — TrouveMoi{% endblock %}
+
+{# Le jeton est dans l'URL : il ne doit jamais partir dans l'en-tête Referer vers un autre site. #}
+{% block meta %}<meta name="referrer" content="no-referrer">{% endblock %}
+
+{% block body %}
+<div class="tm-auth-page">
+    <section class="tm-container tm-auth-message"{% if state == 'verified' %} data-controller="analytics" data-analytics-auto-event-value="email_verified"{% endif %}>
+        <div class="tm-state-card tm-card-panel">
+            <span class="tm-state-card__icon tm-state-card__icon--{{ current[2] }}"><twig:Icon name="{{ current[1] }}" class="tm-icon--inherit" /></span>
+            <h1 class="tm-state-card__title">{{ current[0] }}</h1>
+            {% if state == 'verified' %}
+                <p class="tm-body-sm">Merci ! Vous pouvez maintenant déposer des demandes et utiliser la messagerie.</p>
+                {% if is_granted('IS_AUTHENTICATED') %}
+                    <twig:Button href="{{ tm_path('client_dashboard') }}" block>Accéder à mon espace</twig:Button>
+                {% else %}
+                    <twig:Button href="{{ tm_path('identity_login') }}" block>Se connecter</twig:Button>
+                {% endif %}
+            {% elseif state == 'expired' %}
+                <p class="tm-body-sm">Le lien de validation est valable {{ tm_setting_int('auth.email_verification_ttl_hours') }} h. Recevez un nouveau lien en un clic.</p>
+                <form method="post" action="{{ path('identity_resend_verification') }}" class="tm-state-card__form">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <input type="hidden" name="token" value="{{ token }}">
+                    <twig:Button type="submit" variant="secondary" block>Renvoyer le lien</twig:Button>
+                </form>
+            {% elseif state == 'already_verified' %}
+                <p class="tm-body-sm">Votre adresse a déjà été confirmée. Connectez-vous pour continuer.</p>
+                <twig:Button variant="secondary" href="{{ tm_path('identity_login') }}" block>Se connecter</twig:Button>
+            {% elseif state == 'resent' %}
+                <p class="tm-body-sm">Si votre adresse doit encore être confirmée, un nouveau lien vient de vous être envoyé. Pensez à vérifier vos courriers indésirables.</p>
+                <twig:Button variant="secondary" href="{{ tm_path('public_home') }}" block>Retour à l’accueil</twig:Button>
+            {% else %}
+                <p class="tm-body-sm">Ce lien n’est pas (ou plus) valable. Utilisez le lien le plus récent reçu par e-mail, ou demandez-en un nouveau depuis votre espace.</p>
+                <twig:Button variant="secondary" href="{{ tm_path('public_home') }}" block>Retour à l’accueil</twig:Button>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

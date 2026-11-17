@@ -1,0 +1,9 @@
+<p>Bonjour {{ prenom }},</p>
+{% if refusee %}
+<p>Votre demande de devis <strong>n° {{ numero }}</strong> ({{ metier }}) n’a pas été publiée après vérification.</p>
+<p><strong>Motif :</strong> {{ motif }}.</p>
+<p>Vous pouvez déposer une nouvelle demande en tenant compte de ce motif.</p>
+<p class="muted">Une question ? <a href="{{ lien_aide }}">Contactez-nous</a>.</p>
+{% else %}
+<p>Votre demande de devis <strong>n° {{ numero }}</strong> ({{ metier }}) est bien reçue. Comme certaines demandes, elle est <strong>relue par notre équipe</strong> avant d’être transmise aux professionnels : vous serez prévenu dès sa publication.</p>
+{% endif %}

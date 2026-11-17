@@ -1,0 +1,40 @@
+{#
+    TM / Carte artisan, disposition verticale (Figma 66:32, annexe B). La photo est une donnée de l'artisan (alt obligatoire).
+    Étoiles toujours doublées de la note chiffrée ; cœur 44 × 44 (aria-pressed) ; tout l'encart est cliquable via le lien du nom.
+#}
+{% props name, href, trades, location, rating = null, reviewsCount = 0, photo = null, photoAlt = '', verified = false, available = false, favorite = null, headingLevel = 3 %}
+<article {{ attributes.defaults({class: 'tm-card-artisan'}) }}>
+    <div class="tm-card-artisan__media">
+        {% if photo %}
+            <img src="{{ photo }}" alt="{{ photoAlt }}" loading="lazy" decoding="async" width="282" height="212">
+        {% else %}
+            <div class="tm-card-artisan__placeholder"><twig:Icon name="briefcase" /></div>
+        {% endif %}
+        {% if favorite is not null %}
+            <button type="button" class="tm-card-artisan__favorite" aria-pressed="{{ favorite ? 'true' : 'false' }}"
+                    aria-label="{{ favorite ? 'Retirer ' ~ name ~ ' des favoris' : 'Ajouter ' ~ name ~ ' aux favoris' }}">
+                <twig:Icon name="{{ favorite ? 'heartFilled' : 'heart' }}" size="sm" class="tm-icon--inherit" />
+            </button>
+        {% endif %}
+    </div>
+    <div class="tm-card-artisan__body">
+        {% if verified or available %}
+            <div class="tm-card-artisan__badges">
+                {% if verified %}<twig:Badge variant="verified" />{% endif %}
+                {% if available %}<twig:Badge variant="available" />{% endif %}
+            </div>
+        {% endif %}
+        <h{{ headingLevel }} class="tm-card-artisan__name"><a class="tm-card-artisan__link" href="{{ href }}">{{ name }}</a></h{{ headingLevel }}>
+        <p class="tm-card-artisan__trades">{{ trades }}</p>
+        {% if rating is not null %}
+            <p class="tm-card-artisan__rating">
+                <span class="tm-card-artisan__stars" aria-hidden="true">
+                    {% for i in 1..5 %}<twig:Icon name="starFilled" class="{{ i > rating|round ? 'tm-card-artisan__star--empty' }}" />{% endfor %}
+                </span>
+                <span class="tm-card-artisan__score"><span class="tm-visually-hidden">Note : </span>{{ rating|number_format(1, ',', ' ') }}<span class="tm-visually-hidden"> sur 5</span></span>
+                <span class="tm-card-artisan__reviews">({{ reviewsCount|number_format(0, ',', ' ') }} avis)</span>
+            </p>
+        {% endif %}
+        <p class="tm-card-artisan__location"><twig:Icon name="pin" />{{ location }}</p>
+    </div>
+</article>

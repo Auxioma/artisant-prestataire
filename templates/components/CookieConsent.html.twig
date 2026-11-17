@@ -1,0 +1,50 @@
+{#
+    TM / Bandeau cookies (CMP) — Figma 158:1510, préférences 395:16148 — CDC §3.2, lignes directrices CNIL :
+    « Tout accepter » et « Tout refuser » de même niveau, « Personnaliser », rien d'activé par défaut,
+    consentement conservé cookies.consent_months, redemandé si cookies.policy_version change.
+    Rendu masqué : le script l'affiche s'il n'existe pas de choix valide (aucun traceur sans JavaScript).
+#}
+{% set months = tm_setting_int('cookies.consent_months') %}
+{% set categories = cookie_registry|filter(c => c.key != 'necessary') %}
+<div class="tm-cmp" data-controller="consent"
+     data-consent-version-value="{{ tm_setting_int('cookies.policy_version') }}"
+     data-consent-months-value="{{ months }}"
+     data-consent-endpoint-value="{{ tm_path('identity_cookie_consent') }}">
+    <section class="tm-cmp__banner" role="region" aria-labelledby="tm-cmp-title" hidden data-consent-target="banner">
+        <span class="tm-cmp__picto"><twig:Icon name="cookie" class="tm-icon--inherit" /></span>
+        <div class="tm-cmp__text">
+            <h2 class="tm-cmp__title" id="tm-cmp-title">Nous respectons votre vie privée</h2>
+            <p class="tm-cmp__body">
+                Nous utilisons des cookies nécessaires au fonctionnement du site et, avec votre accord, des cookies de mesure d’audience,
+                réseaux sociaux et marketing. Consentement conservé {{ months }} mois.
+                <a href="{{ tm_path('identity_legal_document', {slug: 'cookies'}) }}">Politique de cookies</a>
+            </p>
+            <button type="button" class="tm-cmp__customize" data-action="consent#openPreferences" aria-haspopup="dialog">Personnaliser</button>
+        </div>
+        <div class="tm-cmp__actions">
+            <twig:Button variant="secondary" data-action="consent#refuseAll">Tout refuser</twig:Button>
+            <twig:Button variant="secondary" data-action="consent#acceptAll">Tout accepter</twig:Button>
+        </div>
+    </section>
+
+    <dialog class="tm-modal tm-cmp__dialog" id="tm-cmp-preferences" aria-labelledby="tm-cmp-preferences-title" data-consent-target="dialog" data-action="close->consent#restoreFocus">
+        <form class="tm-modal__content" method="dialog" data-action="submit->consent#save">
+            <div class="tm-modal__header">
+                <h2 class="tm-modal__title" id="tm-cmp-preferences-title"><twig:Icon name="sliders" size="sm" class="tm-icon--inherit" /> Mes préférences de cookies</h2>
+                <button type="button" class="tm-modal__close" data-action="consent#closePreferences"><twig:Icon name="x" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Fermer</span></button>
+            </div>
+            <p class="tm-body-sm">Activez ou désactivez chaque catégorie. Vous pouvez modifier vos choix à tout moment via « Gérer mes cookies » en bas de page.</p>
+            <div class="tm-cmp__categories">
+                <twig:Switch id="tm-cmp-necessary" name="necessary" label="Cookies nécessaires" description="Indispensables au fonctionnement du site : session, sécurité, mémorisation de vos choix de cookies." locked />
+                {% for category in categories %}
+                    <twig:Switch id="tm-cmp-{{ category.key }}" name="{{ category.key }}" label="{{ category.label }}" description="{{ category.description }}" data-consent-target="switch" />
+                {% endfor %}
+            </div>
+            <div class="tm-modal__actions tm-cmp__dialog-actions">
+                <twig:Button variant="secondary" data-action="consent#refuseAll">Tout refuser</twig:Button>
+                <twig:Button variant="secondary" data-action="consent#acceptAll">Tout accepter</twig:Button>
+                <twig:Button type="submit">Enregistrer mes choix</twig:Button>
+            </div>
+        </form>
+    </dialog>
+</div>

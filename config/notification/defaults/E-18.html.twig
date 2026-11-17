@@ -1,0 +1,4 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Votre avis sur <strong>{{ artisan }}</strong> {{ resultat }}.</p>
+{% if decision == 'changes_requested' %}<p>Demande de la modération : {{ motif }}</p><p>Modifiez votre avis pour qu’il puisse être publié.</p>{% elseif motif %}<p>Motif : {{ motif }}</p><p>Les motifs de refus sont décrits dans notre politique des avis.</p>{% else %}<p>Merci : votre avis aide d’autres particuliers à choisir leur professionnel.</p>{% endif %}
+{{ bouton(lien, 'Voir mes avis') }}

@@ -1,0 +1,30 @@
+{#- BO14.1 — activation du compte invité : mot de passe + configuration de la double authentification, en une étape. -#}
+{% extends 'admin/security/_card.html.twig' %}
+{% block title %}Activer votre compte{% endblock %}
+{% block card %}
+    <h1 id="titre" class="tm-card-title">Bienvenue {{ invitation.name }}</h1>
+    <p>Activez votre compte <strong>{{ invitation.email }}</strong> (rôle {{ invitation.roleLabel }}) : choisissez un mot de passe puis configurez la double authentification, obligatoire pour tous les administrateurs.</p>
+    {% if errors.form is defined %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ errors.form }}</p></div>{% endif %}
+    <form method="post" class="tm-signup__fields" novalidate data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token('admin_invitation') }}">
+        <fieldset class="tm-fieldset tm-insurance">
+            <legend class="tm-card-title">1. Mot de passe</legend>
+            <twig:Field id="password" name="password" type="password" label="Mot de passe" required autocomplete="new-password" maxlength="128" help="{{ min_length }} caractères minimum ; une phrase de passe est idéale." error="{{ errors.password ?? null }}" />
+            <twig:Field id="password_confirm" name="password_confirm" type="password" label="Confirmation" required autocomplete="new-password" maxlength="128" error="{{ errors.password_confirm ?? null }}" />
+        </fieldset>
+        <fieldset class="tm-fieldset tm-insurance">
+            <legend class="tm-card-title">2. Double authentification</legend>
+            <ol class="tm-admin-steps">
+                <li>Ouvrez votre application d’authentification (Google Authenticator, Microsoft Authenticator, 1Password…).</li>
+                <li>Scannez ce QR code, ou saisissez la clé ci-dessous.</li>
+                <li>Saisissez le code à 6 chiffres affiché.</li>
+            </ol>
+            <div class="tm-admin-qr">
+                <figure aria-label="QR code de configuration de la double authentification">{{ qr_svg|raw }}</figure>
+                <p><span class="tm-caption">Clé de configuration</span><br><code class="tm-admin-secret">{{ secret }}</code></p>
+            </div>
+            <twig:Field id="code" name="code" label="Code à 6 chiffres" required autocomplete="one-time-code" inputmode="numeric" maxlength="6" error="{{ errors.code ?? null }}" />
+        </fieldset>
+        <twig:Button type="submit" block>Activer mon compte</twig:Button>
+    </form>
+{% endblock %}

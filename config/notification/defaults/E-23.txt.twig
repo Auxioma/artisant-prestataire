@@ -1,0 +1,8 @@
+Bonjour {{ prenom }},
+
+{% if inacheve %}Votre inscription professionnelle n’est pas encore terminée. Votre progression est enregistrée : reprenez là où vous vous êtes arrêté, il ne reste que quelques minutes.
+{% else %}Votre dossier est bien envoyé, mais il manque encore des pièces obligatoires pour que notre équipe puisse le vérifier : {{ pieces }}
+{% endif %}
+Dès la validation de votre compte, vous recevrez vos devis offerts pour répondre aux demandes de votre zone.
+
+{{ lien }}

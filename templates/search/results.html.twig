@@ -1,0 +1,127 @@
+{#- P02 (Figma 95:395) — recherche et résultats : barre compacte, en-tête (H1 dynamique, compteur, tri), filtres, cartes horizontales, « Afficher plus », états vide / sans lieu. -#}
+{% extends 'base.html.twig' %}
+{% set active_nav = 'search' %}
+{% block title %}{{ job ? job.name : 'Professionnels' }}{{ place ? ' ' ~ place.name|a_lieu }} — TrouveMoi{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, follow">{% endblock %}
+{% block body %}
+{% set h1 = (job ? job.name : 'Professionnels') ~ (place ? ' ' ~ place.name|a_lieu ~ ' et alentours' : '') %}
+{% set count = result ? result.total : 0 %}
+{% set active_filters = (selected_jobs|length > 1 ? 1 : 0) + (note ? 1 : 0) + labels|length %}
+<div class="tm-search"{% if result %} data-controller="analytics" data-analytics-auto-event-value="{{ count > 0 ? 'search_results_view' : 'search_no_result' }}" data-analytics-auto-type-value="{{ count }}"{% endif %}>
+    <div class="tm-search__top">
+        <div class="tm-container">
+            <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}]|merge(job ? [{label: job.categoryName, href: tm_path('catalog_category', {slug: job.categorySlug})}] : [])|merge([{label: place ? place.name : 'Recherche'}])" />
+            <form method="get" action="{{ path('public_search') }}" class="tm-search__bar" role="search" data-turbo="false">
+                <div class="tm-search__field" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="metier">
+                    <label class="tm-search__label" for="search_job">Métier</label>
+                    <input class="tm-search__input" id="search_job" type="text" value="{{ job ? job.name }}" placeholder="Plombier, électricien…" autocomplete="off" maxlength="80" data-autocomplete-target="input" data-action="input->autocomplete#suggest">
+                    <input type="hidden" name="metier" value="{{ job ? job.slug }}" data-autocomplete-target="value">
+                    <ul class="tm-area__suggestions" id="search_job_list" role="listbox" aria-label="Métiers proposés" hidden data-autocomplete-target="list"></ul>
+                </div>
+                <div class="tm-search__field" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="lieu">
+                    <label class="tm-search__label" for="search_place">Ville ou code postal</label>
+                    <input class="tm-search__input" id="search_place" name="lieu_libelle" type="text" value="{{ place_label }}" placeholder="Le Havre, 76600…" autocomplete="off" maxlength="80" required data-autocomplete-target="input" data-action="input->autocomplete#suggest">
+                    <input type="hidden" name="lieu" value="{{ place ? place.insee }}" data-autocomplete-target="value">
+                    <ul class="tm-area__suggestions" id="search_place_list" role="listbox" aria-label="Communes proposées" hidden data-autocomplete-target="list"></ul>
+                </div>
+                <input type="hidden" name="rayon" value="{{ radius }}">
+                <twig:Button type="submit" variant="search" icon="search" iconPosition="start">Rechercher</twig:Button>
+            </form>
+            <div class="tm-search__head">
+                <div>
+                    <h1>{{ h1 }}</h1>
+                    {% if result %}<p class="tm-search__count" role="status">{{ count|number_format(0, ',', ' ') }} professionnel{{ count > 1 ? 's' }} vérifié{{ count > 1 ? 's' }}</p>{% endif %}
+                </div>
+                {% if result and count > 1 %}
+                    <form method="get" action="{{ path('public_search') }}" class="tm-search__sort" data-controller="autosubmit">
+                        {% for key, value in params|filter((v, k) => k != 'tri') %}{% if value is iterable %}{% for v in value %}<input type="hidden" name="{{ key }}[]" value="{{ v }}">{% endfor %}{% else %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+                        <twig:Select id="tri" name="tri" prefix="Trier :" :options="sorts" value="{{ sort }}" data-action="change->autosubmit#submit" />
+                        <noscript><twig:Button type="submit" variant="secondary">Trier</twig:Button></noscript>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="tm-container tm-search__layout">
+        {% if result %}
+        <details class="tm-search__filters-wrap" data-controller="search-filters" open>
+            <summary class="tm-search__filters-toggle"><twig:Icon name="sliders" size="sm" class="tm-icon--inherit" />Filtres{{ active_filters ? ' (' ~ active_filters ~ ')' }}</summary>
+            <form method="get" action="{{ path('public_search') }}" class="tm-search__filters" aria-labelledby="filtres-titre" data-controller="autosubmit" data-turbo="false">
+                <div class="tm-search__filters-head"><h2 id="filtres-titre" class="tm-card-title">Filtres</h2><a href="{{ path('public_search', {metier: job ? job.slug, lieu: place.insee}) }}">Réinitialiser</a></div>
+                <input type="hidden" name="metier" value="{{ job ? job.slug }}"><input type="hidden" name="lieu" value="{{ place.insee }}">{% if sort != 'pertinence' %}<input type="hidden" name="tri" value="{{ sort }}">{% endif %}
+                <fieldset class="tm-search__group"><legend>Confiance</legend>
+                    <label class="tm-check"><input class="tm-check__input" type="checkbox" checked disabled><span>Professionnels vérifiés uniquement</span></label>
+                </fieldset>
+                {% if category_jobs|length > 1 %}
+                <fieldset class="tm-search__group"><legend>Métier</legend>
+                    {% for j in category_jobs %}<label class="tm-check"><input class="tm-check__input" type="checkbox" name="metiers[]" value="{{ j.slug }}"{{ j.slug in selected_jobs|map(s => s.slug) ? ' checked' }} data-action="change->autosubmit#submit"><span>{{ j.name }}</span></label>{% endfor %}
+                </fieldset>
+                {% endif %}
+                <fieldset class="tm-search__group"><legend>Rayon autour de {{ place.name }}</legend>
+                    <div class="tm-search__chips">{% for r in radius_options %}<label class="tm-search__chip"><input type="radio" name="rayon" value="{{ r }}"{{ r == radius ? ' checked' }} data-action="change->autosubmit#submit"><span>{{ r }} km</span></label>{% endfor %}</div>
+                </fieldset>
+                <fieldset class="tm-search__group"><legend>Note minimale</legend>
+                    <label class="tm-check"><input class="tm-check__input" type="radio" name="note" value=""{{ note == '' ? ' checked' }} data-action="change->autosubmit#submit"><span>Toutes</span></label>
+                    {% for n in ['3', '4', '4.5'] %}<label class="tm-check"><input class="tm-check__input" type="radio" name="note" value="{{ n }}"{{ note == n ? ' checked' }} data-action="change->autosubmit#submit"><span>{{ n|replace({'.': ','}) }}+ étoiles</span></label>{% endfor %}
+                </fieldset>
+                {% if result.labels is not empty %}
+                <fieldset class="tm-search__group"><legend>Labels &amp; qualifications</legend>
+                    {% for l in result.labels %}<label class="tm-check"><input class="tm-check__input" type="checkbox" name="labels[]" value="{{ l }}"{{ l in labels ? ' checked' }} data-action="change->autosubmit#submit"><span>{{ l }}</span></label>{% endfor %}
+                    <p class="tm-caption">Déclarés par l’artisan ; « vérifié » après contrôle du justificatif.</p>
+                </fieldset>
+                {% endif %}
+                <noscript><twig:Button type="submit" variant="secondary" block>Appliquer</twig:Button></noscript>
+            </form>
+        </details>
+        {% endif %}
+
+        <section class="tm-search__results" aria-label="Résultats">
+            {% if not place %}
+                <twig:EmptyState icon="pin" title="{{ searched ? 'Ville introuvable' : 'Où cherchez-vous un professionnel ?' }}" text="{{ searched ? 'Vérifiez l’orthographe ou saisissez un code postal, puis choisissez la commune dans la liste.' : 'Indiquez une ville ou un code postal pour voir les professionnels vérifiés qui interviennent chez vous.' }}" />
+            {% elseif count == 0 %}
+                <twig:EmptyState icon="search" title="Aucun {{ job ? job.name|lower : 'professionnel' }} trouvé dans un rayon de {{ radius }} km" text="Les professionnels affichés sont vérifiés et interviennent dans votre commune." />
+                <div class="tm-search__empty-actions">
+                    {% if radius * 2 <= max_radius %}<twig:Button href="{{ path('public_search', params|merge({rayon: radius_options|filter(r => r >= radius * 2)|first})) }}" variant="secondary">Élargir à {{ radius_options|filter(r => r >= radius * 2)|first }} km</twig:Button>{% endif %}
+                    {% if tm_path('request_new') != '#' %}<twig:Button href="{{ tm_path('request_new') }}">Déposer une demande : nous la transmettons aux professionnels de la région</twig:Button>{% endif %}
+                </div>
+            {% else %}
+                {% if active_filters %}
+                    <ul class="tm-search__active" aria-label="Filtres actifs">
+                        {% if note %}<li><a class="tm-search__active-chip" href="{{ path('public_search', params|merge({note: null})) }}">{{ note|replace({'.': ','}) }}+ étoiles<twig:Icon name="x" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden"> (retirer)</span></a></li>{% endif %}
+                        {% for l in labels %}<li><a class="tm-search__active-chip" href="{{ path('public_search', params|merge({labels: labels|filter(x => x != l)})) }}">{{ l }}<twig:Icon name="x" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden"> (retirer)</span></a></li>{% endfor %}
+                    </ul>
+                {% endif %}
+                <ol class="tm-search__list">
+                    {% for hit in result.hits %}
+                        {% set a = hit.artisan %}
+                        <li>
+                            <twig:CardArtisanRow
+                                name="{{ a.name }}"
+                                anchor="resultat-{{ loop.index }}"
+                                href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}"
+                                trades="{{ a.jobIds|map(id => (job_names[id] ?? null))|filter(n => n)|join(' · ') }}"
+                                location="{{ a.communeName ?? '—' }}{{ a.departmentCode ? ' (' ~ a.departmentCode ~ ')' }}"
+                                :distance="a.distanceKm"
+                                description="{{ a.shortDescription }}"
+                                :rating="a.reviewsCount > 0 ? hit.bayesRating : null"
+                                :reviewsCount="a.reviewsCount"
+                                :available="a.available"
+                                photo="{{ a.hasLogo ? path('public_artisan_logo', {id: a.profileId}) : null }}"
+                                photoAlt="{{ a.hasLogo ? 'Logo de ' ~ a.name : '' }}" />
+                        </li>
+                    {% endfor %}
+                </ol>
+                <p class="tm-search__progress">{{ result.hits|length }} sur {{ count }} professionnel{{ count > 1 ? 's' }} affiché{{ result.hits|length > 1 ? 's' }}</p>
+                {% if result.hasMore %}
+                    <div class="tm-search__more"><twig:Button href="{{ path('public_search', params|merge({page: result.page + 1})) }}#resultat-{{ result.hits|length + 1 }}" variant="secondary">Afficher plus de résultats</twig:Button></div>
+                {% endif %}
+            {% endif %}
+            <details class="tm-search__ranking">
+                <summary><twig:Icon name="info" size="xs" class="tm-icon--inherit" />Comment fonctionne le classement ?</summary>
+                <p>Seuls les professionnels <strong>vérifiés</strong> qui interviennent dans votre commune et se situent dans le rayon choisi sont affichés. Le tri « Pertinence » combine : métier ({{ (weights.job * 100)|round }} %), distance ({{ (weights.distance * 100)|round }} %), note bayésienne ({{ (weights.rating * 100)|round }} %), réactivité ({{ (weights.responsiveness * 100)|round }} %), complétude du profil ({{ (weights.completion * 100)|round }} %) et disponibilité ({{ (weights.availability * 100)|round }} %). La note bayésienne pondère la moyenne par le nombre d’avis : un seul avis ne suffit pas à passer devant de nombreux avis. Aucun professionnel ne paie pour être mieux classé.</p>
+            </details>
+        </section>
+    </div>
+</div>
+{% endblock %}

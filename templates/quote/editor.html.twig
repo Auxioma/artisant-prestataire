@@ -1,0 +1,252 @@
+{#-
+    PR04 — Créer un devis (Figma 22:229) dans l'espace pro : fil d'Ariane, « Prestations et montants » (numéro, validité,
+    synthèse des lignes, durée des travaux, modalités, actions), « Récapitulatif » (HT, TVA, TTC, crédits), « Lignes du
+    devis » (type, désignation, quantité, unité, PU HT, remise, TVA, total HT), conditions PR04.3, contrôle RG-120.
+    Envoi : bouton « Envoyer le devis » (22:290) et modale de confirmation (74:121) ; devis envoyé en lecture seule, avec
+    « Modifier le devis » (PR05 167:1749 ; révision RG-102) et « Retirer le devis » (RG-103, avant consultation).
+    Écarts : P-79, P-82, P-84.
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'quotes' %}
+{% block title %}{{ sent ? 'Devis ' ~ view.number : (revising ? 'Modifier le devis ' ~ view.number : 'Créer un devis') }} — Espace pro — TrouveMoi{% endblock %}
+{% set c = view.content %}
+{% set p = posted %}
+{% macro field(p, key, current) %}{{ p is not null ? (p[key] ?? '') : current }}{% endmacro %}
+{% macro row(i, line, p, line_types, vat_rates) %}
+    {% set src = p is not null ? (p.lines[i] ?? {}) : null %}
+    {% set type = src is not null ? (src.type ?? 'service') : (line ? line.type.value : 'labour') %}
+    {% set priced = type not in ['section', 'comment'] %}
+    <tr class="tm-qlines__row{{ priced ? '' : ' is-heading' }}" data-quote-editor-target="row">
+        <td class="tm-qlines__handle">
+            <button type="button" class="tm-qlines__move" data-action="quote-editor#moveUp" aria-label="Monter la ligne"><twig:Icon name="chevD" size="xs" class="tm-icon--inherit tm-qlines__up" /></button>
+            <button type="button" class="tm-qlines__move" data-action="quote-editor#moveDown" aria-label="Descendre la ligne"><twig:Icon name="chevD" size="xs" class="tm-icon--inherit" /></button>
+        </td>
+        <td><label class="tm-visually-hidden" for="line-{{ i }}-type">Type</label>
+            <select id="line-{{ i }}-type" name="lines[{{ i }}][type]" class="tm-qlines__input" data-action="quote-editor#typeChanged">
+                {% for t in line_types %}<option value="{{ t.value }}"{{ t.value == type ? ' selected' }}>{{ t.label }}</option>{% endfor %}
+            </select></td>
+        <td><label class="tm-visually-hidden" for="line-{{ i }}-label">Désignation</label>
+            <input id="line-{{ i }}-label" name="lines[{{ i }}][label]" class="tm-qlines__input" maxlength="200" value="{{ src is not null ? (src.label ?? '') : (line.label ?? '') }}" placeholder="Désignation"></td>
+        <td class="tm-qlines__num"><label class="tm-visually-hidden" for="line-{{ i }}-qty">Quantité</label>
+            <input id="line-{{ i }}-qty" name="lines[{{ i }}][quantity]" class="tm-qlines__input" inputmode="decimal" value="{{ src is not null ? (src.quantity ?? '') : (line and priced ? line.quantityMilli|tm_decimal(3) : '1') }}"{{ priced ? '' : ' disabled' }}></td>
+        <td><label class="tm-visually-hidden" for="line-{{ i }}-unit">Unité</label>
+            <input id="line-{{ i }}-unit" name="lines[{{ i }}][unit]" class="tm-qlines__input" maxlength="20" value="{{ src is not null ? (src.unit ?? '') : (line.unit ?? '') }}" placeholder="u"{{ priced ? '' : ' disabled' }}></td>
+        <td class="tm-qlines__num"><label class="tm-visually-hidden" for="line-{{ i }}-price">Prix unitaire HT</label>
+            <input id="line-{{ i }}-price" name="lines[{{ i }}][unit_price]" class="tm-qlines__input" inputmode="decimal" value="{{ src is not null ? (src.unit_price ?? '') : (line and priced ? line.unitPriceHt|tm_money(false) : '') }}" placeholder="0,00"{{ priced ? '' : ' disabled' }}></td>
+        <td class="tm-qlines__num"><label class="tm-visually-hidden" for="line-{{ i }}-discount">Remise (%)</label>
+            <input id="line-{{ i }}-discount" name="lines[{{ i }}][discount]" class="tm-qlines__input" inputmode="decimal" value="{{ src is not null ? (src.discount ?? '') : (line and line.discountBp > 0 ? line.discountBp|tm_decimal(2) : '') }}" placeholder="—"{{ priced ? '' : ' disabled' }}></td>
+        <td><label class="tm-visually-hidden" for="line-{{ i }}-vat">TVA</label>
+            <select id="line-{{ i }}-vat" name="lines[{{ i }}][vat]" class="tm-qlines__input"{{ priced ? '' : ' disabled' }}>
+                {% set vat = src is not null ? (src.vat ?? '2000') : (line ? line.vatRate.value : 2000) %}
+                {% for r in vat_rates %}<option value="{{ r.value }}"{{ r.value == vat ? ' selected' }}>{{ r.label }}</option>{% endfor %}
+            </select></td>
+        <td class="tm-qlines__total" data-quote-editor-target="lineTotal">{{ line and priced ? line.totalHt().amount|tm_money : '' }}</td>
+        <td><button type="button" class="tm-qlines__remove" data-action="quote-editor#remove" aria-label="Supprimer la ligne"><twig:Icon name="x" size="xs" class="tm-icon--inherit" /></button></td>
+    </tr>
+{% endmacro %}
+{% import _self as m %}
+{% block space_content %}
+<form class="tm-qedit" method="post" action="{{ path(revising ? 'pro_quote_revise' : 'pro_quote_new', {demande: view.request.id}) }}" data-turbo="false"
+      data-controller="quote-editor" data-quote-editor-url-value="{{ path(revising ? 'pro_quote_revise_preview' : 'pro_quote_autosave', {demande: view.request.id}) }}"{% if revising %} data-quote-editor-revision-value="true"{% endif %} data-action="input->quote-editor#changed change->quote-editor#changed">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+    <nav class="tm-qedit__crumbs" aria-label="Fil d’Ariane"><a href="{{ path('pro_requests') }}">Demandes</a><span aria-hidden="true">/</span>{% if tm_route_exists('pro_request') %}<a href="{{ path('pro_request', {id: view.request.id}) }}">{{ view.request.title }}</a>{% else %}<span>{{ view.request.title }}</span>{% endif %}</nav>
+    <header class="tm-qedit__head">
+        {% if sent %}
+            <h1>Devis {{ view.number }}</h1>
+            <p>{{ view.status.isRevisable() ? 'Ce devis a été envoyé au client. Pour le corriger, envoyez-lui une nouvelle version.' : 'Ce devis ne se modifie plus.' }}</p>
+        {% elseif revising %}
+            <h1>Modifier le devis {{ view.number }}</h1>
+            <p>Une nouvelle version (v{{ view.version + 1 }}) sera envoyée au client. La révision est gratuite : elle ne consomme ni crédit ni place.</p>
+        {% else %}
+            <h1>Créer un devis</h1>
+            <p>Établissez une proposition détaillée avant l’envoi au client.</p>
+        {% endif %}
+    </header>
+    {% if sent %}
+        <div class="tm-qedit__state">
+            <p class="tm-qedit__sent{{ view.status.isRevisable() ? '' : ' is-closed' }}" role="status"><twig:Icon name="{{ view.status.isRevisable() ? 'check' : 'info' }}" size="xs" class="tm-icon--inherit" />
+                <span>{{ view.status.label() }}{{ view.version > 1 ? ' · version ' ~ view.version }}{{ view.sentAt ? ' · envoyé le ' ~ view.sentAt|date('d/m/Y à H:i', 'Europe/Paris') }}.</span>
+                <a href="{{ path('pro_quote_pdf', {id: view.quoteId, version: view.version}) }}" target="_blank" rel="noopener">Voir le PDF envoyé<span class="tm-visually-hidden"> (nouvel onglet)</span></a></p>
+            {% if view.status.isRevisable() %}
+                <div class="tm-qedit__actions">
+                    <twig:Button href="{{ path('pro_quote_new', {demande: view.request.id, reviser: 1}) }}" variant="secondary">Modifier le devis</twig:Button>
+                    {% if view.reminderAvailableAt and date(view.reminderAvailableAt) <= date() %}
+                        <twig:Button type="submit" variant="soft" formaction="{{ path('pro_quote_remind', {demande: view.request.id}) }}">Relancer le client</twig:Button>
+                    {% endif %}
+                    {% if view.status.value == 'sent' %}
+                        <twig:Button variant="tertiary" data-controller="modal-opener" data-modal-opener-dialog-value="retrait-devis" data-action="modal-opener#open">Retirer le devis</twig:Button>
+                    {% endif %}
+                </div>
+                {% if view.remindedAt %}
+                    <p class="tm-caption">Client relancé le {{ view.remindedAt|date('d/m/Y à H:i', 'Europe/Paris') }}.</p>
+                {% elseif view.reminderAvailableAt and date(view.reminderAvailableAt) > date() %}
+                    <p class="tm-caption">Sans consultation du client, vous pourrez le relancer gratuitement à partir du {{ view.reminderAvailableAt|date('d/m/Y à H:i', 'Europe/Paris') }}.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endif %}
+    <fieldset class="tm-qedit__frame"{{ sent ? ' disabled' }}>
+    <legend class="tm-visually-hidden">{{ sent ? 'Contenu du devis envoyé' : 'Contenu du devis' }}</legend>
+    {% if error %}<p class="tm-field__error tm-qedit__error" role="alert"><twig:Icon name="alert" size="xs" />{{ error }}</p>{% endif %}
+    <p class="tm-qedit__error" role="alert" data-quote-editor-target="error" hidden></p>
+
+    <div class="tm-qedit__top">
+        <section class="tm-qedit__card" aria-labelledby="montants-title">
+            <h2 id="montants-title">Prestations et montants</h2>
+            <div class="tm-qedit__pair">
+                <div class="tm-qedit__box"><span>Numéro du devis</span><strong>{{ view.number ?? 'Attribué à l’envoi' }}</strong></div>
+                <div class="tm-field tm-qedit__box"><label for="validity_days">Validité (jours)</label>
+                    <input id="validity_days" name="validity_days" type="number" min="1" max="180" required value="{{ m.field(p, 'validity_days', c ? c.conditions.validityDays : view.defaultValidityDays) }}"></div>
+            </div>
+            <div class="tm-field"><label class="tm-field__label" for="subject">Objet du devis <span aria-hidden="true">*</span></label>
+                <div class="tm-field__control"><input class="tm-field__input" id="subject" name="subject" maxlength="200" required value="{{ m.field(p, 'subject', c ? c.subject : view.request.title) }}"></div></div>
+            <div class="tm-qedit__pair">
+                <div class="tm-field tm-qedit__box"><label for="execution_delay">Durée des travaux</label>
+                    <input id="execution_delay" name="execution_delay" maxlength="200" placeholder="Ex. : 3 semaines" value="{{ m.field(p, 'execution_delay', c.conditions.executionDelay ?? '') }}"></div>
+                <div class="tm-field tm-qedit__box"><label for="payment_terms">Modalités</label>
+                    <input id="payment_terms" name="payment_terms" maxlength="2000" placeholder="Ex. : à convenir" value="{{ m.field(p, 'payment_terms', c.conditions.paymentTerms ?? '') }}"></div>
+            </div>
+            {% if revising %}
+            <p class="tm-caption">Les modifications ne sont envoyées qu’à la confirmation : la version actuelle reste valable jusque-là.</p>
+            <div class="tm-qedit__actions">
+                <twig:Button href="{{ path('pro_quote_new', {demande: view.request.id}) }}" variant="soft">Annuler</twig:Button>
+                <twig:Button data-controller="modal-opener" data-modal-opener-dialog-value="revision-devis" data-action="modal-opener#open" data-quote-editor-target="send" :disabled="view.mentions is not empty and not view.complete()">Envoyer la révision</twig:Button>
+                <p class="tm-caption tm-qedit__saved" data-quote-editor-target="status" aria-live="polite"></p>
+            </div>
+            {% elseif not sent %}
+            <p class="tm-caption">Un crédit sera déduit uniquement lors de l’envoi effectif.</p>
+            <div class="tm-qedit__actions">
+                <twig:Button type="submit" variant="soft">Enregistrer brouillon</twig:Button>
+                {% if view.quoteId %}<twig:Button href="{{ path('pro_quote_preview', {demande: view.request.id}) }}" variant="soft" target="_blank" rel="noopener">Aperçu PDF<span class="tm-visually-hidden"> (nouvel onglet)</span></twig:Button>{% endif %}
+                <twig:Button data-controller="modal-opener" data-modal-opener-dialog-value="envoi-devis" data-action="modal-opener#open" data-quote-editor-target="send" :disabled="view.mentions is not empty and not view.complete()">Envoyer le devis</twig:Button>
+                <p class="tm-caption tm-qedit__saved" data-quote-editor-target="status" aria-live="polite">{{ view.savedAt ? 'Brouillon enregistré à ' ~ view.savedAt|date('H:i', 'Europe/Paris') : '' }}</p>
+            </div>
+            {% endif %}
+        </section>
+
+        <aside class="tm-qedit__card tm-qedit__recap" aria-labelledby="recap-title">
+            <h2 id="recap-title">Récapitulatif</h2>
+            {% set t = c ? c.totals : null %}
+            <div class="tm-qedit__box"><span>Total HT</span><strong data-quote-editor-target="ht">{{ t ? t.ht.amount|tm_money : '0,00 €' }}</strong></div>
+            <div class="tm-qedit__box"><span>TVA</span><strong data-quote-editor-target="vat">{{ view.issuer.vatExempt ? 'Non applicable' : (t ? t.vat.amount|tm_money : '0,00 €') }}</strong>
+                {% if view.issuer.vatExempt %}<small>TVA non applicable, art. 293 B du CGI</small>{% endif %}</div>
+            <div class="tm-qedit__box"><span>Montant TTC</span><strong data-quote-editor-target="ttc">{{ t ? t.ttc.amount|tm_money : '0,00 €' }}</strong></div>
+            {% if view.creditsRemaining is not null %}<div class="tm-qedit__box"><span>Crédits disponibles</span><strong>{{ view.creditsRemaining }}</strong></div>{% endif %}
+            {% if view.creditsRemaining is same as(0) and not sent %}<p class="tm-credit-out" role="alert"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" /><span>Crédit épuisé : souscrivez un forfait pour continuer à envoyer des devis. <a href="{{ path('content_pricing') }}">Voir les forfaits</a></span></p>{% endif %}
+            <p class="tm-caption">Coordonnées client protégées avant l’acceptation du devis.</p>
+        </aside>
+    </div>
+
+    <section class="tm-qedit__card" aria-labelledby="lignes-title">
+        <h2 id="lignes-title">Lignes du devis</h2>
+        <div class="tm-qlines__wrap">
+            <table class="tm-qlines">
+                <thead><tr><th scope="col"><span class="tm-visually-hidden">Ordre</span></th><th scope="col">Type</th><th scope="col">Désignation</th><th scope="col">Qté</th><th scope="col">Unité</th><th scope="col">PU HT</th><th scope="col">Remise %</th><th scope="col">TVA</th><th scope="col">Total HT</th><th scope="col"><span class="tm-visually-hidden">Supprimer</span></th></tr></thead>
+                <tbody data-quote-editor-target="lines">
+                    {% set rows = p is not null ? (p.lines ?? []) : (c ? c.lines : [null]) %}
+                    {% for line in rows %}{{ m.row(loop.index0, p is not null ? null : line, p, line_types, vat_rates) }}{% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <template data-quote-editor-target="template">{{ m.row('__i__', null, null, line_types, vat_rates) }}</template>
+        <div class="tm-qedit__add">
+            <button type="button" class="tm-qedit__add-btn" data-action="quote-editor#addLine" data-type="labour"><twig:Icon name="plus" size="xs" class="tm-icon--inherit" />Ajouter une ligne</button>
+            <button type="button" class="tm-qedit__add-btn" data-action="quote-editor#addLine" data-type="section"><twig:Icon name="plus" size="xs" class="tm-icon--inherit" />Section</button>
+        </div>
+    </section>
+
+    <details class="tm-qedit__card tm-qedit__conditions"{% if p is not null or (c and (c.conditions.guarantees or c.conditions.specialConditions or c.conditions.clientNote or c.globalDiscountBp or c.deposit)) %} open{% endif %}>
+        <summary><h2>Conditions et mentions</h2><span class="tm-caption">Remise globale, acompte, début des travaux, paiement, garanties, note au client</span></summary>
+        <div class="tm-qedit__grid">
+            <div class="tm-field"><label class="tm-field__label" for="global_discount">Remise globale (%)</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="global_discount" name="global_discount" inputmode="decimal" value="{{ m.field(p, 'global_discount', c and c.globalDiscountBp ? c.globalDiscountBp|tm_decimal(2) : '') }}"></div></div>
+            <div class="tm-field"><label class="tm-field__label" for="deposit_type">Acompte</label>
+                {% set dtype = p is not null ? (p.deposit_type ?? '') : (c and c.deposit ? (c.deposit.percentBp ? 'percent' : 'amount') : '') %}
+                <div class="tm-qedit__deposit">
+                    <div class="tm-field__control"><select class="tm-field__input" id="deposit_type" name="deposit_type"><option value="">Aucun</option><option value="percent"{{ dtype == 'percent' ? ' selected' }}>% du TTC</option><option value="amount"{{ dtype == 'amount' ? ' selected' }}>Montant (€)</option></select></div>
+                    <div class="tm-field__control"><label class="tm-visually-hidden" for="deposit_value">Valeur de l’acompte</label><input class="tm-field__input" id="deposit_value" name="deposit_value" inputmode="decimal" value="{{ m.field(p, 'deposit_value', c and c.deposit ? (c.deposit.percentBp ? c.deposit.percentBp|tm_decimal(2) : c.deposit.amount|tm_money(false)) : '') }}"></div>
+                </div></div>
+            <div class="tm-field"><label class="tm-field__label" for="start_date">Début possible des travaux</label>
+                <div class="tm-field__control"><input class="tm-field__input" type="date" id="start_date" name="start_date" value="{{ m.field(p, 'start_date', c and c.conditions.startDate ? c.conditions.startDate|date('Y-m-d') : '') }}"></div></div>
+            <fieldset class="tm-field">
+                <legend class="tm-field__label">Moyens de paiement acceptés</legend>
+                {% set methods = p is not null ? (p.payment_methods ?? []) : (c ? c.conditions.paymentMethods : []) %}
+                <div class="tm-cedit__slots">{% for key, label in {virement: 'Virement', cheque: 'Chèque', carte: 'Carte bancaire', especes: 'Espèces'} %}<label class="tm-cedit__slot"><input type="checkbox" name="payment_methods[]" value="{{ key }}"{{ key in methods ? ' checked' }}><span>{{ label }}</span></label>{% endfor %}</div>
+            </fieldset>
+            <div class="tm-field tm-qedit__wide"><label class="tm-field__label" for="guarantees">Garanties</label>
+                <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="guarantees" name="guarantees" rows="2" maxlength="2000">{{ m.field(p, 'guarantees', c.conditions.guarantees ?? '') }}</textarea></div></div>
+            <div class="tm-field tm-qedit__wide"><label class="tm-field__label" for="special_conditions">Conditions particulières</label>
+                <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="special_conditions" name="special_conditions" rows="2" maxlength="2000">{{ m.field(p, 'special_conditions', c.conditions.specialConditions ?? '') }}</textarea></div></div>
+            <div class="tm-field tm-qedit__wide"><label class="tm-field__label" for="client_note">Note au client</label>
+                <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="client_note" name="client_note" rows="2" maxlength="2000">{{ m.field(p, 'client_note', c.conditions.clientNote ?? '') }}</textarea></div></div>
+            {% if view.issuer.insurances is not empty %}
+                <div class="tm-qedit__wide tm-qedit__insurance"><p class="tm-field__label">Assurance (reprise de votre dossier)</p>
+                    <ul>{% for i in view.issuer.insurances %}<li>{{ i.label }} · {{ i.insurer }} · police {{ i.policy }} · valable jusqu’au {{ i.validUntil|date('d/m/Y') }}</li>{% endfor %}</ul></div>
+            {% endif %}
+        </div>
+    </details>
+
+    <section class="tm-qedit__card" aria-labelledby="mentions-title">
+        <h2 id="mentions-title">Contrôle des mentions obligatoires (RG-120)</h2>
+        <ul class="tm-qedit__mentions" data-quote-editor-target="mentions">
+            {% for check in view.mentions %}
+                <li class="{{ check.ok ? 'is-ok' : 'is-missing' }}"><twig:Icon name="{{ check.ok ? 'check' : 'alert' }}" size="xs" class="tm-icon--inherit" />{{ check.label }}</li>
+            {% else %}
+                <li class="is-pending">Enregistrez le brouillon pour lancer le contrôle.</li>
+            {% endfor %}
+        </ul>
+        <p class="tm-qedit__blocked" role="status" data-quote-editor-target="blocked"{{ view.mentions is not empty and not view.complete() ? '' : ' hidden' }}><twig:Icon name="alert" size="xs" class="tm-icon--inherit" />Il manque des informations obligatoires. L’envoi est bloqué tant qu’elles ne sont pas complétées.</p>
+        <p class="tm-caption" data-quote-editor-target="certificate"{{ c and c.needsClientCertificate() ? '' : ' hidden' }}>TVA à taux réduit (10 % / 5,5 %) : l’attestation du client est requise (information).</p>
+    </section>
+    </fieldset>
+
+    {% if revising %}
+        <twig:Modal id="revision-devis" title="Envoyer la version {{ view.version + 1 }} ?">
+            <twig:block name="content">
+                <p>Le client recevra la version {{ view.version + 1 }} du devis {{ view.number }}, qui remplace la précédente. La validité repart à la date d’envoi.</p>
+                <p class="tm-callout"><twig:Icon name="info" size="xs" class="tm-icon--inherit" />Révision gratuite : aucun crédit ni place supplémentaire.</p>
+            </twig:block>
+            <twig:block name="actions">
+                <twig:Button variant="secondary" data-action="modal#close">Annuler</twig:Button>
+                <twig:Button type="submit">Envoyer la révision</twig:Button>
+            </twig:block>
+        </twig:Modal>
+    {% elseif not sent %}
+        {% set credits = view.creditsRemaining %}
+        <twig:Modal id="envoi-devis" title="{{ credits is same as(0) ? 'Crédit de devis épuisé' : 'Envoyer ce devis ?' }}">
+            <twig:block name="content">
+                {% if credits is same as(0) %}
+                    <p>Vous n’avez plus de devis disponible sur votre crédit. Choisissez un forfait pour envoyer ce devis.</p>
+                {% elseif credits is null %}
+                    <p>Cet envoi consommera 1 devis de votre crédit.</p>
+                {% else %}
+                    <p>Cet envoi consommera 1 devis de votre crédit. Il vous restera {{ credits - 1 }} devis.</p>
+                {% endif %}
+                <p class="tm-callout"><twig:Icon name="info" size="xs" class="tm-icon--inherit" />Le brouillon reste enregistré si vous annulez.</p>
+            </twig:block>
+            <twig:block name="actions">
+                <twig:Button variant="secondary" data-action="modal#close">Annuler</twig:Button>
+                {% if credits is same as(0) %}
+                    <twig:Button href="{{ path('content_pricing') }}">Voir les forfaits</twig:Button>
+                {% else %}
+                    <twig:Button type="submit" formaction="{{ path('pro_quote_send', {demande: view.request.id}) }}">Envoyer le devis</twig:Button>
+                {% endif %}
+            </twig:block>
+        </twig:Modal>
+    {% endif %}
+</form>
+{% if sent and view.status.value == 'sent' %}
+    <form method="post" action="{{ path('pro_quote_withdraw', {demande: view.request.id}) }}" data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+        <twig:Modal id="retrait-devis" title="Retirer ce devis ?">
+            <twig:block name="content">
+                <p>Le client ne verra plus ce devis et la place se libère sur sa demande. Le crédit utilisé n’est pas restitué, et vous ne pourrez pas envoyer un autre devis sur cette demande.</p>
+            </twig:block>
+            <twig:block name="actions">
+                <twig:Button variant="secondary" data-action="modal#close">Annuler</twig:Button>
+                <twig:Button type="submit" variant="danger">Retirer le devis</twig:Button>
+            </twig:block>
+        </twig:Modal>
+    </form>
+{% endif %}
+{% endblock %}

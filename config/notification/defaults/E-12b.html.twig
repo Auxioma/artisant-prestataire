@@ -1,0 +1,4 @@
+<p>Bonjour {{ prenom }},</p>
+<p><strong>{{ artisan }}</strong> a mis à jour son devis pour votre demande <strong>n° {{ numero }}</strong> : la <strong>version {{ version }}</strong> s’élève à <strong>{{ montant }} TTC</strong> et remplace la précédente. Elle est valable jusqu’au {{ validite|date('d/m/Y', 'Europe/Paris') }}.</p>
+<p>Vos coordonnées ne sont communiquées au professionnel qu’après votre acceptation.</p>
+{{ bouton(lien, 'Voir le devis') }}

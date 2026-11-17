@@ -1,0 +1,210 @@
+{#-
+    C03 — Comparateur de devis (Figma 22:80) : fil d'Ariane, « n devis disponibles sur max », cartes (badge, artisan,
+    TTC, HT / TVA, validité et durée, principaux postes, « Voir le devis détaillé », « Choisir ce professionnel »,
+    « Refuser »), « Comparatif détaillé » (Imprimer / PDF), « Avant de confirmer votre choix ». Modales : acceptation
+    (195:9075, RG-071) et refus motivé (C03.5). Devis accepté : C03B (12:2) — confirmation, devis retenu, coordonnées de
+    l'artisan (RG-022bis), prochaines étapes, suivi du rendez-vous (T-703b). Écarts : P-87, P-88, P-115.
+-#}
+{% extends 'client/_space.html.twig' %}
+{% set space_active = 'requests' %}
+{% set retained = view.accepted() %}
+{% set space_title = retained ? 'Mes devis' : 'Comparateur de devis' %}
+{% set space_subtitle = retained ? 'Votre devis est accepté : retrouvez les prochaines étapes.' : 'Comparez les devis reçus et choisissez votre professionnel.' %}
+{% set title = view.requestTitle ?? ('Demande ' ~ view.requestNumber) %}
+{% block title %}Devis reçus — {{ title }} — Espace client — TrouveMoi{% endblock %}
+{% macro money(cents) %}{{ cents|tm_money }}{% endmacro %}
+{% macro rates(card) %}{% if card.vatExempt %}Non applicable{% else %}{% for r in card.vatRatesBp %}{{ r|tm_decimal(2) }} %{{ not loop.last ? ' / ' }}{% endfor %}{% endif %}{% endmacro %}
+{% macro deposit(card) %}{% if card.depositPercentBp %}{{ card.depositPercentBp|tm_decimal(2) }} %{% elseif card.depositCents %}{{ card.depositCents|tm_money }}{% else %}Aucun{% endif %}{% endmacro %}
+{% import _self as q %}
+{% block space_content %}
+{% set cheapest = view.cheapestId() %}
+{% set detailed = view.mostDetailedId() %}
+{% if retained %}
+<div class="tm-accepted">
+    <p class="tm-accepted__status"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Devis accepté</p>
+    <h1>Votre choix est confirmé !</h1>
+    <p class="tm-accepted__lead">{{ retained.artisanName }} a été informé de votre décision concernant « {{ title }} ».</p>
+    <section class="tm-accepted__card" aria-labelledby="retenu-title">
+        <h2 id="retenu-title">Devis retenu : {{ retained.artisanName }}</h2>
+        <div class="tm-accepted__facts">
+            <div><span>Montant du devis</span><strong>{{ retained.ttcCents|tm_money }} TTC</strong></div>
+            <div><span>Délai annoncé</span><strong>{{ retained.executionDelay ?? '—' }}</strong></div>
+            <div><span>Localisation</span><strong>{{ view.requestCity }}</strong></div>
+        </div>
+        {% set contact = view.acceptedContact %}
+        {% if contact and (contact.phone or contact.email) %}
+            <div class="tm-accepted__facts tm-accepted__contact">
+                {% if contact.phone %}<div><span>Téléphone</span><strong><a href="tel:{{ contact.phone|replace({' ': ''}) }}">{{ contact.phone }}</a></strong></div>{% endif %}
+                {% if contact.email %}<div><span>E-mail</span><strong><a href="mailto:{{ contact.email }}">{{ contact.email }}</a></strong></div>{% endif %}
+            </div>
+        {% endif %}
+    </section>
+    <section class="tm-accepted__card" aria-labelledby="next-title">
+        <h2 id="next-title">Et maintenant ?</h2>
+        <ol class="tm-accepted__steps">
+            <li><span>1</span>L’artisan reçoit la confirmation et les coordonnées nécessaires.</li>
+            <li><span>2</span>Vous planifiez ensemble l’intervention : prenez rendez-vous ci-dessous dans son agenda, ou échangez via la messagerie.</li>
+            <li><span>3</span>Après la prestation, vous pourrez laisser un avis certifié.</li>
+        </ol>
+    </section>
+    <div class="tm-accepted__actions">
+        <a class="tm-qcard__choose" href="{{ path('client_quote_pdf', {quote: retained.quoteId}) }}" target="_blank" rel="noopener">Voir le devis<span class="tm-visually-hidden"> (PDF, nouvel onglet)</span></a>
+        <a class="tm-qcard__view" href="{{ path('client_requests') }}">Retour à mes demandes</a>
+    </div>
+    <p class="tm-accepted__legal">L’acceptation exprime votre choix du professionnel. Les modalités contractuelles et le paiement des travaux sont convenus directement avec lui.</p>
+    {% if tm_route_exists('client_appointments') %}
+        {% set a = appointment %}
+        {% set step = {proposed: 1, confirmed: 2, completed: 3}[a.status ?? ''] ?? 0 %}
+        <section class="tm-accepted__card tm-rdv-track" aria-labelledby="rdv-title">
+            <h2 id="rdv-title">Suivi du rendez-vous</h2>
+            <ol class="tm-rdv-track__steps">
+                {% for i, label in {1: (a and a.proposedBy == 'artisan' ? 'Proposé par l’artisan' : 'Proposé par vous'), 2: (a and a.proposedBy == 'artisan' ? 'Confirmé par vous' : 'Confirmé par l’artisan'), 3: 'Réalisé', 4: 'Avis'} %}
+                    <li class="{{ i <= step ? 'is-done' : (i == step + 1 ? 'is-current' : '') }}"><span>{% if i <= step %}<twig:Icon name="check" size="xs" class="tm-icon--inherit" />{% else %}{{ i }}{% endif %}</span>{{ label }}</li>
+                {% endfor %}
+            </ol>
+            {% if a and a.isActive() %}
+                <p class="tm-rdv-track__when"><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />{{ a.startsAt|date('d/m/Y', 'Europe/Paris') }} de {{ a.startsAt|date('H:i', 'Europe/Paris') }} à {{ a.endsAt|date('H:i', 'Europe/Paris') }} — {{ a.status == 'proposed' ? (a.awaits('client') ? 'à confirmer par vous' : 'en attente de confirmation de l’artisan') : 'confirmé' }}</p>
+            {% elseif a and a.status in ['cancelled', 'expired'] %}
+                <p class="tm-rdv-track__when">Dernier rendez-vous {{ a.status == 'cancelled' ? 'annulé' : 'non confirmé à temps' }}{% if a.cancelReason %} ({{ a.cancelReason }}){% endif %} : proposez un nouveau créneau.</p>
+            {% elseif a and a.status == 'completed' %}
+                <p class="tm-rdv-track__when">Prestation réalisée le {{ a.startsAt|date('d/m/Y', 'Europe/Paris') }}. Vous pourrez bientôt laisser un avis certifié.</p>
+            {% endif %}
+            <p class="tm-caption">Créneau verrouillé {{ tm_setting_int('appointments.hold_hours') }} h en attente de confirmation (RG-073). Après la date : « La prestation a-t-elle eu lieu ? » puis invitation à l’avis.</p>
+            {% if a and a.isActive() %}
+                {{ include('appointments/_actions.html.twig', {appointment: a, party: 'client', space: 'client', retour: app.request.requestUri}) }}
+            {% elseif not a or a.status in ['cancelled', 'expired'] %}
+                <twig:Button href="{{ path('client_appointment_new', {devis: retained.quoteId}) }}" icon="calendar" iconPosition="start">Prendre rendez-vous</twig:Button>
+            {% endif %}
+            {% set locked = a and (a.status == 'completed' or (a.status == 'confirmed' and a.startsAt < date('+' ~ cancel_min_hours ~ ' hours'))) %}
+            {% if not locked %}
+                <details class="tm-rdv-cancel tm-accepted__revoke">
+                    <summary>Annuler l’acceptation (jusqu’à {{ cancel_min_hours }} h avant le rendez-vous, motif)</summary>
+                    <form method="post" action="{{ path('client_quote_cancel_acceptance', {quote: retained.quoteId}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                        <label class="tm-field__label" for="motif-acceptation">Motif de l’annulation</label>
+                        <textarea class="tm-field__input" id="motif-acceptation" name="motif" rows="2" maxlength="300" required></textarea>
+                        <p class="tm-caption">{{ retained.artisanName }} est prévenu ; {{ a and a.isActive() ? 'le rendez-vous est annulé et ' }}votre demande redevient ouverte aux devis.</p>
+                        <twig:Button type="submit" variant="danger">Annuler l’acceptation</twig:Button>
+                    </form>
+                </details>
+            {% endif %}
+        </section>
+    {% endif %}
+</div>
+{% else %}
+<div class="tm-compare">
+    <nav class="tm-compare__crumbs" aria-label="Fil d’Ariane"><a href="{{ path('client_requests') }}">Mes demandes</a><span aria-hidden="true">/</span><span aria-current="page">{{ title }}</span></nav>
+    <h1 class="tm-visually-hidden">Devis reçus pour « {{ title }} »</h1>
+
+    <p class="tm-compare__count"><twig:Icon name="check" size="xs" class="tm-icon--inherit" /><strong>{{ view.cards|length }} devis disponible{{ view.cards|length > 1 ? 's' }} sur {{ view.maxQuotes }}</strong><span>La comparaison est gratuite et sans engagement.</span></p>
+
+    {% if view.cards is empty %}
+        <div class="tm-compare__empty">
+            <p><strong>Les professionnels étudient votre demande.</strong></p>
+            <p>Vous serez prévenu par e-mail dès qu’un devis arrive.</p>
+        </div>
+    {% else %}
+        <div class="tm-compare__grid">
+            {% for card in view.cards %}
+                <article class="tm-qcard{{ card.decidable ? '' : ' is-closed' }}" aria-labelledby="qcard-{{ card.quoteId }}">
+                    {% if card.quoteId == cheapest %}<span class="tm-qcard__badge">Prix le plus bas</span>
+                    {% elseif card.quoteId == detailed %}<span class="tm-qcard__badge">Réponse détaillée</span>
+                    {% elseif card.isNew() and card.decidable %}<span class="tm-qcard__badge">Nouveau</span>
+                    {% elseif not card.decidable %}<span class="tm-qcard__badge is-status">{{ card.status.label() }}</span>{% endif %}
+                    <h2 class="tm-qcard__name" id="qcard-{{ card.quoteId }}">{{ card.artisanName }}</h2>
+                    <p class="tm-qcard__meta"><twig:Icon name="shield" size="xs" class="tm-icon--inherit" />Artisan vérifié{{ card.artisanCity ? ' · ' ~ card.artisanCity }}</p>
+                    <p class="tm-qcard__price">{{ q.money(card.ttcCents) }}</p>
+                    <p class="tm-qcard__caption">Montant TTC indiqué par le professionnel</p>
+                    <div class="tm-qcard__amounts">
+                        <p>{{ q.money(card.htCents) }} HT · {{ card.vatExempt ? 'TVA non applicable' : 'TVA ' ~ q.rates(card) ~ ' ' ~ q.money(card.vatCents) }}</p>
+                        <p>Valable jusqu’au {{ card.validUntil ? card.validUntil|date('d/m/Y', 'Europe/Paris') : '—' }}{{ card.executionDelay ? ' · Durée des travaux : ' ~ card.executionDelay }}</p>
+                    </div>
+                    <ul class="tm-qcard__lines">
+                        {% for line in card.mainLines %}<li><twig:Icon name="check" size="xs" class="tm-icon--inherit" />{{ line }}</li>{% endfor %}
+                        <li><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Devis PDF téléchargeable</li>
+                    </ul>
+                    <a class="tm-qcard__view" href="{{ path('client_quote_pdf', {quote: card.quoteId}) }}" target="_blank" rel="noopener">Voir le devis détaillé<span class="tm-visually-hidden"> de {{ card.artisanName }} (PDF, nouvel onglet)</span></a>
+                    {% if tm_route_exists('client_message_new') %}<a class="tm-qcard__view" href="{{ path('client_message_new', {demande: view.requestId, artisan: card.artisanId}) }}"><twig:Icon name="msg" size="xs" class="tm-icon--inherit" /> Envoyer un message<span class="tm-visually-hidden"> à {{ card.artisanName }}</span></a>{% endif %}
+                    {% if card.decidable %}
+                        <button type="button" class="tm-qcard__choose" data-controller="modal-opener" data-modal-opener-dialog-value="accepter-{{ card.quoteId }}" data-action="modal-opener#open">Choisir ce professionnel</button>
+                        <div class="tm-qcard__secondary">
+                            <twig:Button variant="tertiary" data-controller="modal-opener" data-modal-opener-dialog-value="refuser-{{ card.quoteId }}" data-action="modal-opener#open">Refuser<span class="tm-visually-hidden"> le devis de {{ card.artisanName }}</span></twig:Button>
+                        </div>
+                    {% elseif card.decisionReason and card.status.value == 'refused' %}
+                        <p class="tm-qcard__caption">Motif : {{ card.decisionReason }}</p>
+                    {% endif %}
+                </article>
+            {% endfor %}
+        </div>
+
+        <section class="tm-compare__table" aria-labelledby="comparatif-title" data-controller="print">
+            <header>
+                <h2 id="comparatif-title">Comparatif détaillé</h2>
+                <twig:Button variant="tertiary" data-action="print#print">Imprimer / PDF</twig:Button>
+            </header>
+            <div class="tm-compare__scroll">
+                <table>
+                    <thead><tr><td></td>{% for card in view.cards %}<th scope="col">{{ card.artisanName }}</th>{% endfor %}</tr></thead>
+                    <tbody>
+                        <tr><th scope="row">Prix TTC</th>{% for card in view.cards %}<td{% if card.quoteId == cheapest %} class="is-best"{% endif %}>{{ q.money(card.ttcCents) }}{{ card.quoteId == cheapest ? ' · le moins cher' }}</td>{% endfor %}</tr>
+                        <tr><th scope="row">Prix HT</th>{% for card in view.cards %}<td>{{ q.money(card.htCents) }}</td>{% endfor %}</tr>
+                        <tr><th scope="row">TVA</th>{% for card in view.cards %}<td>{{ q.rates(card) }}</td>{% endfor %}</tr>
+                        <tr><th scope="row">Acompte demandé</th>{% for card in view.cards %}<td>{{ q.deposit(card) }}</td>{% endfor %}</tr>
+                        <tr><th scope="row">Durée des travaux</th>{% for card in view.cards %}<td>{{ card.executionDelay ?? '—' }}</td>{% endfor %}</tr>
+                        <tr><th scope="row">Validité</th>{% for card in view.cards %}<td>{{ card.validUntil ? card.validUntil|date('d/m/Y', 'Europe/Paris') : '—' }}</td>{% endfor %}</tr>
+                        <tr><th scope="row">Garanties</th>{% for card in view.cards %}<td>{{ card.guarantees ?? '—' }}</td>{% endfor %}</tr>
+                        <tr><th scope="row">Labels</th>{% for card in view.cards %}<td>{{ card.labels is empty ? '—' : card.labels|join(', ') }}</td>{% endfor %}</tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    {% endif %}
+
+    <section class="tm-compare__notice" aria-labelledby="consent-title">
+        <h2 id="consent-title">Avant de confirmer votre choix</h2>
+        <p>L’acceptation d’un devis constitue une intention de commande : le contrat se forme directement entre vous et le professionnel. La signature électronique et le paiement des travaux ne sont pas inclus à ce stade.</p>
+    </section>
+</div>
+{% endif %}
+
+{% for card in view.cards|filter(c => c.decidable) %}
+    <form method="post" action="{{ path('client_quote_accept', {quote: card.quoteId}) }}" data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+        <input type="hidden" name="back" value="{{ path('client_request', {id: view.requestId}) }}">
+        {% set de = card.artisanName matches '/^[AEIOUYHÀÂÄÉÈÊËÎÏÔÖÙÛÜaeiouyhàâäéèêëîïôöùûü]/u' ? 'd’' : 'de ' %}
+        <twig:Modal id="accepter-{{ card.quoteId }}" title="Accepter le devis {{ de }}{{ card.artisanName }} ?">
+            <twig:block name="content">
+                <p>Montant : {{ card.ttcCents|tm_money }} TTC. L’acceptation vaut intention de commande : le contrat se forme directement avec l’artisan. Les autres devis passeront en « non retenu ».</p>
+                <p class="tm-callout"><twig:Icon name="info" size="xs" class="tm-icon--inherit" />Vous recevrez ses coordonnées par e-mail pour organiser l’intervention.</p>
+            </twig:block>
+            <twig:block name="actions">
+                <twig:Button variant="secondary" data-action="modal#close">Annuler</twig:Button>
+                <twig:Button type="submit">Accepter le devis</twig:Button>
+            </twig:block>
+        </twig:Modal>
+    </form>
+    <form method="post" action="{{ path('client_quote_refuse', {quote: card.quoteId}) }}" data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+        <input type="hidden" name="back" value="{{ path('client_request', {id: view.requestId}) }}">
+        <twig:Modal id="refuser-{{ card.quoteId }}" title="Refuser ce devis ?">
+            <twig:block name="content">
+                <fieldset class="tm-field tm-refuse">
+                    <legend class="tm-field__label">Motif <span aria-hidden="true">*</span></legend>
+                    {% for reason in reasons %}
+                        <label class="tm-refuse__option"><input type="radio" name="reason" value="{{ reason.value }}" required>{{ reason.label() }}</label>
+                    {% endfor %}
+                </fieldset>
+                <div class="tm-field">
+                    <label class="tm-field__label" for="comment-{{ card.quoteId }}">Commentaire (facultatif)</label>
+                    <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="comment-{{ card.quoteId }}" name="comment" rows="2" maxlength="300"></textarea></div>
+                </div>
+                <p class="tm-callout"><twig:Icon name="info" size="xs" class="tm-icon--inherit" />L’artisan est notifié poliment de votre décision.</p>
+            </twig:block>
+            <twig:block name="actions">
+                <twig:Button variant="secondary" data-action="modal#close">Annuler</twig:Button>
+                <twig:Button type="submit">Refuser le devis</twig:Button>
+            </twig:block>
+        </twig:Modal>
+    </form>
+{% endfor %}
+{% endblock %}

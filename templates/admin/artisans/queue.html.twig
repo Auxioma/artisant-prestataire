@@ -1,0 +1,151 @@
+{#- BO03.2 (Figma 186:1324) — file de vérification : dossiers en attente, rappel Sirene, contrôles automatiques, visionneuse des pièces (consultations journalisées), décision RG-130. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'artisans' %}
+{% block title %}Artisans et vérification{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Artisans et vérification', crumbs: ['Utilisateurs'], subtitle: items|length ~ ' dossier' ~ (items|length > 1 ? 's') ~ ' en attente (délai cible ' ~ delay_hours ~ ' h)'}) }}
+    <nav class="tm-admin-tabs" aria-label="Sections artisans">
+        <a class="tm-admin-tab" href="{{ path('admin_artisans') }}">Liste des artisans</a>
+        <a class="tm-admin-tab is-active" href="{{ path('admin_artisans_queue') }}" aria-current="page">File de vérification ({{ items|length }})</a>
+        <span class="tm-admin-tab is-disabled">Justificatifs expirants <span class="tm-admin__soon">Bientôt</span></span>
+    </nav>
+
+    <div class="tm-verif">
+        <section class="tm-admin-panel tm-verif__queue" aria-labelledby="attente-titre">
+            <h2 id="attente-titre" class="tm-card-title">Dossiers en attente</h2>
+            <ul class="tm-verif__list">
+                {% for item in items %}
+                    {% set current = dossier and dossier.profileId == item.profileId %}
+                    <li>
+                        <a class="tm-verif__item{{ current ? ' is-active' }}" href="{{ path('admin_artisans_queue', {dossier: item.profileId}) }}"{{ current ? ' aria-current="true"' }}>
+                            <strong>{{ item.name }}</strong>
+                            <span class="tm-caption">{{ item.mainJob }}{{ item.place ? ' · ' ~ item.place }}</span>
+                            <span class="tm-caption{{ item.overdue ? ' tm-verif__late' }}">Déposé le {{ item.submittedAt|date('d/m/Y à H:i', 'Europe/Paris') }}{{ item.overdue ? ' · délai dépassé' }}{{ item.moreInfoRequested ? ' · complément demandé' }}</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li><twig:EmptyState icon="check" title="Aucun dossier en attente" text="Les nouveaux dossiers d’inscription apparaîtront ici." /></li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        {% if dossier %}
+        {% set can_edit = is_granted('admin.artisans.edit') %}
+        <div class="tm-verif__dossier">
+            <header class="tm-verif__head">
+                <h2>{{ dossier.name }}</h2>
+                {% if dossier.status == 'pending_verification' %}<twig:Badge variant="pending">{{ dossier.statusReason == 'more_info' ? 'Complément demandé' : 'En attente de vérification' }}</twig:Badge>
+                {% elseif dossier.status == 'verified' %}<twig:Badge variant="verified">Vérifié</twig:Badge>
+                {% elseif dossier.status == 'rejected' %}<twig:Badge variant="refused">Refusé</twig:Badge>
+                {% else %}<twig:Badge variant="neutral">{{ dossier.status }}</twig:Badge>{% endif %}
+                <p class="tm-caption">{{ dossier.submittedAt ? 'Déposé le ' ~ dossier.submittedAt|date('d/m/Y à H:i', 'Europe/Paris') }}{{ dossier.manager ? ' · Dirigeant : ' ~ dossier.manager }}{{ dossier.email ? ' · ' ~ dossier.email }} · Complétude du profil : {{ dossier.completion }} %</p>
+            </header>
+
+            <div class="tm-verif__grid">
+                <section class="tm-admin-panel" aria-labelledby="sirene-titre">
+                    <h3 id="sirene-titre" class="tm-card-title">Données Sirene (rappel automatique)</h3>
+                    <dl class="tm-facts">
+                        <div><dt>SIRET</dt><dd>{{ dossier.company.siret|default('—') }}</dd></div>
+                        <div><dt>État administratif</dt><dd>{% if dossier.sirene is null %}<twig:Badge variant="neutral">Répertoire indisponible</twig:Badge>{% elseif dossier.sirene.active %}<twig:Badge variant="available">Actif</twig:Badge>{% else %}<twig:Badge variant="refused">Fermé ou introuvable</twig:Badge>{% endif %}</dd></div>
+                        <div><dt>Raison sociale</dt><dd>{{ dossier.sirene.name ?? dossier.company.company }}</dd></div>
+                        <div><dt>Code APE</dt><dd>{{ dossier.sirene.ape ?? dossier.company.ape ?? '—' }}</dd></div>
+                        <div><dt>Date de création</dt><dd>{{ dossier.sirene and dossier.sirene.createdOn ? dossier.sirene.createdOn|date('d/m/Y') : (dossier.company.created ?? '—') }}</dd></div>
+                        <div><dt>Siège</dt><dd>{{ dossier.sirene.city ?? dossier.company.hq ?: '—' }}</dd></div>
+                        <div><dt>TVA</dt><dd>{{ dossier.company.vat ?? 'Franchise / non renseignée' }}</dd></div>
+                        <div><dt>Métiers</dt><dd>{{ dossier.jobs|join(', ') }}</dd></div>
+                        <div><dt>Zone</dt><dd>{{ dossier.area }}</dd></div>
+                    </dl>
+                </section>
+                <section class="tm-admin-panel" aria-labelledby="controles-titre">
+                    <h3 id="controles-titre" class="tm-card-title">Contrôles automatiques</h3>
+                    <ul class="tm-verif__checks">
+                        {% for check in dossier.checks %}
+                            <li class="tm-verif__check tm-verif__check--{{ check.level }}">
+                                <twig:Icon name="{{ {ok: 'check', warning: 'alert', error: 'x', info: 'info'}[check.level] }}" size="sm" class="tm-icon--inherit" />
+                                <span><span class="tm-visually-hidden">{{ {ok: 'Conforme', warning: 'À vérifier', error: 'Problème', info: 'À contrôler'}[check.level] }} : </span>{{ check.label }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            </div>
+
+            <section class="tm-admin-panel" aria-labelledby="pieces-titre">
+                <h3 id="pieces-titre" class="tm-card-title">Pièces justificatives</h3>
+                <ul class="tm-verif__docs">
+                    {% for doc in dossier.documents %}
+                        {% set slot = doc.slot %}
+                        <li class="tm-verif__doc{{ doc.id in viewed ? ' is-viewed' }}">
+                            <twig:Icon name="file" class="tm-verif__doc-icon" />
+                            <span class="tm-verif__doc-label">{{ slot.label }}</span>
+                            {% if slot.expiresOn %}<span class="tm-caption">Échéance : {{ slot.expiresOn|date('d/m/Y') }}</span>{% endif %}
+                            {% if slot.status == 'approved' %}<twig:Badge variant="available">Validée</twig:Badge>
+                            {% elseif slot.status == 'pending_review' %}<twig:Badge variant="pending">À vérifier</twig:Badge>
+                            {% elseif slot.status == 'quarantined' %}<twig:Badge variant="neutral">Analyse antivirus</twig:Badge>
+                            {% elseif slot.status == 'expired' %}<twig:Badge variant="refused">Expirée</twig:Badge>
+                            {% elseif slot.status == 'rejected' %}<twig:Badge variant="refused">Refusée</twig:Badge>{% if doc.reason %}<span class="tm-caption">{{ doc.reason }}</span>{% endif %}
+                            {% elseif slot.required %}<twig:Badge variant="refused">Manquante</twig:Badge>
+                            {% else %}<twig:Badge variant="neutral">Facultative</twig:Badge>{% endif %}
+                            {% if doc.id and slot.status in ['pending_review', 'approved', 'rejected'] %}
+                                <a href="{{ path('admin_artisans_queue', {dossier: dossier.profileId, voir: (viewed|filter(v => v != doc.id)|slice(-1))|merge([doc.id])}) }}#visionneuse">Afficher<span class="tm-visually-hidden"> {{ slot.label }}</span></a>
+                                {% if can_edit and slot.status == 'pending_review' %}
+                                    <form method="post" action="{{ path('admin_artisans_review', {id: dossier.profileId, document: doc.id}) }}" class="tm-verif__review">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('admin_artisan_review_' ~ doc.id) }}">
+                                        <button type="submit" class="tm-link-button" name="decision" value="approve">Valider la pièce</button>
+                                        <label class="tm-visually-hidden" for="reason_{{ doc.id }}">Motif du refus de {{ slot.label }}</label>
+                                        <div class="tm-field__control"><input class="tm-field__input tm-verif__reason" id="reason_{{ doc.id }}" name="reason" maxlength="200" placeholder="Motif si refus"></div>
+                                        <button type="submit" class="tm-link-button tm-admin-danger" name="decision" value="reject">Refuser</button>
+                                    </form>
+                                {% endif %}
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+                <p class="tm-caption">Documents chiffrés · accès restreint aux rôles habilités · chaque consultation est journalisée.</p>
+                {% if viewed is not empty %}
+                    <div class="tm-verif__viewer" id="visionneuse">
+                        {% for doc in dossier.documents|filter(d => d.id in viewed) %}
+                            <figure>
+                                <figcaption>{{ doc.slot.label }} · <a href="{{ path('admin_artisans_document', {id: dossier.profileId, document: doc.id}) }}" target="_blank" rel="noopener">ouvrir dans un onglet</a></figcaption>
+                                <iframe src="{{ path('admin_artisans_document', {id: dossier.profileId, document: doc.id}) }}" title="{{ doc.slot.label }}" loading="lazy" referrerpolicy="no-referrer"></iframe>
+                            </figure>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </section>
+
+            {% if can_edit and dossier.status == 'pending_verification' %}
+            <section class="tm-admin-panel" aria-labelledby="decision-titre">
+                <h3 id="decision-titre" class="tm-card-title">Décision (horodatée avec l’administrateur — RG-130)</h3>
+                <form method="post" action="{{ path('admin_artisans_decide', {id: dossier.profileId}) }}" class="tm-verif__decision" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token('admin_artisan_decision_' ~ dossier.profileId) }}">
+                    <div class="tm-field">
+                        <label class="tm-field__label" for="decision_message">Message à l’artisan (obligatoire si complément ; précise un refus)</label>
+                        <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="decision_message" name="message" rows="2" maxlength="500" placeholder="Ex. : merci de transmettre une attestation décennale valable au-delà du 30/11/2026."></textarea></div>
+                    </div>
+                    <div class="tm-field">
+                        <label class="tm-field__label" for="decision_reason">Motif normalisé (refus)</label>
+                        <div class="tm-select"><select class="tm-select__input" id="decision_reason" name="reason">{% for r in reasons %}<option value="{{ r.value }}">{{ r.label }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
+                    </div>
+                    <div class="tm-verif__actions">
+                        <twig:Button type="submit" name="action" value="approve">Valider : badge « Vérifié » + {{ tm_setting_int('credits.free_on_signup') }} devis offerts</twig:Button>
+                        <twig:Button type="submit" variant="secondary" name="action" value="more_info">Demander un complément</twig:Button>
+                        <twig:Button type="submit" variant="danger" name="action" value="reject">Refuser (motif normalisé)</twig:Button>
+                    </div>
+                </form>
+            </section>
+            {% endif %}
+
+            {% if dossier.history is not empty %}
+            <section class="tm-admin-panel" aria-labelledby="historique-titre">
+                <h3 id="historique-titre" class="tm-card-title">Historique des décisions</h3>
+                <ul class="tm-verif__history">
+                    {% for h in dossier.history %}
+                        <li><strong>{{ {approved: 'Validé', rejected: 'Refusé', more_info: 'Complément demandé'}[h.decision] }}</strong> le {{ h.created_at|date('d/m/Y à H:i', 'Europe/Paris') }}{{ h.reason_code ? ' · motif : ' ~ h.reason_code }}{{ h.comment ? ' · « ' ~ h.comment ~ ' »' }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+{% endblock %}

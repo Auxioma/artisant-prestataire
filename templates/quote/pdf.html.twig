@@ -1,0 +1,125 @@
+{#-
+    PR04.4 — PDF du devis (dompdf, CSS 2.1, ADR-0015) : couleurs neutres, logo de l'artisan, pied « Devis transmis via
+    TrouveMoi.com ». Couleurs : `PdfPalette` (un PDF n'a pas accès aux jetons CSS du site).
+-#}
+{%- set c = d.content -%}
+{%- set t = c.totals -%}
+{%- set rates = {2000: '20 %', 1000: '10 %', 550: '5,5 %', 0: '0 %'} -%}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>{{ d.number ? 'Devis ' ~ d.number : 'Aperçu de devis' }}</title>
+<style>
+    @page { margin: 18mm 14mm 20mm; }
+    body { font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; color: {{ palette.text }}; line-height: 1.35; }
+    h1 { font-size: 18pt; margin: 0 0 2mm; color: {{ palette.heading }}; letter-spacing: 1pt; }
+    h2 { font-size: 10pt; margin: 5mm 0 2mm; text-transform: uppercase; color: {{ palette.label }}; }
+    p { margin: 0 0 1.5mm; }
+    .muted { color: {{ palette.muted }}; }
+    table { width: 100%; border-collapse: collapse; }
+    .head td { vertical-align: top; }
+    .logo { max-height: 18mm; max-width: 50mm; margin-bottom: 2mm; }
+    .box { border: 0.6pt solid {{ palette.rule }}; padding: 3mm; }
+    .lines th { background: {{ palette.header_bg }}; border-bottom: 0.8pt solid {{ palette.strong_rule }}; padding: 1.6mm 1.4mm; text-align: left; font-size: 8pt; }
+    .lines td { border-bottom: 0.4pt solid {{ palette.thin_rule }}; padding: 1.6mm 1.4mm; vertical-align: top; }
+    .lines .num { text-align: right; white-space: nowrap; }
+    .lines .section td { background: {{ palette.section_bg }}; font-weight: bold; }
+    .lines .comment td { font-style: italic; color: {{ palette.soft }}; }
+    .desc { color: {{ palette.soft }}; font-size: 8pt; }
+    .totals { width: 45%; margin-left: 55%; margin-top: 3mm; }
+    .totals td { padding: 1.2mm 1.4mm; }
+    .totals .grand td { border-top: 0.8pt solid {{ palette.total_rule }}; font-weight: bold; font-size: 10.5pt; }
+    .signature { margin-top: 6mm; }
+    .signature td { width: 50%; vertical-align: top; }
+    .sign-area { height: 24mm; }
+    .watermark { position: fixed; top: 110mm; left: 10mm; width: 190mm; text-align: center; font-size: 48pt; color: {{ palette.watermark }}; transform: rotate(-30deg); z-index: -1000; opacity: 0.55; }
+    .footer { position: fixed; bottom: -12mm; left: 0; right: 0; text-align: center; font-size: 7pt; color: {{ palette.footer }}; }
+</style>
+</head>
+<body>
+{% if d.preview %}<div class="watermark">APERÇU — BROUILLON</div>{% endif %}
+<div class="footer">Devis transmis via TrouveMoi.com · {{ d.issuer.name }}{{ d.issuer.siret ? ' · SIRET ' ~ d.issuer.siret }}</div>
+
+<table class="head">
+    <tr>
+        <td style="width: 55%;">
+            {% if d.logoDataUri %}<img class="logo" src="{{ d.logoDataUri }}" alt=""><br>{% endif %}
+            <p><strong>{{ d.issuer.name }}</strong></p>
+            {% if d.issuer.legalName and d.issuer.legalName != d.issuer.name %}<p>{{ d.issuer.legalName }}</p>{% endif %}
+            {% if d.issuer.address %}<p>{{ d.issuer.address }}</p>{% endif %}
+            {% if d.issuer.siret %}<p>SIRET {{ d.issuer.siret }}</p>{% endif %}
+            {% if d.issuer.vatNumber and not c.vatExempt %}<p>TVA intracommunautaire {{ d.issuer.vatNumber }}</p>{% endif %}
+        </td>
+        <td style="width: 45%;">
+            <h1>DEVIS</h1>
+            <p><strong>N° {{ d.number ?? '— (attribué à l’envoi)' }}</strong>{{ d.version > 1 ? ' · version ' ~ d.version }}</p>
+            <p>Date : {{ d.issuedAt|date('d/m/Y', 'Europe/Paris') }}</p>
+            <p>Valable jusqu’au {{ d.validUntil|date('d/m/Y', 'Europe/Paris') }} ({{ c.conditions.validityDays }} jours)</p>
+            <p>Référence de la demande : {{ d.requestNumber }}</p>
+            <div class="box" style="margin-top: 3mm;"><p class="muted">Client</p><p><strong>{{ d.clientLabel }}</strong></p><p class="muted">Coordonnées complètes communiquées après acceptation du devis.</p></div>
+        </td>
+    </tr>
+</table>
+
+<h2>Objet : {{ c.subject }}</h2>
+
+<table class="lines">
+    <thead><tr><th>Désignation</th><th class="num">Qté</th><th>Unité</th><th class="num">PU HT</th><th class="num">Remise</th>{% if not c.vatExempt %}<th class="num">TVA</th>{% endif %}<th class="num">Total HT</th></tr></thead>
+    <tbody>
+    {% for l in c.lines %}
+        {% if l.type.value == 'section' %}
+            <tr class="section"><td colspan="{{ c.vatExempt ? 6 : 7 }}">{{ l.label }}</td></tr>
+        {% elseif l.type.value == 'comment' %}
+            <tr class="comment"><td colspan="{{ c.vatExempt ? 6 : 7 }}">{{ l.label }}{% if l.description %}<br>{{ l.description }}{% endif %}</td></tr>
+        {% else %}
+            <tr>
+                <td>{{ l.label }} <span class="muted">({{ l.type.label|lower }})</span>{% if l.description %}<br><span class="desc">{{ l.description }}</span>{% endif %}</td>
+                <td class="num">{{ l.quantityMilli|tm_decimal(3) }}</td>
+                <td>{{ l.unit ?? '' }}</td>
+                <td class="num">{{ l.unitPriceHt|tm_money }}</td>
+                <td class="num">{{ l.discountBp > 0 ? l.discountBp|tm_decimal(2) ~ ' %' : '' }}</td>
+                {% if not c.vatExempt %}<td class="num">{{ rates[l.vatRate.value] }}</td>{% endif %}
+                <td class="num">{{ l.totalHt().amount|tm_money }}</td>
+            </tr>
+        {% endif %}
+    {% endfor %}
+    </tbody>
+</table>
+
+<table class="totals">
+    {% if t.discount.amount > 0 %}
+        <tr><td>Total HT avant remise</td><td class="num" style="text-align: right;">{{ t.grossHt.amount|tm_money }}</td></tr>
+        <tr><td>Remise globale ({{ c.globalDiscountBp|tm_decimal(2) }} %)</td><td style="text-align: right;">{{ (0 - t.discount.amount)|tm_money }}</td></tr>
+    {% endif %}
+    <tr><td>Total HT</td><td style="text-align: right;">{{ t.ht.amount|tm_money }}</td></tr>
+    {% if c.vatExempt %}
+        <tr><td colspan="2">TVA non applicable, art. 293 B du CGI</td></tr>
+    {% else %}
+        {% for rate, amounts in t.byRate %}<tr><td>TVA {{ rates[rate] }} sur {{ amounts.ht.amount|tm_money }}</td><td style="text-align: right;">{{ amounts.vat.amount|tm_money }}</td></tr>{% endfor %}
+    {% endif %}
+    <tr class="grand"><td>Total TTC</td><td style="text-align: right;">{{ t.ttc.amount|tm_money }}</td></tr>
+    {% if t.deposit %}<tr><td>Acompte à la commande{{ c.deposit.percentBp ? ' (' ~ c.deposit.percentBp|tm_decimal(2) ~ ' %)' }}</td><td style="text-align: right;">{{ t.deposit.amount|tm_money }}</td></tr>{% endif %}
+</table>
+
+<h2>Conditions</h2>
+{% set cond = c.conditions %}
+{% if cond.executionDelay %}<p>Durée des travaux : {{ cond.executionDelay }}</p>{% endif %}
+{% if cond.startDate %}<p>Début possible : {{ cond.startDate|date('d/m/Y') }}</p>{% endif %}
+{% if cond.paymentTerms %}<p>Conditions de paiement : {{ cond.paymentTerms }}</p>{% endif %}
+{% if cond.paymentMethods is not empty %}<p>Moyens de paiement acceptés : {{ cond.paymentMethods|map(m => ({virement: 'virement', cheque: 'chèque', carte: 'carte bancaire', especes: 'espèces'}[m] ?? m))|join(', ') }}</p>{% endif %}
+{% if cond.guarantees %}<p>Garanties : {{ cond.guarantees }}</p>{% endif %}
+{% if cond.specialConditions %}<p>Conditions particulières : {{ cond.specialConditions }}</p>{% endif %}
+{% if cond.clientNote %}<p>Note : {{ cond.clientNote }}</p>{% endif %}
+{% for i in d.issuer.insurances %}<p>{{ i.label }} : {{ i.insurer }}, police n° {{ i.policy }}, valable jusqu’au {{ i.validUntil|date('d/m/Y') }}.</p>{% endfor %}
+{% if c.needsClientCertificate() %}<p class="muted">Taux réduit de TVA (10 % / 5,5 %) : attestation du client requise.</p>{% endif %}
+<p><strong>Devis gratuit.</strong></p>
+
+<table class="signature">
+    <tr>
+        <td class="box"><p class="muted">L’entreprise</p><p>{{ d.issuer.name }}</p></td>
+        <td class="box"><p class="muted">Le client : date et signature précédées de la mention « Bon pour accord »</p><div class="sign-area"></div></td>
+    </tr>
+</table>
+</body>
+</html>

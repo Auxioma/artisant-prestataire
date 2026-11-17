@@ -1,0 +1,131 @@
+{#
+    Thème de formulaire TrouveMoi : balisage des composants Figma TM / Input (59:219), TM / Checkbox & Radio (93:1510).
+    Étiquette visible, astérisque des champs obligatoires, aide/erreur reliées par aria-describedby, aria-invalid,
+    erreur = bordure 2 px + icône + message (jamais la couleur seule).
+#}
+{% use 'form_div_layout.html.twig' %}
+
+{%- block form_row -%}
+    {%- if expanded is defined and expanded -%}
+        {#- Groupe de cases / radios : fieldset + legend (RGAA 11.5), erreurs reliées au groupe -#}
+        <fieldset class="tm-fieldset{{ errors|length > 0 ? ' tm-fieldset--error' }}"
+            {%- if errors|length > 0 %} aria-describedby="{{ id }}_errors"{% elseif help is not empty %} aria-describedby="{{ id }}_help"{% endif %}>
+            {%- if label is not same as(false) -%}
+                <legend class="tm-field__label">
+                    {{- translation_domain is same as(false) ? (label ?? name|humanize) : (label ?? name|humanize)|trans(label_translation_parameters, translation_domain) -}}
+                    {%- if required -%}<abbr class="tm-field__required" title="obligatoire">*</abbr>{%- endif -%}
+                </legend>
+            {%- endif -%}
+            {{- form_widget(form) -}}
+            {{- form_errors(form) -}}
+            {%- if errors|length == 0 -%}{{- form_help(form) -}}{%- endif -%}
+        </fieldset>
+    {%- elseif compound -%}
+        {{- parent() -}}
+    {%- else -%}
+        {%- set has_errors = errors|length > 0 -%}
+        {%- set state = has_errors ? 'error' : (disabled ? 'disabled' : (attr.readonly is defined and attr.readonly ? 'readonly' : null)) -%}
+        <div class="tm-field{{ state ? ' tm-field--' ~ state }}{{ row_attr.class is defined ? ' ' ~ row_attr.class }}"
+            {%- for attrname, attrvalue in row_attr|filter((v, k) => k != 'class') %} {{ attrname }}="{{ attrvalue }}"{% endfor %}>
+            {{- form_label(form) -}}
+            <div class="tm-field__control">
+                {%- if attr['data-icon'] is defined -%}<twig:Icon name="{{ attr['data-icon'] }}" size="sm" class="tm-icon--inherit" />{%- endif -%}
+                {{- form_widget(form) -}}
+                {%- if has_errors -%}<twig:Icon name="alert" size="sm" class="tm-field__status tm-icon--inherit" />{%- endif -%}
+            </div>
+            {{- form_errors(form) -}}
+            {%- if not has_errors -%}{{- form_help(form) -}}{%- endif -%}
+        </div>
+    {%- endif -%}
+{%- endblock form_row -%}
+
+{%- block form_widget_compound -%}
+    {%- set attr = attr|merge({class: ((attr.class ?? '') ~ ' tm-form-fields')|trim}) -%}
+    {{- parent() -}}
+{%- endblock form_widget_compound -%}
+
+{%- block widget_attributes -%}
+    {%- set describedby = [] -%}
+    {%- if errors|length > 0 -%}{%- set describedby = describedby|merge([id ~ '_errors']) -%}{%- elseif help is not empty -%}{%- set describedby = describedby|merge([id ~ '_help']) -%}{%- endif -%}
+    {%- set attr = attr|filter((v, k) => k != 'data-icon') -%}
+    {%- set attr = attr|merge({class: ((attr.class ?? '') ~ ' tm-field__input')|trim}) -%}
+    {%- if errors|length > 0 -%}{%- set attr = attr|merge({'aria-invalid': 'true'}) -%}{%- endif -%}
+    {%- if describedby is not empty -%}{%- set attr = attr|merge({'aria-describedby': describedby|join(' ')}) -%}{%- endif -%}
+    {{- parent() -}}
+{%- endblock widget_attributes -%}
+
+{%- block form_label -%}
+    {%- if label is not same as(false) -%}
+        {%- set label = label ?? name|humanize -%}
+        <label class="tm-field__label" for="{{ id }}">
+            {{- translation_domain is same as(false) ? label : label|trans(label_translation_parameters, translation_domain) -}}
+            {%- if required -%}<abbr class="tm-field__required" title="obligatoire">*</abbr>{%- endif -%}
+        </label>
+    {%- endif -%}
+{%- endblock form_label -%}
+
+{%- block form_help -%}
+    {%- if help is not empty -%}
+        <p class="tm-field__help" id="{{ id }}_help">
+            {{- translation_domain is same as(false) or help_translation_parameters is not defined ? help : help|trans(help_translation_parameters, translation_domain) -}}
+        </p>
+    {%- endif -%}
+{%- endblock form_help -%}
+
+{%- block form_errors -%}
+    {%- if errors|length > 0 -%}
+        <div class="tm-field__error" id="{{ id }}_errors">
+            {%- if errors|length == 1 -%}
+                <p>{{ errors|first.message }}</p>
+            {%- else -%}
+                <ul>{%- for error in errors -%}<li>{{ error.message }}</li>{%- endfor -%}</ul>
+            {%- endif -%}
+        </div>
+    {%- endif -%}
+{%- endblock form_errors -%}
+
+{%- block checkbox_row -%}
+    <div class="tm-check-row">
+        <label class="tm-check" for="{{ id }}">
+            {{- form_widget(form, {attr: (attr|merge({class: 'tm-check__input'}))}) -}}
+            <span>
+                {{- translation_domain is same as(false) ? label : label|trans(label_translation_parameters, translation_domain) -}}
+                {%- if required -%}<abbr class="tm-field__required" title="obligatoire">*</abbr>{%- endif -%}
+            </span>
+        </label>
+        {{- form_errors(form) -}}
+        {%- if errors|length == 0 -%}{{- form_help(form) -}}{%- endif -%}
+    </div>
+{%- endblock checkbox_row -%}
+
+{%- block radio_row -%}
+    {{- block('checkbox_row') -}}
+{%- endblock radio_row -%}
+
+{%- block checkbox_widget -%}
+    <input type="checkbox" id="{{ id }}" name="{{ full_name }}" class="tm-check__input"
+        {%- if value is defined %} value="{{ value }}"{% endif %}
+        {%- if checked %} checked{% endif %}
+        {%- if disabled %} disabled{% endif %}
+        {%- if required %} required{% endif %}
+        {%- if errors|length > 0 %} aria-invalid="true" aria-describedby="{{ id }}_errors"{% elseif help is not empty %} aria-describedby="{{ id }}_help"{% endif %}>
+{%- endblock checkbox_widget -%}
+
+{%- block radio_widget -%}
+    <input type="radio" id="{{ id }}" name="{{ full_name }}" class="tm-check__input"
+        {%- if value is defined %} value="{{ value }}"{% endif %}
+        {%- if checked %} checked{% endif %}
+        {%- if disabled %} disabled{% endif %}
+        {%- if required %} required{% endif %}>
+{%- endblock radio_widget -%}
+
+{%- block choice_widget_expanded -%}
+    <div {{ block('widget_container_attributes') }}>
+        {%- for child in form -%}
+            <label class="tm-check" for="{{ child.vars.id }}">
+                {{- form_widget(child) -}}
+                <span>{{ child.vars.label|trans({}, choice_translation_domain) }}</span>
+            </label>
+        {%- endfor -%}
+    </div>
+{%- endblock choice_widget_expanded -%}

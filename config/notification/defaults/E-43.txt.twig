@@ -1,0 +1,6 @@
+Bonjour {{ prenom }},
+
+{% if changement == 'cancel_scheduled' %}La résiliation de votre forfait {{ forfait }} est programmée. Il reste actif, sans frais supplémentaires, jusqu’au {{ date }} : vos crédits restent utilisables jusque-là. Vous pouvez annuler cette résiliation à tout moment avant cette date.{% elseif changement == 'cancel_undone' %}La résiliation de votre forfait {{ forfait }} est annulée : votre abonnement continue normalement.{% else %}Votre changement de forfait est pris en compte : vous bénéficiez désormais du forfait {{ forfait }}.{% endif %}
+
+
+Voir mon abonnement : {{ lien }}

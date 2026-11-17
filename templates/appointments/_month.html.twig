@@ -1,0 +1,32 @@
+{#- « Mon agenda » (C10, PR06) : mois en mini-calendrier, jours de rendez-vous à venir marqués (confirmé / en attente). -#}
+{% set months = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] %}
+{% set marked = view.days() %}
+{% set first = month %}
+{% set offset = first|date('N', 'Europe/Paris') - 1 %}
+{% set count = first|date('t', 'Europe/Paris') %}
+<section class="tm-pro-card tm-rdv-month" aria-labelledby="agenda-titre">
+    <h2 id="agenda-titre"><twig:Icon name="calendar" size="sm" class="tm-icon--inherit" />Mon agenda</h2>
+    <div class="tm-rdv-month__bar">
+        <a href="{{ path(route, {mois: first|date_modify('-1 month')|date('Y-m', 'Europe/Paris')}) }}"><twig:Icon name="chevL" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Mois précédent</span></a>
+        <strong>{{ months[first|date('n', 'Europe/Paris') - 1] }} {{ first|date('Y', 'Europe/Paris') }}</strong>
+        <a href="{{ path(route, {mois: first|date_modify('+1 month')|date('Y-m', 'Europe/Paris')}) }}"><twig:Icon name="chevR" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Mois suivant</span></a>
+    </div>
+    <table>
+        <caption class="tm-visually-hidden">Jours de rendez-vous</caption>
+        <thead><tr>{% for d in ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] %}<th scope="col">{{ d }}</th>{% endfor %}</tr></thead>
+        <tbody>
+            {% for week in 0..((offset + count - 1) // 7) %}
+                <tr>
+                    {% for col in 0..6 %}
+                        {% set n = week * 7 + col - offset + 1 %}
+                        {% if n < 1 or n > count %}<td></td>{% else %}
+                            {% set key = first|date('Y-m-', 'Europe/Paris') ~ ('%02d'|format(n)) %}
+                            {% set state = marked[key] ?? null %}
+                            <td{% if state or key == today|date('Y-m-d', 'Europe/Paris') %} class="{{ state ? 'is-' ~ state }}{{ key == today|date('Y-m-d', 'Europe/Paris') ? ' is-today' }}"{% endif %}>{{ n }}{% if state %}<span class="tm-visually-hidden"> — rendez-vous {{ state == 'confirmed' ? 'confirmé' : 'en attente' }}</span>{% endif %}</td>
+                        {% endif %}
+                    {% endfor %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>

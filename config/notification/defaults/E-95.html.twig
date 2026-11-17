@@ -1,0 +1,8 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Nous avons mis à jour nos {{ document }} : la version {{ version }} est en vigueur depuis le {{ date }}.</p>
+{% if substantielle %}
+<p>Cette mise à jour modifie des points importants : votre acceptation vous sera demandée à votre prochaine connexion.</p>
+{% else %}
+<p>Cette mise à jour n’appelle aucune action de votre part ; nous vous en informons par transparence.</p>
+{% endif %}
+{{ bouton(lien, 'Lire la nouvelle version') }}

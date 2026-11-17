@@ -1,0 +1,115 @@
+{#-
+    PR07 — Mes messages de l'artisan (Figma 232:13464) : composants de C04 (liste, fil, saisie), onglets Toutes / Non
+    lues / Clients / Prospects / Archivées avec compteurs, encart client (Client actif, fiche, devis, archiver, bloquer),
+    notes privées, réponses types (PR07.1). Écarts : P-107.
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'messages' %}
+{% block title %}Mes messages — Espace pro — TrouveMoi{% endblock %}
+{% set list_tabs = {
+    all: {label: 'Toutes', icon: 'msg'},
+    unread: {label: 'Non lues', icon: 'bell'},
+    clients: {label: 'Clients', icon: 'users'},
+    prospects: {label: 'Prospects', icon: 'userPlus'},
+    archived: {label: 'Archivées', icon: 'file'},
+} %}
+{% block space_content %}
+<div class="tm-msg-page{{ thread ? ' has-thread' }}">
+    <header class="tm-msg-page__head">
+        <div class="tm-pro-head">
+            <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="msg" class="tm-icon--inherit" /></span>
+            <div>
+                <h1>Mes messages{% if list and list.unread > 0 %} ({{ list.unread }}){% endif %}</h1>
+                <p>Échangez avec vos clients, suivez vos demandes et vos chantiers.</p>
+            </div>
+        </div>
+        <twig:Button href="{{ path('pro_message_new') }}" variant="primary" icon="plus" iconPosition="start">Nouveau message</twig:Button>
+    </header>
+    {% set tabs_bar = true %}
+    {{ include('messaging/_tabs.html.twig') }}
+    <div class="tm-msg-layout">
+        {{ include('messaging/_list.html.twig') }}
+        {% if thread %}
+            <div class="tm-msg-layout__thread" data-controller="message-poll" data-message-poll-url-value="{{ path('pro_conversation_messages', {id: thread.id}) }}">
+                {{ include('messaging/_thread.html.twig') }}
+            </div>
+            <div class="tm-msg-side">
+                <aside class="tm-pro-card tm-msg-aside" aria-label="Client">
+                    <div class="tm-msg-aside__who">
+                        <span class="tm-msg-avatar tm-msg-avatar--lg tm-msg-avatar--initials" aria-hidden="true">{{ thread.initials() }}</span>
+                        <div>
+                            <p class="tm-msg-aside__name">{{ thread.counterpartName }}</p>
+                            {% if thread.counterpartCity %}<p class="tm-msg-aside__city"><twig:Icon name="pin" size="xs" class="tm-icon--inherit" />{{ thread.counterpartCity }}</p>{% endif %}
+                        </div>
+                    </div>
+                    {% if thread.contactsShared %}<twig:Badge variant="available" class="tm-msg-aside__status">Client actif</twig:Badge>{% else %}<twig:Badge variant="neutral" class="tm-msg-aside__status">Prospect</twig:Badge>{% endif %}
+                    <ul class="tm-msg-aside__links">
+                        {% if thread.requestId %}
+                            <li><a href="{{ path('pro_request', {id: thread.requestId}) }}"><twig:Icon name="file" size="sm" class="tm-icon--inherit" />Voir la fiche client</a></li>
+                            {% if tm_route_exists('pro_quote_new') %}<li><a href="{{ path('pro_quote_new', {demande: thread.requestId}) }}"><twig:Icon name="briefcase" size="sm" class="tm-icon--inherit" />{{ thread.quoteNumber ? 'Devis (1)' : 'Devis (0) · créer un devis' }}</a></li>{% endif %}
+                        {% else %}
+                            <li class="tm-msg-aside__hint">Question préalable : aucune demande de devis pour l’instant.</li>
+                        {% endif %}
+                    </ul>
+                    <form method="post" action="{{ path('pro_conversation_action', {id: thread.id}) }}" class="tm-msg-aside__actions">
+                        <input type="hidden" name="_token" value="{{ csrf_token('messaging') }}">
+                        <button type="submit" name="action" value="{{ thread.archived ? 'unarchive' : 'archive' }}"><twig:Icon name="file" size="sm" class="tm-icon--inherit" />{{ thread.archived ? 'Sortir des archives' : 'Archiver la conversation' }}</button>
+                        {% if thread.blocked != 'other' %}<button type="submit" name="action" value="{{ thread.blocked == 'me' ? 'unblock' : 'block' }}"><twig:Icon name="lock" size="sm" class="tm-icon--inherit" />{{ thread.blocked == 'me' ? 'Débloquer' : 'Bloquer cet interlocuteur' }}</button>{% endif %}
+                    </form>
+                </aside>
+
+                <section class="tm-pro-card tm-msg-note" aria-labelledby="note-titre">
+                    <h2 id="note-titre"><twig:Icon name="file" size="sm" class="tm-icon--inherit tm-msg-note__picto" />Notes privées</h2>
+                    <details class="tm-msg-note__edit"{% if thread.note is null %} open{% endif %}>
+                        <summary><twig:Icon name="edit" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Modifier la note</span></summary>
+                        <form method="post" action="{{ path('pro_conversation_note', {id: thread.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('messaging') }}">
+                            <label class="tm-visually-hidden" for="note">Note privée</label>
+                            <textarea class="tm-field__input tm-field__textarea" id="note" name="note" rows="4" maxlength="2000" placeholder="Visible de vous seul : projet, rendez-vous, documents reçus…">{{ thread.note }}</textarea>
+                            <twig:Button type="submit" variant="secondary">Enregistrer la note</twig:Button>
+                        </form>
+                    </details>
+                    {% if thread.note %}<p class="tm-msg-note__text">{{ thread.note|nl2br }}</p>{% endif %}
+                    <p class="tm-caption">Visible de vous seul, jamais du client.</p>
+                </section>
+
+                <section class="tm-pro-card tm-msg-replies" aria-labelledby="reponses-titre">
+                    <h2 id="reponses-titre"><twig:Icon name="bulb" size="sm" class="tm-icon--inherit" />Réponses types</h2>
+                    {% if quick_replies is empty %}
+                        <p class="tm-caption">Enregistrez vos messages fréquents pour les insérer en un clic.</p>
+                    {% else %}
+                        <ul>
+                            {% for reply in quick_replies %}
+                                <li>
+                                    <span title="{{ reply.body }}">{{ reply.title }}</span>
+                                    <form method="post" action="{{ path('pro_quick_reply_delete', {reply: reply.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('messaging') }}">
+                                        <input type="hidden" name="retour" value="{{ thread.id }}">
+                                        <button type="submit" class="tm-msg-replies__delete"><twig:Icon name="x" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden">Supprimer « {{ reply.title }} »</span></button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if quick_replies|length < quick_replies_max %}
+                        <details>
+                            <summary>Ajouter une réponse type</summary>
+                            <form method="post" action="{{ path('pro_quick_reply_add') }}" class="tm-msg-replies__form">
+                                <input type="hidden" name="_token" value="{{ csrf_token('messaging') }}">
+                                <input type="hidden" name="retour" value="{{ thread.id }}">
+                                <div class="tm-field"><label class="tm-field__label" for="qr-title">Titre</label><div class="tm-field__control"><input class="tm-field__input" id="qr-title" name="title" maxlength="60" required></div></div>
+                                <div class="tm-field"><label class="tm-field__label" for="qr-body">Texte</label><div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="qr-body" name="body" rows="4" maxlength="2000" required></textarea></div></div>
+                                <twig:Button type="submit" variant="secondary">Enregistrer</twig:Button>
+                            </form>
+                        </details>
+                    {% endif %}
+                </section>
+            </div>
+        {% else %}
+            <div class="tm-msg-layout__empty">
+                <twig:EmptyState title="{{ list and list.rows is not empty ? 'Choisissez une conversation' : 'Aucune conversation pour le moment' }}" text="Écrivez à un client depuis une demande reçue (« Écrire au client »). Ses coordonnées vous sont transmises dès qu’il accepte votre devis." icon="msg" />
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,287 @@
+# Annexe F — déclencheurs de notification (codes, destinataires, canaux par défaut).
+# Chargé en base par `bin/console app:notification:sync` : ajoute les entrées manquantes, ne remplace jamais un
+# modèle modifié en back-office (BO11). Contenu par défaut : config/notification/defaults/<code>.{subject,html,txt,in_app}.twig
+# (syntaxe Twig en bac à sable). `variables` : données fournies par le module émetteur.
+# SMS (canal « sms ») : lot V2 — ignoré tant qu'aucun fournisseur n'est configuré.
+notifications:
+    'E-01':
+        label: "Inscription : validation de l'adresse email"
+        recipient: "Client / artisan"
+        channels: [email]
+        variables: [prenom, lien, validite_heures, changement_adresse]
+    'E-02':
+        label: "Bienvenue client (après validation)"
+        recipient: "Client"
+        channels: [email]
+    'E-03':
+        label: "Lien de réinitialisation du mot de passe"
+        recipient: "Tous"
+        channels: [email]
+        variables: [prenom, lien, validite_minutes]
+    'E-04':
+        label: "Mot de passe modifié"
+        recipient: "Tous"
+        channels: [email, in_app]
+        variables: [prenom, date, lien_reinitialisation, lien_aide]
+    'E-05':
+        label: "Connexion depuis un nouvel appareil"
+        recipient: "Tous"
+        channels: [email]
+        variables: [prenom, appareil, date, lien_reinitialisation]
+    'E-06':
+        label: "Changement d'adresse email (alerte à l'ancienne)"
+        recipient: "Tous"
+        channels: [email]
+        variables: [prenom, date, lien_aide]
+    'E-07':
+        label: "Export de données prêt"
+        recipient: "Tous"
+        channels: [email, in_app]
+        variables: [prenom, lien, validite_jours, expiration]
+    'E-08':
+        label: "Demande de suppression de compte enregistrée"
+        recipient: "Tous"
+        channels: [email]
+        variables: [prenom, date_effacement, lien_annulation, lien_aide]
+    'E-09':
+        label: "Suppression de compte effective"
+        recipient: "Tous"
+        channels: [email]
+        variables: [prenom, lien_aide]
+    'E-10':
+        label: "Demande de devis envoyée (récapitulatif)"
+        recipient: "Client"
+        channels: [email, in_app]
+        variables: [prenom, numero, metier, ville, max_devis, lien]
+    'E-10b':
+        label: "Demande mise en modération / refusée"
+        recipient: "Client"
+        channels: [email, in_app]
+        variables: [prenom, numero, metier, refusee, motif, lien_aide]
+    'E-11':
+        label: "Compte créé lors du dépôt (activation)"
+        recipient: "Client"
+        channels: [email]
+        variables: [prenom, lien, validite_heures, changement_adresse, sans_mot_de_passe]
+    'E-12':
+        label: "Nouveau devis reçu"
+        recipient: "Client"
+        channels: [email, in_app, sms]
+        variables: [prenom, artisan, numero, metier, montant, validite, lien, rappel]
+    'E-12b':
+        label: "Devis révisé par l'artisan"
+        recipient: "Client"
+        channels: [email, in_app]
+        variables: [prenom, artisan, numero, version, montant, validite, lien]
+    'E-13':
+        label: "Récapitulatif d'acceptation de devis + coordonnées de l'artisan"
+        recipient: "Client"
+        channels: [email, in_app]
+        variables: [prenom, numero, demande, montant, artisan, artisan_email, artisan_telephone, lien]
+    'E-14':
+        label: "RDV proposé / confirmé / reporté / annulé par l'artisan"
+        recipient: "Client"
+        channels: [email, in_app, sms]
+        variables: [prenom, interlocuteur, evenement, action, quand, motif, demande, lien]
+    'E-15':
+        label: "Rappel de RDV J-1"
+        recipient: "Client et artisan"
+        channels: [email, sms]
+        variables: [prenom, interlocuteur, quand, demande, lien]
+    'E-16':
+        label: "Invitation à déposer un avis (J+1, relance J+7)"
+        recipient: "Client"
+        channels: [email, in_app]
+        variables: [prenom, artisan, relance, lien]
+    'E-17':
+        label: "Nouveau message (regroupé)"
+        recipient: "Client / artisan"
+        channels: [email, in_app]
+        variables: [prenom, expediteur, extrait, lien]
+    'E-18':
+        label: "Avis publié / refusé (motif)"
+        recipient: "Client"
+        channels: [email, in_app]
+        variables: [prenom, artisan, decision, resultat, motif, lien]
+    'E-19':
+        label: "Demande bientôt expirée (J-3) / expirée"
+        recipient: "Client"
+        channels: [email, in_app]
+        variables: [prenom, expiree, relance_possible, numero, metier, ville, date_expiration, devis, lien]
+    'E-19b':
+        label: "Demande complète (max devis atteint)"
+        recipient: "Client"
+        channels: [in_app]
+        variables: [numero, max_devis]
+    'E-19c':
+        label: "Brouillon de demande non finalisé (J+1)"
+        recipient: "Visiteur ayant consenti"
+        channels: [email]
+        variables: [prenom, metier, conservation_jours, lien]
+    'E-20':
+        label: "Dossier d'inscription pro reçu"
+        recipient: "Artisan"
+        channels: [email]
+        variables: [prenom, entreprise, delai_heures, devis_offerts, lien]
+    'E-21':
+        label: "Compte vérifié + crédits offerts"
+        recipient: "Artisan"
+        channels: [email, in_app]
+        variables: [prenom, entreprise, devis_offerts, lien]
+    'E-22':
+        label: "Compte refusé / pièce complémentaire demandée"
+        recipient: "Artisan"
+        channels: [email, in_app]
+        variables: [prenom, entreprise, refus, motif, message, lien]
+    'E-23':
+        label: "Relance dossier incomplet (J+2, J+7)"
+        recipient: "Artisan"
+        channels: [email]
+        variables: [prenom, inacheve, pieces, lien]
+    'E-24':
+        label: "Justificatif validé / refusé"
+        recipient: "Artisan"
+        channels: [email, in_app]
+        variables: [prenom, piece, valide, motif, lien]
+    'E-25':
+        label: "Justificatif bientôt expiré (J-30, J-7) / expiré"
+        recipient: "Artisan"
+        channels: [email, in_app]
+        variables: [prenom, piece, date_expiration, jours, expire, lien]
+    'E-26':
+        label: "Compte suspendu / réactivé"
+        recipient: "Artisan / client"
+        channels: [email]
+        variables: [prenom, suspendu, motif, lien_aide]
+    'E-27':
+        label: "Réponse à votre signalement (BO05.2)"
+        recipient: "Signalant (client / artisan)"
+        channels: [email, in_app]
+        variables: [prenom, contenu, suite_donnee, reponse]
+    'E-30':
+        label: "Nouvelle demande compatible (immédiat ou digest)"
+        recipient: "Artisan"
+        channels: [email, in_app, sms]
+        variables: [prenom, digest, numero, titre, metier, ville, delai, budget, nombre, liste, autres, lien]
+    'E-31':
+        label: "Demande directe reçue"
+        recipient: "Artisan"
+        channels: [email, in_app, sms]
+        variables: [prenom, digest, numero, titre, metier, ville, delai, budget, lien]
+    'E-32':
+        label: "Complément ajouté à une demande à laquelle il a répondu"
+        recipient: "Artisan"
+        channels: [email, in_app]
+    'E-33':
+        label: "Demande devenue complète (brouillon en cours)"
+        recipient: "Artisan"
+        channels: [in_app]
+        variables: [numero, metier, ville]
+    'E-34':
+        label: "Devis accepté (+ coordonnées client)"
+        recipient: "Artisan"
+        channels: [email, in_app, sms]
+        variables: [prenom, numero, demande, montant, client, client_email, client_telephone, adresse, lien]
+    'E-35':
+        label: "Devis refusé (motif) / non retenu"
+        recipient: "Artisan"
+        channels: [email, in_app]
+        variables: [prenom, numero, demande, refuse, motif, lien]
+    'E-35b':
+        label: "Devis consulté par le client"
+        recipient: "Artisan"
+        channels: [in_app]
+        variables: [numero, demande]
+    'E-36':
+        label: "RDV proposé / confirmé / annulé par le client"
+        recipient: "Artisan"
+        channels: [email, in_app, sms]
+        variables: [prenom, interlocuteur, evenement, action, quand, motif, demande, lien]
+    'E-37':
+        label: "Nouvel avis reçu"
+        recipient: "Artisan"
+        channels: [email, in_app]
+        variables: [prenom, note, demande, lien]
+    'E-38':
+        label: "Réponse à un avis publiée / refusée"
+        recipient: "Artisan"
+        channels: [in_app]
+        variables: [publiee, motif, lien]
+    'E-39':
+        label: "Offre publiée / refusée / expirée"
+        recipient: "Artisan"
+        channels: [email, in_app]
+    'E-40':
+        label: "Abonnement activé + facture"
+        recipient: "Artisan"
+        channels: [email, in_app]
+        variables: [prenom, forfait, credits, fin_periode, montant, facture, lien]
+    'E-41':
+        label: "Renouvellement réussi + facture"
+        recipient: "Artisan"
+        channels: [email]
+        variables: [prenom, forfait, credits, fin_periode, montant, facture, lien]
+    'E-42':
+        label: "Alerte crédits : seuils consommés"
+        recipient: "Artisan"
+        channels: [email, in_app]
+        variables: [prenom, seuil, restants, total, lien]
+    'E-42b':
+        label: "Crédit gratuit épuisé : invitation à souscrire"
+        recipient: "Artisan"
+        channels: [email, in_app]
+        variables: [prenom, total, restants, lien]
+    'E-43':
+        label: "Changement de forfait / résiliation programmée / annulation de résiliation"
+        recipient: "Artisan"
+        channels: [email, in_app]
+        variables: [prenom, forfait, changement, date, lien]
+    'E-44':
+        label: "Échec de paiement (chaque tentative)"
+        recipient: "Artisan"
+        channels: [email, in_app]
+        variables: [prenom, forfait, montant, tentative, prochaine_tentative, paiement, lien]
+    'E-45':
+        label: "Fin de période de grâce : abonnement suspendu"
+        recipient: "Artisan"
+        channels: [email, in_app]
+        variables: [prenom, forfait, jours, annulation, lien]
+    'E-46':
+        label: "Carte bientôt expirée"
+        recipient: "Artisan"
+        channels: [email]
+        variables: [prenom, carte, expiration, lien]
+    'E-47':
+        label: "Évolution tarifaire d'un forfait (préavis)"
+        recipient: "Artisans concernés"
+        channels: [email]
+    'E-48':
+        label: "Remboursement effectué / avoir"
+        recipient: "Artisan"
+        channels: [email]
+        variables: [prenom, montant, facture, avoir, document, lien]
+    'E-90':
+        label: "Accusé de réception du formulaire de contact"
+        recipient: "Tous"
+        channels: [email]
+        variables: [nom, motif, reference, delai_heures, extrait]
+    'E-95':
+        label: "Mise à jour des CGU / CGV"
+        recipient: "Tous"
+        channels: [email, in_app]
+        variables: [prenom, document, version, date, substantielle, lien]
+    'I-01':
+        label: "Inscription tentée avec l'adresse d'un compte existant (anti-énumération A02)"
+        recipient: "Titulaire du compte"
+        channels: [email]
+        variables: [prenom, lien_connexion, lien_reinitialisation]
+    'I-02':
+        label: "Invitation à rejoindre l'équipe d'administration (BO14.1)"
+        recipient: "Administrateur invité"
+        channels: [email]
+        variables: [nom, role, lien, validite_heures]
+    'I-03':
+        label: "Nouveau message du formulaire de contact (P16) — boîte du support"
+        recipient: "Support"
+        channels: [email]
+        variables: [reference, motif, nom, email, telephone, numero_demande, message, piece_jointe, compte]

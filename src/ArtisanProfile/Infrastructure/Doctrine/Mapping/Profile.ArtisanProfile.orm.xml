@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ArtisanProfile — profil professionnel (A03, RG-041 à RG-043). Unicité du SIRET : index posé par la migration. -->
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\ArtisanProfile\Domain\Profile\ArtisanProfile" table="artisan_profile" schema="artisan">
+        <id name="id" type="artisan_profile_id" column="id"/>
+        <field name="userId" type="guid" column="user_id" unique="true"/>
+        <field name="status" type="string" length="30" enum-type="App\ArtisanProfile\Domain\Profile\ArtisanStatus"/>
+        <field name="completedStep" type="smallint" column="completed_step"/>
+        <field name="siret" type="string" length="14" nullable="true"/>
+        <field name="siren" type="string" length="9" nullable="true"/>
+        <field name="companyName" type="string" length="120" column="company_name" nullable="true"/>
+        <field name="tradeName" type="string" length="120" column="trade_name" nullable="true"/>
+        <field name="legalForm" type="string" length="10" column="legal_form" nullable="true"/>
+        <field name="ape" type="string" length="10" nullable="true"/>
+        <field name="vatNumber" type="string" length="20" column="vat_number" nullable="true"/>
+        <field name="vatStatus" type="string" length="20" column="vat_status" nullable="true" enum-type="App\ArtisanProfile\Domain\Profile\VatStatus"/>
+        <field name="hqStreet" type="string" length="200" column="hq_street" nullable="true"/>
+        <field name="hqPostalCode" type="string" length="5" column="hq_postal_code" nullable="true"/>
+        <field name="hqCity" type="string" length="100" column="hq_city" nullable="true"/>
+        <field name="hqInsee" type="string" length="5" column="hq_city_insee" nullable="true"/>
+        <field name="companyCreatedOn" type="date_immutable" column="company_created_on" nullable="true"/>
+        <field name="siretVerifiedAt" type="datetimetz_immutable" column="siret_verified_at" nullable="true"/>
+        <field name="jobs" type="json">
+            <options><option name="jsonb">true</option></options>
+        </field>
+        <field name="areaMode" type="string" length="10" column="area_mode" nullable="true" enum-type="App\ArtisanProfile\Domain\Profile\ServiceAreaMode"/>
+        <field name="areaCenterInsee" type="string" length="5" column="area_center_insee" nullable="true"/>
+        <field name="areaRadiusKm" type="smallint" column="area_radius_km" nullable="true"/>
+        <field name="areaDepartments" type="json" column="area_departments">
+            <options><option name="jsonb">true</option></options>
+        </field>
+        <field name="areaCommunes" type="json" column="area_communes">
+            <options><option name="jsonb">true</option></options>
+        </field>
+        <field name="insurances" type="json">
+            <options><option name="jsonb">true</option></options>
+        </field>
+        <field name="qualifications" type="json">
+            <options><option name="jsonb">true</option></options>
+        </field>
+        <field name="shortDescription" type="string" length="300" column="short_description" nullable="true"/>
+        <field name="logoFileId" type="guid" column="logo_file_id" nullable="true"/>
+        <field name="submittedAt" type="datetimetz_immutable" column="submitted_at" nullable="true"/>
+        <field name="verifiedAt" type="datetimetz_immutable" column="verified_at" nullable="true"/>
+        <field name="statusReason" type="string" length="40" column="status_reason" nullable="true"/>
+        <field name="statusComment" type="string" length="500" column="status_comment" nullable="true"/>
+        <field name="statusChangedAt" type="datetimetz_immutable" column="status_changed_at" nullable="true"/>
+        <field name="statusChangedBy" type="guid" column="status_changed_by" nullable="true"/>
+        <field name="completionRate" type="smallint" column="completion_rate"/>
+        <field name="hiddenAt" type="datetimetz_immutable" column="hidden_at" nullable="true"/>
+        <field name="hiddenReason" type="string" length="200" column="hidden_reason" nullable="true"/>
+        <field name="phonePublic" type="boolean" column="phone_public"/>
+        <field name="presentation" type="json" column="presentation"><options><option name="jsonb">true</option></options></field>
+        <field name="services" type="json" column="services"><options><option name="jsonb">true</option></options></field>
+        <field name="openingHours" type="json" column="opening_hours"><options><option name="jsonb">true</option></options></field>
+        <field name="createdAt" type="datetimetz_immutable" column="created_at"/>
+        <field name="updatedAt" type="datetimetz_immutable" column="updated_at"/>
+        <field name="version" type="integer" version="true"/>
+    </entity>
+</doctrine-mapping>

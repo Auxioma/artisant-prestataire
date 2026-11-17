@@ -1,0 +1,99 @@
+{#-
+    C05 « Mes favoris » (Figma 230:12674) : en-tête « Mes favoris (n) », « Ajouter un professionnel », recherche, filtres
+    métier et ville, tri, liste (logo, nom, ville, métiers, note, Disponible / délai, Contacter, Demander un devis,
+    retirer), artisan inactif grisé « Plus disponible sur TrouveMoi » ; colonne : chiffres, astuce. Écarts : P-121.
+-#}
+{% extends 'client/_space.html.twig' %}
+{% set space_active = 'favorites' %}
+{% set space_title = 'Mes favoris' %}
+{% set space_subtitle = 'Retrouvez rapidement vos artisans et prestataires préférés.' %}
+{% block title %}Mes favoris — Espace client — TrouveMoi{% endblock %}
+{% block space_content %}
+<div class="tm-agenda tm-fav">
+    <header class="tm-agenda__head">
+        <div class="tm-pro-head">
+            <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="heart" class="tm-icon--inherit" /></span>
+            <div>
+                <h1>Mes favoris{% if view.all is not empty %} ({{ view.all|length }}){% endif %}</h1>
+                <p>Vos professionnels enregistrés pour les retrouver en un clic.</p>
+            </div>
+        </div>
+        {% if tm_route_exists('search_directory') %}<twig:Button href="{{ path('search_directory') }}" icon="plus" iconPosition="start">Ajouter un professionnel</twig:Button>{% endif %}
+    </header>
+
+    <div class="tm-agenda__main">
+        {% if view.all is not empty %}
+            <form method="get" class="tm-fav__filters" role="search" data-controller="autosubmit">
+                <div class="tm-field__control tm-fav__search"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><label class="tm-visually-hidden" for="fav-q">Rechercher dans mes favoris</label><input class="tm-field__input" id="fav-q" name="q" type="search" value="{{ filters.q }}" placeholder="Rechercher dans mes favoris (ex. : rénovation, jardin…)"></div>
+                <label class="tm-visually-hidden" for="fav-metier">Métier</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="fav-metier" name="metier" data-action="autosubmit#submit"><option value="">Tous les métiers</option>{% for id, name in jobs %}<option value="{{ id }}"{% if filters.metier == id %} selected{% endif %}>{{ name }}</option>{% endfor %}</select></div>
+                <label class="tm-visually-hidden" for="fav-ville">Ville</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="fav-ville" name="ville" data-action="autosubmit#submit"><option value="">Toutes les villes</option>{% for c in view.cities() %}<option value="{{ c }}"{% if filters.ville == c %} selected{% endif %}>{{ c }}</option>{% endfor %}</select></div>
+                <label class="tm-visually-hidden" for="fav-tri">Trier</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="fav-tri" name="tri" data-action="autosubmit#submit">{% for k, l in sorts %}<option value="{{ k }}"{% if filters.tri == k %} selected{% endif %}>Tri : {{ l|lower }}</option>{% endfor %}</select></div>
+                <noscript><button type="submit" class="tm-button tm-button--secondary">Filtrer</button></noscript>
+            </form>
+        {% endif %}
+
+        {% if view.all is empty %}
+            <div class="tm-pro-card"><twig:EmptyState title="Aucun favori pour le moment" text="Ajoutez vos artisans préférés en cliquant sur « Ajouter à mes favoris » depuis leur fiche professionnelle." icon="heart" />{% if tm_route_exists('search_directory') %}<p><twig:Button href="{{ path('search_directory') }}" variant="secondary">Trouver un professionnel</twig:Button></p>{% endif %}</div>
+        {% elseif view.items is empty %}
+            <p class="tm-caption">Aucun favori ne correspond à votre recherche.</p>
+        {% else %}
+            <ul class="tm-pro-card tm-fav__list">
+                {% for f in view.items %}
+                    <li class="tm-fav__item{{ f.active ? '' : ' is-inactive' }}">
+                        <div class="tm-fav__media">
+                            {% if f.active and f.hasLogo %}<img src="{{ path('public_artisan_logo', {id: f.artisanId}) }}" alt="" width="84" height="64" loading="lazy">{% else %}<span class="tm-msg-avatar tm-msg-avatar--initials" aria-hidden="true">{{ f.name|slice(0, 2)|upper }}</span>{% endif %}
+                            <twig:Icon name="heartFilled" size="xs" class="tm-icon--inherit tm-fav__heart" />
+                        </div>
+                        <div class="tm-fav__text">
+                            <h2>{% if f.active %}<a href="{{ tm_artisan_url(f.artisanId, f.name, f.communeName) }}">{{ f.name }}</a>{% else %}{{ f.name }}{% endif %}</h2>
+                            {% if f.active %}
+                                {% if f.communeName %}<p><twig:Icon name="pin" size="xs" class="tm-icon--inherit" />{{ f.communeName }}{{ f.departmentCode ? ' (' ~ f.departmentCode ~ ')' }}</p>{% endif %}
+                                {% if f.jobIds is not empty %}<p><twig:Icon name="wrench" size="xs" class="tm-icon--inherit" />{{ f.jobIds|map(id => (jobs[id] ?? null))|filter(n => n)|join(' · ') }}</p>{% endif %}
+                            {% else %}
+                                <p class="tm-fav__gone">Plus disponible sur TrouveMoi</p>
+                            {% endif %}
+                        </div>
+                        {% if f.active %}
+                            <div class="tm-fav__meta">
+                                {% if f.reviewsCount > 0 %}<p class="tm-fav__rating"><twig:Icon name="starFilled" size="xs" class="tm-icon--inherit" /><strong>{{ f.rating|number_format(1, ',', ' ') }}</strong> ({{ f.reviewsCount }} avis)</p>{% else %}<twig:Badge variant="new">Nouveau</twig:Badge>{% endif %}
+                                {% if f.available %}<span class="tm-rdv__status"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Disponible</span>{% else %}<span class="tm-rdv__status is-proposed"><twig:Icon name="clock" size="xs" class="tm-icon--inherit" />Avec délai</span>{% endif %}
+                            </div>
+                        {% endif %}
+                        <div class="tm-fav__actions">
+                            {% if f.active %}
+                                {% if tm_route_exists('client_message_new') %}<twig:Button href="{{ path('client_message_new', {artisan: f.artisanId}) }}" variant="secondary" icon="msg" iconPosition="start">Contacter</twig:Button>{% endif %}
+                                {% if tm_route_exists('request_new') %}<twig:Button href="{{ path('request_new', {pro: f.artisanId}) }}" variant="secondary" icon="calendar" iconPosition="start">Demander un devis</twig:Button>{% endif %}
+                            {% endif %}
+                            <form method="post" action="{{ path('client_favorite_toggle', {artisan: f.artisanId}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                                <input type="hidden" name="favori" value="0">
+                                <input type="hidden" name="retour" value="{{ app.request.requestUri }}">
+                                <button type="submit" class="tm-fav__remove"><twig:Icon name="x" size="xs" class="tm-icon--inherit" />Retirer<span class="tm-visually-hidden"> {{ f.name }} des favoris</span></button>
+                            </form>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+            <p class="tm-caption">{{ view.items|length }} professionnel{{ view.items|length > 1 ? 's' }} favori{{ view.items|length > 1 ? 's' }}</p>
+        {% endif %}
+    </div>
+
+    <aside class="tm-agenda__side">
+        <section class="tm-pro-card tm-fav__figures" aria-labelledby="chiffres-titre">
+            <h2 id="chiffres-titre"><twig:Icon name="bars" size="sm" class="tm-icon--inherit" />Mes favoris en chiffres</h2>
+            <ul>
+                <li><span class="is-red"><twig:Icon name="heart" size="sm" class="tm-icon--inherit" /></span><strong>{{ view.all|length }}</strong>Professionnel{{ view.all|length > 1 ? 's' }} enregistré{{ view.all|length > 1 ? 's' }}</li>
+                <li><span class="is-green"><twig:Icon name="checkC" size="sm" class="tm-icon--inherit" /></span><strong>{{ view.available() }}</strong>Disponible{{ view.available() > 1 ? 's' }} maintenant</li>
+                <li><span class="is-orange"><twig:Icon name="clock" size="sm" class="tm-icon--inherit" /></span><strong>{{ view.delayed() }}</strong>Avec délai</li>
+            </ul>
+        </section>
+        <section class="tm-pro-card tm-fav__tip" aria-labelledby="astuce-titre">
+            <h2 id="astuce-titre"><twig:Icon name="bulb" size="sm" class="tm-icon--inherit" />Astuce</h2>
+            <p>Ajoutez vos artisans et prestataires préférés en cliquant sur « Ajouter à mes favoris » depuis leur fiche professionnelle.</p>
+        </section>
+    </aside>
+</div>
+{% endblock %}

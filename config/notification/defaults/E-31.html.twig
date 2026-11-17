@@ -1,0 +1,6 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Un client a choisi votre entreprise et vous adresse directement sa demande de devis <strong>n° {{ numero }}</strong> :</p>
+<p>{% if titre %}<strong>{{ titre }}</strong><br>{% endif %}{{ metier }} · {{ ville }}<br>Délai souhaité : {{ delai }}{% if budget %}<br>Budget indicatif : {{ budget }}{% endif %}</p>
+<p>Répondez rapidement : le client peut aussi recevoir les devis d’autres professionnels.</p>
+{{ bouton(lien, 'Voir la demande') }}
+<p class="muted">Les coordonnées du client vous sont communiquées s’il accepte votre devis.</p>

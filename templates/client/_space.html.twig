@@ -1,0 +1,93 @@
+{#-
+    Espace client (Figma 159:3905 « Corps espace ») : bannière (titre de la page, accroche « Trouvez le bon artisan »),
+    menu latéral « Mon espace client » et zone de contenu ; mobile (239:15124) : barre d'onglets en bas d'écran, menu
+    complet sous « Compte ». Rubriques non livrées grisées. Pied de page : celui du site (P-29).
+    Variables : space_active, space_title, space_subtitle, space_counts (compteurs par clé).
+-#}
+{% extends 'base.html.twig' %}
+{% set header_variant = 'client' %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% set space_items = [
+    {route: 'client_dashboard', label: 'Tableau de bord', icon: 'home', key: 'dashboard'},
+    {route: 'client_requests', label: 'Mes demandes', icon: 'file', key: 'requests'},
+    {route: 'client_quotes', label: 'Mes devis', icon: 'fileEuro', key: 'quotes'},
+    {route: 'client_appointments', label: 'Mes rendez-vous', icon: 'calendar', key: 'appointments'},
+    {route: 'client_favorites', label: 'Mes favoris', icon: 'heart', key: 'favorites'},
+    {route: 'client_messages', label: 'Mes messages', icon: 'msg', key: 'messages'},
+    {route: 'client_profile', label: 'Mon profil', icon: 'user', key: 'profile'},
+    {route: 'client_settings', label: 'Mes paramètres', icon: 'settings', key: 'settings'},
+    {route: 'content_faq', label: 'Aide / FAQ', icon: 'help', key: 'help'},
+] %}
+{% macro nav(items, active, counts) %}
+    <p class="tm-cspace__title"><twig:Icon name="user" class="tm-icon--inherit" />Mon espace client</p>
+    <ul>
+        {% for item in items %}
+            {% set current = item.key == active %}
+            {% set count = counts[item.key] ?? 0 %}
+            <li>
+                {% if tm_route_exists(item.route) %}
+                    <a class="tm-cspace__link{{ current ? ' is-active' }}" href="{{ path(item.route) }}"{% if current %} aria-current="page"{% endif %}>
+                        <twig:Icon name="{{ item.icon }}" class="tm-icon--inherit" /><span>{{ item.label }}</span>
+                        {% if count > 0 %}<span class="tm-cspace__count">{{ count }}</span>{% endif %}
+                    </a>
+                {% else %}
+                    <span class="tm-cspace__link is-soon" aria-disabled="true" title="Bientôt disponible"><twig:Icon name="{{ item.icon }}" class="tm-icon--inherit" /><span>{{ item.label }}<span class="tm-visually-hidden"> (bientôt disponible)</span></span></span>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% endmacro %}
+{% block body %}
+{% import _self as space %}
+<div class="tm-cspace">
+    <div class="tm-cspace__banner">
+        <picture class="tm-cspace__banner-photo">
+            <source srcset="{{ asset('images/client/banniere-espace@1x.webp') }} 1x, {{ asset('images/client/banniere-espace@2x.webp') }} 2x" type="image/webp">
+            <img src="{{ asset('images/client/banniere-espace@1x.webp') }}" alt="" width="612" height="136">
+        </picture>
+        <div class="tm-cspace__banner-text">
+            <p class="tm-cspace__banner-title">{{ space_title }}</p>
+            {% if space_subtitle ?? null %}<p>{{ space_subtitle }}</p>{% endif %}
+            <img src="{{ asset('images/pro/trait-orange.svg') }}" alt="" width="190" height="12">
+        </div>
+        <div class="tm-cspace__banner-hint">
+            <img src="{{ asset('images/client/repere.svg') }}" alt="" width="34" height="40">
+            <div>
+                <p>Trouvez le bon artisan ou prestataire près de chez vous !</p>
+                <img src="{{ asset('images/pro/trait-orange.svg') }}" alt="" width="190" height="12">
+            </div>
+        </div>
+    </div>
+    <div class="tm-cspace__body">
+        <aside class="tm-cspace__aside">
+            <nav class="tm-cspace__menu" aria-label="Mon espace client">{{ space.nav(space_items, space_active ?? null, (space_counts ?? {})|merge({messages: tm_unread_messages()})) }}</nav>
+            <a class="tm-cspace__logout" href="{{ logout_path('main') }}"><twig:Icon name="power" size="sm" class="tm-icon--inherit" />Se déconnecter</a>
+        </aside>
+        <div class="tm-cspace__content">
+            {% block space_content %}{% endblock %}
+        </div>
+    </div>
+    {% set tabs = [
+        {route: 'client_dashboard', label: 'Accueil', icon: 'home', key: 'dashboard'},
+        {route: 'client_requests', label: 'Demandes', icon: 'file', key: 'requests'},
+        {route: 'client_messages', label: 'Messages', icon: 'msg', key: 'messages'},
+        {route: 'client_favorites', label: 'Favoris', icon: 'heart', key: 'favorites'},
+    ] %}
+    <nav class="tm-space__tabs" aria-label="Mon espace client (raccourcis)">
+        {% for tab in tabs %}
+            {% if tm_route_exists(tab.route) %}
+                <a class="tm-space__tab{{ tab.key == (space_active ?? null) ? ' is-active' }}" href="{{ path(tab.route) }}"{% if tab.key == (space_active ?? null) %} aria-current="page"{% endif %}><twig:Icon name="{{ tab.icon }}" class="tm-icon--inherit" />{{ tab.label }}</a>
+            {% else %}
+                <span class="tm-space__tab is-soon" aria-disabled="true"><twig:Icon name="{{ tab.icon }}" class="tm-icon--inherit" />{{ tab.label }}<span class="tm-visually-hidden"> (bientôt disponible)</span></span>
+            {% endif %}
+        {% endfor %}
+        <details class="tm-space__more">
+            <summary class="tm-space__tab"><twig:Icon name="user" class="tm-icon--inherit" />Compte</summary>
+            <div class="tm-space__sheet">
+                <nav class="tm-cspace__menu" aria-label="Mon espace client">{{ space.nav(space_items, space_active ?? null, (space_counts ?? {})|merge({messages: tm_unread_messages()})) }}</nav>
+                <a class="tm-cspace__logout" href="{{ logout_path('main') }}"><twig:Icon name="power" size="sm" class="tm-icon--inherit" />Se déconnecter</a>
+            </div>
+        </details>
+    </nav>
+</div>
+{% endblock %}

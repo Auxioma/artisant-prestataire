@@ -1,0 +1,124 @@
+{#- A03.4 — Zone d'intervention (Figma 228:12011) : mode rayon (commune de départ + rayon) ou liste ; aperçu de couverture. Sans JavaScript : choix parmi les homonymes, aperçu mis à jour à l'envoi. -#}
+{% extends 'pro_signup/_layout.html.twig' %}
+{% set step = 4 %}
+
+{% block title %}Votre zone d’intervention — Inscription professionnelle — TrouveMoi{% endblock %}
+{% block step_title %}Votre zone d’intervention{% endblock %}
+{% block step_subtitle %}Les demandes vous sont diffusées si la commune est dans votre zone.{% endblock %}
+
+{% block step_content %}
+    {% set radius_mode = values.mode != 'list' %}
+    <form method="post" class="tm-signup__fields" novalidate data-turbo="false"
+          data-controller="service-area"
+          data-service-area-preview-url-value="{{ path('artisan_signup_area_preview') }}"
+          data-service-area-communes-url-value="{{ path('artisan_signup_area_communes') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('artisan_area') }}">
+        {# Bouton par défaut (touche Entrée) placé en tête : sinon le premier bouton du formulaire (« Retirer »…) serait activé #}
+        <button type="submit" name="action" value="preview" class="tm-visually-hidden" tabindex="-1" aria-hidden="true"></button>
+        {% if error %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ error }}</p></div>{% endif %}
+
+        <fieldset class="tm-fieldset">
+            <legend class="tm-visually-hidden">Mode de définition de la zone</legend>
+            <div class="tm-inline-choices">
+                <label class="tm-check"><input class="tm-check__input" type="radio" name="mode" value="radius"{{ radius_mode ? ' checked' }} data-action="change->service-area#switchMode"><span>Mode rayon</span></label>
+                <label class="tm-check"><input class="tm-check__input" type="radio" name="mode" value="list"{{ not radius_mode ? ' checked' }} data-action="change->service-area#switchMode"><span>Mode liste (départements / communes)</span></label>
+            </div>
+        </fieldset>
+
+        {# ── Mode rayon ── #}
+        <div class="tm-area__panel" data-service-area-target="radiusPanel"{{ not radius_mode ? ' hidden' }}>
+            <input type="hidden" name="center_insee" value="{{ values.center_insee }}" data-service-area-target="centerInsee">
+            <div class="tm-area__suggest">
+                <twig:Field id="center" name="center" label="Commune de départ" value="{{ values.center }}" required icon="pin" autocomplete="off" maxlength="60"
+                    placeholder="Nom de la commune ou code postal (ex. Harfleur)"
+                    help="Votre adresse exacte n’est ni demandée ni affichée : la zone part du centre de la commune."
+                    data-service-area-target="center" data-action="input->service-area#suggest" />
+                <ul class="tm-area__suggestions" id="center_suggestions" role="listbox" aria-label="Communes proposées" hidden data-service-area-target="centerList"></ul>
+            </div>
+            {% if center_choices is not empty %}
+                <fieldset class="tm-fieldset tm-area__choices">
+                    <legend class="tm-field__label">Plusieurs communes correspondent : laquelle ?</legend>
+                    {% for commune in center_choices %}
+                        <label class="tm-check"><input class="tm-check__input" type="radio" name="center_pick" value="{{ commune.insee }}"{{ loop.first ? ' checked' }}><span>{{ commune.name }} ({{ commune.postalCodes|first }}) · {{ commune.departmentName ?? commune.departmentCode }}</span></label>
+                    {% endfor %}
+                </fieldset>
+            {% endif %}
+
+            <div class="tm-field tm-area__range">
+                <div class="tm-area__range-head">
+                    <label class="tm-field__label" for="radius">Rayon d’intervention</label>
+                    <output for="radius" class="tm-area__range-value" data-service-area-target="radiusValue">{{ values.radius }} km</output>
+                </div>
+                <input class="tm-range" type="range" id="radius" name="radius" min="{{ radius_min }}" max="{{ radius_max }}" step="1" value="{{ values.radius }}"
+                       aria-describedby="radius_help" data-service-area-target="radius" data-action="input->service-area#radiusChanged">
+                <p class="tm-field__help" id="radius_help">Entre {{ radius_min }} et {{ radius_max }} km.</p>
+            </div>
+        </div>
+
+        {# ── Mode liste ── #}
+        <div class="tm-area__panel" data-service-area-target="listPanel"{{ radius_mode ? ' hidden' }}>
+            <details class="tm-job-category"{{ values.departments is not empty ? ' open' }}>
+                <summary>Départements entiers <span class="tm-caption">({{ values.departments|length }} choisi{{ values.departments|length > 1 ? 's' }})</span></summary>
+                <ul class="tm-area__departments">
+                    {% for code, name in departments %}
+                        <li><label class="tm-check"><input class="tm-check__input" type="checkbox" name="departments[]" value="{{ code }}"{{ code in values.departments ? ' checked' }} data-action="change->service-area#refresh"><span>{{ code }} · {{ name }}</span></label></li>
+                    {% endfor %}
+                </ul>
+            </details>
+
+            <div class="tm-area__suggest">
+                <div class="tm-siret">
+                    <twig:Field id="commune_search" name="commune_search" label="Ajouter une commune" value="{{ values.commune_search }}" icon="search" autocomplete="off" maxlength="60"
+                        placeholder="Nom de la commune ou code postal"
+                        data-service-area-target="communeSearch" data-action="input->service-area#suggest" />
+                    <twig:Button type="submit" variant="secondary" name="action" value="add_commune" icon="plus">Ajouter</twig:Button>
+                </div>
+                <ul class="tm-area__suggestions" id="commune_suggestions" role="listbox" aria-label="Communes proposées" hidden data-service-area-target="communeList"></ul>
+                <input type="hidden" name="commune_pick" value="" data-service-area-target="communePick">
+            </div>
+            {% if commune_choices is not empty %}
+                <fieldset class="tm-fieldset tm-area__choices">
+                    <legend class="tm-field__label">Plusieurs communes correspondent : laquelle ajouter ?</legend>
+                    {% for commune in commune_choices %}
+                        <label class="tm-check"><input class="tm-check__input" type="radio" name="commune_pick" value="{{ commune.insee }}"{{ loop.first ? ' checked' }}><span>{{ commune.name }} ({{ commune.postalCodes|first }}) · {{ commune.departmentName ?? commune.departmentCode }}</span></label>
+                    {% endfor %}
+                </fieldset>
+            {% endif %}
+            {% if selected_communes is not empty %}
+                <ul class="tm-chips" aria-label="Communes choisies">
+                    {% for commune in selected_communes %}
+                        <li class="tm-chip">
+                            <input type="hidden" name="communes[]" value="{{ commune.insee }}">
+                            {{ commune.name }} ({{ commune.postalCodes|first }})
+                            <button type="submit" class="tm-chip__remove" name="action" value="remove_commune:{{ commune.insee }}" aria-label="Retirer {{ commune.name }}"><twig:Icon name="x" size="xs" class="tm-icon--inherit" /></button>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+
+        {# ── Aperçu (schéma, pas une carte géographique : aucune tuile externe chargée) ── #}
+        <div class="tm-area__preview" role="status" aria-live="polite">
+            <div class="tm-area__circle" aria-hidden="true"><twig:Icon name="pin" class="tm-icon--inherit" /></div>
+            <p class="tm-area__coverage" data-service-area-target="coverage">
+                {%- if coverage.communes > 0 -%}
+                    {{ coverage.communes|number_format(0, ',', ' ') }} commune{{ coverage.communes > 1 ? 's' }} couverte{{ coverage.communes > 1 ? 's' }} · {{ coverage.population|number_format(0, ',', ' ') }} habitants
+                {%- else -%}
+                    Choisissez votre zone pour voir les communes couvertes.
+                {%- endif -%}
+            </p>
+            <twig:Button type="submit" variant="secondary" name="action" value="preview" class="tm-area__refresh" data-service-area-target="refreshButton">Mettre à jour l’aperçu</twig:Button>
+        </div>
+
+        <div class="tm-pro-signup__actions">
+            <twig:Button variant="secondary" href="{{ path('artisan_signup_jobs') }}">← Étape précédente</twig:Button>
+            <twig:Button type="submit" name="action" value="continue" icon="arrowR">Continuer</twig:Button>
+        </div>
+    </form>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Modifiable à tout moment, effet immédiat sur les nouvelles demandes (RG-042).</li>
+    <li><twig:Icon name="check" size="xs" />Rayon de {{ radius_min }} à {{ radius_max }} km.</li>
+    <li><twig:Icon name="check" size="xs" />Votre adresse exacte n’est jamais demandée ni affichée publiquement.</li>
+{% endblock %}

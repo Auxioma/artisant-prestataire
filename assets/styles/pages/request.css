@@ -1,0 +1,167 @@
+/*
+ * P11 (T-402a) — tunnel de dépôt de demande (Figma 194:8981) : intro alignée à gauche, étapes, carte principale et
+ * colonne « À quoi sert cette étape ? », options en pastilles (type de projet, réponses), cartes métier, pièces jointes.
+ * Mobile d'abord ; deux colonnes à partir de 1024 px.
+ */
+@layer components {
+    .tm-request { background: var(--color-surface-alt); padding-bottom: var(--space-12); }
+    .tm-request__intro { padding-block: var(--space-6); background: var(--color-surface); }
+    .tm-request__intro > .tm-container { display: grid; gap: var(--space-3); }
+    .tm-request__intro h1 { margin: 0; }
+    .tm-request__intro .tm-body { margin: 0; color: var(--color-text-muted); }
+    .tm-request__grid { display: grid; gap: var(--space-4); align-items: start; padding-top: var(--space-6); }
+    .tm-request__grid > * { min-width: 0; }
+    .tm-request__main { display: grid; gap: var(--space-5); padding: var(--space-5); }
+    .tm-request__main form { display: grid; gap: var(--space-5); min-width: 0; }
+    .tm-request__why { display: grid; gap: var(--space-4); padding: var(--space-5); }
+    .tm-request__promise { display: grid; gap: var(--space-2); margin: 0; padding: var(--space-4); border-radius: var(--radius-card); background: var(--color-info-bg); color: var(--color-info-text); font: var(--type-caption); list-style: none; }
+    .tm-request__promise li { display: flex; align-items: center; gap: var(--space-2); }
+    .tm-request__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+    .tm-request__saved { margin: 0; color: var(--color-text-muted); font: var(--type-caption); }
+    .tm-request__divider { margin: 0; border: 0; border-top: 1px solid var(--color-border); }
+    .tm-request__target { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3) var(--space-4); border-radius: var(--radius-card); background: var(--color-info-bg); }
+    .tm-request__target p { margin: 0; }
+
+    /* Options en pastilles (radio ou case à cocher natives, visibles au clavier). */
+    .tm-request fieldset { display: grid; gap: var(--space-2); min-width: 0; margin: 0; padding: 0; border: 0; }
+    .tm-request legend { padding: 0; margin-bottom: var(--space-2); color: var(--color-heading); font: var(--type-label); }
+    .tm-pills { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+    .tm-pill { position: relative; display: inline-flex; }
+    .tm-pill input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+    .tm-pill span {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-1);
+        min-height: var(--control-height);
+        padding: 0 var(--space-4);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-pill);
+        background: var(--color-surface);
+        color: var(--color-heading);
+        font: var(--type-label);
+    }
+    .tm-pill input:checked + span { border-color: var(--color-link); background: var(--color-info-bg); color: var(--color-link); }
+    .tm-pill input:focus-visible + span { box-shadow: var(--focus-ring); }
+    .tm-pill input:checked + span::after { content: '✕'; } /* Figma 5:2 : pastille choisie marquée d'une croix */
+
+    /* Métiers par catégorie (étape 1). */
+    .tm-request-jobs { display: grid; gap: var(--space-2); }
+    .tm-request-jobs details { border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
+    .tm-request-jobs summary { padding: var(--space-3) var(--space-4); color: var(--color-heading); font: var(--type-label); cursor: pointer; }
+    .tm-request-jobs .tm-pills { padding: 0 var(--space-4) var(--space-4); }
+    .tm-request-jobs [hidden] { display: none; }
+
+    /* Pièces jointes (étape 3). */
+    .tm-request-files { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+    .tm-request-file { display: grid; gap: var(--space-1); min-width: 0; }
+    .tm-request-file__preview { display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; border-radius: var(--radius-card); background: var(--color-surface-section); color: var(--color-icon-ui); }
+    .tm-request-file__preview img { width: 100%; height: 100%; object-fit: cover; }
+    .tm-request-file__name { overflow: hidden; color: var(--color-text-muted); font: var(--type-caption); text-overflow: ellipsis; white-space: nowrap; }
+    .tm-request-file form { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+    .tm-request .tm-dropzone input[type='file'] { width: 100%; min-width: 0; }
+
+    @media (min-width: 1024px) {
+        .tm-request__grid { grid-template-columns: minmax(0, 1fr) 360px; gap: var(--space-6); }
+        .tm-request__main { padding: var(--space-6); }
+    }
+}
+
+/* T-402b — étapes 4 à 6, confirmation. */
+@layer components {
+    .tm-address { position: relative; }
+    .tm-address__list { position: absolute; z-index: 10; inset-inline: 0; top: 100%; margin: var(--space-1) 0 0; padding: var(--space-1) 0; border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); box-shadow: var(--shadow-card); list-style: none; }
+    .tm-address__list li { padding: var(--space-2) var(--space-4); cursor: pointer; }
+    .tm-address__list li[aria-selected='true'], .tm-address__list li:hover { background: var(--color-info-bg); color: var(--color-link); }
+    .tm-request__note, .tm-request__promise-line { display: flex; gap: var(--space-2); align-items: flex-start; margin: 0; padding: var(--space-3) var(--space-4); border-radius: var(--radius-card); background: var(--color-info-bg); color: var(--color-info-text); font: var(--type-caption); }
+    .tm-request__promise-line { background: var(--color-success-bg); color: var(--color-success-text); font: var(--type-label); }
+    .tm-request__summary { display: grid; gap: var(--space-2); margin: 0; }
+    .tm-request__summary > div { display: grid; gap: var(--space-1); padding: var(--space-2) var(--space-3); border-radius: var(--radius-card); background: var(--color-surface-section); }
+    .tm-request__summary dt { color: var(--color-text-muted); font: var(--type-caption); }
+    .tm-request__summary dd { margin: 0; overflow-wrap: anywhere; color: var(--color-heading); }
+    .tm-recap { display: grid; gap: var(--space-2); min-width: 0; }
+    .tm-recap__head { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: baseline; justify-content: space-between; }
+    .tm-recap__head h3 { margin: 0; }
+    .tm-request__account { display: grid; gap: var(--space-3); }
+    .tm-request__account-choice { display: grid; gap: var(--space-3); justify-items: start; padding: var(--space-4); }
+    .tm-request__account-choice p { margin: 0; }
+    .tm-request__sent { padding-top: var(--space-8); }
+    .tm-request__sent h1 { margin: 0; }
+    .tm-request__sent-icon { color: var(--color-success-text); }
+    .tm-request__sent-icon .tm-icon { width: 24px; height: 24px; }
+    .tm-request__sent-card { display: grid; gap: var(--space-1); padding: var(--space-4); border-radius: var(--radius-card); background: var(--color-info-bg); }
+    .tm-request__sent-card p { margin: 0; }
+
+    @media (min-width: 768px) {
+        .tm-request__account { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .tm-request__summary > div { grid-template-columns: 200px minmax(0, 1fr); align-items: baseline; }
+    }
+}
+
+/* T-402c — alignement Figma P11 (194:8981). */
+@layer components {
+    .tm-request__intro .tm-overline { color: var(--color-link); }
+
+    /* Champ « libellé dans le cadre » (Figma 5:2, 5:57, 5:110). */
+    .tm-field--inset { gap: var(--space-1); padding: var(--space-2) var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); }
+    .tm-field--inset:focus-within { box-shadow: var(--focus-ring); }
+    .tm-field--inset .tm-field__label { color: var(--color-text-muted); font: var(--type-caption); }
+    .tm-request .tm-field--inset .tm-field__control, .tm-request .tm-field--inset .tm-select .tm-select__input { min-height: 0; padding-block: 0; padding-inline-start: 0; border: 0; background: transparent; box-shadow: none; }
+    .tm-request .tm-field--inset .tm-field__input { padding-inline: 0; }
+    .tm-request .tm-field--inset .tm-select { display: flex; min-height: 0; padding-inline: 0; border: 0; background: transparent; }
+    .tm-request .tm-field--inset .tm-select:focus-within { box-shadow: none; }
+    .tm-request .tm-field--inset .tm-select__input { width: 100%; font: var(--type-body); }
+    .tm-field--inset .tm-field__control:focus-within { box-shadow: none; }
+    .tm-field--inset.tm-field--error { border-color: var(--color-danger-text); }
+
+    /* Cartes radio des catégories (Figma 5:2). */
+    .tm-radio-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: var(--space-3); }
+    .tm-radio-card { position: relative; display: grid; align-content: space-between; gap: var(--space-6); min-height: 112px; padding: var(--space-4); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); color: var(--color-heading); font: var(--type-label); cursor: pointer; }
+    .tm-radio-card input { width: 20px; height: 20px; margin: 0; accent-color: var(--color-link); }
+    .tm-radio-card:has(input:checked) { border-color: var(--color-link); background: var(--color-info-bg); }
+    .tm-radio-card:has(input:focus-visible) { box-shadow: var(--focus-ring); }
+    .tm-radio-card[hidden] { display: none; }
+
+    .tm-request__split { display: grid; gap: var(--space-3); }
+    .tm-request__split > * { min-width: 0; }
+    .tm-request__radios { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); }
+    .tm-request__privacy { display: grid; gap: var(--space-1); margin: 0; padding: var(--space-4); border-radius: var(--radius-card); background: var(--color-info-bg); color: var(--color-heading); }
+    .tm-request__privacy strong { font: var(--type-label); }
+    .tm-request__privacy span { color: var(--color-text-muted); font: var(--type-caption); }
+    .tm-request__heading { margin: 0; color: var(--color-heading); font: var(--type-label); }
+
+    /* Étape 3 : envoi avec progression (Figma 99:2230). */
+    .tm-request-file__progress { width: 100%; height: 6px; border: 0; border-radius: var(--radius-pill); background: var(--background-light); appearance: none; overflow: hidden; }
+    .tm-request-file__progress::-webkit-progress-bar { background: var(--background-light); }
+    .tm-request-file__progress::-webkit-progress-value { background: var(--color-link); }
+    .tm-request-file__progress::-moz-progress-bar { background: var(--color-link); }
+    .tm-request-file__state { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--color-success-text); font: var(--type-caption); }
+    .tm-request-file__state--pending { color: var(--color-text-muted); }
+    .tm-request-file__state--refused { color: var(--color-danger-text); }
+    .tm-request-file__remove { display: inline-grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: var(--radius-pill); background: none; color: var(--color-text-muted); cursor: pointer; }
+    .tm-request-file__remove:focus-visible { box-shadow: var(--focus-ring); }
+    .tm-dropzone__or { margin: 0; color: var(--color-text-muted); font: var(--type-caption); }
+
+    /* Étape 6 : lignes compactes (Figma 5:219). */
+    .tm-recap-rows { display: grid; justify-items: start; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .tm-recap-rows a { display: inline-flex; flex-wrap: wrap; gap: var(--space-4); max-width: 100%; padding: var(--space-3) var(--space-3); border-radius: var(--radius-sm); background: var(--color-surface-section); color: var(--color-heading); font: var(--type-caption); text-decoration: none; }
+    .tm-recap-rows a:hover { background: var(--color-info-bg); }
+    .tm-recap-rows a:focus-visible { box-shadow: var(--focus-ring); }
+    .tm-recap-rows span:first-child { color: var(--color-text-muted); }
+    .tm-recap-rows span:last-child { overflow-wrap: anywhere; }
+
+    /* Confirmation (Figma 25:3). */
+    .tm-request__next { display: grid; gap: var(--space-3); padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-card); }
+    .tm-request__next h2 { margin: 0; }
+    .tm-request__next ul { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .tm-request__next li { display: flex; gap: var(--space-2); align-items: flex-start; font: var(--type-body-sm); }
+    .tm-request__next .tm-icon { color: var(--color-link); }
+
+    @media (min-width: 768px) {
+        .tm-request__split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+}
+
+/* T-402e — liens d'action dans une légende (Figma 5:162 : « afficher / masquer », « Créer mon compte plus tard »). */
+@layer components {
+    .tm-request .tm-caption .tm-link-button { min-height: 0; padding: 0; color: var(--color-link); font: inherit; text-decoration: underline; }
+}

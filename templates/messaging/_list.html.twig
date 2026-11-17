@@ -1,0 +1,49 @@
+{#-
+    C04.1 / PR07 — liste des conversations : recherche, filtres, lignes, pagination. L'espace pro passe ses onglets
+    (`list_tabs` : libellé et pictogramme) avec leurs compteurs ; le client garde Tous / Non lus / Archives.
+-#}
+{% set route = space ~ '_messages' %}
+<section class="tm-msg-list" aria-labelledby="fils-titre">
+    <h2 id="fils-titre" class="tm-visually-hidden">Conversations</h2>
+    <form method="get" action="{{ path(route) }}" class="tm-msg-list__search" role="search">
+        {% if filter != 'all' %}<input type="hidden" name="filtre" value="{{ filter }}">{% endif %}
+        <div class="tm-field__control"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><label class="tm-visually-hidden" for="msg-q">Rechercher une conversation</label><input class="tm-field__input" id="msg-q" name="q" type="search" value="{{ q }}" placeholder="Rechercher une conversation…"></div>
+    </form>
+    {% if not (tabs_bar ?? false) %}{{ include('messaging/_tabs.html.twig') }}{% endif %}
+    {% if list is null or list.rows is empty %}
+        <p class="tm-msg-list__empty">{{ filter == 'archived' ? 'Aucune conversation archivée.' : (filter == 'unread' ? 'Aucun message non lu.' : (filter == 'clients' ? 'Aucune conversation avec un client (devis accepté).' : (filter == 'prospects' ? 'Aucune conversation avec un prospect.' : (q ? 'Aucune conversation ne correspond à votre recherche.' : 'Aucune conversation pour le moment.')))) }}</p>
+    {% else %}
+        <ul class="tm-msg-list__items">
+            {% for row in list.rows %}
+                {% set current = thread and thread.id == row.id %}
+                <li>
+                    <a class="tm-msg-row{{ current ? ' is-current' }}{{ row.unread > 0 ? ' is-unread' }}" href="{{ path(space ~ '_conversation', {id: row.id}) }}"{% if current %} aria-current="true"{% endif %}>
+                        {% if row.counterpartLogoProfileId %}
+                            <img class="tm-msg-avatar" src="{{ path('public_artisan_logo', {id: row.counterpartLogoProfileId}) }}" alt="" width="48" height="48" loading="lazy">
+                        {% else %}
+                            <span class="tm-msg-avatar tm-msg-avatar--initials" aria-hidden="true">{{ row.initials() }}</span>
+                        {% endif %}
+                        <span class="tm-msg-row__text">
+                            <strong>{{ row.counterpartName }}</strong>
+                            {% if row.requestTitle %}<span class="tm-msg-row__ctx">{{ row.requestTitle }}</span>{% endif %}
+                            <span class="tm-msg-row__last">{{ row.lastIsMine ? 'Vous : ' }}{{ (row.lastBody ?? '') == '' ? 'Pièce jointe' : ((row.lastBody ?? '')|length > 60 ? (row.lastBody ?? '')|slice(0, 59) ~ '…' : row.lastBody) }}</span>
+                        </span>
+                        <span class="tm-msg-row__meta">
+                            {% if row.lastAt %}<time datetime="{{ row.lastAt|date('c') }}">{{ row.lastAt|date('Y-m-d', 'Europe/Paris') == 'now'|date('Y-m-d', 'Europe/Paris') ? row.lastAt|date('H:i', 'Europe/Paris') : row.lastAt|date('d/m', 'Europe/Paris') }}</time>{% endif %}
+                            {% if row.unread > 0 %}<span class="tm-msg-badge">{{ row.unread }}<span class="tm-visually-hidden"> non lu{{ row.unread > 1 ? 's' }}</span></span>{% elseif row.lastIsMine %}<twig:Icon name="check" size="xs" class="tm-icon--inherit tm-msg-row__sent" />{% endif %}
+                            {% if row.blocked %}<span class="tm-visually-hidden">Bloquée</span><twig:Icon name="lock" size="xs" class="tm-icon--inherit" />{% endif %}
+                        </span>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+        {% if list.pages() > 1 %}
+            <nav class="tm-msg-list__pages" aria-label="Pagination des conversations">
+                <span>{{ list.total }} conversation{{ list.total > 1 ? 's' }}</span>
+                {% for n in 1..list.pages() %}
+                    {% if n == list.page %}<span aria-current="page">{{ n }}</span>{% else %}<a href="{{ path(route, {filtre: filter != 'all' ? filter : null, q: q ?: null, page: n}|filter(v => v is not null)) }}">{{ n }}</a>{% endif %}
+                {% endfor %}
+            </nav>
+        {% endif %}
+    {% endif %}
+</section>

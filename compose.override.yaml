@@ -1,18 +1,12 @@
-
+# Ports exposés en local uniquement (127.0.0.1), surchargeables via .env.local / variables d'environnement.
 services:
-###> symfony/mailer ###
-  mailer:
-    image: axllent/mailpit
-    ports:
-      - "1025"
-      - "8025"
-    environment:
-      MP_SMTP_AUTH_ACCEPT_ANY: 1
-      MP_SMTP_AUTH_ALLOW_INSECURE: 1
-###< symfony/mailer ###
-
-###> doctrine/doctrine-bundle ###
   database:
-    ports:
-      - "5432"
-###< doctrine/doctrine-bundle ###
+    ports: ['127.0.0.1:${TM_DB_PORT:-5434}:5432']
+  redis:
+    ports: ['127.0.0.1:${TM_REDIS_PORT:-6380}:6379']
+  meilisearch:
+    ports: ['127.0.0.1:${TM_MEILI_PORT:-7700}:7700']
+  mailer:
+    ports: ['127.0.0.1:${TM_MAILPIT_PORT:-8025}:8025']
+  s3:
+    ports: ['127.0.0.1:${TM_S3_PORT:-8333}:8333']

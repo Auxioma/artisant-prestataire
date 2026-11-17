@@ -1,0 +1,10 @@
+{#- Figma 5:162 « Préférences de contact » (boutons radio). -#}
+<fieldset aria-describedby="{{ errors.contact_preference is defined ? 'contact_preference_error' }}">
+    <legend>Préférences de contact</legend>
+    <div class="tm-request__radios">
+        {% for p in preferences %}
+            <twig:Checkbox type="radio" id="pref_{{ p.value }}" name="contact_preference" value="{{ p.value }}" label="{{ p.value == 'messaging_only' ? 'Messagerie uniquement' : 'Téléphone autorisé après acceptation du devis' }}" :checked="p.value == preference" />
+        {% endfor %}
+    </div>
+    {{ include('request/_error.html.twig', {key: 'contact_preference'}) }}
+</fieldset>

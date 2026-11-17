@@ -1,22 +1,70 @@
+# ADR-0011 : bus command / query / event, transports Redis Streams, échecs en base, sérialisation JSON (pas d'unserialize PHP).
 framework:
     messenger:
-        # Uncomment this (and the failed transport below) to send failed messages to this transport for later handling.
-        # failure_transport: failed
+        default_bus: command.bus
+        failure_transport: failed
+
+        serializer:
+            default_serializer: messenger.transport.symfony_serializer
+            symfony_serializer:
+                format: json
+
+        buses:
+            command.bus:
+                middleware:
+                    - validation
+                    - doctrine_ping_connection
+                    - doctrine_close_connection
+                    - doctrine_transaction
+            query.bus:
+                middleware:
+                    - validation
+                    - doctrine_ping_connection
+            event.bus:
+                default_middleware:
+                    enabled: true
+                    allow_no_handlers: true
+                middleware:
+                    - doctrine_ping_connection
+                    - doctrine_close_connection
+                    - doctrine_transaction
 
         transports:
-            # https://symfony.com/doc/current/messenger.html#transport-configuration
-            # async: '%env(MESSENGER_TRANSPORT_DSN)%'
-            # failed: 'doctrine://default?queue_name=failed'
-            sync: 'sync://'
+            async:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options: { stream: tm_async, group: tm_workers }
+                retry_strategy: { max_retries: 3, delay: 1000, multiplier: 2, max_delay: 3600000 }
+            async_priority:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options: { stream: tm_async_priority, group: tm_workers }
+                retry_strategy: { max_retries: 5, delay: 500, multiplier: 2, max_delay: 600000 }
+            stripe_webhooks:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options: { stream: tm_stripe_webhooks, group: tm_workers }
+                retry_strategy: { max_retries: 5, delay: 2000, multiplier: 3, max_delay: 3600000 }
+            file_scan:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options: { stream: tm_file_scan, group: tm_workers }
+                retry_strategy: { max_retries: 3, delay: 5000, multiplier: 2 }
+            search_index:
+                dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+                options: { stream: tm_search_index, group: tm_workers }
+                retry_strategy: { max_retries: 3, delay: 1000, multiplier: 2 }
+            failed: 'doctrine://default?queue_name=failed&table_name=messenger_failed&auto_setup=false'
 
         routing:
-            # Route your messages to the transports
-            # 'App\Message\YourMessage': async
+            # Événements de domaine : toujours traités de façon asynchrone (relayés depuis l'outbox).
+            'App\Shared\Domain\Event\DomainEvent': async
+            # ADR-0010 : événements Stripe traités hors requête, reprises exponentielles puis transport « failed ».
+            'App\Billing\Application\Webhook\HandleStripeEvent': stripe_webhooks
 
-# when@test:
-#    framework:
-#        messenger:
-#            transports:
-#                # replace with your transport name here (e.g., my_transport: 'in-memory://')
-#                # For more Messenger testing tools, see https://github.com/zenstruck/messenger-test
-#                async: 'in-memory://'
+when@test:
+    framework:
+        messenger:
+            transports:
+                async: 'in-memory://'
+                async_priority: 'in-memory://'
+                stripe_webhooks: 'in-memory://'
+                file_scan: 'in-memory://'
+                search_index: 'in-memory://'
+                failed: 'in-memory://'

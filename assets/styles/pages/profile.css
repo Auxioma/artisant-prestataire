@@ -1,0 +1,171 @@
+/*
+ * P10 (T-303) — fiche artisan publique (Figma 98:763) : en-tête, navigation par ancres collante, sections, colonne
+ * « Contact » collante au-delà de 1024 px, professionnels similaires. Mobile d'abord.
+ */
+@layer components {
+    .tm-profile { background: var(--color-surface-alt); padding-bottom: var(--space-12); }
+    .tm-profile__top { background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
+    .tm-profile__top > .tm-container { display: grid; gap: var(--space-4); padding-block: var(--space-4) var(--space-5); }
+
+    .tm-profile__header { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+    .tm-profile__logo { width: 72px; height: 72px; border-radius: var(--radius-card); overflow: hidden; border: 1px solid var(--color-border); background: var(--color-info-bg); display: grid; place-items: center; }
+    .tm-profile__logo img { width: 100%; height: 100%; object-fit: cover; }
+    .tm-profile__initials { font: var(--type-h2); color: var(--color-link); }
+    .tm-profile__identity { display: grid; gap: var(--space-2); min-width: 0; }
+    .tm-profile__name { margin: 0; font: var(--type-h1-mobile); color: var(--color-heading); overflow-wrap: anywhere; }
+    .tm-profile__badges { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+    .tm-profile__no-review { font: var(--type-body-sm); color: var(--color-text-muted); }
+    .tm-profile__trades { margin: 0; font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-profile__facts { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: 0; padding: 0; list-style: none; font: var(--type-body-sm); color: var(--color-text-muted); }
+    .tm-profile__facts li { display: inline-flex; align-items: center; gap: var(--space-1); }
+
+    .tm-profile__verified { position: relative; }
+    .tm-profile__verified summary { list-style: none; cursor: pointer; border-radius: var(--radius-pill); }
+    .tm-profile__verified summary::-webkit-details-marker { display: none; }
+    .tm-profile__verified summary:focus-visible { box-shadow: var(--focus-ring); outline: none; }
+    .tm-profile__verified-panel {
+        position: absolute;
+        z-index: 5;
+        inset-inline-start: 0;
+        top: calc(100% + var(--space-2));
+        width: min(320px, calc(100vw - 2 * var(--space-4)));
+        display: grid;
+        gap: var(--space-2);
+        padding: var(--space-4);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        background: var(--color-surface);
+        box-shadow: var(--shadow-card);
+        font: var(--type-body-sm);
+    }
+    .tm-profile__verified-panel p, .tm-profile__verified-panel ul { margin: 0; }
+    .tm-profile__verified-panel ul { display: grid; gap: var(--space-1); padding: 0; list-style: none; }
+    .tm-profile__verified-panel li { display: flex; gap: var(--space-2); align-items: center; color: var(--color-success-text); }
+
+    .tm-profile__nav { position: sticky; top: 0; z-index: 4; background: var(--color-surface); border-top: 1px solid var(--color-border); }
+    .tm-profile__nav ul { display: flex; gap: var(--space-5); margin: 0 auto; padding-block: 0; list-style: none; overflow-x: auto; scrollbar-width: none; }
+    .tm-profile__nav a { display: inline-flex; align-items: center; min-height: 48px; white-space: nowrap; color: var(--color-text-muted); font: var(--type-label); text-decoration: none; border-bottom: 2px solid transparent; }
+    .tm-profile__nav a:hover, .tm-profile__nav a:focus-visible { color: var(--color-link); border-bottom-color: var(--color-link); }
+
+    .tm-profile__layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); align-items: start; padding-top: var(--space-5); }
+    .tm-profile__main { display: grid; gap: var(--space-4); min-width: 0; }
+    .tm-profile__section {
+        display: grid;
+        gap: var(--space-3);
+        padding: var(--space-5);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        background: var(--color-surface);
+        scroll-margin-top: 64px;
+    }
+    .tm-profile__section h2 { margin: 0; font: var(--type-h2-mobile); color: var(--color-heading); }
+    .tm-profile__section h3 { margin: 0; font: var(--type-h3-mobile); color: var(--color-heading); }
+    .tm-profile__section p { margin: 0; }
+    .tm-profile__description { white-space: pre-line; }
+    .tm-profile__muted { color: var(--color-text-muted); font: var(--type-body-sm); }
+    .tm-profile__fine { color: var(--color-text-muted); font: var(--type-caption); }
+    .tm-profile__fine .tm-icon { display: inline-block; vertical-align: -2px; }
+    .tm-profile__chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .tm-profile__chips li { padding: var(--space-1) var(--space-3); border-radius: var(--radius-pill); background: var(--color-info-bg); color: var(--color-heading); font: var(--type-label); }
+
+    .tm-profile__credentials { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
+    .tm-profile__credential { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-3); align-items: center; padding: var(--space-3); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+    .tm-profile__credential > .tm-icon { color: var(--color-link); }
+    .tm-profile__credential > .tm-badge { grid-column: 2; justify-self: start; }
+    .tm-profile__credential-name { font: var(--type-body-strong); color: var(--color-heading); }
+
+    .tm-profile__legal { display: grid; gap: var(--space-2); margin: 0; }
+    .tm-profile__legal div { display: grid; gap: 2px; }
+    .tm-profile__legal dt { font: var(--type-caption); color: var(--color-text-muted); }
+    .tm-profile__legal dd { margin: 0; color: var(--color-heading); overflow-wrap: anywhere; }
+
+    .tm-profile__aside { scroll-margin-top: 64px; }
+    .tm-profile__contact { display: grid; gap: var(--space-4); padding: var(--space-5); border: 1px solid var(--color-border); border-radius: var(--radius-card); background: var(--color-surface); box-shadow: var(--shadow-card); }
+    .tm-profile__contact h2 { margin: 0; font: var(--type-h3); color: var(--color-heading); overflow-wrap: anywhere; }
+    .tm-profile__contact p { margin: 0; }
+    .tm-profile__phone, .tm-profile__share { display: grid; gap: var(--space-2); }
+    .tm-profile__phone .tm-button { width: 100%; }
+
+    .tm-profile__similar { padding-top: var(--space-8); }
+    .tm-profile__similar h2 { margin: 0 0 var(--space-4); font: var(--type-h2-mobile); color: var(--color-heading); }
+    .tm-profile__similar-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); margin: 0; padding: 0; list-style: none; }
+
+    @media (min-width: 768px) {
+        .tm-profile__logo { width: 112px; height: 112px; }
+        .tm-profile__name { font: var(--type-h1); letter-spacing: var(--type-h1-tracking); }
+        .tm-profile__section h2, .tm-profile__similar h2 { font: var(--type-h2); }
+        .tm-profile__legal { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .tm-profile__credential { grid-template-columns: auto minmax(0, 1fr) auto; }
+        .tm-profile__credential > .tm-badge { grid-column: auto; }
+        .tm-profile__similar-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+
+    @media (min-width: 1024px) {
+        .tm-profile__layout { grid-template-columns: minmax(0, 1fr) 320px; }
+        .tm-profile__aside { position: sticky; top: 64px; }
+    }
+}
+
+/* PR08 sur la fiche (T-309a) : slogan, présentation enrichie, prestations, horaires */
+@layer components {
+    .tm-profile__slogan { margin: 0; color: var(--color-text); font: var(--type-body); font-style: italic; }
+    .tm-profile__rich { display: grid; gap: var(--space-2); }
+    .tm-profile__rich :is(p, ul) { margin: 0; }
+    .tm-profile__rich ul { padding-left: var(--space-5); }
+    .tm-profile__strengths { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .tm-profile__strengths li { display: flex; gap: var(--space-2); align-items: center; }
+    .tm-profile__strengths .tm-icon { flex: none; color: var(--color-success-text); }
+    .tm-profile__facts-list { display: grid; gap: var(--space-2); margin: 0; }
+    .tm-profile__facts-list div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: var(--space-2); }
+    .tm-profile__facts-list dt { color: var(--color-text-muted); font: var(--type-body-sm); }
+    .tm-profile__facts-list dd { margin: 0; }
+    .tm-profile__services { display: grid; margin: 0; padding: 0; list-style: none; }
+    .tm-profile__services li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-2); padding-block: var(--space-2); border-bottom: 1px solid var(--color-border); }
+    .tm-profile__services strong { color: var(--color-heading); }
+    .tm-profile__hours { display: grid; gap: var(--space-2); }
+    .tm-profile__hours h3 { margin: 0; font: var(--type-body-strong); color: var(--color-heading); }
+    .tm-profile__hours dl { display: grid; gap: 2px; margin: 0; font: var(--type-body-sm); }
+    .tm-profile__hours dl div { display: grid; grid-template-columns: 90px minmax(0, 1fr); }
+    .tm-profile__hours dd { margin: 0; }
+    .tm-profile__emergency { display: flex; gap: var(--space-2); align-items: center; margin: 0; color: var(--color-success-text); font: var(--type-label); }
+}
+
+/* PR08.6 — réalisations sur la fiche (T-309b) */
+@layer components {
+    .tm-profile__project { display: grid; gap: var(--space-2); padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
+    .tm-profile__project:first-of-type { padding-top: 0; border-top: 0; }
+    .tm-profile__project h3 { margin: 0; font: var(--type-h3-mobile); color: var(--color-heading); }
+    .tm-profile__gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+    .tm-profile__gallery figure { position: relative; margin: 0; }
+    .tm-profile__gallery img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; border-radius: var(--radius-md); }
+    .tm-profile__gallery figcaption { position: absolute; inset-inline-start: var(--space-2); inset-block-start: var(--space-2); padding: 2px var(--space-2); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--color-heading); font: var(--type-caption); }
+    /* T-702c — artisan en mode pause (PR06.1) : plus de demande directe */
+    .tm-profile__paused { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 14px; line-height: 20px; color: var(--color-text-muted); }
+    /* T-704d — P10.9 avis clients certifiés (Figma 99:925) */
+    .tm-profile__rating { display: inline-flex; align-items: center; gap: 6px; color: var(--color-heading); font-size: 14px; text-decoration: none; }
+    .tm-profile__rating:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 6px; }
+    .tm-profile__reviews-summary { display: grid; gap: var(--space-4); align-items: center; }
+    .tm-profile__reviews-score { display: grid; justify-items: center; gap: 4px; padding: var(--space-4); border-radius: 12px; background: var(--color-surface-section); font-size: 13px; color: var(--color-text); }
+    .tm-profile__reviews-score strong { font-size: 32px; line-height: 38px; color: var(--color-heading); }
+    .tm-profile__reviews-tools { display: flex; flex-wrap: wrap; gap: 10px; margin-top: var(--space-4); }
+    .tm-profile__sort { display: flex; align-items: center; gap: 6px; padding-inline-start: 12px; }
+    .tm-profile__sort span { font-size: 14px; color: var(--color-text-muted); }
+    .tm-profile__sort select { min-height: 44px; border: 0; font-weight: var(--font-weight-semibold); }
+    .tm-profile__reviews-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .tm-profile__reviews-filters a { padding: 8px 16px; border: 1px solid var(--color-border); border-radius: var(--radius-pill); color: var(--color-heading); font-size: 14px; font-weight: var(--font-weight-semibold); text-decoration: none; }
+    .tm-profile__reviews-filters a[aria-current="page"] { border-color: var(--color-heading); background: var(--color-heading); color: var(--color-text-inverse); }
+    .tm-profile__reviews-filters a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-profile__reviews { display: grid; margin: var(--space-4) 0 0; padding: 0; list-style: none; }
+    .tm-profile__reviews > li { display: grid; gap: 8px; padding: var(--space-4) 0; border-top: 1px solid var(--color-border); }
+    .tm-profile__review-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0; font-size: 14px; color: var(--color-heading); }
+    .tm-profile__certified { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--radius-pill); background: var(--color-info-bg); color: var(--color-link); font-size: 12px; font-weight: var(--font-weight-semibold); }
+    .tm-profile__review-title { margin: 0; font-weight: var(--font-weight-semibold); color: var(--color-heading); }
+    .tm-profile__review-text { margin: 0; line-height: 22px; overflow-wrap: anywhere; }
+    .tm-profile__reply { padding: 12px 14px; border-radius: 10px; background: var(--color-surface-section); }
+    .tm-profile__reply p { margin: 0; }
+    .tm-profile__reply p + p { margin-top: 4px; }
+    .tm-profile__report { justify-self: start; font-size: 12px; }
+    @media (min-width: 900px) {
+        .tm-profile__reviews-summary { grid-template-columns: 9rem minmax(0, 1fr) 13rem; }
+    }
+}

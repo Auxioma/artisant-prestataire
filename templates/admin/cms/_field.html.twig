@@ -1,0 +1,27 @@
+{#- Champ d'un bloc de l'accueil (HomeBlockSchema) : name, field, value, id. -#}
+{% if field.type == 'textarea' %}
+    <div class="tm-field">
+        <label class="tm-field__label" for="{{ id }}">{{ field.label }}{% if field.required ?? false %} *{% endif %}</label>
+        <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="{{ id }}" name="{{ name }}" rows="3" maxlength="{{ field.max }}"{% if field.required ?? false %} required{% endif %}>{{ value }}</textarea></div>
+        {% if field.variables ?? false %}<p class="tm-caption">Variables autorisées : {{ variables|join(', ') }}</p>{% endif %}
+    </div>
+{% elseif field.type == 'int' %}
+    <div class="tm-field">
+        <label class="tm-field__label" for="{{ id }}">{{ field.label }}</label>
+        <div class="tm-field__control"><input class="tm-field__input" type="number" id="{{ id }}" name="{{ name }}" value="{{ value }}" min="{{ field.min }}" max="{{ field.max }}" required></div>
+    </div>
+{% elseif field.type == 'bool' %}
+    <label class="tm-check"><input class="tm-check__input" type="checkbox" name="{{ name }}" value="1"{% if value %} checked{% endif %}><span>{{ field.label }}</span></label>
+{% elseif field.type == 'choice' %}
+    <div class="tm-field">
+        <label class="tm-field__label" for="{{ id }}">{{ field.label }}</label>
+        <div class="tm-field__control"><select class="tm-field__input" id="{{ id }}" name="{{ name }}">
+            {% for key, label in field.choices %}<option value="{{ key }}"{% if key ~ '' == value ~ '' %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select></div>
+    </div>
+{% else %}
+    <div class="tm-field">
+        <label class="tm-field__label" for="{{ id }}">{{ field.label }}{% if field.required ?? false %} *{% endif %}</label>
+        <div class="tm-field__control"><input class="tm-field__input" type="text" id="{{ id }}" name="{{ name }}" value="{{ value }}" maxlength="{{ field.max }}"{% if field.required ?? false %} required{% endif %}></div>
+    </div>
+{% endif %}

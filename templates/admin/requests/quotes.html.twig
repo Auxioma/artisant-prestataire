@@ -1,0 +1,61 @@
+{#-
+    BO04.2 — onglet « Devis » de 186:1669 (pas de maquette dédiée : tableau sur le modèle de BO04.1) : n° de devis, demande,
+    métier · ville, artisan, montant TTC, statut, version, envoyé le, validité, PDF figé (consultation journalisée).
+    Aucune donnée personnelle du client. Écarts : P-91.
+-#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'requests' %}
+{% set status_variants = {sent: 'pending', viewed: 'verified', accepted: 'available', refused: 'refused', not_selected: 'neutral', expired: 'neutral', withdrawn: 'neutral', request_cancelled: 'neutral'} %}
+{% block title %}Devis — Demandes et devis{% endblock %}
+{% block body %}
+    {{ include('admin/requests/_head.html.twig', {tab: 'quotes', total: page.kpis.all, quotes: quotes.total, filters: {}}) }}
+
+    <ul class="tm-admin-kpis" aria-label="Devis par statut">
+        <li class="tm-admin-kpi"><a href="{{ path('admin_quotes', {statut: 'sent'}) }}"><span>Envoyés</span><strong>{{ (quotes.counts.sent ?? 0)|number_format(0, ',', ' ') }}</strong></a></li>
+        <li class="tm-admin-kpi"><a href="{{ path('admin_quotes', {statut: 'viewed'}) }}"><span>Consultés</span><strong>{{ (quotes.counts.viewed ?? 0)|number_format(0, ',', ' ') }}</strong></a></li>
+        <li class="tm-admin-kpi"><a href="{{ path('admin_quotes', {statut: 'accepted'}) }}"><span>Acceptés</span><strong>{{ (quotes.counts.accepted ?? 0)|number_format(0, ',', ' ') }}</strong></a></li>
+        <li class="tm-admin-kpi"><a href="{{ path('admin_quotes', {statut: 'request_cancelled'}) }}"><span>Demande annulée</span><strong>{{ (quotes.counts.request_cancelled ?? 0)|number_format(0, ',', ' ') }}</strong></a></li>
+    </ul>
+
+    <section class="tm-admin-panel" aria-labelledby="devis-titre">
+        <h2 id="devis-titre" class="tm-visually-hidden">Liste des devis</h2>
+        <form method="get" class="tm-admin-filters" role="search">
+            <div class="tm-field tm-admin-filters__search"><label class="tm-visually-hidden" for="q">Rechercher</label><div class="tm-field__control"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><input class="tm-field__input" id="q" name="q" type="search" value="{{ filters.q ?? '' }}" placeholder="N° de devis ou de demande, artisan, métier, ville"></div></div>
+            <div class="tm-select"><label class="tm-visually-hidden" for="statut">Statut</label><select class="tm-select__input" id="statut" name="statut"><option value="">Statut</option>{% for s in statuses %}<option value="{{ s.value }}"{{ (filters.statut ?? '') == s.value ? ' selected' }}>{{ s.label() }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
+            <twig:Button type="submit" variant="secondary" icon="search" iconPosition="start">Filtrer</twig:Button>
+        </form>
+        <div class="tm-admin-table-wrap">
+            <table class="tm-admin-table">
+                <thead><tr>
+                    <th scope="col">N° de devis</th><th scope="col">Demande</th><th scope="col">Métier · Ville</th><th scope="col">Artisan</th><th scope="col">Montant TTC</th><th scope="col">Statut</th><th scope="col">Envoyé le</th><th scope="col">Validité</th><th scope="col"><span class="tm-visually-hidden">PDF</span></th>
+                </tr></thead>
+                <tbody>
+                    {% for q in quotes.items %}
+                        <tr>
+                            <td><strong>{{ q.number }}</strong>{{ q.version > 1 ? ' · v' ~ q.version }}</td>
+                            <td><a href="{{ path('admin_requests', {demande: q.requestId}) }}">{{ q.requestNumber }}</a></td>
+                            <td>{{ q.jobName }} · {{ q.city }}</td>
+                            <td>{{ q.artisanName }}</td>
+                            <td>{{ q.ttcCents|tm_money }}</td>
+                            <td><twig:Badge variant="{{ status_variants[q.status.value] ?? 'neutral' }}">{{ q.status.label() }}</twig:Badge></td>
+                            <td>{{ q.sentAt ? q.sentAt|date('d/m/Y', 'Europe/Paris') : '—' }}</td>
+                            <td>{{ q.validUntil ? q.validUntil|date('d/m/Y', 'Europe/Paris') : '—' }}</td>
+                            <td><a class="tm-icon-link" href="{{ path('admin_quote_pdf', {id: q.quoteId}) }}" target="_blank" rel="noopener" aria-label="PDF du devis {{ q.number }} (nouvel onglet)"><twig:Icon name="file" size="sm" class="tm-icon--inherit" /></a></td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="9">Aucun devis ne correspond à ces critères.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if quotes.pages() > 1 %}
+            <nav class="tm-directory__pagination" aria-label="Pagination">
+                <ul>
+                    {% for n in 1..quotes.pages() %}
+                        <li>{% if n == quotes.page %}<span aria-current="page">{{ n }}</span>{% else %}<a href="{{ path('admin_quotes', filters|merge({page: n})) }}">{{ n }}</a>{% endif %}</li>
+                    {% endfor %}
+                </ul>
+            </nav>
+        {% endif %}
+    </section>
+{% endblock %}

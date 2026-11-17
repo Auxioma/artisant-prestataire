@@ -1,0 +1,100 @@
+{#- P11.6 — Étape 5 « Coordonnées » (Figma 5:162). Le dépôt exige un compte client à l'e-mail vérifié (RG-040) : un visiteur se connecte ou crée son compte, son brouillon est conservé et rattaché. Téléphone requis au premier dépôt (A02). -#}
+{% extends 'request/_layout.html.twig' %}
+
+{% block title %}Coordonnées — Demande de devis — TrouveMoi{% endblock %}
+{% block step_title %}Comment pouvons-nous vous contacter ?{% endblock %}
+{% block step_subtitle %}Vos coordonnées ne sont partagées qu’au moment prévu par les règles de mise en relation.{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {% if contact is null and not draft.pendingUserId %}<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="{{ csp_nonce('script') }}"></script>{% endif %}
+{% endblock %}
+
+{% block step_content %}
+    {% if contact is null and draft.pendingUserId %}
+        {#- Compte déjà créé pour ce brouillon : la demande partira à son activation (E-11). -#}
+        {% set preference = posted.contact_preference ?? draft.contactPreference ?? 'messaging_only' %}
+        <p class="tm-request__privacy" role="status"><strong>Votre compte est créé.</strong><span>Vérifiez votre boîte mail : un lien d’activation vous a été envoyé. Vous pouvez terminer votre demande dès maintenant, elle partira à l’activation.</span></p>
+        <form method="post" novalidate data-turbo="false" data-request-tunnel-target="form" data-action="change->request-tunnel#changed">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            {{ include('request/_preferences.html.twig') }}
+            {{ include('request/_actions.html.twig') }}
+        </form>
+    {% elseif contact is null %}
+        {% set preference = posted.contact_preference ?? draft.contactPreference ?? 'messaging_only' %}
+        <form method="post" novalidate data-turbo="false" data-request-tunnel-target="form" data-action="change->request-tunnel#changed">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            {% if errors.form is defined %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ errors.form }}</p></div>{% endif %}
+            <div class="tm-request__split">
+                <div class="tm-field tm-field--inset{{ errors.first_name is defined ? ' tm-field--error' }}">
+                    <label class="tm-field__label" for="first_name">Prénom</label>
+                    <div class="tm-field__control"><input class="tm-field__input" id="first_name" name="first_name" type="text" autocomplete="given-name" maxlength="60" value="{{ posted.first_name ?? '' }}"></div>
+                    {{ include('request/_error.html.twig', {key: 'first_name'}) }}
+                </div>
+                <div class="tm-field tm-field--inset{{ errors.last_name is defined ? ' tm-field--error' }}">
+                    <label class="tm-field__label" for="last_name">Nom</label>
+                    <div class="tm-field__control"><input class="tm-field__input" id="last_name" name="last_name" type="text" autocomplete="family-name" maxlength="60" value="{{ posted.last_name ?? '' }}"></div>
+                    {{ include('request/_error.html.twig', {key: 'last_name'}) }}
+                </div>
+            </div>
+            <div class="tm-field tm-field--inset{{ errors.email is defined ? ' tm-field--error' }}">
+                <label class="tm-field__label" for="email">Adresse email</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="email" name="email" type="email" autocomplete="email" maxlength="180" value="{{ posted.email ?? '' }}"></div>
+                {{ include('request/_error.html.twig', {key: 'email'}) }}
+            </div>
+            <div class="tm-field tm-field--inset{{ errors.phone is defined ? ' tm-field--error' }}">
+                <label class="tm-field__label" for="phone">Téléphone</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" value="{{ posted.phone ?? '' }}"></div>
+                {{ include('request/_error.html.twig', {key: 'phone'}) }}
+            </div>
+            <div class="tm-field tm-field--inset{{ errors.password is defined ? ' tm-field--error' }}" data-controller="password">
+                <label class="tm-field__label" for="password">Mot de passe</label>
+                <div class="tm-field__control">
+                    <input class="tm-field__input" id="password" name="password" type="password" autocomplete="new-password" minlength="{{ password_min }}" maxlength="128" aria-describedby="password_help" data-password-target="input">
+                </div>
+                {{ include('request/_error.html.twig', {key: 'password'}) }}
+            </div>
+            <twig:Checkbox id="terms" name="terms" value="1" label="J’accepte les conditions d’utilisation et le traitement de mes données." :checked="posted.terms is defined" />
+            <p class="tm-caption"><a href="{{ path('identity_legal_document', {slug: 'cgu'}) }}" target="_blank" rel="noopener">Conditions d’utilisation</a> · <a href="{{ path('identity_legal_document', {slug: 'confidentialite'}) }}" target="_blank" rel="noopener">Politique de confidentialité</a></p>
+            {{ include('request/_error.html.twig', {key: 'terms'}) }}
+            <hr class="tm-request__divider">
+            <p class="tm-caption" id="password_help">{{ password_min }} caractères minimum, non présent dans les fuites connues · <button type="button" class="tm-link-button" aria-controls="password" aria-pressed="false" data-action="request-tunnel#togglePassword">afficher / masquer</button></p>
+            {{ include('request/_preferences.html.twig') }}
+            <twig:Checkbox id="newsletter" name="newsletter" value="1" label="Je souhaite recevoir la newsletter (facultatif)" :checked="posted.newsletter is defined" />
+            <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-action="request" data-size="flexible" data-language="fr" data-appearance="interaction-only"></div>
+            <p class="tm-caption">J’ai déjà un compte : <a href="{{ login_url }}">Se connecter</a> · ou <button type="submit" class="tm-link-button" name="action" value="magic">Créer mon compte plus tard (lien magique)</button></p>
+            {{ include('request/_actions.html.twig') }}
+        </form>
+    {% else %}
+        {% set preference = posted.contact_preference ?? draft.contactPreference ?? 'messaging_only' %}
+        <form method="post" novalidate data-turbo="false" data-request-tunnel-target="form" data-action="change->request-tunnel#changed">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            <div class="tm-field tm-field--inset">
+                <label class="tm-field__label" for="first_name">Prénom</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="first_name" type="text" value="{{ contact.firstName }}" readonly></div>
+            </div>
+            <div class="tm-field tm-field--inset">
+                <label class="tm-field__label" for="email">Adresse email</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="email" type="email" value="{{ contact.email }}" readonly></div>
+            </div>
+            {% if not email_verified %}
+                <p class="tm-form-note" role="status"><twig:Icon name="alert" size="sm" />Validez votre adresse e-mail grâce au lien reçu à l’inscription : c’est nécessaire pour envoyer votre demande.</p>
+            {% endif %}
+            {% if not has_phone %}
+                <div class="tm-field tm-field--inset{{ errors.phone is defined ? ' tm-field--error' }}">
+                    <label class="tm-field__label" for="phone">Téléphone<abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+                    <div class="tm-field__control"><input class="tm-field__input" id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" value="{{ posted.phone ?? '' }}" placeholder="06 12 34 56 78" aria-describedby="phone_help{{ errors.phone is defined ? ' phone_error' }}"></div>
+                    <p class="tm-field__help" id="phone_help">Requis pour votre première demande ; communiqué uniquement au professionnel retenu.</p>
+                    {{ include('request/_error.html.twig', {key: 'phone'}) }}
+                </div>
+            {% endif %}
+            {{ include('request/_preferences.html.twig') }}
+            {{ include('request/_actions.html.twig') }}
+        </form>
+    {% endif %}
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Un compte permet de comparer les devis et suivre les messages.</li>
+    <li><twig:Icon name="check" size="xs" />Vos coordonnées ne seront partagées qu’aux étapes autorisées.</li>
+{% endblock %}

@@ -1,0 +1,103 @@
+# Definition of Done (cadrage §7) : tests, PHPStan max, Deptrac, CS, composer audit, gitleaks — le build échoue sinon.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Qualité et tests
+    runs-on: ubuntu-24.04
+    services:
+      database:
+        image: imresamu/postgis:16-3.5-alpine
+        env:
+          POSTGRES_DB: trouvemoi
+          POSTGRES_USER: trouvemoi
+          POSTGRES_PASSWORD: trouvemoi
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U trouvemoi" --health-interval 5s --health-timeout 5s --health-retries 10
+      meilisearch:
+        image: getmeili/meilisearch:v1.12
+        env:
+          MEILI_MASTER_KEY: ci-master-key-not-secret
+          MEILI_NO_ANALYTICS: 'true'
+        ports: ['7700:7700']
+    env:
+      DATABASE_URL: postgresql://trouvemoi:trouvemoi@127.0.0.1:5432/trouvemoi?serverVersion=16&charset=utf8
+      MEILISEARCH_URL: http://127.0.0.1:7700
+      MEILISEARCH_SEARCH_KEY: ci-master-key-not-secret
+      MEILISEARCH_ADMIN_KEY: ci-master-key-not-secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, pdo_pgsql, sodium, zip, apcu, gd, exif
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - run: composer validate --strict
+      - run: composer install --no-interaction --no-progress --prefer-dist
+      - name: Audit des dépendances
+        run: composer audit --locked
+
+      - name: Style (PHP-CS-Fixer)
+        run: vendor/bin/php-cs-fixer fix --dry-run --diff
+
+      - name: Lints Symfony
+        run: |
+          php bin/console lint:container
+          php bin/console lint:yaml config --parse-tags
+          php bin/console lint:twig templates
+          php bin/console doctrine:schema:validate --skip-sync
+
+      - name: Migrations réversibles (up → first → up)
+        run: |
+          php bin/console doctrine:database:create --if-not-exists --env=test
+          php bin/console doctrine:migrations:migrate -n --env=test
+          php bin/console doctrine:migrations:migrate first -n --env=test
+          php bin/console doctrine:migrations:migrate -n --env=test
+          php bin/console doctrine:migrations:up-to-date --env=test
+          php bin/console app:notification:sync --env=test
+
+      - name: PHPStan (niveau max)
+        run: |
+          php bin/console cache:warmup --env=dev
+          vendor/bin/phpstan analyse --memory-limit=1G --no-progress
+
+      - name: Deptrac (couches et modules)
+        run: |
+          vendor/bin/deptrac analyse --config-file=deptrac.layers.yaml --no-progress
+          vendor/bin/deptrac analyse --config-file=deptrac.modules.yaml --no-progress
+
+      - name: Tests (unitaires, intégration, fonctionnels)
+        run: vendor/bin/phpunit
+
+  secrets:
+    name: Analyse de secrets (gitleaks)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.21.2 detect --source=/repo --config=/repo/.gitleaks.toml --redact --verbose

@@ -1,0 +1,115 @@
+{#- BO10.1 (Figma 186:4326) — CMS de la page d'accueil : blocs (activer, réordonner, éditer), brouillon, aperçu, publication, historique. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'cms' %}
+{% set can_edit = is_granted('admin.cms.edit') %}
+{% block title %}Page d’accueil — CMS{% endblock %}
+{% block body %}
+    {% set live = state.live %}
+    {{ include('admin/_page_header.html.twig', {title: 'Page d’accueil', crumbs: ['Contenus', 'CMS'], subtitle: live
+        ? 'En ligne : version ' ~ live.number ~ ', publiée le ' ~ live.publishAt|date('d/m/Y à H:i', 'Europe/Paris')
+        : 'Aucune version publiée : le contenu initial du cahier des charges est affiché.'}) }}
+
+    <div class="tm-cms-toolbar">
+        <a class="tm-button tm-button--secondary" href="{{ path('admin_cms_history') }}">Historique et restauration</a>
+        <a class="tm-button tm-button--secondary" href="{{ path('admin_cms_preview') }}">Aperçu desktop / mobile</a>
+        {% if can_edit and state.draft %}
+            <form method="post" action="{{ path('admin_cms_publish') }}" class="tm-cms-publish">
+                <input type="hidden" name="_token" value="{{ csrf_token('admin_cms_publish') }}">
+                <div class="tm-field">
+                    <label class="tm-field__label" for="publish_at">Programmer (facultatif)</label>
+                    <div class="tm-field__control"><input class="tm-field__input" type="datetime-local" id="publish_at" name="publish_at"></div>
+                </div>
+                <twig:Button type="submit">Publier</twig:Button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if state.scheduled %}<p class="tm-cms-status" role="status"><twig:Icon name="calendar" size="sm" /> Version {{ state.scheduled.number }} programmée le {{ state.scheduled.publishAt|date('d/m/Y à H:i', 'Europe/Paris') }}.</p>{% endif %}
+    {% if state.draft %}
+        <div class="tm-cms-status" role="status">
+            <span><twig:Icon name="file" size="sm" /> Brouillon en cours (version {{ state.draft.number }}, modifié le {{ state.draft.updatedAt|date('d/m/Y à H:i', 'Europe/Paris') }}) : non visible du public.</span>
+            {% if can_edit %}
+                <form method="post" action="{{ path('admin_cms_discard') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('admin_cms_discard') }}">
+                    <button type="submit" class="tm-link-button tm-admin-danger">Abandonner le brouillon</button>
+                </form>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <div class="tm-cms">
+        <section class="tm-admin-panel" aria-labelledby="blocks-title">
+            <h2 id="blocks-title" class="tm-card-title">Blocs de la page</h2>
+            <ol class="tm-cms-blocks">
+                {% for b in state.blocks %}
+                    {% set t = types[loop.index0] %}
+                    {% if t %}
+                    <li class="tm-cms-block{{ selected and selected.value == t.value ? ' tm-cms-block--active' }}{{ b.enabled ? '' : ' tm-cms-block--off' }}">
+                        <div class="tm-cms-block__text">
+                            <strong>{{ t.code }} {{ t.label }}</strong>
+                            <span class="tm-caption">{{ t.isGlobal ? 'Composant global (Apparence, Menus)' : (b.enabled ? 'Affiché' : 'Masqué') ~ (b.settings.items is defined ? ' · ' ~ b.settings.items|length ~ ' élément' ~ (b.settings.items|length > 1 ? 's') : '') }}</span>
+                        </div>
+                        {% if can_edit and not t.isGlobal %}
+                            <div class="tm-cms-block__actions">
+                                <form method="post" action="{{ path('admin_cms_block_move', {type: t.value}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('admin_cms_move_' ~ t.value) }}">
+                                    <button type="submit" name="offset" value="-1" class="tm-cms-icon" {{ loop.index0 <= 1 ? 'disabled' }}><twig:Icon name="chevL" size="sm" label="Monter {{ t.label }}" class="tm-cms-icon--up" /></button>
+                                    <button type="submit" name="offset" value="1" class="tm-cms-icon" {{ loop.index0 >= state.blocks|length - 2 ? 'disabled' }}><twig:Icon name="chevR" size="sm" label="Descendre {{ t.label }}" class="tm-cms-icon--down" /></button>
+                                </form>
+                                <form method="post" action="{{ path('admin_cms_block_toggle', {type: t.value}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('admin_cms_toggle_' ~ t.value) }}">
+                                    <input type="hidden" name="enabled" value="{{ b.enabled ? '0' : '1' }}">
+                                    <button type="submit" class="tm-link-button">{{ b.enabled ? 'Masquer' : 'Afficher' }}<span class="tm-visually-hidden"> {{ t.label }}</span></button>
+                                </form>
+                                <a href="{{ path('admin_cms', {bloc: t.value}) }}" class="tm-link-button">Éditer<span class="tm-visually-hidden"> {{ t.label }}</span></a>
+                            </div>
+                        {% elseif not t.isGlobal %}
+                            <a href="{{ path('admin_cms', {bloc: t.value}) }}" class="tm-link-button">Voir</a>
+                        {% endif %}
+                    </li>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+        </section>
+
+        <section class="tm-admin-panel" aria-labelledby="editor-title">
+            {% if block %}
+                <h2 id="editor-title" class="tm-card-title">Éditer : {{ selected.label }}</h2>
+                <form method="post" action="{{ path('admin_cms_block_save', {type: selected.value}) }}" class="tm-cms-form">
+                    <input type="hidden" name="_token" value="{{ csrf_token('admin_cms_block_' ~ selected.value) }}">
+                    <fieldset {{ can_edit ? '' : 'disabled' }}>
+                        <label class="tm-check"><input class="tm-check__input" type="checkbox" name="enabled" value="1"{% if block.enabled %} checked{% endif %}><span>Bloc affiché</span></label>
+                        {% for name, field in fields %}
+                            {% if field.type == 'items' %}
+                                <fieldset class="tm-cms-items">
+                                    <legend>Éléments ({{ field.min }} à {{ field.max }}) — laissez une ligne vide pour la retirer</legend>
+                                    {% set rows = block.settings[name] ?? [] %}
+                                    {% for i in 0..(field.max - 1) %}
+                                        <div class="tm-cms-item">
+                                            <span class="tm-cms-item__n" aria-hidden="true">{{ i + 1 }}</span>
+                                            {% for sub, subField in field.fields %}
+                                                {{ include('admin/cms/_field.html.twig', {name: 'settings[' ~ name ~ '][' ~ i ~ '][' ~ sub ~ ']', field: subField|merge({required: false, label: subField.label ~ ' ' ~ (i + 1)}), value: rows[i][sub] ?? '', id: 'f_' ~ name ~ '_' ~ i ~ '_' ~ sub}) }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endfor %}
+                                </fieldset>
+                            {% else %}
+                                {{ include('admin/cms/_field.html.twig', {name: 'settings[' ~ name ~ ']', field: field, value: block.settings[name] ?? '', id: 'f_' ~ name}) }}
+                            {% endif %}
+                        {% endfor %}
+                        {% if can_edit %}
+                            <div class="tm-cms-form__actions">
+                                <a class="tm-button tm-button--secondary" href="{{ path('admin_cms') }}">Annuler</a>
+                                <twig:Button type="submit">Enregistrer le bloc</twig:Button>
+                            </div>
+                        {% endif %}
+                    </fieldset>
+                </form>
+                <p class="tm-caption">L’enregistrement met à jour le brouillon ; le public ne voit la modification qu’après « Publier ».</p>
+            {% else %}
+                <h2 id="editor-title" class="tm-card-title">Éditer un bloc</h2>
+                <p>Choisissez un bloc à éditer dans la liste. En-tête et pied de page sont des composants globaux.</p>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

@@ -1,0 +1,19 @@
+# ADR-0013 : double authentification TOTP obligatoire du back-office (aucun appareil de confiance), codes de secours
+# à usage unique (empreintes HMAC, AdminBackupCodeManager) ; « appareil de confiance » non installé. Les comptes clients et artisans n'ont pas de 2FA au MVP
+# (auth.pro_2fa_enabled, V2).
+scheb_two_factor:
+    security_tokens:
+        - Symfony\Component\Security\Core\Authentication\Token\UsernamePasswordToken
+        - Symfony\Component\Security\Http\Authenticator\Token\PostAuthenticationToken
+    totp:
+        enabled: true
+        server_name: 'TrouveMoi'
+        issuer: 'TrouveMoi back-office'
+        leeway: 29
+        template: admin/security/two_factor.html.twig
+    backup_codes:
+        enabled: true
+        manager: App\Administration\Infrastructure\Security\AdminBackupCodeManager
+    # Un code TOTP déjà utilisé est refusé pendant sa durée de validité (anti-rejeu, ASVS 2.8.4).
+    code_reuse_cache: cache.app
+    code_reuse_cache_duration: 90

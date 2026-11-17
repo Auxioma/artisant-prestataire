@@ -1,0 +1,8 @@
+<p>Bonjour {{ prenom }},</p>
+{% if refuse %}
+<p>Le client n’a pas accepté votre devis <strong>{{ numero }}</strong> (demande n° {{ demande }}).{% if motif %} Motif indiqué : <strong>{{ motif }}</strong>.{% endif %}</p>
+{% else %}
+<p>Le client a choisi un autre professionnel pour la demande n° {{ demande }} : votre devis <strong>{{ numero }}</strong> n’a pas été retenu.</p>
+{% endif %}
+<p>Merci pour le temps consacré à cette proposition. De nouvelles demandes vous attendent dans votre espace.</p>
+{{ bouton(lien, 'Voir mon devis') }}

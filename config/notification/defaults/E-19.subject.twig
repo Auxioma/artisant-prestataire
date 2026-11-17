@@ -1,0 +1,1 @@
+{% if expiree %}Votre demande {{ numero }} a expiré{% else %}Votre demande {{ numero }} expire le {{ date_expiration|date('d/m/Y', 'Europe/Paris') }}{% endif %}

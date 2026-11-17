@@ -1,0 +1,11 @@
+<p>Nouveau message reçu par le formulaire de contact.</p>
+<ul>
+<li><strong>Référence :</strong> {{ reference }}</li>
+<li><strong>Motif :</strong> {{ motif }}</li>
+<li><strong>Nom :</strong> {{ nom }}{% if compte %} (compte inscrit){% endif %}</li>
+<li><strong>E-mail :</strong> {{ email }}</li>
+{% if telephone %}<li><strong>Téléphone :</strong> {{ telephone }}</li>{% endif %}
+{% if numero_demande %}<li><strong>N° de demande ou devis :</strong> {{ numero_demande }}</li>{% endif %}
+<li><strong>Pièce jointe :</strong> {% if piece_jointe %}oui (analysée par l’antivirus, consultable depuis le back-office){% else %}non{% endif %}</li>
+</ul>
+<p>{{ message|nl2br }}</p>

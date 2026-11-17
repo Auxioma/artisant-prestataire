@@ -1,0 +1,25 @@
+{#
+    TM / Stepper (Figma 63:102, CDC P11.1) : pastilles numérotées (desktop), barre + « Étape n/N » (mobile).
+    <twig:Stepper :steps="['Votre besoin', 'Détails', 'Photos', 'Lieu & délai', 'Coordonnées', 'Récapitulatif']" :current="2" />
+#}
+{% props steps, current = 1, errorStep = null, label = 'Progression' %}
+<nav {{ attributes.defaults({class: 'tm-stepper', 'aria-label': label}) }}>
+    <ol class="tm-stepper__list">
+        {% for step in steps %}
+            {% set n = loop.index %}
+            {% set state = n == errorStep ? 'error' : (n < current ? 'done' : (n == current ? 'current' : 'upcoming')) %}
+            <li class="tm-stepper__step tm-stepper__step--{{ state }}"{% if n == current %} aria-current="step"{% endif %}>
+                <span class="tm-stepper__dot" aria-hidden="true">
+                    {% if state == 'done' %}<twig:Icon name="check" class="tm-icon--inherit" />
+                    {% elseif state == 'error' %}<twig:Icon name="x" class="tm-icon--inherit" />
+                    {% else %}{{ n }}{% endif %}
+                </span>
+                <span>{{ step }}<span class="tm-visually-hidden"> ({{ {done: 'terminée', current: 'en cours', upcoming: 'à venir', error: 'à corriger'}[state] }})</span></span>
+            </li>
+        {% endfor %}
+    </ol>
+    <div class="tm-stepper__mobile">
+        <p class="tm-stepper__count">Étape {{ current }}/{{ steps|length }} · {{ steps[current - 1] }}</p>
+        <progress class="tm-stepper__bar" max="{{ steps|length }}" value="{{ current }}" aria-hidden="true"></progress>
+    </div>
+</nav>

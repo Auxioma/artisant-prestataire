@@ -1,0 +1,58 @@
+{#- P17 — document légal versionné (RG-002) : sommaire ancré, version et date, versions précédentes ; /cookies : registre des traceurs et « Gérer mes cookies ». HTML assaini à la publication. -#}
+{% extends 'base.html.twig' %}
+{% set slug = document.type.slug %}
+{% block title %}{{ document.title }}{{ archived ? ' — version ' ~ document.version }} — TrouveMoi{% endblock %}
+{% set canonical_url = url('identity_legal_document', {slug: slug}) %}
+{% set meta_description = document.title ~ ' de TrouveMoi.com : version ' ~ document.version ~ ' du ' ~ document.publishedAt|date('d/m/Y', 'Europe/Paris') ~ '.' %}
+{% block meta %}
+    {% if archived %}<meta name="robots" content="noindex, follow">{% endif %}
+{% endblock %}
+{% block body %}
+<article class="tm-container tm-legal">
+    <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: document.title}]" />
+    <h1>{{ document.title }}</h1>
+    <p class="tm-caption">
+        Version {{ document.version }} {{ archived ? 'publiée le' : 'en vigueur depuis le' }} {{ document.publishedAt|date('d/m/Y', 'Europe/Paris') }}
+        {% if versions_count > 1 %} · <a href="{{ path('identity_legal_versions', {slug: slug}) }}">Versions précédentes</a>{% endif %}
+    </p>
+    {% if archived %}
+        <p class="tm-legal__archived" role="note">Version archivée. <a href="{{ path('identity_legal_document', {slug: slug}) }}">Consulter la version {{ current_version }} en vigueur</a>.</p>
+    {% endif %}
+    <div class="tm-legal__layout">
+        {% if toc|length > 1 %}
+            <nav class="tm-legal__toc" aria-labelledby="toc-title">
+                <h2 id="toc-title">Sommaire</h2>
+                <ul>{% for entry in toc %}<li><a href="#{{ entry.id }}">{{ entry.label }}</a></li>{% endfor %}</ul>
+            </nav>
+        {% endif %}
+        <div class="tm-legal__content">
+            {# |raw justifié : HTML assaini à la publication (liste blanche app.legal_sanitizer), seuls des identifiants de titres ajoutés. #}
+            {{ html|raw }}
+
+            {% if document.type.value == 'cookies' %}
+                <section aria-labelledby="registry-title">
+                    <h2 id="registry-title">Traceurs utilisés sur TrouveMoi</h2>
+                    <p>Seuls les traceurs nécessaires sont déposés sans votre accord. Les autres catégories ne sont activées qu’après votre consentement, modifiable à tout moment.</p>
+                    <p><button type="button" class="tm-button tm-button--secondary" data-cookie-consent-open aria-haspopup="dialog">Gérer mes cookies</button></p>
+                    {% for category in cookie_registry %}
+                        <h3>{{ category.label }}</h3>
+                        <p>{{ category.description }}</p>
+                        {% if category.trackers is empty %}
+                            <p class="tm-caption">Aucun traceur de cette catégorie n’est utilisé actuellement.</p>
+                        {% else %}
+                            <div class="tm-legal__table-wrap">
+                                <table class="tm-legal__table">
+                                    <thead><tr><th scope="col">Nom</th><th scope="col">Finalité</th><th scope="col">Durée</th><th scope="col">Type</th></tr></thead>
+                                    <tbody>
+                                    {% for t in category.trackers %}<tr><th scope="row"><code>{{ t.name }}</code></th><td>{{ t.purpose }}</td><td>{{ t.duration }}</td><td>{{ t.type }}</td></tr>{% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </section>
+            {% endif %}
+        </div>
+    </div>
+</article>
+{% endblock %}

@@ -1,0 +1,55 @@
+{#-
+    C04 — Mes messages (Figma 160:644) : en-tête « Mes messages (n) » et « Nouveau message », liste des conversations
+    (recherche, Tous / Non lus / Archives), fil (interlocuteur, contexte, messages du jour, statut lu, saisie), encart de
+    l'artisan (demander un devis, voir le profil, archiver, bloquer). Mobile : liste puis fil. Rafraîchissement par
+    interrogation (P-105). Écarts : P-106.
+-#}
+{% extends 'client/_space.html.twig' %}
+{% set space_active = 'messages' %}
+{% set space_title = 'Mes messages' %}
+{% set space_subtitle = 'Échangez facilement avec vos artisans et prestataires en toute sécurité.' %}
+{% block title %}Mes messages — Espace client — TrouveMoi{% endblock %}
+{% block space_content %}
+<div class="tm-msg-page{{ thread ? ' has-thread' }}">
+    <header class="tm-msg-page__head">
+        <div class="tm-pro-head">
+            <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="msg" class="tm-icon--inherit" /></span>
+            <div>
+                <h1>Mes messages{% if list and list.unread > 0 %} ({{ list.unread }}){% endif %}</h1>
+                <p>Retrouvez et gérez vos conversations avec vos professionnels.</p>
+            </div>
+        </div>
+        <twig:Button href="{{ path('client_message_new') }}" icon="edit" iconPosition="start">Nouveau message</twig:Button>
+    </header>
+    <div class="tm-msg-layout">
+        {{ include('messaging/_list.html.twig') }}
+        {% if thread %}
+            <div class="tm-msg-layout__thread" data-controller="message-poll" data-message-poll-url-value="{{ path('client_conversation_messages', {id: thread.id}) }}">
+                {{ include('messaging/_thread.html.twig') }}
+            </div>
+            <aside class="tm-pro-card tm-msg-aside" aria-label="Professionnel">
+                <div class="tm-msg-aside__who">
+                    {% if thread.counterpartLogoProfileId %}<img class="tm-msg-avatar tm-msg-avatar--lg" src="{{ path('public_artisan_logo', {id: thread.counterpartLogoProfileId}) }}" alt="" width="72" height="72">{% else %}<span class="tm-msg-avatar tm-msg-avatar--lg tm-msg-avatar--initials" aria-hidden="true">{{ thread.initials() }}</span>{% endif %}
+                    <div>
+                        <p class="tm-msg-aside__name">{{ thread.counterpartName }}</p>
+                        {% if thread.counterpartCity %}<p class="tm-msg-aside__city"><twig:Icon name="pin" size="xs" class="tm-icon--inherit" />{{ thread.counterpartCity }}</p>{% endif %}
+                    </div>
+                </div>
+                <div class="tm-msg-aside__buttons">
+                    {% if thread.artisanId and tm_route_exists('request_new') %}<twig:Button href="{{ path('request_new', {pro: thread.artisanId}) }}" variant="secondary" icon="fileEuro" iconPosition="start">Demander un devis</twig:Button>{% endif %}
+                    {% if thread.artisanId %}<twig:Button href="{{ tm_artisan_url(thread.artisanId, thread.counterpartName, thread.counterpartCity) }}" variant="secondary" icon="info" iconPosition="start">Voir le profil</twig:Button>{% endif %}
+                </div>
+                <form method="post" action="{{ path('client_conversation_action', {id: thread.id}) }}" class="tm-msg-aside__actions">
+                    <input type="hidden" name="_token" value="{{ csrf_token('messaging') }}">
+                    <button type="submit" name="action" value="{{ thread.archived ? 'unarchive' : 'archive' }}"><twig:Icon name="file" size="sm" class="tm-icon--inherit" />{{ thread.archived ? 'Sortir des archives' : 'Archiver la conversation' }}</button>
+                    {% if thread.blocked != 'other' %}<button type="submit" name="action" value="{{ thread.blocked == 'me' ? 'unblock' : 'block' }}"><twig:Icon name="lock" size="sm" class="tm-icon--inherit" />{{ thread.blocked == 'me' ? 'Débloquer' : 'Bloquer cet interlocuteur' }}</button>{% endif %}
+                </form>
+            </aside>
+        {% else %}
+            <div class="tm-msg-layout__empty">
+                <twig:EmptyState title="{{ list and list.rows is not empty ? 'Choisissez une conversation' : 'Aucune conversation pour le moment' }}" text="Échangez avec les professionnels qui ont répondu à vos demandes. Vos coordonnées restent protégées jusqu’à l’acceptation d’un devis." icon="msg" />
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

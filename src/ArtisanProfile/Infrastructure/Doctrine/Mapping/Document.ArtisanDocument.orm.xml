@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ArtisanProfile — justificatif (A03.6, ADR-0008) : seule la référence du fichier chiffré est conservée ici. -->
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\ArtisanProfile\Domain\Document\ArtisanDocument" table="document" schema="artisan">
+        <id name="id" type="guid" column="id"/>
+        <field name="artisanId" type="guid" column="artisan_id"/>
+        <field name="type" type="string" length="40"/>
+        <field name="subject" type="string" length="80" nullable="true"/>
+        <field name="fileId" type="guid" column="file_id" unique="true"/>
+        <field name="originalName" type="string" length="120" column="original_name" nullable="true"/>
+        <field name="status" type="string" length="20" enum-type="App\ArtisanProfile\Domain\Document\DocumentStatus"/>
+        <field name="reason" type="string" length="200" nullable="true"/>
+        <field name="reviewedBy" type="guid" column="reviewed_by" nullable="true"/>
+        <field name="reviewedAt" type="datetimetz_immutable" column="reviewed_at" nullable="true"/>
+        <field name="expiresOn" type="date_immutable" column="expires_on" nullable="true"/>
+        <field name="uploadedAt" type="datetimetz_immutable" column="uploaded_at"/>
+        <field name="updatedAt" type="datetimetz_immutable" column="updated_at"/>
+    </entity>
+</doctrine-mapping>

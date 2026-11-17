@@ -1,0 +1,18 @@
+{#
+    TM / Jauge de crédits (Figma 74:235, PR01.1, RG-105/RG-106). L'état est calculé par l'application à partir des
+    seuils administrables (credits.alert_thresholds, credits.plan_alert_pct) : normal · alert · critical · exhausted.
+#}
+{% props remaining, total, state = 'normal', status, ctaHref, ctaLabel = null %}
+{% set percent = total > 0 ? (remaining / total * 100)|round(1) : 0 %}
+<section {{ attributes.defaults({class: 'tm-credit-gauge tm-credit-gauge--' ~ state, 'aria-label': 'Crédit de devis'}) }}>
+    <svg class="tm-credit-gauge__ring" viewBox="0 0 36 36" aria-hidden="true" focusable="false">
+        <circle class="tm-credit-gauge__track" cx="18" cy="18" r="15.5" fill="none" stroke-width="4" pathLength="100"></circle>
+        <circle class="tm-credit-gauge__value" cx="18" cy="18" r="15.5" fill="none" stroke-width="4" pathLength="100" stroke-dasharray="{{ max(percent, remaining == 0 ? 1 : 0) }} 100" stroke-linecap="butt"></circle>
+    </svg>
+    <div class="tm-credit-gauge__body">
+        <p class="tm-credit-gauge__intro">Il vous reste</p>
+        <p class="tm-credit-gauge__count">{{ remaining|number_format(0, ',', ' ') }} devis</p>
+        <p class="tm-credit-gauge__status"{% if state == 'exhausted' %} role="alert"{% endif %}>{{ status }}</p>
+    </div>
+    <twig:Button href="{{ ctaHref }}" variant="{{ state == 'normal' ? 'secondary' : 'primary' }}">{{ ctaLabel ?? (state == 'normal' ? 'Voir les forfaits' : 'Choisir un forfait') }}</twig:Button>
+</section>

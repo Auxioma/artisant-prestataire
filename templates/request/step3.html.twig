@@ -1,0 +1,64 @@
+{#- P11.4 — Étape 3 « Photos » (Figma 99:2230) : facultative ; glisser-déposer, « Ajouter des photos » ou « Prendre une photo » ; envoi immédiat avec progression (JavaScript), formulaire classique sinon ; état de chaque fichier (RG-061). -#}
+{% extends 'request/_layout.html.twig' %}
+
+{% block title %}Photos — Demande de devis — TrouveMoi{% endblock %}
+{% block step_title %}Ajoutez des photos de votre projet{% endblock %}
+{% block step_subtitle %}Facultatif, mais les artisans répondent plus précisément avec des photos.{% endblock %}
+
+{% block step_content %}
+    {% set remaining = max_files - draft.attachments|length %}
+    {% if remaining > 0 %}
+        <form method="post" action="{{ path('request_upload') }}" enctype="multipart/form-data" class="tm-dropzone" data-turbo="false"
+            data-request-tunnel-target="upload" data-action="dragover->request-tunnel#dragOver dragleave->request-tunnel#dragLeave drop->request-tunnel#drop">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            <twig:Icon name="upload" class="tm-dropzone__icon" />
+            <p class="tm-dropzone__title">Glissez vos photos ici</p>
+            <p class="tm-dropzone__or">ou</p>
+            <div class="tm-dropzone__buttons">
+                <label class="tm-button tm-button--secondary tm-dropzone__pick">
+                    Ajouter des photos
+                    <input class="tm-visually-hidden" type="file" name="files[]" multiple accept="image/jpeg,image/png,image/webp,application/pdf" data-action="change->request-tunnel#filesChosen">
+                </label>
+                <label class="tm-button tm-button--tertiary tm-dropzone__pick">
+                    Prendre une photo
+                    <input class="tm-visually-hidden" type="file" name="files[]" accept="image/jpeg,image/png,image/webp" capture="environment" data-action="change->request-tunnel#filesChosen">
+                </label>
+            </div>
+            <p class="tm-caption">{{ max_files }} fichiers max · {{ max_mb }} Mo par fichier · JPG, PNG, WEBP, PDF · données GPS supprimées</p>
+            <twig:Button type="submit" icon="upload" data-request-tunnel-target="uploadSubmit">Envoyer les fichiers</twig:Button>
+        </form>
+    {% else %}
+        <p class="tm-form-note">Vous avez atteint le maximum de {{ max_files }} fichiers : retirez-en un pour en ajouter un autre.</p>
+    {% endif %}
+
+    <ul class="tm-request-files" aria-label="Fichiers ajoutés" data-request-tunnel-target="files">
+        {% for file in draft.attachments %}
+            <li class="tm-request-file">
+                <div class="tm-request-file__preview">
+                    {% if file.status == 'available' and file.image %}<img src="{{ path('request_upload_view', {id: file.fileId}) }}" alt="Photo ajoutée : {{ file.name }}" loading="lazy">
+                    {% else %}<twig:Icon name="{{ file.image ? 'camera' : 'file' }}" />{% endif %}
+                </div>
+                <form method="post" action="{{ path('request_upload_delete', {id: file.fileId}) }}" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    {% if file.status == 'available' %}<span class="tm-request-file__state"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Ajoutée</span>
+                    {% elseif file.status == 'quarantined' %}<span class="tm-request-file__state tm-request-file__state--pending">Analyse en cours</span>
+                    {% else %}<span class="tm-request-file__state tm-request-file__state--refused">Refusée</span>{% endif %}
+                    <button type="submit" class="tm-request-file__remove" aria-label="Retirer {{ file.name }}"><twig:Icon name="x" size="xs" class="tm-icon--inherit" /></button>
+                </form>
+                <span class="tm-request-file__name" title="{{ file.name }}">{{ file.name }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <p class="tm-caption">Astuce : prenez une vue d’ensemble et un gros plan. Les données de localisation (EXIF/GPS) sont supprimées automatiquement.</p>
+
+    <form method="post" novalidate data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+        {{ include('request/_actions.html.twig') }}
+    </form>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Une description précise facilite les propositions.</li>
+    <li><twig:Icon name="check" size="xs" />Les photos aident à évaluer la prestation à distance.</li>
+{% endblock %}

@@ -1,0 +1,56 @@
+{#- P14 (Figma 224:11220) — centre d'aide : recherche, rubriques, questions fréquentes, contact. -#}
+{% extends 'base.html.twig' %}
+{% set active_nav = 'help' %}
+{% block title %}{{ term ? 'Recherche « ' ~ term ~ ' » — ' }}Aide et questions fréquentes — TrouveMoi{% endblock %}
+{% set canonical_url = url('content_faq') %}
+{% set meta_description %}Réponses aux questions des particuliers et des professionnels : devis, vérification, crédits, avis, compte et données personnelles.{% endset %}
+{% block meta %}
+    {% if term %}<meta name="robots" content="noindex, follow">{% endif %}
+{% endblock %}
+{% block body %}
+<div class="tm-help">
+    <twig:PageBanner title="Centre d’aide" subtitle="Trouvez rapidement des réponses à vos questions." image="images/auth/a02-banner" />
+    <div class="tm-container tm-help__body">
+        {% include 'content/help/_search.html.twig' with {term: term} %}
+
+        {% if results is not null %}
+            <section aria-labelledby="results-title" data-controller="analytics" data-analytics-auto-event-value="help_search" data-analytics-auto-params-value="{{ {terme: term|slice(0, 100), resultats: results|length}|json_encode }}">
+                <h2 class="tm-section-title" id="results-title">{{ results|length }} résultat{{ results|length > 1 ? 's' }} pour « {{ term }} »</h2>
+                {% if results is empty %}
+                    <twig:EmptyState icon="search" title="Aucune réponse ne correspond" text="Essayez d’autres mots, parcourez les rubriques ou écrivez-nous.">
+                        <twig:Button href="{{ path('content_contact') }}" variant="secondary">Nous contacter</twig:Button>
+                    </twig:EmptyState>
+                {% else %}
+                    {% include 'content/help/_accordion.html.twig' with {questions: results} %}
+                {% endif %}
+            </section>
+        {% endif %}
+
+        <section aria-labelledby="topics-title">
+            <h2 class="tm-section-title" id="topics-title">Aide par thème</h2>
+            <ul class="tm-help__topics">
+                {% for t in topics %}
+                    <li>
+                        <a class="tm-help__topic" href="{{ path('content_faq_topic', {topic: t.slug}) }}">
+                            <twig:Icon name="{{ t.icon }}" />
+                            <span><strong>{{ t.title }}</strong><span>{{ t.description }}</span></span>
+                            <span class="tm-caption">{{ t.questionCount }} question{{ t.questionCount > 1 ? 's' }}</span>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </section>
+
+        <div class="tm-help__columns">
+            {% if popular is not empty %}
+                <section class="tm-card-panel" aria-labelledby="popular-title">
+                    <h2 id="popular-title">Questions fréquentes</h2>
+                    {% include 'content/help/_accordion.html.twig' with {questions: popular} %}
+                </section>
+            {% endif %}
+            {% include 'content/help/_contact.html.twig' %}
+        </div>
+    </div>
+</div>
+{% if popular is not empty and not term %}{% include 'content/help/_faq_ld.html.twig' with {questions: popular} %}{% endif %}
+{% endblock %}

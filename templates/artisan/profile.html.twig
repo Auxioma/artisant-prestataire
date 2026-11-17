@@ -1,0 +1,328 @@
+{#- P10 (Figma 98:763) — fiche artisan publique : en-tête, navigation par ancres, présentation, assurances et certifications, zone, avis, informations légales, professionnels similaires. Colonne « Contact » collante au-delà de 1024 px. -#}
+{% extends 'base.html.twig' %}
+{% set p = profile %}
+{% set pres = p.presentation %}
+{% set canonical = tm_artisan_url(p.profileId, p.name, p.communeName, true) %}
+{% set place = p.communeName ? p.communeName ~ (p.departmentCode ? ' (' ~ p.departmentCode ~ ')') : null %}
+{% set job_names = [] %}{% for j in jobs %}{% set job_names = job_names|merge([j.name]) %}{% endfor %}
+{% set department_areas = [] %}{% for name in departments %}{% set department_areas = department_areas|merge([{'@type': 'AdministrativeArea', name: name}]) %}{% endfor %}
+{% set logo = p.hasLogo ? path('public_artisan_logo', {id: p.profileId}) : null %}
+{% set revealed = app.flashes('artisan_phone')|first %}
+{% set summary = p.description ?? (p.name ~ ', professionnel vérifié' ~ (main_job ? ' — ' ~ main_job.name) ~ (place ? ' ' ~ place|a_lieu) ~ '.') %}
+{% set seo = tm_seo_meta('artisan', {nom: p.name, metier: main_job ? main_job.name : null, ville: p.communeName, a_ville: p.communeName ? p.communeName|a_lieu : null}) %}
+{% block title %}{{ seo.title ?? (p.name ~ (main_job ? ' — ' ~ main_job.name) ~ (p.communeName ? ' ' ~ p.communeName|a_lieu) ~ ' | TrouveMoi') }}{% endblock %}
+{% set meta_description = seo.description ?? (summary|length > 155 ? summary|slice(0, 154) ~ '…' : summary) %}
+{% set canonical_url = canonical %}
+{% set og_type = 'profile' %}
+{% set og_image = logo ? app.request.schemeAndHttpHost ~ logo : null %}
+{% block body %}
+<div class="tm-profile" data-controller="analytics" data-analytics-auto-event-value="pro_profile_view" data-analytics-auto-type-value="{{ main_job ? main_job.slug }}">
+    <div class="tm-profile__top">
+        <div class="tm-container">
+            <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}]
+                |merge(main_job ? [{label: main_job.categoryName, href: tm_path('catalog_category', {slug: main_job.categorySlug})}] : [])
+                |merge(main_job and p.communeInsee ? [{label: main_job.name ~ (p.communeName ? ' ' ~ p.communeName|a_lieu), href: path('public_search', {metier: main_job.slug, lieu: p.communeInsee})}] : [])
+                |merge([{label: p.name}])" />
+
+            <header class="tm-profile__header">
+                <div class="tm-profile__logo">
+                    {% if logo %}<img src="{{ logo }}" alt="Logo de {{ p.name }}" width="112" height="112" decoding="async">
+                    {% else %}<span class="tm-profile__initials" aria-hidden="true">{{ p.name|slice(0, 1)|upper }}</span>{% endif %}
+                </div>
+                <div class="tm-profile__identity">
+                    <h1 class="tm-profile__name">{{ p.name }}</h1>
+                    {% if pres and pres.slogan %}<p class="tm-profile__slogan">{{ pres.slogan }}</p>{% endif %}
+                    <div class="tm-profile__badges">
+                        <details class="tm-profile__verified">
+                            <summary><twig:Badge variant="verified">Vérifié</twig:Badge><span class="tm-visually-hidden"> — voir ce qui a été contrôlé</span></summary>
+                            <div class="tm-profile__verified-panel">
+                                <p>Dossier contrôlé par l’équipe TrouveMoi le {{ p.verifiedAt|date('d/m/Y', 'Europe/Paris') }} :</p>
+                                <ul>{% for check in p.verifiedChecks %}<li><twig:Icon name="check" size="xs" />{{ check }}</li>{% endfor %}</ul>
+                                <p class="tm-profile__fine">Le badge ne garantit pas la qualité des travaux ; il atteste de l’existence de l’entreprise et de ses justificatifs à la date du contrôle.</p>
+                            </div>
+                        </details>
+                        {% if p.availableSoon %}<twig:Badge variant="available" />{% endif %}
+                        {% if reviews.count > 0 %}
+                            <a class="tm-profile__rating" href="#avis"><span class="tm-pr-stars" aria-hidden="true">{% for i in 1..5 %}<twig:Icon name="{{ i <= reviews.average|round ? 'starFilled' : 'star' }}" size="xs" class="tm-icon--inherit{{ i <= reviews.average|round ? ' is-on' }}" />{% endfor %}</span><strong>{{ reviews.average|number_format(1, ',', ' ') }}</strong> ({{ reviews.count }} avis)<span class="tm-visually-hidden"> — note moyenne sur 5</span></a>
+                        {% else %}
+                            <twig:Badge variant="new">Nouveau</twig:Badge>
+                            <span class="tm-profile__no-review">Aucun avis pour le moment</span>
+                        {% endif %}
+                    </div>
+                    {% if job_names is not empty %}<p class="tm-profile__trades">{{ job_names|join(' · ') }}</p>{% endif %}
+                    <ul class="tm-profile__facts">
+                        {% if place %}<li><twig:Icon name="pin" size="xs" />{{ place }}</li>{% endif %}
+                        {% if p.areaMode == 'radius' and p.areaRadiusKm %}<li><twig:Icon name="locate" size="xs" />Intervient jusqu’à {{ p.areaRadiusKm }} km</li>
+                        {% elseif p.areaMode == 'list' %}<li><twig:Icon name="locate" size="xs" />Intervient sur {{ (departments|length + p.areaCommunesCount) }} zone{{ (departments|length + p.areaCommunesCount) > 1 ? 's' }}</li>{% endif %}
+                        {% if p.companyCreatedOn %}<li><twig:Icon name="building" size="xs" />Entreprise créée en {{ p.companyCreatedOn|date('Y') }}</li>{% endif %}
+                        <li><twig:Icon name="calendar" size="xs" />Sur TrouveMoi depuis {{ p.memberSince|date('Y', 'Europe/Paris') }}</li>
+                        {% if response_minutes ?? null %}<li><twig:Icon name="clock" size="xs" />Répond en moyenne en {{ response_minutes < 60 ? response_minutes ~ ' min' : (response_minutes < 1440 ? (response_minutes / 60)|round ~ ' h' : (response_minutes / 1440)|round ~ ' j') }}</li>{% endif %}
+                    </ul>
+                </div>
+            </header>
+        </div>
+        <nav class="tm-profile__nav" aria-label="Sections de la fiche">
+            <ul class="tm-container">
+                <li><a href="#presentation">Présentation</a></li>
+                {% if p.services is not empty %}<li><a href="#prestations">Prestations</a></li>{% endif %}
+                {% if p.portfolio is not empty %}<li><a href="#realisations">Réalisations</a></li>{% endif %}
+                <li><a href="#garanties">Assurances et certifications</a></li>
+                <li><a href="#zone">Zone d’intervention</a></li>
+                <li><a href="#avis">Avis</a></li>
+                <li><a href="#informations">Informations légales</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="tm-container tm-profile__layout">
+        <div class="tm-profile__main">
+            <section class="tm-profile__section" id="presentation" aria-labelledby="presentation-title">
+                <h2 id="presentation-title">Présentation</h2>
+                {% if pres and pres.description %}<div class="tm-profile__description tm-profile__rich">{{ pres.description|tm_rich_text }}</div>
+                {% elseif p.description %}<p class="tm-profile__description">{{ p.description }}</p>
+                {% else %}<p class="tm-profile__muted">Ce professionnel n’a pas encore rédigé sa présentation.</p>{% endif %}
+                {% if pres and pres.strengths is not empty %}
+                    <h3>Points forts</h3>
+                    <ul class="tm-profile__strengths">{% for s in pres.strengths %}<li><twig:Icon name="checkC" size="sm" />{{ s }}</li>{% endfor %}</ul>
+                {% endif %}
+                {% if pres and (pres.yearsExperience is not null or pres.languages is not empty or pres.clients is not empty) %}
+                    <dl class="tm-profile__facts-list">
+                        {% if pres.yearsExperience is not null %}<div><dt>Expérience</dt><dd>{{ pres.yearsExperience }} an{{ pres.yearsExperience > 1 ? 's' }}</dd></div>{% endif %}
+                        {% if pres.languages is not empty %}<div><dt>Langues parlées</dt><dd>{{ pres.languages|map(l => (languages[l] ?? l))|join(', ') }}</dd></div>{% endif %}
+                        {% if pres.clients is not empty %}<div><dt>Clients acceptés</dt><dd>{{ pres.clients|map(c => (clients[c] ?? c))|join(', ') }}</dd></div>{% endif %}
+                    </dl>
+                {% endif %}
+                {% if jobs is not empty %}
+                    <h3>Métiers</h3>
+                    <ul class="tm-profile__chips">{% for j in jobs %}<li>{{ j.name }}{% if main_job and j.id == main_job.id %} <span class="tm-profile__muted">(principal)</span>{% endif %}</li>{% endfor %}</ul>
+                {% endif %}
+            </section>
+
+            {% if p.services is not empty %}
+                <section class="tm-profile__section" id="prestations" aria-labelledby="prestations-title">
+                    <h2 id="prestations-title">Prestations et tarifs indicatifs</h2>
+                    <ul class="tm-profile__services">{% for s in p.services %}<li><span>{{ s.title }}</span>{% if s.price %}<strong>{{ s.price }}</strong>{% endif %}</li>{% endfor %}</ul>
+                    <p class="tm-profile__fine">Tarifs indicatifs communiqués par le professionnel : seul le devis fait foi.</p>
+                </section>
+            {% endif %}
+
+            {% if p.portfolio is not empty %}
+                <section class="tm-profile__section" id="realisations" aria-labelledby="realisations-title">
+                    <h2 id="realisations-title">Réalisations</h2>
+                    {% for project in p.portfolio %}
+                        <article class="tm-profile__project">
+                            <h3>{{ project.title }}</h3>
+                            {% set meta = [project.city, project.doneOn ? project.doneOn|date('m/Y') : null, project.jobId and jobs[project.jobId] is defined ? jobs[project.jobId].name : null]|filter(v => v) %}
+                            {% if meta is not empty %}<p class="tm-profile__muted">{{ meta|join(' · ') }}</p>{% endif %}
+                            {% if project.description %}<p>{{ project.description }}</p>{% endif %}
+                            <ul class="tm-profile__gallery">
+                                {% for photo in project.photos %}
+                                    <li>
+                                        <figure>
+                                            <a href="{{ path('public_portfolio_photo', {id: p.profileId, photo: photo.id}) }}" target="_blank" rel="noopener"><img src="{{ path('public_portfolio_photo', {id: p.profileId, photo: photo.id}) }}" alt="{{ project.title }}{{ photo.kind != 'photo' ? ' — ' ~ photo_kinds[photo.kind]|lower }}" width="320" height="240" loading="lazy" decoding="async"></a>
+                                            {% if photo.kind != 'photo' %}<figcaption>{{ photo_kinds[photo.kind] }}</figcaption>{% endif %}
+                                        </figure>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </article>
+                    {% endfor %}
+                </section>
+            {% endif %}
+
+            <section class="tm-profile__section" id="garanties" aria-labelledby="garanties-title">
+                <h2 id="garanties-title">Assurances et certifications</h2>
+                {% set credentials = p.insurances|merge(p.qualifications) %}
+                {% if credentials is empty %}
+                    <p class="tm-profile__muted">Aucune assurance ni certification déclarée.</p>
+                {% else %}
+                    <ul class="tm-profile__credentials">
+                        {% for c in credentials %}
+                            <li class="tm-profile__credential">
+                                <twig:Icon name="{{ c.verified ? 'shield' : 'file' }}" />
+                                <div>
+                                    <p class="tm-profile__credential-name">{{ c.label }}</p>
+                                    <p class="tm-profile__muted">{{ c.issuer ? c.issuer ~ ' · ' }}{{ c.validUntil ? 'valable jusqu’au ' ~ c.validUntil|date('d/m/Y') : 'sans date d’échéance' }}</p>
+                                </div>
+                                {% if c.verified %}<twig:Badge variant="verified">Justificatif vérifié</twig:Badge>
+                                {% else %}<twig:Badge variant="neutral">Déclaré</twig:Badge>{% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    <p class="tm-profile__fine">« Justificatif vérifié » : attestation contrôlée par l’équipe TrouveMoi et en cours de validité. « Déclaré » : information fournie par le professionnel, non encore contrôlée.</p>
+                {% endif %}
+            </section>
+
+            <section class="tm-profile__section" id="zone" aria-labelledby="zone-title">
+                <h2 id="zone-title">Zone d’intervention</h2>
+                {% if p.areaMode == 'radius' and area_center %}
+                    <p>Dans un rayon de <strong>{{ p.areaRadiusKm }} km</strong> autour de <strong>{{ area_center.name }} ({{ area_center.departmentCode }})</strong>.</p>
+                {% elseif p.areaMode == 'list' %}
+                    {% if departments is not empty %}<p>Départements : {{ departments|map((name, code) => name ~ ' (' ~ code ~ ')')|join(', ') }}.</p>{% endif %}
+                    {% if p.areaCommunesCount > 0 %}<p>{{ p.areaCommunesCount }} commune{{ p.areaCommunesCount > 1 ? 's' }} choisie{{ p.areaCommunesCount > 1 ? 's' }} individuellement.</p>{% endif %}
+                {% else %}
+                    <p class="tm-profile__muted">Zone non renseignée.</p>
+                {% endif %}
+                {% if main_job and p.communeInsee %}<p><a href="{{ path('public_search', {metier: main_job.slug, lieu: p.communeInsee}) }}">Voir d’autres {{ main_job.name|lower }}s autour de {{ p.communeName }}</a></p>{% endif %}
+            </section>
+
+            <section class="tm-profile__section" id="avis" aria-labelledby="avis-title">
+                <h2 id="avis-title">Avis clients certifiés</h2>
+                {% if reviews.count == 0 %}
+                    <twig:EmptyState icon="star" title="Ce professionnel n’a pas encore reçu d’avis">
+                        Les avis apparaîtront ici après les premières prestations réalisées via TrouveMoi.
+                    </twig:EmptyState>
+                {% else %}
+                    <div class="tm-profile__reviews-summary">
+                        <div class="tm-profile__reviews-score"><strong>{{ reviews.average|number_format(1, ',', ' ') }}</strong><span class="tm-pr-stars" aria-hidden="true">{% for i in 1..5 %}<twig:Icon name="{{ i <= reviews.average|round ? 'starFilled' : 'star' }}" size="xs" class="tm-icon--inherit{{ i <= reviews.average|round ? ' is-on' }}" />{% endfor %}</span><span>{{ reviews.count }} avis</span></div>
+                        <ul class="tm-pr__bars" aria-label="Répartition des notes">
+                            {% for n in 5..1 %}<li><span>{{ n }} ét.</span><span class="tm-pr__bar"><span class="tm-pr__fill is-{{ (reviews.share(n) / 5)|round * 5 }}"></span></span><span>{{ reviews.distribution[n] ?? 0 }}</span></li>{% endfor %}
+                        </ul>
+                        {% if reviews.criteria is not empty %}
+                            <dl class="tm-pr__criteria">
+                                {% for key, label in {quality: 'Qualité', punctuality: 'Ponctualité', cleanliness: 'Propreté', value: 'Rapport qualité/prix', communication: 'Communication'} %}{% if reviews.criteria[key] is defined %}<div><dt>{{ label }}</dt><dd>{{ reviews.criteria[key]|number_format(1, ',', ' ') }}</dd></div>{% endif %}{% endfor %}
+                            </dl>
+                        {% endif %}
+                    </div>
+                    {% set tri = app.request.query.get('tri', 'recents') %}
+                    {% set note = app.request.query.get('note', 'toutes') %}
+                    <form method="get" action="{{ app.request.pathInfo }}#avis" class="tm-profile__reviews-tools" data-controller="autosubmit">
+                        <label class="tm-visually-hidden" for="tri-avis">Trier les avis</label>
+                        <div class="tm-field__control tm-profile__sort"><span>Trier :</span><select class="tm-field__input" id="tri-avis" name="tri" data-action="autosubmit#submit">{% for k, l in review_sorts %}<option value="{{ k }}"{% if tri == k %} selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+                        {% if note != 'toutes' %}<input type="hidden" name="note" value="{{ note }}">{% endif %}
+                        <noscript><button type="submit" class="tm-button tm-button--secondary">Trier</button></noscript>
+                    </form>
+                    <nav class="tm-profile__reviews-filters" aria-label="Filtrer par note">
+                        {% for k, l in review_filters %}<a href="{{ path('public_artisan_profile', {slug: app.request.attributes.get('slug'), id: p.profileId, tri: tri != 'recents' ? tri : null, note: k != 'toutes' ? k : null}|filter(v => v is not null)) }}#avis"{% if note == k %} aria-current="page"{% endif %}>{{ l }}</a>{% endfor %}
+                    </nav>
+                    <ol class="tm-profile__reviews">
+                        {% for r in reviews.items %}
+                            <li>
+                                <p class="tm-profile__review-head"><span class="tm-pr-stars" aria-hidden="true">{% for i in 1..5 %}<twig:Icon name="{{ i <= r.rating ? 'starFilled' : 'star' }}" size="xs" class="tm-icon--inherit{{ i <= r.rating ? ' is-on' }}" />{% endfor %}</span><strong>{{ r.rating }}/5</strong><strong>{{ r.author }}{% if r.city %} · {{ r.city }}{% endif %}</strong><span class="tm-profile__certified"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />Avis certifié — prestation du {{ r.serviceDate|date('d/m/Y') }}</span></p>
+                                {% if r.title %}<p class="tm-profile__review-title">{{ r.title }}</p>{% endif %}
+                                <p class="tm-profile__review-text">{{ r.text }}</p>
+                                {% if r.photos is not empty %}<p class="tm-pr__photos">{% for f in r.photos %}<a href="{{ path('review_photo', {review: r.id, file: f}) }}" target="_blank" rel="noopener"><img src="{{ path('review_photo', {review: r.id, file: f}) }}" alt="Photo {{ loop.index }} de l’avis de {{ r.author }}" width="72" height="72" loading="lazy"></a>{% endfor %}</p>{% endif %}
+                                {% if r.reply %}<div class="tm-profile__reply"><p><strong>Réponse de {{ p.name }}</strong></p><p>{{ r.reply }}</p></div>{% endif %}
+                                <a class="tm-profile__report" href="{{ path('moderation_report', {type: 'avis', id: r.id, retour: app.request.requestUri}) }}" rel="nofollow">Signaler cet avis</a>
+                            </li>
+                        {% else %}
+                            <li class="tm-profile__muted">Aucun avis avec cette note.</li>
+                        {% endfor %}
+                    </ol>
+                {% endif %}
+                <p class="tm-profile__fine" id="avis-controle">
+                    <twig:Icon name="info" size="xs" /> Avis contrôlés (art. L111-7-2 du Code de la consommation) : seul un client dont la demande a abouti
+                    à une prestation via TrouveMoi peut déposer un avis. Les avis sont modérés avant publication, sans contrepartie, et affichés
+                    du plus récent au plus ancien ; la note n’est affichée qu’à partir du premier avis publié.
+                    {% if tm_route_exists('identity_legal_document') %}<a href="{{ path('identity_legal_document', {slug: 'cgu'}) }}">Fonctionnement des avis (CGU)</a>{% endif %}
+                </p>
+                {% if reviews.matching > reviews.items|length %}<twig:Button href="{{ path('public_artisan_profile', {slug: app.request.attributes.get('slug'), id: p.profileId, tri: app.request.query.get('tri'), note: app.request.query.get('note'), avis: reviews.items|length + 10}|filter(v => v is not null)) }}#avis" variant="secondary">Afficher 10 avis de plus</twig:Button>{% endif %}
+            </section>
+
+            <section class="tm-profile__section" id="informations" aria-labelledby="informations-title">
+                <h2 id="informations-title">Informations légales</h2>
+                <dl class="tm-profile__legal">
+                    <div><dt>Raison sociale</dt><dd>{{ p.companyName }}</dd></div>
+                    {% if p.tradeName and p.tradeName != p.companyName %}<div><dt>Nom commercial</dt><dd>{{ p.tradeName }}</dd></div>{% endif %}
+                    <div><dt>SIRET</dt><dd>{{ p.siret|slice(0, 3) }} {{ p.siret|slice(3, 3) }} {{ p.siret|slice(6, 3) }} {{ p.siret|slice(9) }}</dd></div>
+                    {% if p.legalForm %}<div><dt>Forme juridique (code INSEE)</dt><dd>{{ p.legalForm }}</dd></div>{% endif %}
+                    {% if p.ape %}<div><dt>Code APE</dt><dd>{{ p.ape }}</dd></div>{% endif %}
+                    {% if p.vatNumber %}<div><dt>N° de TVA intracommunautaire</dt><dd>{{ p.vatNumber }}</dd></div>{% endif %}
+                    {% if p.postalCode %}<div><dt>Siège</dt><dd>{{ p.postalCode ? p.postalCode ~ ' ' }}{{ p.communeName }}</dd></div>{% endif %}
+                </dl>
+                <p class="tm-profile__fine">Données issues du répertoire Sirene (INSEE) et déclarées par le professionnel.</p>
+            </section>
+        </div>
+
+        <aside class="tm-profile__aside" id="contact" aria-labelledby="contact-title">
+            <div class="tm-profile__contact">
+                <h2 id="contact-title">Contacter {{ p.name }}</h2>
+                {% if not p.acceptsDirectRequests %}
+                    <p class="tm-profile__paused"><twig:Icon name="clock" size="xs" />{{ p.name }} ne prend pas de nouvelles demandes pour le moment.</p>
+                    {% if tm_route_exists('request_new') %}<twig:Button href="{{ path('request_new') }}" variant="secondary" icon="fileEuro" iconPosition="start">Demander des devis à d’autres professionnels</twig:Button>{% endif %}
+                {% elseif tm_route_exists('request_new') %}<twig:Button href="{{ path('request_new', {pro: p.profileId}) }}" icon="fileEuro" iconPosition="start">Demander un devis</twig:Button>{% endif %}
+                {% if tm_route_exists('client_favorite_toggle') and is_granted('ROLE_CLIENT') %}
+                    <form method="post" action="{{ path('client_favorite_toggle', {artisan: p.profileId}) }}" class="tm-profile__favorite">
+                        <input type="hidden" name="_token" value="{{ csrf_token('favorites') }}">
+                        <input type="hidden" name="favori" value="{{ is_favorite ? '0' : '1' }}">
+                        <input type="hidden" name="retour" value="{{ app.request.requestUri }}">
+                        <twig:Button type="submit" variant="tertiary" icon="{{ is_favorite ? 'heartFilled' : 'heart' }}" iconPosition="start" aria-pressed="{{ is_favorite ? 'true' : 'false' }}">{{ is_favorite ? 'Retirer de mes favoris' : 'Ajouter à mes favoris' }}</twig:Button>
+                    </form>
+                {% endif %}
+                {% if tm_route_exists('client_message_new') and not is_granted('ROLE_ARTISAN') %}<twig:Button href="{{ path('client_message_new', {artisan: p.profileId}) }}" variant="secondary" icon="msg" iconPosition="start">Poser une question</twig:Button>{% endif %}
+                {% if p.phoneAvailable %}
+                    <div class="tm-profile__phone" data-controller="phone-reveal">
+                        {% if revealed %}
+                            <twig:Button variant="secondary" href="tel:{{ revealed|replace({' ': ''}) }}" icon="phone" iconPosition="start">{{ revealed }}</twig:Button>
+                        {% else %}
+                            <form method="post" action="{{ path('public_artisan_phone', {id: p.profileId}) }}" data-phone-reveal-target="form" data-action="phone-reveal#reveal" data-turbo="false">
+                                <input type="hidden" name="_token" value="{{ csrf_token('phone_reveal') }}">
+                                <twig:Button type="submit" variant="secondary" icon="phone" iconPosition="start">Afficher le téléphone</twig:Button>
+                            </form>
+                            <p class="tm-profile__phone-number" data-phone-reveal-target="output" role="status" hidden></p>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                {% if p.hours and (p.hours.isSet or p.hours.emergencies) %}
+                    <div class="tm-profile__hours">
+                        <h3>Horaires</h3>
+                        {% if p.hours.emergencies %}<p class="tm-profile__emergency"><twig:Icon name="zap" size="sm" />Intervient en urgence{{ p.hours.emergencyNote ? ' : ' ~ p.hours.emergencyNote }}</p>{% endif %}
+                        {% if p.hours.isSet %}
+                            <dl>{% for day in hours_days %}<div><dt>{{ day|capitalize }}</dt><dd>{{ (p.hours.days[day] ?? [])|map(r => r|replace({'-': ' – '}))|join(', ') ?: 'Fermé' }}</dd></div>{% endfor %}</dl>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                <div class="tm-profile__share" data-controller="share" data-share-url-value="{{ canonical }}" data-share-title-value="{{ p.name }}">
+                    <twig:Button variant="tertiary" icon="share" iconPosition="start" data-action="share#share">Partager la fiche</twig:Button>
+                    <p class="tm-profile__muted" data-share-target="status" role="status"></p>
+                    <noscript><a href="mailto:?subject={{ p.name|url_encode }}&amp;body={{ canonical|url_encode }}">Partager par e-mail</a></noscript>
+                </div>
+                {% if not is_owner|default(false) %}<a class="tm-profile__report tm-profile__report--profile" href="{{ path('moderation_report', {type: 'profil', id: p.profileId, retour: app.request.requestUri}) }}" rel="nofollow"><twig:Icon name="alert" size="xs" class="tm-icon--inherit" />Signaler ce profil</a>{% endif %}
+            </div>
+        </aside>
+    </div>
+
+    {% if similar is not empty %}
+        <section class="tm-profile__similar" aria-labelledby="similar-title">
+            <div class="tm-container">
+                <h2 id="similar-title">Professionnels similaires{{ p.communeName ? ' près de ' ~ p.communeName }}</h2>
+                <ul class="tm-profile__similar-list">
+                    {% for hit in similar %}
+                        {% set a = hit.artisan %}
+                        <li>
+                            <twig:CardArtisan
+                                name="{{ a.name }}"
+                                href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}"
+                                trades="{{ a.jobIds|map(id => (similar_jobs[id].name ?? null))|filter(n => n)|join(' · ') }}"
+                                location="{{ a.communeName ? a.communeName ~ (a.departmentCode ? ' (' ~ a.departmentCode ~ ')') : '' }}"
+                                :rating="a.reviewsCount > 0 ? a.ratingAverage : null"
+                                :reviewsCount="a.reviewsCount"
+                                :available="a.available"
+                                photo="{{ a.hasLogo ? path('public_artisan_logo', {id: a.profileId}) : null }}"
+                                photoAlt="Logo de {{ a.name }}"
+                                :verified="true" />
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </section>
+    {% endif %}
+</div>
+{% set business = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    '@id': canonical ~ '#entreprise',
+    name: p.name,
+    legalName: p.companyName,
+    url: canonical,
+    identifier: {'@type': 'PropertyValue', propertyID: 'SIRET', value: p.siret},
+    address: {'@type': 'PostalAddress', addressLocality: p.communeName, addressCountry: 'FR'}|merge(p.postalCode ? {postalCode: p.postalCode} : {}),
+    knowsAbout: job_names,
+}|merge(p.description ? {description: p.description} : {})
+ |merge(logo ? {logo: app.request.schemeAndHttpHost ~ logo, image: app.request.schemeAndHttpHost ~ logo} : {})
+ |merge(p.vatNumber ? {vatID: p.vatNumber} : {})
+ |merge(area_center and p.areaRadiusKm ? {areaServed: {'@type': 'GeoCircle', geoMidpoint: {'@type': 'Place', name: area_center.name}, geoRadius: p.areaRadiusKm * 1000}} : (departments is not empty ? {areaServed: department_areas} : {})) %}
+{% if reviews.count > 0 %}{% set business = business|merge({aggregateRating: {'@type': 'AggregateRating', ratingValue: reviews.average, reviewCount: reviews.count, bestRating: 5, worstRating: 1}}) %}{% endif %}
+{# AggregateRating seulement à partir du premier avis publié. |raw justifié : json_encode avec JSON_HEX_TAG/JSON_HEX_AMP. #}
+{% if tm_schema('local_business') %}<script type="application/ld+json" nonce="{{ csp_nonce('script') }}">{{ business|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP'))|raw }}</script>{% endif %}
+{% endblock %}

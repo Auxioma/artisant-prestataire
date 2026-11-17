@@ -1,0 +1,7 @@
+Bonjour {{ prenom }},
+
+Vous avez utilisé vos {{ total }} devis gratuits. {% if restants > 0 %}Il vous reste {{ restants }} devis sur vos autres crédits.{% else %}Vous ne pouvez plus envoyer de devis pour le moment.{% endif %}
+
+Souscrivez un forfait pour continuer à envoyer des devis. Le reste de votre espace professionnel (demandes, messages, profil) reste accessible.
+
+Choisir un forfait : {{ lien }}

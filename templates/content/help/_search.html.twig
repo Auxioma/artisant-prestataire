@@ -1,0 +1,12 @@
+{#- P14.1 — recherche dans l'aide : formulaire GET (sans JavaScript) et suggestions instantanées. -#}
+<form method="get" action="{{ path('content_faq') }}" class="tm-search__bar tm-help__search" role="search" data-turbo="false"
+      data-controller="faq-search" data-faq-search-url-value="{{ path('content_faq_suggest') }}">
+    <div class="tm-search__field">
+        <label class="tm-search__label" for="help_q">Rechercher dans l’aide</label>
+        <input class="tm-search__input" id="help_q" name="q" type="search" value="{{ term ?? '' }}" placeholder="Ex. mot de passe, crédits, avis…" autocomplete="off" maxlength="100"
+               role="combobox" aria-expanded="false" aria-controls="help_suggestions" aria-autocomplete="list"
+               data-faq-search-target="input" data-action="input->faq-search#suggest keydown->faq-search#navigate">
+        <ul class="tm-area__suggestions" id="help_suggestions" role="listbox" aria-label="Questions suggérées" hidden data-faq-search-target="list"></ul>
+    </div>
+    <twig:Button type="submit" variant="search" icon="search" iconPosition="start">Rechercher</twig:Button>
+</form>

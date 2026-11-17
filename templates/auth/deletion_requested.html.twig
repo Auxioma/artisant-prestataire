@@ -1,0 +1,18 @@
+{#- RG-090 — confirmation publique après « Supprimer mon compte » (même gabarit que A05). Écarts : P-126. -#}
+{% extends 'base.html.twig' %}
+{% set header_variant = 'tunnel' %}
+{% block title %}Suppression de compte enregistrée — TrouveMoi{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block body %}
+<div class="tm-auth-page">
+    <section class="tm-container tm-auth-message">
+        <div class="tm-state-card tm-card-panel">
+            <span class="tm-state-card__icon tm-state-card__icon--info"><twig:Icon name="info" class="tm-icon--inherit" /></span>
+            <h1 class="tm-state-card__title">Votre demande de suppression est enregistrée</h1>
+            <p class="tm-body-sm">Votre compte est désactivé dès maintenant et sera définitivement effacé dans {{ grace_days }} jours. Un e-mail de confirmation vient de vous être envoyé.</p>
+            <p class="tm-body-sm">Vous changez d’avis ? Utilisez le lien « Annuler la suppression » de cet e-mail avant la date indiquée.</p>
+            <a href="{{ path('public_home') }}" class="tm-body-sm"><strong>← Retour à l’accueil</strong></a>
+        </div>
+    </section>
+</div>
+{% endblock %}

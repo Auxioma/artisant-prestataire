@@ -1,0 +1,10 @@
+Bonjour {{ prenom }},
+
+Merci pour votre signalement concernant « {{ contenu }} ». Notre équipe de modération l’a examiné.
+
+{% if suite_donnee %}Nous avons pris les mesures nécessaires au regard de nos règles de publication.{% else %}Après vérification, ce contenu respecte nos règles de publication : il reste en ligne.{% endif %}
+{% if reponse %}
+
+Message de l’équipe : {{ reponse }}{% endif %}
+
+Vos signalements nous aident à garder TrouveMoi fiable pour tous.

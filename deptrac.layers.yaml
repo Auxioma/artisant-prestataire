@@ -1,0 +1,26 @@
+# ADR-0001 — axe 1 : couches de la Clean Architecture (UI → Application → Domain ; Infrastructure → Application/Domain).
+deptrac:
+  paths: [./src]
+  cache_file: var/deptrac/layers.cache
+  layers:
+    - name: Domain
+      collectors: [{ type: classLike, value: '^App\\[A-Za-z]+\\Domain\\.*' }]
+    - name: Application
+      collectors: [{ type: classLike, value: '^App\\[A-Za-z]+\\Application\\.*' }]
+    - name: Infrastructure
+      collectors: [{ type: classLike, value: '^App\\[A-Za-z]+\\Infrastructure\\.*' }]
+    - name: UI
+      collectors: [{ type: classLike, value: '^App\\[A-Za-z]+\\UI\\.*' }]
+    - name: Kernel
+      collectors: [{ type: classLike, value: '^App\\Kernel$' }]
+    # Bibliothèques interdites dans Domain et Application (le domaine est du PHP pur).
+    - name: Framework
+      collectors:
+        - type: classLike
+          value: '^(Symfony|Doctrine|Psr|Monolog|Stripe|League|Meilisearch|Twig|Brevo|Nelmio|Scheb|OTPHP|chillerlan|AsyncAws|PhpParser|PHPStan)\\.*'
+  ruleset:
+    Domain: ~
+    Application: [Domain]
+    Infrastructure: [Domain, Application, Framework]
+    UI: [Domain, Application, Framework]
+    Kernel: [Framework, Infrastructure] # racine de composition : enregistre les passes de compilation

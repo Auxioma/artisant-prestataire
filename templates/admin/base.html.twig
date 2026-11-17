@@ -1,0 +1,61 @@
+{#- Back-office (Figma 186:76 / 186:329) : barre latérale par rubriques (permissions), barre supérieure, contenu. Pas de bandeau cookies : aucune mesure d'audience ni traceur tiers dans le back-office. -#}
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csp-nonce" content="{{ csp_nonce('style') }}">
+        <meta name="robots" content="noindex, nofollow">
+        <title>{% block title %}Back-office{% endblock %} — TrouveMoi</title>
+        {{ include('_head_assets.html.twig') }}
+        <link rel="stylesheet" href="{{ asset('styles/pages/admin.css') }}">
+        {{ importmap('app', {nonce: csp_nonce('script')}) }}
+    </head>
+    <body class="tm-admin-body">
+        <a class="tm-skip-link" href="#contenu">Aller au contenu</a>
+        {% block layout %}
+        <div class="tm-admin">
+            <aside class="tm-admin__sidebar" data-controller="admin-nav">
+                <div class="tm-admin__bar">
+                    <a class="tm-admin__brand" href="{{ path('admin_dashboard') }}"><twig:Logo tone="fonce" width="150" /><span>Back-office</span></a>
+                    <button type="button" class="tm-admin__menu-button" hidden aria-expanded="true" aria-controls="admin-nav" data-admin-nav-target="button" data-action="admin-nav#toggle"><twig:Icon name="menu" size="sm" class="tm-icon--inherit" />Menu</button>
+                </div>
+                <nav aria-label="Back-office" id="admin-nav" data-admin-nav-target="panel">
+                    {% for group, items in tm_admin_navigation() %}
+                        <p class="tm-admin__group">{{ group }}</p>
+                        <ul class="tm-admin__nav">
+                            {% for item in items %}
+                                <li>
+                                    {% if item.href %}
+                                        <a class="tm-admin__link{{ active_module|default('') == item.module ? ' is-active' }}" href="{{ item.href }}"{{ active_module|default('') == item.module ? ' aria-current="page"' }}><twig:Icon name="{{ item.icon }}" size="sm" class="tm-icon--inherit" />{{ item.label }}{% if item.count > 0 %}<span class="tm-admin__badge">{{ item.count }}<span class="tm-visually-hidden"> en attente</span></span>{% endif %}</a>
+                                    {% else %}
+                                        <span class="tm-admin__link is-disabled"><twig:Icon name="{{ item.icon }}" size="sm" class="tm-icon--inherit" />{{ item.label }}<span class="tm-admin__soon">Bientôt</span></span>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endfor %}
+                </nav>
+            </aside>
+            <div class="tm-admin__main">
+                <header class="tm-admin__topbar">
+                    <span class="tm-admin__env tm-admin__env--{{ app.environment }}"><span class="tm-admin__dot" aria-hidden="true"></span>{{ {prod: 'Production', dev: 'Développement', test: 'Test'}[app.environment] ?? app.environment }}</span>
+                    <span class="tm-admin__2fa"><twig:Icon name="shield" size="xs" class="tm-icon--inherit" />2FA</span>
+                    {% if app.user %}
+                        <span class="tm-admin__me">
+                            <span class="tm-admin__avatar" aria-hidden="true">{{ app.user.name|split(' ')|map(p => p|first)|join|upper|slice(0, 2) }}</span>
+                            <span><strong>{{ app.user.name }}</strong><span class="tm-caption">{{ app.user.role.label }}</span></span>
+                        </span>
+                        <a class="tm-admin__logout" href="{{ logout_path('admin') }}"><twig:Icon name="logIn" size="sm" class="tm-icon--inherit" />Se déconnecter</a>
+                    {% endif %}
+                </header>
+                <main id="contenu" tabindex="-1" class="tm-admin__content">
+                    {% block breadcrumb %}{% endblock %}
+                    {% block body %}{% endblock %}
+                </main>
+            </div>
+        </div>
+        {% endblock %}
+        <twig:ToastRegion />
+    </body>
+</html>

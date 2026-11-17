@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Identity — profil client (A02, C07). Clé = identifiant du compte. -->
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Identity\Domain\Client\ClientProfile" table="client_profile" schema="identity">
+        <id name="userId" type="identity_user_id" column="user_id"/>
+        <field name="type" type="string" length="20" enum-type="App\Identity\Domain\Client\ClientType"/>
+        <field name="companyName" type="string" length="120" column="company_name" nullable="true"/>
+        <field name="siret" type="string" length="14" nullable="true"/>
+        <field name="siretVerified" type="boolean" column="siret_verified"/>
+        <field name="postalCode" type="string" length="5" column="postal_code"/>
+        <field name="newsletterOptInAt" type="datetimetz_immutable" column="newsletter_opt_in_at" nullable="true"/>
+        <field name="avatarFileId" type="guid" column="avatar_file_id" nullable="true"/>
+        <field name="searchRadiusKm" type="smallint" column="search_radius_km" nullable="true"/>
+        <field name="interests" type="json" column="interests"/>
+        <field name="createdAt" type="datetimetz_immutable" column="created_at"/>
+        <field name="updatedAt" type="datetimetz_immutable" column="updated_at"/>
+    </entity>
+</doctrine-mapping>

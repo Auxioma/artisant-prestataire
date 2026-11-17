@@ -1,0 +1,54 @@
+{#- BO08.1 — création ou modification d'un forfait (pas de maquette dédiée : formulaire sur le modèle du back-office). P-93. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'plans' %}
+{% set t = plan ? plan.terms : null %}
+{% set p = posted %}
+{% set locked = plan and plan.status.value == 'archived' %}
+{% macro value(p, key, current) %}{{ p is not null ? (p[key] ?? '') : current }}{% endmacro %}
+{% import _self as m %}
+{% block title %}{{ plan ? t.name : 'Nouveau forfait' }} — Forfaits{% endblock %}
+{% block body %}
+    <nav class="tm-admin-crumbs" aria-label="Fil d’Ariane">
+        <ol><li><a href="{{ path('admin_dashboard') }}">Back-office</a></li><li><a href="{{ path('admin_plans') }}">Monétisation</a></li><li aria-current="page">{{ plan ? t.name : 'Nouveau forfait' }}</li></ol>
+    </nav>
+    <div class="tm-admin-head">
+        <div>
+            <h1>{{ plan ? t.name : 'Nouveau forfait' }}</h1>
+            <p class="tm-admin-head__sub">{{ plan ? 'Statut : ' ~ plan.status.label() : 'Créé en brouillon : publiez-le une fois le prix et le volume fixés.' }}</p>
+        </div>
+    </div>
+    <section class="tm-admin-panel">
+        {% if error %}<p class="tm-field__error" role="alert"><twig:Icon name="alert" size="xs" />{{ error }}</p>{% endif %}
+        <form method="post" data-turbo="false" class="tm-plan-form">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            <fieldset class="tm-plan-form__frame"{{ locked ? ' disabled' }}>
+            <legend class="tm-visually-hidden">Forfait</legend>
+            <div class="tm-plan-grid">
+                <div class="tm-field"><label class="tm-field__label" for="name">Nom <span aria-hidden="true">*</span></label><div class="tm-field__control"><input class="tm-field__input" id="name" name="name" maxlength="60" required value="{{ m.value(p, 'name', t.name ?? '') }}"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="badge">Badge</label><div class="tm-field__control"><input class="tm-field__input" id="badge" name="badge" maxlength="30" placeholder="Ex. : Le plus choisi" value="{{ m.value(p, 'badge', t.badge ?? '') }}"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="monthly_price">Prix HT mensuel (€)</label><div class="tm-field__control"><input class="tm-field__input" id="monthly_price" name="monthly_price" inputmode="decimal" placeholder="Obligatoire pour publier" value="{{ m.value(p, 'monthly_price', plan and plan.monthlyCents is not null ? plan.monthlyCents|tm_money(false) : '') }}"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="yearly_price">Prix HT annuel (€)</label><div class="tm-field__control"><input class="tm-field__input" id="yearly_price" name="yearly_price" inputmode="decimal" placeholder="Facultatif" value="{{ m.value(p, 'yearly_price', plan and plan.yearlyCents is not null ? plan.yearlyCents|tm_money(false) : '') }}"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="quotes_per_period">Devis par période</label><div class="tm-field__control"><input class="tm-field__input" id="quotes_per_period" name="quotes_per_period" inputmode="numeric" value="{{ m.value(p, 'quotes_per_period', t.quotesPerPeriod ?? '') }}"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="fair_use_cap">Plafond d’usage raisonnable (illimité)</label><div class="tm-field__control"><input class="tm-field__input" id="fair_use_cap" name="fair_use_cap" inputmode="numeric" value="{{ m.value(p, 'fair_use_cap', t.fairUseCap ?? '') }}"></div></div>
+            </div>
+            {% set unlimited = p is not null ? (p.unlimited ?? '') == '1' : (t.unlimited ?? false) %}
+            <label class="tm-check"><input type="checkbox" class="tm-check__input" name="unlimited" value="1"{{ unlimited ? ' checked' }}><span>Devis illimités (avec plafond d’usage raisonnable)</span></label>
+            <div class="tm-field"><label class="tm-field__label" for="description">Description</label><div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="description" name="description" rows="2" maxlength="500">{{ m.value(p, 'description', t.description ?? '') }}</textarea></div></div>
+            <div class="tm-field"><label class="tm-field__label" for="features">Avantages (un par ligne)</label><div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="features" name="features" rows="4">{{ m.value(p, 'features', t ? t.features|join("\n") : '') }}</textarea></div></div>
+            <div class="tm-plan-grid">
+                <div class="tm-field"><label class="tm-field__label" for="max_offers">Nombre d’offres publiables</label><div class="tm-field__control"><input class="tm-field__input" id="max_offers" name="max_offers" inputmode="numeric" placeholder="Vide : sans limite" value="{{ m.value(p, 'max_offers', t.maxOffers ?? '') }}"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="visibility">Visibilité</label><div class="tm-select"><select class="tm-select__input" id="visibility" name="visibility">{% set vis = p is not null ? (p.visibility ?? 'public') : (t ? t.visibility.value : 'public') %}{% for v in visibilities %}<option value="{{ v.value }}"{{ v.value == vis ? ' selected' }}>{{ v.label() }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="access_code">Code d’accès (forfait privé)</label><div class="tm-field__control"><input class="tm-field__input" id="access_code" name="access_code" maxlength="40" placeholder="Ex. : PARTENAIRE-76" value="{{ m.value(p, 'access_code', t.accessCode ?? '') }}"></div></div>
+            </div>
+            {% set featured = p is not null ? (p.featured ?? '') == '1' : (t.featured ?? false) %}
+            {% set stats = p is not null ? (p.advanced_stats ?? '') == '1' : (t.advancedStats ?? false) %}
+            <label class="tm-check"><input type="checkbox" class="tm-check__input" name="featured" value="1"{{ featured ? ' checked' }}><span>Mise en avant dans les résultats</span></label>
+            <label class="tm-check"><input type="checkbox" class="tm-check__input" name="advanced_stats" value="1"{{ stats ? ' checked' }}><span>Statistiques avancées</span></label>
+            </fieldset>
+            <div class="tm-admin-actions">
+                <twig:Button href="{{ path('admin_plans') }}" variant="secondary">Retour</twig:Button>
+                {% if not locked %}<twig:Button type="submit">{{ plan ? 'Enregistrer' : 'Créer le brouillon' }}</twig:Button>{% endif %}
+            </div>
+        </form>
+    </section>
+{% endblock %}

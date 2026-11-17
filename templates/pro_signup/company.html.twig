@@ -1,0 +1,73 @@
+{#- A03.2 — Entreprise (Figma 228:11720) : SIRET vérifié via Sirene, pré-remplissage, TVA ; saisie manuelle si l'API est indisponible. -#}
+{% extends 'pro_signup/_layout.html.twig' %}
+{% set step = 2 %}
+
+{% block title %}Votre entreprise — Inscription professionnelle — TrouveMoi{% endblock %}
+{% block step_title %}Votre entreprise{% endblock %}
+{% block step_subtitle %}Saisissez votre SIRET : nous récupérons automatiquement vos informations.{% endblock %}
+
+{% block step_content %}
+    {% set status = lookup ? lookup.status : null %}
+    {% set siret_message = {
+        found: ['success', 'Établissement actif · vérifié via le répertoire des entreprises (INSEE)'],
+        invalid: ['error', 'Ce numéro SIRET est invalide.'],
+        taken: ['error', 'Cette entreprise est déjà inscrite. Contactez-nous si vous pensez qu’il s’agit d’une erreur.'],
+        closed: ['error', 'Cet établissement est indiqué comme fermé.'],
+        unavailable: ['help', 'Le répertoire des entreprises ne répond pas : complétez les informations ci-dessous, nous vérifierons votre SIRET plus tard.'],
+    }[status] ?? null %}
+    <form method="post" class="tm-signup__fields" novalidate data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token('artisan_company') }}">
+        {% if error %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ error }}</p></div>{% endif %}
+
+        <div class="tm-siret">
+            <twig:Field id="siret" name="siret" label="SIRET (14 chiffres)" value="{{ values.siret }}" required inputmode="numeric" maxlength="17" autocomplete="off" placeholder="812 345 678 00021"
+                error="{{ siret_message and siret_message[0] == 'error' ? siret_message[1] : null }}"
+                success="{{ siret_message and siret_message[0] == 'success' ? siret_message[1] : null }}"
+                help="{{ siret_message and siret_message[0] == 'help' ? siret_message[1] : 'Il figure sur votre extrait Kbis ou votre avis de situation INSEE.' }}" />
+            <twig:Button type="submit" variant="secondary" name="action" value="verify">Vérifier</twig:Button>
+        </div>
+
+        {% if status == 'found' and lookup.company %}
+            <dl class="tm-facts">
+                <div><dt>Raison sociale</dt><dd>{{ lookup.company.name ?? 'Non diffusée' }}</dd></div>
+                {% if lookup.company.legalCategory %}<div><dt>Forme juridique (code INSEE)</dt><dd>{{ lookup.company.legalCategory }}</dd></div>{% endif %}
+                <div><dt>Adresse du siège</dt><dd>{{ [lookup.company.street, lookup.company.postalCode, lookup.company.city]|filter(v => v)|join(', ') ?: 'Non diffusée' }}</dd></div>
+                {% if lookup.company.nafCode %}<div><dt>Code APE</dt><dd>{{ lookup.company.nafCode }}</dd></div>{% endif %}
+                {% if lookup.company.createdOn %}<div><dt>Date de création</dt><dd>{{ lookup.company.createdOn|date('d/m/Y') }}</dd></div>{% endif %}
+            </dl>
+        {% elseif status == 'unavailable' %}
+            <div class="tm-form-grid">
+                <twig:Field id="company_name" name="company_name" label="Raison sociale" value="{{ values.company_name }}" required maxlength="120" />
+                <twig:Field id="postal_code" name="postal_code" label="Code postal du siège" value="{{ values.postal_code }}" required inputmode="numeric" maxlength="5" />
+                <twig:Field id="city" name="city" label="Ville du siège" value="{{ values.city }}" maxlength="100" />
+            </div>
+        {% endif %}
+
+        {% if status in ['found', 'unavailable'] %}
+            <div class="tm-form-grid">
+                <twig:Field id="trade_name" name="trade_name" label="Nom commercial" value="{{ values.trade_name }}" maxlength="120" help="Facultatif : nom sous lequel vos clients vous connaissent." />
+                <twig:Field id="vat_number" name="vat_number" label="N° TVA intracommunautaire" value="{{ values.vat_number }}" maxlength="20" help="Calculé automatiquement, modifiable." />
+            </div>
+            <fieldset class="tm-fieldset">
+                <legend class="tm-field__label">Statut TVA</legend>
+                <div class="tm-inline-choices">
+                    <label class="tm-check"><input class="tm-check__input" type="radio" name="vat_status" value="assujetti"{{ values.vat_status != 'franchise' ? ' checked' }}><span>Assujetti</span></label>
+                    <label class="tm-check"><input class="tm-check__input" type="radio" name="vat_status" value="franchise"{{ values.vat_status == 'franchise' ? ' checked' }}><span>Franchise en base (art. 293 B)</span></label>
+                </div>
+            </fieldset>
+        {% endif %}
+
+        <div class="tm-pro-signup__actions">
+            <twig:Button variant="secondary" href="{{ path('public_home') }}">Terminer plus tard</twig:Button>
+            {% if status in ['found', 'unavailable'] %}
+                <twig:Button type="submit" name="action" value="continue" icon="arrowR">Continuer</twig:Button>
+            {% endif %}
+        </div>
+    </form>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Un SIRET = un compte professionnel (RG-041).</li>
+    <li><twig:Icon name="check" size="xs" />Seul un établissement actif peut s’inscrire.</li>
+    <li><twig:Icon name="check" size="xs" />Le code APE est contrôlé par notre équipe lors de la validation.</li>
+{% endblock %}

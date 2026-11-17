@@ -1,0 +1,4 @@
+{% extends 'base.html.twig' %}
+{% block title %}Page supprimée — TrouveMoi{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}{% include 'bundles/TwigBundle/Exception/_page.html.twig' with {code: 410, icon: 'x', title: 'Ce contenu n’existe plus', text: 'Le professionnel ou la page demandée a été supprimé. D’autres professionnels vérifiés peuvent vous aider.'} %}{% endblock %}

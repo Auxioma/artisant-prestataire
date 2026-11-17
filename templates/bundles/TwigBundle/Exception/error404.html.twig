@@ -1,0 +1,4 @@
+{% extends 'base.html.twig' %}
+{% block title %}Page introuvable — TrouveMoi{% endblock %}
+{% block meta %}<meta name="robots" content="noindex">{% endblock %}
+{% block body %}{% include 'bundles/TwigBundle/Exception/_page.html.twig' with {code: 404, icon: 'search', title: 'Cette page est introuvable', text: 'Elle a peut-être été déplacée ou supprimée. Recherchez un professionnel ou parcourez nos catégories.'} %}{% endblock %}

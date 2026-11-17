@@ -1,0 +1,49 @@
+{#- A03.1 — Compte du dirigeant. La maquette 15:51 (version antérieure) mêle entreprise et SMS : contenu du CDC (P-46). -#}
+{% extends 'pro_signup/_layout.html.twig' %}
+{% set step = 1 %}
+{% set steps = ['Compte', 'Entreprise', 'Métiers', 'Zone', 'Assurances', 'Justificatifs', 'Profil & récapitulatif'] %}
+
+{% block title %}Inscription professionnelle — TrouveMoi{% endblock %}
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="{{ csp_nonce('script') }}"></script>
+{% endblock %}
+{% block step_title %}Développez votre activité{% endblock %}
+{% block step_subtitle %}Créez votre compte professionnel : {{ tm_setting_int('credits.free_on_signup') }} devis offerts dès la vérification de votre dossier.{% endblock %}
+
+{% block step_content %}
+    {{ form_start(form, {attr: {novalidate: 'novalidate', 'data-controller': 'signup', 'data-turbo': 'false', class: 'tm-signup__fields'}}) }}
+        {{ form_errors(form) }}
+        <div class="tm-form-grid">
+            {{ form_row(form.firstName) }}
+            {{ form_row(form.lastName) }}
+            {{ form_row(form.email) }}
+            {{ form_row(form.mobile) }}
+            {{ include('auth/_password_row.html.twig', {field: form.password.first, gauge: true}) }}
+            {{ include('auth/_password_row.html.twig', {field: form.password.second}) }}
+        </div>
+        <div class="tm-check-row">
+            <label class="tm-check" for="{{ form.terms.vars.id }}">
+                {{ form_widget(form.terms) }}
+                <span>J’accepte les <a href="{{ path('identity_legal_document', {slug: 'cgu'}) }}" target="_blank" rel="noopener">CGU</a>, les
+                    <a href="{{ path('identity_legal_document', {slug: 'cgv-professionnels'}) }}" target="_blank" rel="noopener">CGV professionnelles</a>
+                    et la <a href="{{ path('identity_legal_document', {slug: 'confidentialite'}) }}" target="_blank" rel="noopener">Politique de confidentialité</a>.<abbr class="tm-field__required" title="obligatoire">*</abbr>
+                    <span class="tm-visually-hidden">(s’ouvrent dans un nouvel onglet)</span></span>
+            </label>
+            {{ form_errors(form.terms) }}
+        </div>
+        {{ form_widget(form.legalVersions) }}
+        <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-action="signup" data-size="flexible" data-language="fr"></div>
+        <div class="tm-pro-signup__actions">
+            <twig:Button variant="secondary" href="{{ path('identity_register_choice') }}">← Retour</twig:Button>
+            <twig:Button type="submit" icon="arrowR">Continuer</twig:Button>
+        </div>
+    {{ form_end(form) }}
+    <p class="tm-body-sm">Déjà inscrit ? <a href="{{ path('identity_login', {redirect: '/inscription/pro/reprendre'}) }}">Connectez-vous pour reprendre votre inscription</a>.</p>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Votre compte vous permet de reprendre l’inscription à tout moment.</li>
+    <li><twig:Icon name="check" size="xs" />Votre mobile n’est jamais affiché sans votre accord.</li>
+    <li><twig:Icon name="check" size="xs" />Étapes suivantes : entreprise, métiers, zone, assurances, justificatifs.</li>
+{% endblock %}

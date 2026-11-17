@@ -1,0 +1,94 @@
+{#- BO14 (Figma 186:6097) — équipe et rôles : administrateurs, invitation, matrice des permissions des rôles prédéfinis (P-06). -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'team' %}
+{% block title %}Équipe et rôles{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Équipe et rôles', crumbs: ['Système'], subtitle: '2FA obligatoire pour tous les administrateurs'}) }}
+
+    <section class="tm-admin-panel" aria-labelledby="admins-titre">
+        <h2 id="admins-titre" class="tm-card-title">Administrateurs</h2>
+        <div class="tm-admin-table-wrap">
+            <table class="tm-admin-table">
+                <thead><tr><th scope="col">Nom</th><th scope="col">E-mail</th><th scope="col">Rôle</th><th scope="col">2FA</th><th scope="col">Dernière connexion</th><th scope="col">Statut</th>{% if is_granted('admin.team.edit') %}<th scope="col"><span class="tm-visually-hidden">Actions</span></th>{% endif %}</tr></thead>
+                <tbody>
+                {% for m in members %}
+                    <tr>
+                        <th scope="row">{{ m.status == 'invited' ? 'Invitation en attente' : m.name }}</th>
+                        <td>{{ m.email }}</td>
+                        <td><span class="tm-admin-role tm-admin-role--{{ m.role }}">{{ m.roleLabel }}</span></td>
+                        <td>{% if m.twoFactorEnabled %}<twig:Badge variant="available">Active</twig:Badge>{% else %}<twig:Badge variant="pending">À configurer</twig:Badge>{% endif %}</td>
+                        <td>{{ m.lastLoginAt ? m.lastLoginAt|date('d/m/Y H:i', 'Europe/Paris') : '—' }}</td>
+                        <td>{% if m.status == 'active' %}<twig:Badge variant="available">Actif</twig:Badge>{% elseif m.status == 'invited' %}<twig:Badge variant="pending">Invité</twig:Badge>{% else %}<twig:Badge variant="neutral">Désactivé</twig:Badge>{% endif %}</td>
+                        {% if is_granted('admin.team.edit') %}
+                        <td>
+                            {% if m.id != me %}
+                            <details class="tm-admin-actions">
+                                <summary>Gérer<span class="tm-visually-hidden"> {{ m.name }}</span></summary>
+                                <div class="tm-admin-actions__menu">
+                                    <form method="post" action="{{ path('admin_team_update', {id: m.id}) }}" class="tm-admin-inline">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('admin_team_update_' ~ m.id) }}">
+                                        <twig:Select id="role_{{ m.id }}" name="role" label="Rôle de {{ m.name }}" :options="roles|reduce((acc, r) => acc|merge({(r.value): r.label}), {})" value="{{ m.role }}" />
+                                        <twig:Button type="submit" variant="secondary" name="action" value="role">Changer le rôle</twig:Button>
+                                    </form>
+                                    <form method="post" action="{{ path('admin_team_update', {id: m.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('admin_team_update_' ~ m.id) }}">
+                                        {% if m.status == 'invited' %}<button type="submit" class="tm-link-button" name="action" value="reinvite">Renvoyer l’invitation</button>{% endif %}
+                                        {% if m.status == 'disabled' %}<button type="submit" class="tm-link-button" name="action" value="enable">Réactiver</button>
+                                        {% else %}<button type="submit" class="tm-link-button tm-admin-danger" name="action" value="disable">Désactiver</button>{% endif %}
+                                    </form>
+                                </div>
+                            </details>
+                            {% else %}<span class="tm-caption">Vous</span>{% endif %}
+                        </td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% if is_granted('admin.team.create') %}
+    <section class="tm-admin-panel" aria-labelledby="invite-titre">
+        <h2 id="invite-titre" class="tm-card-title">Inviter un administrateur</h2>
+        {% if errors.invite is defined %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ errors.invite }}</p></div>{% endif %}
+        <form method="post" action="{{ path('admin_team_invite') }}" class="tm-admin-invite" novalidate data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('admin_team_invite') }}">
+            <twig:Field id="invite_name" name="name" label="Nom" value="{{ values.name }}" required maxlength="80" autocomplete="off" />
+            <twig:Field id="invite_email" name="email" type="email" label="Adresse e-mail" value="{{ values.email }}" required maxlength="254" autocomplete="off" />
+            <div class="tm-field">
+                <label class="tm-field__label" for="invite_role">Rôle</label>
+                <div class="tm-select"><select class="tm-select__input" id="invite_role" name="role">{% for r in roles %}<option value="{{ r.value }}"{{ r.value == values.role ? ' selected' }}>{{ r.label }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
+            </div>
+            <twig:Button type="submit">Inviter un administrateur</twig:Button>
+        </form>
+        <p class="tm-caption">L’invité reçoit un lien valable {{ tm_setting_int('admin.invitation_ttl_hours') }} h pour choisir son mot de passe et configurer sa double authentification.</p>
+    </section>
+    {% endif %}
+
+    <section class="tm-admin-panel" aria-labelledby="matrice-titre">
+        <h2 id="matrice-titre" class="tm-card-title">Matrice des permissions</h2>
+        <nav class="tm-admin-chips" aria-label="Rôle affiché">
+            <span>Rôle :</span>
+            {% for r in roles %}<a class="tm-admin-chip{{ r == matrix_role ? ' is-active' }}" href="{{ path('admin_team', {role: r.value}) }}#matrice-titre"{{ r == matrix_role ? ' aria-current="true"' }}>{{ r.label }}</a>{% endfor %}
+        </nav>
+        <div class="tm-admin-table-wrap">
+            <table class="tm-admin-table tm-admin-matrix">
+                <caption class="tm-visually-hidden">Permissions du rôle {{ matrix_role.label }}</caption>
+                <thead><tr><th scope="col">Module</th>{% for a in actions %}<th scope="col">{{ a.label }}</th>{% endfor %}</tr></thead>
+                <tbody>
+                {% for module in modules %}
+                    <tr>
+                        <th scope="row">{{ module.label }}</th>
+                        {% for a in actions %}
+                            {% set granted = matrix_role.allows(module.permission(a)) %}
+                            <td>{% if granted %}<twig:Icon name="check" size="sm" class="tm-admin-yes" /><span class="tm-visually-hidden">Autorisé</span>{% else %}<span aria-hidden="true" class="tm-admin-no">—</span><span class="tm-visually-hidden">Non autorisé</span>{% endif %}</td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="tm-caption">Rôles prédéfinis, non modifiables. Les rôles personnalisés (P-06) seront activables plus tard sans refonte. Toutes les actions de l’équipe sont journalisées.</p>
+    </section>
+{% endblock %}

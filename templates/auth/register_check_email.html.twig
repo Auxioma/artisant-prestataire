@@ -1,0 +1,24 @@
+{#- A02 état « succès » : vérification de l'e-mail (A06). Même page qu'il s'agisse d'un nouvel e-mail ou non. -#}
+{% extends 'base.html.twig' %}
+
+{% block title %}Vérifiez votre boîte mail — TrouveMoi{% endblock %}
+
+{% block body %}
+<div class="tm-auth-page">
+    <section class="tm-container tm-auth-message" {% if track %}data-controller="analytics" data-analytics-auto-event-value="sign_up" data-analytics-auto-type-value="client"{% endif %}>
+        <div class="tm-auth-message__card tm-card-panel">
+            <span class="tm-auth-message__icon"><twig:Icon name="mail" /></span>
+            <h1>Vérifiez votre boîte mail</h1>
+            <p class="tm-body">Si cette adresse peut être utilisée, un e-mail vient d’être envoyé à <strong>{{ email }}</strong>.
+                Cliquez sur le lien qu’il contient pour activer votre compte (valable {{ tm_setting_int('auth.email_verification_ttl_hours') }} h).</p>
+            <p class="tm-body-sm tm-muted">Pensez à regarder dans vos courriers indésirables. Vous avez déjà un compte avec cette adresse ? Un e-mail vous l’indique.</p>
+            <form method="post" action="{{ path('identity_resend_verification') }}" data-controller="countdown" data-countdown-seconds-value="{{ tm_setting_int('auth.email_resend_cooldown_sec') }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('email_verification_resend') }}">
+                <twig:Button type="submit" variant="secondary" data-countdown-target="button">Renvoyer l’e-mail</twig:Button>
+                <p class="tm-caption" data-countdown-target="hint" aria-live="polite"></p>
+            </form>
+            <twig:Button variant="tertiary" href="{{ tm_path('public_home') }}">Retour à l’accueil</twig:Button>
+        </div>
+    </section>
+</div>
+{% endblock %}

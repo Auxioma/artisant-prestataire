@@ -1,0 +1,12 @@
+{#
+    Zone d'annonce des toasts (aria-live), alimentée par les messages flash (types : success, info, warning, error).
+    Un message flash peut être une chaîne (titre) ou un tableau {title, message}.
+#}
+<div class="tm-toasts" aria-live="polite" aria-relevant="additions">
+    {% for type, messages in app.flashes(['success', 'info', 'warning', 'error']) %}
+        {% for flash in messages %}
+            <twig:Toast variant="{{ type }}" title="{{ flash.title ?? flash }}" message="{{ flash.message ?? null }}" />
+        {% endfor %}
+    {% endfor %}
+    {% block content %}{% endblock %}
+</div>

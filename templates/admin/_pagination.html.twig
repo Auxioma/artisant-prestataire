@@ -1,0 +1,13 @@
+{#- Pagination du back-office : précédent / pages proches / suivant, filtres conservés. -#}
+{% if page.pages > 1 %}
+<nav class="tm-admin-pager" aria-label="Pagination">
+    <span class="tm-caption">{{ (page.page - 1) * page.perPage + 1 }}–{{ min(page.page * page.perPage, page.total) }} sur {{ page.total|number_format(0, ',', ' ') }}</span>
+    <ul>
+        {% if page.page > 1 %}<li><a href="{{ path(route, params|merge({page: page.page - 1})) }}" aria-label="Page précédente"><twig:Icon name="chevL" size="xs" class="tm-icon--inherit" /></a></li>{% endif %}
+        {% for p in max(1, page.page - 2)..min(page.pages, page.page + 2) %}
+            <li>{% if p == page.page %}<span aria-current="page">{{ p }}</span>{% else %}<a href="{{ path(route, params|merge({page: p})) }}">{{ p }}</a>{% endif %}</li>
+        {% endfor %}
+        {% if page.page < page.pages %}<li><a href="{{ path(route, params|merge({page: page.page + 1})) }}" aria-label="Page suivante"><twig:Icon name="chevR" size="xs" class="tm-icon--inherit" /></a></li>{% endif %}
+    </ul>
+</nav>
+{% endif %}

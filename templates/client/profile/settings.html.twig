@@ -1,0 +1,49 @@
+{#-
+    C07.3 « Mes paramètres » (onglet « Mes préférences » de C07, Figma 231:12840 — pas de maquette dédiée, P-124) :
+    tableau sujet × canal (e-mail, sur le site, SMS à venir) ; lignes indispensables verrouillées.
+-#}
+{% extends 'client/_space.html.twig' %}
+{% set space_active = 'settings' %}
+{% set space_title = 'Mes paramètres' %}
+{% set space_subtitle = 'Choisissez comment TrouveMoi vous prévient.' %}
+{% block title %}Mes paramètres — Espace client — TrouveMoi{% endblock %}
+{% set channels = {email: 'E-mail', in_app: 'Sur le site'} %}
+{% block space_content %}
+<div class="tm-account">
+    <h1 class="tm-visually-hidden">Mes paramètres de notification</h1>
+    {% include 'client/profile/_tabs.html.twig' with {current: 'preferences'} %}
+    <form method="post" action="{{ path('client_settings') }}" class="tm-account__card">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+        <h2 class="tm-account__title"><twig:Icon name="bell" class="tm-icon--inherit" />Mes notifications</h2>
+        <p class="tm-caption">Cochez les canaux par lesquels vous souhaitez être prévenu. Les SMS arriveront dans une prochaine version. La newsletter se règle dans <a href="{{ path('client_profile') }}#preferences">Mes informations</a>.</p>
+        <div class="tm-account__matrix-wrap">
+            <table class="tm-account__matrix">
+                <caption class="tm-visually-hidden">Notifications par sujet et par canal</caption>
+                <thead><tr><th scope="col">Sujet</th>{% for label in channels %}<th scope="col">{{ label }}</th>{% endfor %}<th scope="col">SMS</th></tr></thead>
+                <tbody>
+                    {% for t in topics %}
+                        <tr>
+                            <th scope="row">{{ t.label() }}</th>
+                            {% for channel, label in channels %}
+                                <td><input class="tm-check__input" type="checkbox" id="m_{{ t.value }}_{{ channel }}" name="matrix[{{ t.value }}][{{ channel }}]" value="1" aria-label="{{ t.label() }} — {{ label }}"{% if matrix[t.value][channel] %} checked{% endif %}></td>
+                            {% endfor %}
+                            <td><span class="tm-caption">Bientôt</span></td>
+                        </tr>
+                    {% endfor %}
+                    {% for label in essential %}
+                        <tr class="is-locked">
+                            <th scope="row">{{ label }} <span class="tm-account__type-badge">Indispensable</span></th>
+                            {% for channel, c in channels %}<td><input class="tm-check__input" type="checkbox" checked disabled aria-label="{{ label }} — {{ c }} (toujours envoyé)"></td>{% endfor %}
+                            <td><span class="tm-caption">Bientôt</span></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="tm-account__actions">
+            <twig:Button type="submit" variant="primary" icon="check" iconPosition="start">Enregistrer</twig:Button>
+            <twig:Button href="{{ path('client_settings') }}" variant="secondary" icon="x" iconPosition="start">Annuler</twig:Button>
+        </div>
+    </form>
+</div>
+{% endblock %}

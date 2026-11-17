@@ -1,0 +1,35 @@
+{#- « Signaler » un avis, un profil ou une demande (même gabarit que les pages A05) : motif normalisé, précisions. P-127. -#}
+{% extends 'base.html.twig' %}
+{% block title %}Signaler {{ label|lower }} — TrouveMoi{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block body %}
+<div class="tm-auth-page">
+    <section class="tm-container tm-auth-message">
+        <div class="tm-state-card tm-card-panel tm-report">
+            <span class="tm-state-card__icon tm-state-card__icon--info"><twig:Icon name="alert" class="tm-icon--inherit" /></span>
+            <h1 class="tm-state-card__title">Signaler {{ type == 'avis' ? 'cet avis' : (type == 'profil' ? 'ce profil' : 'cette demande') }}</h1>
+            <blockquote class="tm-report__content">
+                <p><strong>{{ content.title }}</strong></p>
+                <p>{{ content.excerpt|length > 400 ? content.excerpt|slice(0, 400) ~ '…' : content.excerpt }}</p>
+            </blockquote>
+            <form method="post" class="tm-state-card__form tm-report__form" novalidate>
+                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                <fieldset class="tm-report__reasons"{% if error %} aria-describedby="report_error"{% endif %}>
+                    <legend class="tm-field__label">Motif<abbr class="tm-field__required" title="obligatoire">*</abbr></legend>
+                    {% for r in reasons %}
+                        <twig:Checkbox type="radio" id="reason_{{ r.value }}" name="reason" value="{{ r.value }}" label="{{ r.label() }}" checked="{{ selected == r.value }}" />
+                    {% endfor %}
+                </fieldset>
+                <div class="tm-field">
+                    <label class="tm-field__label" for="report_details">Précisions <span class="tm-caption">(obligatoires pour « Autre motif »)</span></label>
+                    <div class="tm-field__control"><textarea class="tm-field__input tm-report__details" id="report_details" name="details" maxlength="1000" rows="4">{{ details }}</textarea></div>
+                </div>
+                {% if error %}<p class="tm-field__error" id="report_error" role="alert">{{ error }}</p>{% endif %}
+                <p class="tm-caption">{{ type == 'avis' ? 'Un avis signalé reste en ligne pendant l’examen, sauf contenu manifestement illicite. ' }}L’équipe examine chaque signalement sous 48 h et vous répond par e-mail. Un signalement abusif peut entraîner la suspension de votre compte.</p>
+                <twig:Button type="submit" block>Envoyer le signalement</twig:Button>
+            </form>
+            <a href="{{ back }}" class="tm-body-sm"><strong>← Retour</strong></a>
+        </div>
+    </section>
+</div>
+{% endblock %}

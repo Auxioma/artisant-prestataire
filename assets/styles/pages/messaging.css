@@ -1,0 +1,154 @@
+/*
+ * Messagerie C04 (Figma 160:644) et PR07 (232:13464), mêmes composants : liste des conversations, fil, encart de
+ * l'interlocuteur ; PR07 ajoute notes privées et réponses types. Mobile d'abord : la liste, puis le fil seul quand une conversation est ouverte ; trois colonnes à
+ * partir de 1280 px (liste, fil, encart), deux à partir de 900 px.
+ */
+@layer components {
+    .tm-msg-page { display: grid; gap: var(--space-4); }
+    .tm-msg-page__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+    .tm-msg-page__links { display: flex; flex-wrap: wrap; gap: 12px; }
+    .tm-msg-page__form { gap: var(--space-3); }
+    .tm-msg-layout { display: grid; gap: var(--space-4); align-items: start; }
+    .tm-msg-layout > * { min-width: 0; }
+
+    /* Avatars : logo de l'artisan ou initiales */
+    .tm-msg-avatar { flex: none; width: 48px; height: 48px; border-radius: 50%; object-fit: contain; background: var(--color-surface); border: 1px solid var(--tm-line); }
+    .tm-msg-avatar--sm { width: 32px; height: 32px; }
+    .tm-msg-avatar--lg { width: 72px; height: 72px; }
+    .tm-msg-avatar--initials { display: inline-grid; place-items: center; background: var(--tm-blue); border-color: var(--tm-blue); color: var(--color-text-inverse); font-weight: var(--font-weight-bold); font-size: 15px; }
+    .tm-msg-avatar--sm.tm-msg-avatar--initials { font-size: 12px; }
+
+    /* Liste (C04.1) */
+    .tm-msg-list { display: grid; gap: 12px; align-content: start; }
+    .tm-msg-list__search .tm-field__control { min-height: 44px; }
+    .tm-msg-list__tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tm-msg-list__tabs a { display: inline-flex; align-items: center; gap: 4px; padding: 6px 14px; border-radius: var(--radius-pill); color: var(--tm-blue); font-size: 13px; font-weight: var(--font-weight-semibold); text-decoration: none; }
+    .tm-msg-list__tabs a[aria-current="page"] { background: var(--tm-blue-deep); color: var(--color-text-inverse); }
+    /* PR07 : barre d'onglets au-dessus de la liste et du fil, boutons bordés de même largeur */
+    .tm-msg-list__tabs--bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 8px; }
+    .tm-msg-list__tabs--bar a { justify-content: center; gap: 8px; padding: 9px 12px; border: 1px solid var(--tm-line); border-radius: 10px; color: var(--tm-navy); font-size: 14px; }
+    .tm-msg-list__tabs--bar a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-msg-page.has-thread .tm-msg-list__tabs--bar { display: none; }
+    .tm-msg-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--tm-orange); }
+    .tm-msg-list__items { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+    .tm-msg-row { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; color: var(--tm-navy); text-decoration: none; }
+    .tm-msg-row:hover, .tm-msg-row.is-current { background: var(--tm-blue-soft); }
+    .tm-msg-row:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-msg-row__text { display: grid; flex: 1; min-width: 0; gap: 2px; font-size: 13px; line-height: 18px; }
+    .tm-msg-row__text strong { font-size: 14px; }
+    .tm-msg-row__ctx { color: var(--tm-blue); font-size: 12px; }
+    .tm-msg-row__last { overflow: hidden; color: var(--tm-ink); text-overflow: ellipsis; white-space: nowrap; }
+    .tm-msg-row.is-unread .tm-msg-row__last { color: var(--tm-navy); font-weight: var(--font-weight-semibold); }
+    .tm-msg-row__meta { display: grid; justify-items: end; gap: 6px; font-size: 12px; color: var(--tm-ink); }
+    .tm-msg-row__sent { color: var(--tm-blue); }
+    .tm-msg-badge { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding-inline: 5px; border-radius: 10px; background: var(--tm-orange); color: var(--color-text-inverse); font-size: 12px; font-weight: var(--font-weight-bold); }
+    .tm-msg-list__empty { margin: 0; padding: 12px; font-size: 13px; color: var(--color-text-muted); }
+    .tm-msg-list__pages { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--tm-ink); }
+    .tm-msg-list__pages a, .tm-msg-list__pages [aria-current] { display: inline-grid; place-items: center; min-width: 30px; height: 30px; border: 1px solid var(--tm-line); border-radius: 8px; }
+    .tm-msg-list__pages [aria-current] { background: var(--tm-blue-deep); border-color: var(--tm-blue-deep); color: var(--color-text-inverse); }
+
+    /* Fil (C04.2) */
+    .tm-msg-thread { display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; border: 1px solid var(--tm-line); border-radius: 14px; background: var(--color-surface); }
+    .tm-msg-thread__head { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--tm-line); }
+    .tm-msg-thread__head h2 { margin: 0; font-size: 17px; line-height: 22px; color: var(--tm-navy); }
+    .tm-msg-thread__head p { margin: 2px 0 0; font-size: 13px; line-height: 18px; color: var(--tm-ink); }
+    .tm-msg-thread__head .tm-msg-thread__quote { display: flex; align-items: center; gap: 6px; color: var(--tm-blue); }
+    .tm-msg-thread__back { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; color: var(--tm-navy); }
+    .tm-msg-thread__messages { display: grid; align-content: start; gap: 12px; max-height: 60vh; min-height: 280px; overflow-y: auto; padding: 16px; background: var(--tm-bg); }
+    .tm-msg-day { display: flex; justify-content: center; margin: 0; }
+    .tm-msg-day span { padding: 3px 12px; border-radius: var(--radius-pill); background: var(--tm-line); font-size: 12px; font-weight: var(--font-weight-semibold); color: var(--tm-ink); }
+    .tm-msg { display: flex; align-items: flex-end; gap: 8px; max-width: 82%; }
+    .tm-msg.is-mine { justify-self: end; }
+    .tm-msg__bubble { padding: 10px 14px; border: 1px solid var(--tm-line); border-radius: 14px 14px 14px 4px; background: var(--color-surface); color: var(--tm-navy); }
+    .tm-msg.is-mine .tm-msg__bubble { border-color: var(--tm-blue-soft); border-radius: 14px 14px 4px 14px; background: var(--tm-blue-soft); }
+    .tm-msg__body { margin: 0; font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+    .tm-msg__removed { display: flex; align-items: center; gap: 6px; color: var(--color-text-muted); font-style: italic; }
+    .tm-msg__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 0; font-size: 12px; color: var(--tm-ink); }
+    .tm-msg__read.is-read { color: var(--tm-blue); }
+    .tm-msg__masked { padding: 1px 8px; border-radius: var(--radius-pill); background: var(--color-warning-bg); color: var(--color-warning-text); }
+    /* Pièce jointe : carte (nom, poids, téléchargement), vignette pour une image */
+    .tm-msg-file { display: flex; align-items: center; gap: 10px; margin-top: 6px; padding: 10px 12px; border: 1px solid var(--tm-line); border-radius: 10px; background: var(--color-surface); color: var(--tm-navy); text-decoration: none; }
+    .tm-msg-file:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-msg-file.is-pending { color: var(--color-text-muted); }
+    .tm-msg-file__text { display: grid; flex: 1; min-width: 0; font-size: 12px; color: var(--tm-ink); }
+    .tm-msg-file__text strong { overflow: hidden; color: var(--tm-navy); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+    .tm-msg-file__thumb { display: block; margin-top: 6px; }
+    .tm-msg-file__thumb img { display: block; max-width: 100%; max-height: 220px; border-radius: 10px; object-fit: cover; }
+    .tm-msg__report { margin-top: 4px; font-size: 12px; }
+    .tm-msg__report summary { cursor: pointer; color: var(--color-text-muted); }
+    .tm-msg__report form { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+    .tm-msg__report .tm-select__input { min-height: 34px; padding-block: 4px; font-size: 13px; }
+    .tm-msg__reported { margin: 4px 0 0; font-size: 12px; color: var(--color-text-muted); }
+    .tm-msg-thread .tm-link-button { padding: 0; border: 0; background: none; color: var(--color-link); font: inherit; font-weight: var(--font-weight-semibold); text-decoration: underline; cursor: pointer; }
+    .tm-msg-composer { position: relative; display: flex; align-items: flex-end; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--tm-line); }
+    .tm-msg-composer__field { display: grid; flex: 1; gap: 4px; min-width: 0; }
+    .tm-msg-composer textarea { min-height: 44px; max-height: 160px; resize: vertical; padding: 10px 14px; border: 1px solid var(--tm-line); border-radius: 12px; }
+    .tm-msg-composer__attach { display: inline-grid; place-items: center; flex: none; width: 36px; height: 44px; border-radius: 10px; color: var(--tm-navy); cursor: pointer; }
+    .tm-msg-composer__file { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .tm-msg-composer:has(.tm-msg-composer__file:focus-visible) .tm-msg-composer__attach { box-shadow: var(--focus-ring); }
+    .tm-msg-composer__chosen { margin: 0; font-size: 12px; color: var(--tm-blue); overflow-wrap: anywhere; }
+    .tm-msg-composer__send { display: inline-grid; place-items: center; flex: none; width: 44px; height: 44px; border: 0; border-radius: 12px; background: var(--tm-blue-deep); color: var(--color-text-inverse); cursor: pointer; }
+    .tm-msg-composer__send:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-msg-thread__hint, .tm-msg-thread__blocked { display: flex; align-items: center; gap: 6px; margin: 0; padding: 0 16px 12px; font-size: 12px; color: var(--color-text-muted); }
+    .tm-msg-thread__blocked { padding-top: 12px; color: var(--color-danger-text); }
+
+    /* Encart de l'interlocuteur */
+    .tm-msg-aside { gap: var(--space-3); }
+    .tm-msg-aside__who { display: flex; align-items: center; gap: 12px; }
+    .tm-msg-aside__name { margin: 0; font-size: 17px; font-weight: var(--font-weight-bold); color: var(--tm-navy); }
+    .tm-msg-aside__city { display: flex; align-items: center; gap: 4px; margin: 4px 0 0; font-size: 13px; color: var(--tm-ink); }
+    .tm-msg-aside__buttons { display: grid; gap: 8px; }
+    .tm-msg-aside__actions { display: grid; gap: 4px; padding-top: 12px; border-top: 1px solid var(--tm-line); }
+    .tm-msg-aside__actions button { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border: 0; background: none; color: var(--tm-navy); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+    .tm-msg-aside__actions button:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 6px; }
+
+    /* PR07 — encart client, notes privées, réponses types */
+    .tm-msg-side { display: grid; gap: var(--space-4); align-content: start; }
+    .tm-msg-aside__status { justify-self: center; }
+    .tm-msg-aside__links { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .tm-msg-aside__links a { display: flex; align-items: center; gap: 10px; padding: 9px 14px; border: 1px solid var(--tm-line); border-radius: 10px; color: var(--tm-navy); font-size: 14px; font-weight: var(--font-weight-semibold); text-decoration: none; }
+    .tm-msg-aside__links a:hover { background: var(--tm-blue-soft); }
+    .tm-msg-aside__links a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-msg-aside__hint { font-size: 13px; color: var(--color-text-muted); }
+    .tm-msg-note, .tm-msg-replies { gap: 10px; }
+    .tm-msg-note h2, .tm-msg-replies h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 17px; color: var(--tm-navy); }
+    .tm-msg-note__picto { color: var(--tm-orange); }
+    .tm-msg-note { position: relative; }
+    .tm-msg-note__edit > summary { position: absolute; top: 16px; right: 16px; display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; color: var(--tm-navy); cursor: pointer; list-style: none; }
+    .tm-msg-note__edit > summary::-webkit-details-marker { display: none; }
+    .tm-msg-note__edit > summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-msg-note__edit form, .tm-msg-replies__form { display: grid; gap: 8px; }
+    .tm-msg-note__text { margin: 0; padding: 12px; border-radius: 10px; background: var(--color-warning-bg); color: var(--tm-navy); font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
+    .tm-msg-replies ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .tm-msg-replies li { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; color: var(--tm-navy); }
+    .tm-msg-replies li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tm-msg-replies__delete { display: inline-grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 6px; background: none; color: var(--color-text-muted); cursor: pointer; }
+    .tm-msg-replies__delete:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .tm-msg-replies summary { cursor: pointer; color: var(--color-link); font-size: 14px; font-weight: var(--font-weight-semibold); }
+    .tm-msg-quick { padding: 0 16px; font-size: 13px; }
+    .tm-msg-quick summary { display: inline-flex; align-items: center; gap: 6px; padding-top: 10px; cursor: pointer; color: var(--color-link); font-weight: var(--font-weight-semibold); }
+    .tm-msg-quick ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+    .tm-msg-quick button { padding: 5px 12px; border: 1px solid var(--tm-line); border-radius: var(--radius-pill); background: var(--color-surface); color: var(--tm-navy); font: inherit; cursor: pointer; }
+    .tm-msg-quick button:hover { background: var(--tm-blue-soft); }
+    .tm-msg-quick button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+    /* Mobile : la liste seule, ou le fil seul quand une conversation est ouverte */
+    .tm-msg-page.has-thread .tm-msg-list, .tm-msg-page.has-thread .tm-msg-aside { display: none; }
+    /* PR07 : l'encart client, la note et les réponses types passent sous le fil tant qu'il n'y a pas trois colonnes. */
+    .tm-msg-page.has-thread .tm-msg-side .tm-msg-aside { display: grid; }
+    .tm-msg-side { grid-column: 1 / -1; }
+    .tm-msg-layout__empty { display: none; }
+
+    @media (min-width: 900px) {
+        .tm-msg-layout { grid-template-columns: 18rem minmax(0, 1fr); }
+        .tm-msg-page.has-thread .tm-msg-list { display: grid; }
+        .tm-msg-page.has-thread .tm-msg-list__tabs--bar { display: grid; }
+        .tm-msg-layout__empty { display: block; }
+        .tm-msg-thread__back { display: none; }
+    }
+    @media (min-width: 1280px) {
+        .tm-msg-page.has-thread .tm-msg-layout { grid-template-columns: 17rem minmax(0, 1fr) 16rem; }
+        .tm-msg-page.has-thread .tm-msg-aside { display: grid; }
+        .tm-msg-side { grid-column: auto; }
+    }
+}

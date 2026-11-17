@@ -1,29 +1,59 @@
+# ADR-0003 : mapping XML par module (aucun attribut Doctrine dans le domaine), un schéma PostgreSQL par module.
 doctrine:
     dbal:
         url: '%env(resolve:DATABASE_URL)%'
-
-        # IMPORTANT: You MUST configure your server version,
-        # either here or in the DATABASE_URL env var (see .env file)
-        #server_version: '16'
-
         profiling_collect_backtrace: '%kernel.debug%'
+        # Seuls les schémas gérés par l'ORM sont comparés au mapping (les tables DBAL — paramètres, audit, outbox,
+        # consentements… — sont décrites par les migrations écrites à la main). Étendre la liste à chaque module ORM.
+        schema_filter: '~^(catalog\.(?!questionnaire_form$)|identity\.(user_account|client_profile)$|artisan\.(artisan_profile|document|artisan_job|service_area_commune)$|request\.quote_request$|admin\.admin_user$|doctrine_migration_versions$)~'
+        types:
+            slug: App\Shared\Infrastructure\Doctrine\Type\SlugType
+            catalog_category_id: App\Catalog\Infrastructure\Doctrine\Type\CategoryIdType
+            catalog_job_id: App\Catalog\Infrastructure\Doctrine\Type\JobIdType
+            identity_user_id: App\Identity\Infrastructure\Doctrine\Type\UserIdType
+            artisan_profile_id: App\ArtisanProfile\Infrastructure\Doctrine\Type\ArtisanProfileIdType
+            quote_request_id: App\QuoteRequest\Infrastructure\Doctrine\Type\QuoteRequestIdType
+
     orm:
         validate_xml_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore
-        identity_generation_preferences:
-            Doctrine\DBAL\Platforms\PostgreSQLPlatform: identity
-        auto_mapping: true
+        auto_mapping: false
+        # Les mappings XML de chaque module sont déclarés ici à mesure que les modules arrivent, sur ce modèle :
+        #   Catalog:
+        #       type: xml
+        #       is_bundle: false
+        #       dir: '%kernel.project_dir%/src/Catalog/Infrastructure/Doctrine/Mapping'
+        #       prefix: 'App\Catalog\Domain'
         mappings:
-            App:
-                type: attribute
+            Catalog:
+                type: xml
                 is_bundle: false
-                dir: '%kernel.project_dir%/src/Entity'
-                prefix: 'App\Entity'
+                dir: '%kernel.project_dir%/src/Catalog/Infrastructure/Doctrine/Mapping'
+                prefix: 'App\Catalog\Domain'
+            Identity:
+                type: xml
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Identity/Infrastructure/Doctrine/Mapping'
+                prefix: 'App\Identity\Domain'
+            Administration:
+                type: xml
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/Administration/Infrastructure/Doctrine/Mapping'
+                prefix: 'App\Administration\Domain'
+            ArtisanProfile:
+                type: xml
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/ArtisanProfile/Infrastructure/Doctrine/Mapping'
+                prefix: 'App\ArtisanProfile\Domain'
+            QuoteRequest:
+                type: xml
+                is_bundle: false
+                dir: '%kernel.project_dir%/src/QuoteRequest/Infrastructure/Doctrine/Mapping'
+                prefix: 'App\QuoteRequest\Domain'
 
 when@test:
     doctrine:
         dbal:
-            # "TEST_TOKEN" is typically set by ParaTest
             dbname_suffix: '_test%env(default::TEST_TOKEN)%'
 
 when@prod:

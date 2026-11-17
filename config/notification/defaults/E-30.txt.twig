@@ -1,0 +1,24 @@
+Bonjour {{ prenom }},
+{% if digest %}
+
+{{ nombre > 1 ? nombre ~ ' nouvelles demandes correspondent' : 'Une nouvelle demande correspond' }} à vos métiers et à votre zone d’intervention :
+
+{{ liste }}
+{% if autres > 0 %}Et {{ autres }} autre{{ autres > 1 ? 's' }} dans votre espace.
+{% endif %}
+
+Voir les demandes : {{ lien }}
+{% else %}
+
+Une nouvelle demande correspond à vos métiers et à votre zone d’intervention :
+
+{% if titre %}{{ titre }}
+{% endif %}{{ metier }} · {{ ville }}
+Délai souhaité : {{ delai }}
+{% if budget %}Budget indicatif : {{ budget }}
+{% endif %}
+
+Le nombre de devis par demande est limité : les premiers professionnels à répondre sont retenus.
+
+Voir la demande : {{ lien }}
+{% endif %}

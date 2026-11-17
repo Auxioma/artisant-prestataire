@@ -1,0 +1,21 @@
+{#- BO04 (Figma 186:1669) : fil d'Ariane, titre, « Exporter CSV », onglets Demandes / Devis. -#}
+<nav class="tm-admin-crumbs" aria-label="Fil d’Ariane">
+    <ol>
+        <li><a href="{{ path('admin_dashboard') }}">Back-office</a></li>
+        <li>Activité</li>
+        <li aria-current="page">{{ tab == 'requests' ? 'Demandes' : 'Devis' }}</li>
+    </ol>
+</nav>
+<div class="tm-admin-head">
+    <div>
+        <h1>Demandes et devis</h1>
+        <p class="tm-admin-head__sub">Supervision du flux de demandes et des devis envoyés</p>
+    </div>
+    {% if tab == 'requests' and is_granted('admin.requests.export') %}
+        <twig:Button variant="secondary" href="{{ path('admin_requests_export', filters) }}">Exporter CSV</twig:Button>
+    {% endif %}
+</div>
+<nav class="tm-admin-tabs" aria-label="Demandes et devis">
+    <a class="tm-admin-tab{{ tab == 'requests' ? ' is-active' }}" href="{{ path('admin_requests') }}"{{ tab == 'requests' ? ' aria-current="page"' }}>Demandes ({{ total|number_format(0, ',', ' ') }})</a>
+    <a class="tm-admin-tab{{ tab == 'quotes' ? ' is-active' }}" href="{{ path('admin_quotes') }}"{{ tab == 'quotes' ? ' aria-current="page"' }}>Devis ({{ quotes|number_format(0, ',', ' ') }})</a>
+</nav>

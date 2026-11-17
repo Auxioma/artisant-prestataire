@@ -1,0 +1,33 @@
+{#
+    TM / Carte artisan horizontale (P02.4, annexe B) : photo, nom + badges vérifié et « Disponible » (RG-013), note bayésienne et nombre d'avis,
+    métiers, commune et distance, extrait de description (2 lignes), actions. Étoiles doublées de la note chiffrée ;
+    aucune note affichée sans avis (jamais de note inventée). Le nom porte le lien principal.
+#}
+{% props name, href = null, trades, location, distance = null, description = null, rating = null, reviewsCount = 0, photo = null, photoAlt = '', verified = true, available = false, quoteHref = null, headingLevel = 2, anchor = null %}
+<article {{ attributes.defaults({class: 'tm-card-row'}) }}{% if anchor %} id="{{ anchor }}"{% endif %}>
+    <div class="tm-card-row__media">
+        {% if photo %}<img src="{{ photo }}" alt="{{ photoAlt }}" loading="lazy" decoding="async" width="160" height="120">
+        {% else %}<div class="tm-card-artisan__placeholder"><twig:Icon name="briefcase" /></div>{% endif %}
+    </div>
+    <div class="tm-card-row__body">
+        <h{{ headingLevel }} class="tm-card-row__name">{% if href %}<a class="tm-card-artisan__link" href="{{ href }}">{{ name }}</a>{% else %}{{ name }}{% endif %}{% if verified %} <twig:Badge variant="verified" />{% endif %}{% if available %} <twig:Badge variant="available" />{% endif %}</h{{ headingLevel }}>
+        <p class="tm-card-row__meta">
+            {% if rating is not null and reviewsCount > 0 %}
+                <span class="tm-card-artisan__stars" aria-hidden="true">{% for i in 1..5 %}<twig:Icon name="starFilled" class="{{ i > rating|round ? 'tm-card-artisan__star--empty' }}" />{% endfor %}</span>
+                <span class="tm-card-artisan__score"><span class="tm-visually-hidden">Note : </span>{{ rating|number_format(1, ',', ' ') }}<span class="tm-visually-hidden"> sur 5</span></span>
+                <span class="tm-card-artisan__reviews">({{ reviewsCount|number_format(0, ',', ' ') }} avis)</span>
+            {% else %}
+                <twig:Badge variant="new">Nouveau</twig:Badge>
+            {% endif %}
+            <span class="tm-card-row__place"><twig:Icon name="pin" size="xs" />{{ location }}{% if distance is not null %} · {{ distance|number_format(distance < 10 ? 1 : 0, ',', ' ') }} km{% endif %}</span>
+        </p>
+        <p class="tm-card-row__trades">{{ trades }}</p>
+        {% if description %}<p class="tm-card-row__description">{{ description }}</p>{% endif %}
+    </div>
+    {% if quoteHref or href %}
+        <div class="tm-card-row__actions">
+            {% if quoteHref %}<twig:Button href="{{ quoteHref }}">Demander un devis</twig:Button>{% endif %}
+            {% if href %}<twig:Button href="{{ href }}" variant="secondary">Voir le profil</twig:Button>{% endif %}
+        </div>
+    {% endif %}
+</article>

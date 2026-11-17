@@ -1,0 +1,15 @@
+{#
+    TM / Select (Figma 93:1511) : liste native stylée. Le préfixe (« Trier : ») sert d'étiquette visible ;
+    à défaut, `label` est fourni en texte masqué.
+    <twig:Select id="tri" name="tri" prefix="Trier :" :options="{pertinence: 'Pertinence', distance: 'Distance'}" value="pertinence" />
+#}
+{% props id, name, options, value = null, prefix = null, label = null %}
+<div {{ attributes.defaults({class: 'tm-select'}) }}>
+    <label class="{{ prefix ? 'tm-select__prefix' : 'tm-visually-hidden' }}" for="{{ id }}">{{ prefix ?? label }}</label>
+    <select class="tm-select__input" id="{{ id }}" name="{{ name }}">
+        {% for optionValue, optionLabel in options %}
+            <option value="{{ optionValue }}"{% if optionValue == value %} selected{% endif %}>{{ optionLabel }}</option>
+        {% endfor %}
+    </select>
+    <twig:Icon name="chevD" size="xs" class="tm-select__chevron" />
+</div>

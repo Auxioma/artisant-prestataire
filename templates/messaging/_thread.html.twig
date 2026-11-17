@@ -1,0 +1,41 @@
+{#- C04.2 / PR07 — fil : en-tête (interlocuteur, contexte demande / devis), messages rafraîchis, saisie. -#}
+<section class="tm-msg-thread" aria-labelledby="fil-titre">
+    <header class="tm-msg-thread__head">
+        <a class="tm-msg-thread__back" href="{{ path(space ~ '_messages') }}"><twig:Icon name="chevL" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Retour aux conversations</span></a>
+        {% if thread.counterpartLogoProfileId %}<img class="tm-msg-avatar" src="{{ path('public_artisan_logo', {id: thread.counterpartLogoProfileId}) }}" alt="" width="48" height="48">{% else %}<span class="tm-msg-avatar tm-msg-avatar--initials" aria-hidden="true">{{ thread.initials() }}</span>{% endif %}
+        <div>
+            <h2 id="fil-titre">{{ thread.counterpartName }}</h2>
+            <p>{% if thread.requestTitle %}{{ thread.requestTitle }}{% if thread.requestNumber %} · {{ thread.requestNumber }}{% endif %}{% else %}Question préalable{% endif %}{% if thread.counterpartCity %} · {{ thread.counterpartCity }}{% endif %}</p>
+            {% if thread.quoteNumber %}<p class="tm-msg-thread__quote"><twig:Icon name="fileEuro" size="xs" class="tm-icon--inherit" />Devis {{ thread.quoteNumber }}{{ thread.contactsShared ? ' · accepté : coordonnées partagées' }}</p>{% endif %}
+        </div>
+    </header>
+    <div class="tm-msg-thread__messages" data-message-poll-target="list" aria-live="polite">
+        {{ include('messaging/_messages.html.twig') }}
+    </div>
+    {% if thread.blocked %}
+        <p class="tm-msg-thread__blocked"><twig:Icon name="lock" size="sm" class="tm-icon--inherit" />{{ thread.blocked == 'me' ? 'Vous avez bloqué cet interlocuteur.' : 'Cet interlocuteur a fermé la conversation.' }}</p>
+    {% else %}
+        {% if quick_replies is defined and quick_replies is not empty %}
+            <details class="tm-msg-quick" data-controller="quick-reply" data-quick-reply-field-value="message">
+                <summary><twig:Icon name="bulb" size="xs" class="tm-icon--inherit" />Réponses types</summary>
+                <ul>
+                    {% for reply in quick_replies %}
+                        <li><button type="button" data-action="quick-reply#insert" data-quick-reply-text-param="{{ reply.body }}" title="{{ reply.body|length > 120 ? reply.body|slice(0, 119) ~ '…' : reply.body }}">{{ reply.title }}</button></li>
+                    {% endfor %}
+                </ul>
+            </details>
+        {% endif %}
+        <form method="post" action="{{ path(space ~ '_conversation_send', {id: thread.id}) }}" class="tm-msg-composer" enctype="multipart/form-data" data-controller="attachment-pick">
+            <input type="hidden" name="_token" value="{{ csrf_token('messaging') }}">
+            <label class="tm-msg-composer__attach" for="piece" title="Joindre une image ou un PDF"><twig:Icon name="paperclip" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Joindre une image ou un PDF ({{ tm_setting_int('requests.max_file_mb') }} Mo max)</span></label>
+            <input class="tm-msg-composer__file" type="file" id="piece" name="piece" accept="image/jpeg,image/png,image/webp,application/pdf" data-attachment-pick-target="input" data-action="attachment-pick#pick">
+            <label class="tm-visually-hidden" for="message">Votre message</label>
+            <div class="tm-msg-composer__field">
+                <textarea class="tm-field__input" id="message" name="message" rows="1" maxlength="5000" placeholder="Écrire un message…"></textarea>
+                <p class="tm-msg-composer__chosen" data-attachment-pick-target="name" hidden></p>
+            </div>
+            <button type="submit" class="tm-msg-composer__send"><twig:Icon name="send" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Envoyer</span></button>
+        </form>
+        {% if not thread.contactsShared %}<p class="tm-msg-thread__hint"><twig:Icon name="shield" size="xs" class="tm-icon--inherit" />Les coordonnées (téléphone, e-mail, liens) sont masquées jusqu’à l’acceptation d’un devis.</p>{% endif %}
+    {% endif %}
+</section>

@@ -1,0 +1,67 @@
+{#- A03.7 — Profil public express et récapitulatif (Figma 230:12231). Aperçu honnête : ni note ni avis, badge « Vérifié » après validation seulement. -#}
+{% extends 'pro_signup/_layout.html.twig' %}
+{% set step = 7 %}
+
+{% block title %}Votre profil public — Inscription professionnelle — TrouveMoi{% endblock %}
+{% block step_title %}Votre profil public express{% endblock %}
+{% block step_subtitle %}Dernière étape : vérifiez votre carte telle que les clients la verront.{% endblock %}
+
+{% block step_content %}
+    {% set name = state.displayName ?? 'Votre entreprise' %}
+    {% set logo_url = logo_ready ? path('artisan_signup_logo') : null %}
+    <div class="tm-profile-step">
+        <div class="tm-signup__fields">
+            {% if logo_saved %}<div class="tm-form-success" role="status"><twig:Icon name="check" size="sm" class="tm-icon--inherit" /><p>Logo reçu : il apparaîtra dès la fin de son analyse.</p></div>{% endif %}
+
+            <form method="post" enctype="multipart/form-data" id="profile_form" class="tm-signup__fields" novalidate data-turbo="false">
+                <input type="hidden" name="_token" value="{{ csrf_token('artisan_profile') }}">
+                <div class="tm-logo-picker" data-controller="dropzone">
+                    <span class="tm-logo-picker__preview">
+                        {% if logo_url %}<img src="{{ logo_url }}" alt="Logo actuel de {{ name }}" width="56" height="56">
+                        {% elseif state.logoFileId %}<twig:Icon name="loader" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Logo en cours d’analyse</span>
+                        {% else %}<twig:Icon name="camera" size="sm" class="tm-icon--inherit" />{% endif %}
+                    </span>
+                    <label class="tm-button tm-button--secondary tm-dropzone__pick">
+                        {{ state.logoFileId ? 'Changer le logo' : 'Ajouter un logo ou une photo' }}
+                        <input class="tm-visually-hidden" type="file" name="logo" accept="image/jpeg,image/png,image/webp" data-dropzone-target="input" data-action="change->dropzone#chosen">
+                    </label>
+                    <span class="tm-visually-hidden" aria-live="polite" data-dropzone-target="hint"></span>
+                    <twig:Button type="submit" variant="tertiary" name="action" value="upload_logo" data-dropzone-target="submit">Envoyer l’image</twig:Button>
+                    {% if errors.logo is defined %}<p class="tm-field__error tm-logo-picker__error" role="alert">{{ errors.logo }}</p>{% endif %}
+                </div>
+                <div class="tm-field{{ errors.description is defined ? ' tm-field--error' }}" data-controller="char-count" data-char-count-max-value="{{ description_max }}">
+                    <label class="tm-field__label" for="description">Description courte ({{ description_max }} car.)<abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+                    <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="description" name="description" rows="3" maxlength="{{ description_max }}" required
+                              aria-describedby="description_count{{ errors.description is defined ? ' description_error' }}"{{ errors.description is defined ? ' aria-invalid="true"' }}
+                              placeholder="Ex. : Plombier chauffagiste depuis 2009 : dépannage, chauffe-eau, salles de bains."
+                              data-char-count-target="input" data-action="input->char-count#update">{{ description }}</textarea></div>
+                    {% if errors.description is defined %}<p class="tm-field__error" id="description_error">{{ errors.description }}</p>{% endif %}
+                    <p class="tm-caption" id="description_count" data-char-count-target="count">{{ description|length }} / {{ description_max }}</p>
+                </div>
+
+                <dl class="tm-facts">
+                    <div><dt>Entreprise</dt><dd>{{ state.companyName }}</dd></div>
+                    <div><dt>Métiers</dt><dd>{{ jobs|join(', ') }}</dd></div>
+                    <div><dt>Zone</dt><dd>{{ area }}</dd></div>
+                    <div><dt>Justificatifs</dt><dd>{{ documents_provided }} / {{ documents_required }} déposés{% if documents_provided < documents_required %} · <a href="{{ path('artisan_signup_documents') }}">compléter</a>{% endif %}</dd></div>
+                </dl>
+            </form>
+        </div>
+
+        <figure class="tm-profile-step__card">
+            <twig:CardArtisan name="{{ name }}" href="#profile_form" trades="{{ jobs|map(j => j|replace({' (principal)': ''}))|join(' · ') }}"
+                location="{{ location ?? '' }}" photo="{{ logo_url }}" photoAlt="{{ logo_url ? 'Logo de ' ~ name : '' }}" headingLevel="3" />
+            <figcaption class="tm-caption">Aperçu. Le badge « Vérifié » et les avis clients apparaîtront après la validation de votre dossier.</figcaption>
+        </figure>
+    </div>
+
+    <div class="tm-pro-signup__actions">
+        <twig:Button variant="secondary" href="{{ path('artisan_signup_documents') }}">← Étape précédente</twig:Button>
+        <twig:Button type="submit" form="profile_form" name="action" value="submit">Finaliser mon inscription</twig:Button>
+    </div>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Votre compte passera « En cours de vérification » (délai annoncé : {{ tm_setting_int('pro.verification_delay_hours') }} h ouvrées).</li>
+    <li><twig:Icon name="check" size="xs" />Les {{ tm_setting_int('credits.free_on_signup') }} devis offerts sont attribués à la validation (RG-044).</li>
+{% endblock %}

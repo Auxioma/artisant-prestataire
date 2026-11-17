@@ -1,0 +1,30 @@
+{#-
+    PR11.3 — résiliation (§4.3) : sans frais, effective en fin de période payée, crédits utilisables jusque-là,
+    annulable tant que la période court ; questionnaire de départ facultatif. Pas de maquette dédiée. Écarts : P-100.
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'subscription' %}
+{% block title %}Résilier mon abonnement — Espace pro — TrouveMoi{% endblock %}
+{% block space_content %}
+<div class="tm-psub tm-subscribe">
+    <header class="tm-subscribe__head">
+        <h1>Résilier mon abonnement</h1>
+        <p>La résiliation est sans frais : votre formule et vos crédits restent actifs jusqu’à la fin de la période déjà payée, et vous pouvez changer d’avis jusque-là.</p>
+    </header>
+    <section class="tm-pro-card tm-subscribe__terms" aria-labelledby="motif-titre">
+        <form method="post" action="{{ path('pro_subscription_cancel') }}" class="tm-subscribe__form">
+            <input type="hidden" name="_token" value="{{ csrf_token('pro_subscription_action') }}">
+            <fieldset class="tm-subscribe__reasons">
+                <legend id="motif-titre" class="tm-subscribe__title">Pourquoi partez-vous ? <span>(facultatif)</span></legend>
+                {% for key, label in reasons %}
+                    <label class="tm-check" for="motif-{{ key }}"><input class="tm-check__input" type="radio" id="motif-{{ key }}" name="motif" value="{{ key }}"><span>{{ label }}</span></label>
+                {% endfor %}
+            </fieldset>
+            <div class="tm-subscribe__actions">
+                <twig:Button href="{{ path('pro_subscription') }}" variant="secondary">Garder mon abonnement</twig:Button>
+                <twig:Button type="submit" variant="danger">Confirmer la résiliation</twig:Button>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

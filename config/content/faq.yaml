@@ -1,0 +1,127 @@
+# Aide / FAQ (P14) — contenu initial rédigé d'après les règles du CDC, À VALIDER par le porteur (P-58).
+# Import : bin/console app:faq:import (mise à jour par slug, sans supprimer les votes) ; édition BO10.4 : T-801.
+# Variables remplacées à l'affichage : {max_devis}, {free_credits}, {reply_hours}. Réponses en HTML assaini.
+# audience : all | client | artisan (FAQ ciblée de « Comment ça marche ? », P12.5).
+topics:
+    - slug: particuliers
+      title: 'Particuliers'
+      description: 'Trouver un professionnel, demander et comparer des devis.'
+      icon: users
+      questions:
+          - slug: comment-trouver-un-professionnel
+            audience: client
+            question: 'Comment trouver un professionnel près de chez moi ?'
+            answer: '<p>Indiquez le métier recherché et votre ville ou votre code postal. Seuls des professionnels <strong>vérifiés</strong> qui interviennent dans votre commune vous sont proposés, classés selon des critères expliqués sur la page <a href="/comment-ca-marche#classement">Comment ça marche ?</a>.</p>'
+          - slug: le-service-est-il-gratuit
+            audience: client
+            question: 'Le service est-il gratuit pour les particuliers ?'
+            answer: '<p>Oui. Rechercher un professionnel, déposer une demande et comparer les devis reçus est gratuit et sans engagement.</p>'
+          - slug: combien-de-devis
+            audience: client
+            question: 'Combien de devis puis-je recevoir ?'
+            answer: '<p>Jusqu’à {max_devis} devis par demande, envoyés par des professionnels vérifiés. Vous choisissez librement celui qui vous convient, ou aucun.</p>'
+          - slug: mes-coordonnees-sont-elles-visibles
+            audience: client
+            question: 'Mes coordonnées sont-elles visibles par les professionnels ?'
+            answer: '<p>Non. Avant que vous acceptiez un devis, le professionnel ne voit que votre prénom et votre commune. Vos coordonnées ne lui sont communiquées qu’après acceptation.</p>'
+          - slug: comment-verifier-un-professionnel
+            audience: all
+            question: 'Que signifie le badge « Vérifié » ?'
+            answer: '<p>Avant d’attribuer ce badge, l’équipe TrouveMoi contrôle le SIRET au répertoire Sirene, l’extrait Kbis, l’identité du dirigeant et les attestations d’assurance. Sur la fiche, la mention « Justificatif vérifié » indique une attestation contrôlée et en cours de validité.</p>'
+    - slug: professionnels
+      title: 'Professionnels'
+      description: 'Inscription, vérification du dossier, demandes de devis.'
+      icon: briefcase
+      questions:
+          - slug: comment-devenir-professionnel-verifie
+            audience: artisan
+            question: 'Comment m’inscrire comme professionnel ?'
+            answer: '<p>Créez votre compte professionnel, renseignez votre SIRET (vérifié au répertoire Sirene), vos métiers, votre zone d’intervention, vos assurances et vos justificatifs. L’équipe contrôle ensuite votre dossier ; vous êtes prévenu par e-mail de sa validation.</p>'
+          - slug: quels-justificatifs
+            audience: artisan
+            question: 'Quels justificatifs dois-je fournir ?'
+            answer: '<p>Une pièce d’identité du dirigeant, un extrait Kbis ou un avis de situation INSEE de moins de trois mois, et les attestations d’assurance exigées par vos métiers (responsabilité civile professionnelle, décennale pour les travaux concernés). Les certifications que vous déclarez (RGE…) sont aussi contrôlées.</p>'
+          - slug: devis-offerts
+            audience: artisan
+            question: 'Combien de devis sont offerts au démarrage ?'
+            answer: '<p>{free_credits} devis vous sont offerts à la validation de votre dossier, sans carte bancaire.</p>'
+          - slug: comment-recevoir-des-demandes
+            audience: artisan
+            question: 'Comment vais-je recevoir des demandes ?'
+            answer: '<p>Vous recevez les demandes des clients situés dans votre zone d’intervention, pour les métiers que vous exercez. Consulter une demande et poser une question au client est gratuit.</p>'
+          - slug: mon-assurance-expire
+            audience: artisan
+            question: 'Que se passe-t-il quand mon assurance arrive à échéance ?'
+            answer: '<p>Vous êtes alerté par e-mail avant l’échéance pour déposer votre nouvelle attestation. Si une assurance obligatoire reste échue au-delà du délai de tolérance, votre profil est masqué des recherches jusqu’au dépôt d’une attestation à jour.</p>'
+    - slug: compte-securite
+      title: 'Compte & sécurité'
+      description: 'Connexion, mot de passe, adresse e-mail.'
+      icon: lock
+      questions:
+          - slug: mot-de-passe-oublie
+            audience: all
+            question: 'J’ai oublié mon mot de passe, que faire ?'
+            answer: '<p>Sur la page de connexion, choisissez « Mot de passe oublié ? » et saisissez votre adresse e-mail : vous recevez un lien de réinitialisation à durée limitée.</p>'
+          - slug: confirmer-mon-adresse-email
+            audience: all
+            question: 'Je n’ai pas reçu l’e-mail de confirmation de mon adresse'
+            answer: '<p>Vérifiez vos courriers indésirables, puis utilisez le bouton « Renvoyer l’e-mail » du bandeau affiché une fois connecté. Tant que l’adresse n’est pas confirmée, certaines actions restent bloquées.</p>'
+          - slug: connexion-nouvel-appareil
+            audience: all
+            question: 'Pourquoi ai-je reçu une alerte de connexion ?'
+            answer: '<p>Nous vous prévenons par e-mail lorsqu’une connexion a lieu depuis un nouvel appareil. Si ce n’est pas vous, changez immédiatement votre mot de passe.</p>'
+    - slug: paiement-abonnement
+      title: 'Paiement & abonnement'
+      description: 'Crédits de devis, forfaits professionnels, résiliation.'
+      icon: tag
+      questions:
+          - slug: que-consomme-un-credit
+            audience: artisan
+            question: 'Que consomme un crédit ?'
+            answer: '<p>Seul l’envoi effectif d’un devis consomme un crédit. Consulter une demande, poser une question au client, réviser un devis tant que le client n’a pas décidé ou enregistrer un brouillon est gratuit.</p>'
+          - slug: credits-epuises
+            audience: artisan
+            question: 'Que se passe-t-il quand mes crédits sont épuisés ?'
+            answer: '<p>Vous êtes alerté à l’approche de l’épuisement. Une fois les crédits épuisés, l’envoi de nouveaux devis est bloqué, mais le reste de votre espace (demandes, messages, devis envoyés) reste accessible.</p>'
+          - slug: puis-je-resilier
+            audience: artisan
+            question: 'Puis-je résilier mon forfait ?'
+            answer: '<p>Oui, sans frais : la résiliation prend effet à la fin de la période déjà payée, et vos crédits restent utilisables jusque-là. Vous pouvez annuler la résiliation tant que la période court.</p>'
+          - slug: credits-reportes
+            audience: artisan
+            question: 'Les crédits non utilisés sont-ils reportés ?'
+            answer: '<p>Non : les crédits d’un forfait non consommés sur une période ne sont pas reportés sur la suivante. Les devis offerts au démarrage sont utilisés en premier.</p>'
+    - slug: avis
+      title: 'Avis'
+      description: 'Dépôt, modération et calcul des notes.'
+      icon: star
+      questions:
+          - slug: qui-peut-deposer-un-avis
+            audience: all
+            question: 'Qui peut déposer un avis ?'
+            answer: '<p>Seul un client dont la demande a abouti à une prestation via TrouveMoi peut évaluer le professionnel. Les avis sont modérés avant publication, sans contrepartie, et affichés du plus récent au plus ancien (article L111-7-2 du Code de la consommation).</p>'
+          - slug: comment-est-calculee-la-note
+            audience: all
+            question: 'Comment la note d’un professionnel est-elle calculée ?'
+            answer: '<p>La note affichée est la moyenne des avis publiés. Pour le classement, elle est pondérée par le nombre d’avis (note dite « bayésienne ») : un seul avis ne suffit pas à passer devant un professionnel qui en a reçu beaucoup.</p>'
+          - slug: signaler-un-avis
+            audience: all
+            question: 'Comment signaler un avis ?'
+            answer: '<p>Écrivez-nous depuis le <a href="/contact?motif=Signalement%20d%E2%80%99un%20contenu%20ou%20d%E2%80%99un%20professionnel">formulaire de contact</a> en choisissant le motif « Signalement » et en indiquant le professionnel concerné.</p>'
+    - slug: donnees-personnelles
+      title: 'Données personnelles'
+      description: 'Vos données, vos cookies, vos droits.'
+      icon: shield
+      questions:
+          - slug: quelles-donnees
+            audience: all
+            question: 'Quelles données sont collectées et pourquoi ?'
+            answer: '<p>Nous collectons les seules données nécessaires à la mise en relation entre clients et professionnels. Le détail figure dans notre <a href="/confidentialite">politique de confidentialité</a>.</p>'
+          - slug: gerer-mes-cookies
+            audience: all
+            question: 'Comment modifier mes choix de cookies ?'
+            answer: '<p>À tout moment, avec le lien « Gérer mes cookies » en bas de chaque page. La liste des traceurs utilisés figure dans notre <a href="/cookies">politique de cookies</a>.</p>'
+          - slug: supprimer-mon-compte
+            audience: all
+            question: 'Comment supprimer mon compte ?'
+            answer: '<p>Écrivez-nous depuis le <a href="/contact">formulaire de contact</a> : nous traitons votre demande et vous répondons sous {reply_hours} h ouvrées.</p>'

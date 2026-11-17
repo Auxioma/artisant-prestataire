@@ -1,0 +1,58 @@
+{#- P04 (Figma 221:10097) — page catégorie : hero et recherche pré-filtrée, métiers, professionnels mis en avant (RG-011), CTA. Prix indicatifs et contenu éditorial : P-53. -#}
+{% extends 'base.html.twig' %}
+{% set active_nav = 'categories' %}
+{% set chapo = category.description ?? (total > 0
+    ? total|number_format(0, ',', ' ') ~ ' professionnel' ~ (total > 1 ? 's') ~ ' vérifié' ~ (total > 1 ? 's') ~ ' en ' ~ category.name|lower ~ ' : ' ~ jobs|slice(0, 4)|map(j => j.name|lower)|join(', ') ~ (jobs|length > 4 ? '…' : '.')
+    : 'Trouvez un professionnel vérifié en ' ~ category.name|lower ~ ' : ' ~ jobs|slice(0, 4)|map(j => j.name|lower)|join(', ') ~ (jobs|length > 4 ? '…' : '.')) %}
+{% set seo = tm_seo_meta('category', {categorie: category.name, nb_pros: total}) %}
+{% block title %}{{ seo.title ?? (category.name ~ ' : trouvez un professionnel vérifié — TrouveMoi') }}{% endblock %}
+{% set meta_description = seo.description ?? (chapo|length > 155 ? chapo|slice(0, 154) ~ '…' : chapo) %}
+{% set canonical_url = url('catalog_category', {slug: category.slug}) %}
+{% block meta %}{% endblock %}
+{% block body %}
+<div class="tm-catalog" data-controller="analytics" data-analytics-auto-event-value="category_view" data-analytics-auto-type-value="{{ category.slug }}">
+    <header class="tm-catalog-hero">
+        <div class="tm-container tm-catalog-hero__inner">
+            <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Catégories', href: path('catalog_categories')}, {label: category.name}]" />
+            <div class="tm-catalog-hero__title">
+                <span class="tm-catalog-hero__icon"><twig:Icon name="{{ category.icon }}" /></span>
+                <h1>{{ category.name }}</h1>
+            </div>
+            <p class="tm-catalog-hero__chapo">{{ chapo }}</p>
+            {% include 'catalog/_search_bar.html.twig' with {job: jobs|first ?: null, place: null} only %}
+        </div>
+    </header>
+
+    <div class="tm-container tm-catalog__body">
+        {% if jobs is not empty %}
+            <section aria-labelledby="jobs-title">
+                <h2 class="tm-section-title" id="jobs-title">Les métiers de la catégorie {{ category.name|lower }}</h2>
+                <ul class="tm-job-chips">
+                    {% for j in jobs %}
+                        {% set n = job_counts[j.id] ?? 0 %}
+                        <li>
+                            <a class="tm-job-chip" href="{{ path('catalog_job', {slug: j.slug}) }}" data-action="analytics#track" data-analytics-event-param="job_link_click" data-analytics-type-param="{{ j.slug }}">
+                                <twig:Icon name="{{ category.icon }}" size="sm" />
+                                <span><strong>{{ j.name }}</strong><span>{{ n > 0 ? n ~ ' professionnel' ~ (n > 1 ? 's') : 'Bientôt disponible' }}</span></span>
+                                <twig:Icon name="chevR" size="sm" />
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+
+        {% if featured is not empty %}
+            <section aria-labelledby="featured-title">
+                <h2 class="tm-section-title" id="featured-title">{{ category.name }} : professionnels recommandés</h2>
+                <ul class="tm-catalog__carousel">
+                    {% for hit in featured %}<li>{% include 'catalog/_artisan_card.html.twig' with {hit: hit, job_names: job_names} only %}</li>{% endfor %}
+                </ul>
+                {% set ranking = tm_path('content_how_it_works') ~ '#classement' %}
+                <p class="tm-catalog__fine">Professionnels vérifiés au profil complet, les mieux notés d’abord.{% if ranking != '##classement' %} <a href="{{ ranking }}">Comment sont classés les professionnels ?</a>{% endif %}</p>
+            </section>
+        {% endif %}
+    </div>
+    {% include 'catalog/_cta.html.twig' with {title: 'Un projet en ' ~ category.name|lower ~ ' ?', text: 'Comparez les professionnels vérifiés près de chez vous.', href: path('public_search', jobs is empty ? {} : {metier: (jobs|first).slug}), label: 'Trouver un professionnel'} only %}
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+{#- A03.5 — Assurances et qualifications (Figma 230:11914) : décennale / RC Pro selon les métiers, labels (type, numéro, validité). Fonctionne sans JavaScript. -#}
+{% extends 'pro_signup/_layout.html.twig' %}
+{% set step = 5 %}
+
+{% block title %}Assurances et qualifications — Inscription professionnelle — TrouveMoi{% endblock %}
+{% block step_title %}Assurances et qualifications{% endblock %}
+{% block step_subtitle %}Vos attestations seront demandées à l’étape suivante.{% endblock %}
+
+{% block step_content %}
+    <form method="post" class="tm-signup__fields" novalidate data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token('artisan_insurance') }}">
+        {# Bouton par défaut (touche Entrée) placé en tête : sinon le premier bouton du formulaire (« Retirer »…) serait activé #}
+        <button type="submit" name="action" value="continue" class="tm-visually-hidden" tabindex="-1" aria-hidden="true"></button>
+        {% if error %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>{{ error }}</p></div>{% endif %}
+
+        {% for kind, title in {decennial: 'Assurance décennale', rc_pro: 'RC Professionnelle'} %}
+            {% set mandatory = kind == 'decennial' ? required.decennial : required.liability %}
+            {% set values = insurances[kind] %}
+            <fieldset class="tm-fieldset tm-insurance">
+                <legend class="tm-card-title">{{ title }} <span class="tm-caption">({{ mandatory ? 'obligatoire pour vos métiers' : 'facultatif' }})</span></legend>
+                <div class="tm-form-grid tm-form-grid--3">
+                    <twig:Field id="{{ kind }}_insurer" name="insurances[{{ kind }}][insurer]" label="Assureur" value="{{ values.insurer }}" :required="mandatory" maxlength="120" autocomplete="off" />
+                    <twig:Field id="{{ kind }}_policy" name="insurances[{{ kind }}][policy]" label="N° de police" value="{{ values.policy }}" :required="mandatory" maxlength="60" autocomplete="off" />
+                    <twig:Field id="{{ kind }}_valid_until" name="insurances[{{ kind }}][valid_until]" type="date" label="Fin de validité" value="{{ values.valid_until }}" :required="mandatory"
+                        error="{{ errors[kind ~ '_valid_until'] ?? null }}" />
+                </div>
+            </fieldset>
+        {% endfor %}
+        {% if required.any and not required.decennial and not required.liability %}
+            <p class="tm-field__help">Vos métiers exigent au moins une assurance (décennale ou RC Professionnelle).</p>
+        {% endif %}
+
+        <fieldset class="tm-fieldset tm-insurance">
+            <legend class="tm-card-title">Labels et qualifications <span class="tm-caption">(facultatif)</span></legend>
+            {% for label in labels %}
+                <div class="tm-label-row">
+                    <div class="tm-form-grid tm-form-grid--3">
+                        <twig:Field id="label_{{ loop.index0 }}_name" name="labels[{{ loop.index0 }}][name]" label="Type (ex. RGE QualiPAC)" value="{{ label.name }}" required maxlength="80" />
+                        <twig:Field id="label_{{ loop.index0 }}_number" name="labels[{{ loop.index0 }}][number]" label="Numéro" value="{{ label.number }}" required maxlength="60" />
+                        <twig:Field id="label_{{ loop.index0 }}_valid_until" name="labels[{{ loop.index0 }}][valid_until]" type="date" label="Valide jusqu’au" value="{{ label.valid_until }}" required />
+                    </div>
+                    <button type="submit" class="tm-link-button" name="action" value="remove_label:{{ loop.index0 }}">Retirer ce label<span class="tm-visually-hidden"> {{ label.name }}</span></button>
+                </div>
+            {% endfor %}
+            {% if labels|length < max_labels %}
+                <div><twig:Button type="submit" variant="secondary" name="action" value="add_label" icon="plus">Ajouter un label</twig:Button></div>
+            {% endif %}
+        </fieldset>
+
+        <div class="tm-pro-signup__actions">
+            <twig:Button variant="secondary" href="{{ path('artisan_signup_area') }}">← Étape précédente</twig:Button>
+            <twig:Button type="submit" name="action" value="continue" icon="arrowR">Continuer</twig:Button>
+        </div>
+    </form>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Un label ou une assurance n’apparaît « vérifié » qu’après contrôle du justificatif (RG-032).</li>
+    <li><twig:Icon name="check" size="xs" />Alertes avant expiration : J-30, J-7, J0.</li>
+{% endblock %}

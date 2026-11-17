@@ -1,0 +1,5 @@
+<p>Bonjour {{ prenom }},</p>
+<p><strong>{{ interlocuteur }}</strong> {{ action }} : <strong>{{ quand }}</strong> (demande n° {{ demande }}).</p>
+{% if motif %}<p>Motif : {{ motif }}</p>{% endif %}
+{% if evenement == 'proposed' or evenement == 'rescheduled' %}<p>Confirmez ce créneau ou proposez-en un autre : sans réponse, il sera libéré automatiquement.</p>{% endif %}
+{{ bouton(lien, 'Voir le rendez-vous') }}

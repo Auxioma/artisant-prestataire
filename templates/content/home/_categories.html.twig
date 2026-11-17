@@ -1,0 +1,18 @@
+{#- P01.5 — catégories actives « à la une », dans l'ordre du référentiel ; carrousel au défilement natif (pas d'animation automatique). -#}
+<section class="tm-container tm-home-section" aria-labelledby="home-categories">
+    <div class="tm-catalog__head">
+        <h2 class="tm-section-title" id="home-categories">{{ s.title }}</h2>
+        <a class="tm-home-section__more" href="{{ path('catalog_categories') }}">{{ s.link_label }}<twig:Icon name="arrowR" size="sm" /></a>
+    </div>
+    <ul class="tm-home-categories">
+        {% for c in d.categories %}
+            <li>
+                <a class="tm-home-categories__card" href="{{ path('catalog_category', {slug: c.summary.slug}) }}" data-action="analytics#track" data-analytics-event-param="category_card_click" data-analytics-type-param="{{ c.summary.slug }}">
+                    <span class="tm-home-categories__icon"><twig:Icon name="{{ c.summary.icon }}" /></span>
+                    <span class="tm-home-categories__name">{{ c.summary.name }}</span>
+                    {% if c.count is not null %}<span class="tm-home-categories__count">{{ c.count }} professionnel{{ c.count > 1 ? 's' }}</span>{% endif %}
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
+</section>

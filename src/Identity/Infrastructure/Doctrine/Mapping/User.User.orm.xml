@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Identity — compte utilisateur (A01–A06, ASVS V2). Unicité de l'e-mail : index partiel posé par la migration. -->
+<doctrine-mapping xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
+                  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                  xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping https://www.doctrine-project.org/schemas/orm/doctrine-mapping.xsd">
+    <entity name="App\Identity\Domain\User\User" table="user_account" schema="identity">
+        <id name="id" type="identity_user_id" column="id"/>
+        <field name="email" type="string" length="254"/>
+        <field name="emailCanonical" type="string" length="254" column="email_canonical"/>
+        <field name="passwordHash" type="string" length="255" column="password_hash"/>
+        <field name="kind" type="string" length="20" enum-type="App\Identity\Domain\User\UserKind"/>
+        <field name="status" type="string" length="30" enum-type="App\Identity\Domain\User\UserStatus"/>
+        <field name="firstName" type="string" length="60" column="first_name"/>
+        <field name="lastName" type="string" length="60" column="last_name"/>
+        <field name="phone" type="string" length="16" nullable="true"/>
+        <field name="phoneVerifiedAt" type="datetimetz_immutable" column="phone_verified_at" nullable="true"/>
+        <field name="emailVerifiedAt" type="datetimetz_immutable" column="email_verified_at" nullable="true"/>
+        <field name="lastLoginAt" type="datetimetz_immutable" column="last_login_at" nullable="true"/>
+        <field name="passwordChangedAt" type="datetimetz_immutable" column="password_changed_at"/>
+        <field name="passwordless" type="boolean"/>
+        <field name="deletionRequestedAt" type="datetimetz_immutable" column="deletion_requested_at" nullable="true"/>
+        <field name="anonymizedAt" type="datetimetz_immutable" column="anonymized_at" nullable="true"/>
+        <field name="createdAt" type="datetimetz_immutable" column="created_at"/>
+        <field name="updatedAt" type="datetimetz_immutable" column="updated_at"/>
+        <field name="version" type="integer" version="true"/>
+    </entity>
+</doctrine-mapping>

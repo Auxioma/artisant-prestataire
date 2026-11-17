@@ -1,0 +1,15 @@
+Bonjour {{ prenom }},
+
+Un client a choisi votre entreprise et vous adresse directement sa demande de devis n° {{ numero }} :
+
+{% if titre %}{{ titre }}
+{% endif %}{{ metier }} · {{ ville }}
+Délai souhaité : {{ delai }}
+{% if budget %}Budget indicatif : {{ budget }}
+{% endif %}
+
+Répondez rapidement : le client peut aussi recevoir les devis d’autres professionnels.
+
+Voir la demande : {{ lien }}
+
+Les coordonnées du client vous sont communiquées s’il accepte votre devis.

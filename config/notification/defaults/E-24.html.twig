@@ -1,0 +1,9 @@
+<p>Bonjour {{ prenom }},</p>
+{% if valide %}
+<p>Votre justificatif <strong>{{ piece }}</strong> a été contrôlé et validé par notre équipe.</p>
+{% else %}
+<p>Votre justificatif <strong>{{ piece }}</strong> n’a pas pu être accepté.</p>
+<p><strong>Motif :</strong> {{ motif }}</p>
+<p>Merci d’en déposer une nouvelle version depuis votre dossier.</p>
+{% endif %}
+{{ bouton(lien, valide ? 'Voir mon dossier' : 'Déposer une nouvelle pièce') }}

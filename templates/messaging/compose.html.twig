@@ -1,0 +1,30 @@
+{#- Nouveau message : premier message au sujet d'une demande (RG-081) ou question préalable (Q14). P-106. -#}
+{% extends layout %}
+{% set space_active = 'messages' %}
+{% set space_title = 'Mes messages' %}
+{% set space_subtitle = 'Échangez facilement avec vos artisans et prestataires en toute sécurité.' %}
+{% block title %}Nouveau message — TrouveMoi{% endblock %}
+{% block space_content %}
+<div class="tm-msg-page">
+    <header class="tm-pro-head">
+        <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="msg" class="tm-icon--inherit" /></span>
+        <div><h1>Nouveau message</h1><p>{% if context.artisan %}À {{ context.artisan.name }}{% if context.request %} — au sujet de « {{ context.request.title }} »{% else %} — question préalable{% endif %}{% elseif context.request %}Au sujet de « {{ context.request.title }} »{% else %}Choisissez d’abord votre interlocuteur.{% endif %}</p></div>
+    </header>
+    {% if context.artisan is null and context.request is null %}
+        <div class="tm-pro-card">
+            <p>Pour écrire à un professionnel, ouvrez une de vos demandes et choisissez « Envoyer un message » sur son devis, ou posez-lui une question depuis sa fiche.</p>
+            <div class="tm-msg-page__links">
+                {% if tm_route_exists(space == 'pro' ? 'pro_requests' : 'client_requests') %}<twig:Button href="{{ path(space == 'pro' ? 'pro_requests' : 'client_requests') }}" variant="secondary">Mes demandes</twig:Button>{% endif %}
+                {% if space == 'client' and tm_route_exists('search_directory') %}<twig:Button href="{{ path('search_directory') }}" variant="secondary">Nos professionnels</twig:Button>{% endif %}
+            </div>
+        </div>
+    {% else %}
+        <form method="post" class="tm-pro-card tm-msg-page__form">
+            <input type="hidden" name="_token" value="{{ csrf_token('messaging') }}">
+            {% if error %}<p class="tm-field__error" role="alert"><twig:Icon name="alert" size="xs" />{{ error }}</p>{% endif %}
+            <div class="tm-field"><label class="tm-field__label" for="message">Votre message</label><div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="message" name="message" rows="6" maxlength="5000" required>{{ message }}</textarea></div><p class="tm-field__help">Les coordonnées (téléphone, e-mail, liens) sont masquées jusqu’à l’acceptation d’un devis.</p></div>
+            <div class="tm-msg-page__links"><twig:Button type="submit" icon="send" iconPosition="start">Envoyer</twig:Button></div>
+        </form>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,177 @@
+/*
+ * TrouveMoi — design tokens (T-108).
+ *
+ * Sources, par ordre de priorité :
+ *   1. Bibliothèque Figma V2 « TM — Bibliothèque de composants V2 » (nœud 59:4) et audit V2.1 (nœud 150:2),
+ *      prioritaires pour les corrections d'accessibilité (contrastes, minimum 12 px).
+ *   2. CDC §2.1–2.4 : les noms de variables imposés (--primary, --secondary…) sont conservés et pointent vers les primitives.
+ * Toute modification de palette ou de typographie relève de RG-001 : validation du porteur requise
+ * (écarts listés dans docs/decisions/points-en-suspens.md, P-05 et P-24 à P-27).
+ *
+ * Règle : aucune couleur codée en dur ailleurs que dans ce fichier (vérifié par tests/Unit/Design/DesignTokensTest).
+ */
+@layer tokens {
+    :root {
+        /* ── Primitives couleur (variables Figma « --tm-* » et « color/* ») ───────────────────────── */
+        --tm-navy: #001568;        /* Bleu marine principal — titres, navigation */
+        --tm-blue: #0057b8;        /* Bleu secondaire — liens, boutons secondaires */
+        --tm-orange: #ff7900;      /* Orange principal — pictos, accents (jamais en texte sur blanc : 2,6:1) */
+        --tm-orange-ink: #b84a00;  /* Orange texte — audit V2.1 (≥ 4,5:1 sur blanc) */
+        --tm-gold: #ffb000;        /* Orange clair — étoiles (toujours doublées de la note chiffrée) */
+        --tm-white: #ffffff;
+        --tm-ice: #ebf6fe;         /* Bleu très clair — fonds de section, pied de page */
+        --tm-bg: #f7f9fc;          /* Fond d'application, champs désactivés */
+        --tm-ink: #192c49;         /* Texte courant (Figma V2) */
+        --tm-muted: #5b6b82;       /* Texte secondaire — audit V2.1 (≥ 5:1) */
+        --tm-line: #e0e7f0;        /* Bordures, séparateurs */
+        --tm-green: #007a47;       /* Vert texte « Disponible », succès — CDC Q21 et Figma */
+        --tm-success: #00b96b;     /* Vert disponibilité (pastilles, jauges ; pas de texte blanc dessus) */
+        --tm-mint: #eaf8f1;        /* Fond succès / Disponible */
+        --tm-red: #b42020;         /* Erreur, danger — Figma V2 (CDC proposait #D62E2E, voir P-24) */
+        --tm-red-hover: #b82626;   /* Survol du bouton danger (Figma) */
+        --tm-red-soft: #fdecec;    /* Fond des messages d'erreur */
+        --tm-blue-soft: #e6f0fa;   /* Survol du bouton secondaire, fonds d'info */
+        --tm-orange-soft: #fff3e4; /* Fond d'alerte (variable Figma --tm-warning) */
+        --tm-blue-deep: #003a8c;   /* Encart « Professionnel ? » (Figma A02 393:16263) — texte blanc 10,6:1 */
+
+        /* ── Variables imposées par le CDC §2.3 ─────────────────────────────────────────────────── */
+        --primary: var(--tm-navy);
+        --secondary: var(--tm-blue);
+        --orange: var(--tm-orange);
+        --orange-light: var(--tm-gold);
+        --background: var(--tm-white);
+        --background-light: var(--tm-ice);
+        --success: var(--tm-success);
+        --gradient-blue: linear-gradient(90deg, #0057b8, #002c72);
+        --gradient-orange: linear-gradient(90deg, #ff9f00, #ff6200);
+        --font-family: 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+        --danger: var(--tm-red);
+        --warning: var(--tm-gold);
+        --radius-btn: 999px;
+        --radius-card: 12px;
+        --shadow-card: 0 2px 12px rgb(0 21 104 / 0.08);
+        --focus-ring: 0 0 0 3px rgb(0 87 184 / 0.45);
+
+        /* États de survol (Figma : assombri d'environ 8 %) */
+        --gradient-orange-hover: linear-gradient(90deg, #ff8a00, #e65800);
+        --gradient-blue-hover: linear-gradient(90deg, #004a9c, #001f55);
+
+        /* ── Rôles sémantiques (à utiliser dans les composants) ─────────────────────────────────── */
+        --color-text: var(--tm-ink);
+        --color-heading: var(--tm-navy);
+        --color-text-muted: var(--tm-muted);
+        --color-text-inverse: var(--tm-white);
+        --color-link: var(--tm-blue);
+        --color-accent-text: var(--tm-orange-ink);
+        --color-icon-ui: var(--tm-navy);
+        --color-icon-trade: var(--tm-orange);
+        --color-surface: var(--tm-white);
+        --color-surface-alt: var(--tm-bg);
+        --color-surface-section: var(--tm-ice);
+        --color-border: var(--tm-line);
+        --color-border-strong: var(--tm-blue);
+        --color-success-text: var(--tm-green);
+        --color-success-bg: var(--tm-mint);
+        --color-danger-text: var(--tm-red);
+        --color-danger-bg: var(--tm-red-soft);
+        --color-warning-text: var(--tm-orange-ink);
+        --color-warning-bg: var(--tm-orange-soft);
+        --color-info-text: var(--tm-blue);
+        --color-info-bg: var(--tm-blue-soft);
+        --color-star: var(--tm-gold);
+        --color-surface-promo: var(--tm-blue-deep);
+
+        /* ── Typographie : 21 styles « TM / … » (Figma V2, échelle CDC §2.2) ─────────────────────── */
+        --font-weight-regular: 400;
+        --font-weight-medium: 500;
+        --font-weight-semibold: 600;
+        --font-weight-bold: 700;
+        --font-size-min: 12px; /* audit V2.1 : aucun texte sous 12 px */
+
+        --type-display: 700 54px/62px var(--font-family);       /* Titre de bannière de page (Figma A02 393:16169) */
+        --type-display-mobile: 700 32px/40px var(--font-family);
+        --type-display-sub: 500 22px/30px var(--font-family);
+        --type-h1: 700 32px/40px var(--font-family);            --type-h1-tracking: -0.5px;
+        --type-h1-mobile: 700 24px/32px var(--font-family);     /* CDC Q22 (24 px mobile) — voir P-25 */
+        --type-h2: 700 24px/32px var(--font-family);
+        --type-h2-mobile: 700 20px/28px var(--font-family);
+        --type-h3: 600 18px/26px var(--font-family);
+        --type-h3-mobile: 600 16px/24px var(--font-family);     /* CDC §2.2 : 16 px mobile */
+        --type-title: 600 20px/28px var(--font-family);
+        --type-card-title: 600 16px/24px var(--font-family);
+        --type-body: 400 16px/24px var(--font-family);
+        --type-body-sm: 400 14px/21px var(--font-family);
+        --type-body-strong: 600 14px/21px var(--font-family);
+        --type-label: 500 14px/20px var(--font-family);
+        --type-button: 600 14px/20px var(--font-family);
+        --type-nav: 600 14px/20px var(--font-family);
+        --type-nav-compact: 600 13px/20px var(--font-family);
+        --type-caption: 500 12px/18px var(--font-family);
+        --type-overline: 600 12px/16px var(--font-family);       --type-overline-tracking: 0.06em; /* Figma : 6 % */
+        --type-number: 700 40px/48px var(--font-family);        --type-number-tracking: -1px;
+        --type-price: 700 32px/40px var(--font-family);         --type-price-tracking: -0.5px;
+
+        /* ── Espacements : grille de 8 pt (demi-pas de 4 px) ─────────────────────────────────────── */
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-5: 20px;
+        --space-6: 24px;
+        --space-8: 32px;
+        --space-10: 40px;
+        --space-12: 48px;
+        --space-16: 64px;
+
+        /* ── Rayons ─────────────────────────────────────────────────────────────────────────────── */
+        --radius-sm: 8px;       /* champs de formulaire */
+        --radius-md: 12px;      /* cartes, accès rapides (= --radius-card) */
+        --radius-lg: 16px;      /* modales, panneaux */
+        --radius-pill: 999px;   /* boutons, badges, puces (= --radius-btn) */
+
+        /* ── Effets (5 effets Figma) ────────────────────────────────────────────────────────────── */
+        --shadow-header: 0 1px 8px rgb(0 21 104 / 0.06);
+        --shadow-hover: 0 8px 24px rgb(0 21 104 / 0.14);
+        --shadow-overlay: 0 16px 40px rgb(0 21 104 / 0.18);
+        --shadow-text: 0 1px 10px rgb(0 21 104 / 0.45); /* lisibilité d’un texte clair sur photo (hero P01) */
+        --overlay-backdrop: rgb(0 21 104 / 0.45);
+        /* Voile de lisibilité de la bannière de page (Figma A02 393:16167) ; plus couvrant sur mobile (texte sur la photo) */
+        --banner-veil: linear-gradient(90deg, rgb(255 255 255 / 0.95) 0%, rgb(255 255 255 / 0.8) 30%, rgb(255 255 255 / 0) 46%);
+        --banner-veil-mobile: linear-gradient(90deg, rgb(255 255 255 / 0.95) 0%, rgb(255 255 255 / 0.85) 55%, rgb(255 255 255 / 0.3) 100%);
+
+        /* ── Dimensions et mise en page (CDC §2.4) ───────────────────────────────────────────────── */
+        --control-height: 44px;        /* cible tactile minimale (boutons) */
+        --input-height: 48px;
+        --button-padding-x: 20px;
+        --icon-size: 24px;
+        --icon-size-sm: 20px;
+        --icon-size-xs: 18px;
+        --section-bar-width: 4px;      /* trait orange des titres de section */
+        --section-bar-height: 24px;
+        --container-max: 1200px;
+        --container-gutter: 16px;
+        --grid-columns: 12;
+        /* Points de rupture (non utilisables en variable CSS dans @media) : mobile < 768 · tablette 768–1023 · desktop ≥ 1024 */
+
+        /* ── Mouvement ──────────────────────────────────────────────────────────────────────────── */
+        --duration-fast: 150ms;
+        --duration-base: 200ms;
+        --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+        --hover-lift: -2px;
+
+        /* ── Empilement ─────────────────────────────────────────────────────────────────────────── */
+        --z-header: 100;
+        --z-dropdown: 200;
+        --z-cookie-banner: 300;
+        --z-modal: 400;
+        --z-toast: 500;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        :root {
+            --duration-fast: 0ms;
+            --duration-base: 0ms;
+            --hover-lift: 0px;
+        }
+    }
+}

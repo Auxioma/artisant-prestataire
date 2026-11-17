@@ -1,0 +1,6 @@
+Bonjour {{ prenom }},
+
+Une connexion à votre compte TrouveMoi a eu lieu le {{ date|date('d/m/Y à H:i', 'Europe/Paris') }} depuis un appareil que nous ne connaissions pas : {{ appareil }}.
+
+C’était vous ? Aucune action n’est nécessaire.
+Ce n’était pas vous ? Changez votre mot de passe sans attendre : toutes les sessions ouvertes seront fermées : {{ lien_reinitialisation }}

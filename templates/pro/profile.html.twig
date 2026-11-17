@@ -1,0 +1,202 @@
+{#- PR08 — Mon profil public (édition) : complétude, identité, présentation, prestations, horaires et contact, dossier, aperçu. -#}
+{% extends 'base.html.twig' %}
+{% set header_variant = 'artisan' %}
+{% block title %}Mon profil public — Espace pro — TrouveMoi{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% set pr = p.presentation %}
+{% set err = error_section %}
+{% macro alert(error, section, current) %}{% if error and section == current %}<p class="tm-field__error" role="alert"><twig:Icon name="alert" size="xs" />{{ error }}</p>{% endif %}{% endmacro %}
+{% import _self as m %}
+{% set missing_labels = {logo: 'Ajouter un logo', description: 'Rédiger votre présentation', photos: 'Publier des photos de réalisations', hours: 'Indiquer vos horaires', zone: 'Définir votre zone d’intervention', services: 'Lister vos prestations', labels: 'Déclarer vos certifications'} %}
+{% block body %}
+<div class="tm-container tm-pro-profile">
+    <header class="tm-pro-profile__head">
+        <div>
+            <h1>Mon profil public</h1>
+            <p class="tm-body-sm">{{ p.tradeName ?? p.companyName }}{{ p.communeName ? ' · ' ~ p.communeName }}</p>
+        </div>
+        {% if p.public %}
+            <twig:Button href="{{ tm_artisan_url(p.profileId, p.tradeName ?? p.companyName, p.communeName) }}" variant="secondary" icon="eye" iconPosition="start" target="_blank" rel="noopener">Voir mon profil public</twig:Button>
+        {% else %}
+            <p class="tm-caption">Votre fiche sera visible dès la validation de votre dossier.</p>
+        {% endif %}
+    </header>
+
+    <section class="tm-card-panel tm-pro-profile__gauge" aria-labelledby="gauge-title">
+        <h2 id="gauge-title">Profil complété à {{ p.completion.percent }} %</h2>
+        <progress max="100" value="{{ p.completion.percent }}">{{ p.completion.percent }} %</progress>
+        {% if p.completion.missing is not empty %}
+            <ul>{% for item in p.completion.missing %}<li>{{ missing_labels[item] ?? item }}</li>{% endfor %}</ul>
+        {% endif %}
+        <p class="tm-caption">Un profil complété à 80 % au moins peut être mis en avant sur l’accueil et les pages catégories.</p>
+    </section>
+
+    <nav class="tm-pro-profile__nav" aria-label="Sections du profil">
+        <a href="#identite">Identité</a><a href="#presentation">Présentation</a><a href="#prestations">Prestations</a><a href="#realisations">Réalisations</a><a href="#horaires">Horaires et contact</a><a href="#dossier">Métiers, zone et justificatifs</a>
+    </nav>
+
+    {# PR08.2 #}
+    <section class="tm-card-panel tm-pro-profile__section" id="identite" aria-labelledby="identite-title">
+        <h2 id="identite-title">Identité visuelle</h2>
+        {{ m.alert(error, err, 'identite') }}
+        <form method="post" action="{{ path('pro_profile_save', {section: 'identite'}) }}" enctype="multipart/form-data" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('pro_profile_identite') }}">
+            <div class="tm-pro-profile__logo">
+                {% if p.hasLogo and p.public %}<img src="{{ path('public_artisan_logo', {id: p.profileId}) }}" alt="Votre logo actuel" width="96" height="96">{% endif %}
+                <div class="tm-field"><label class="tm-field__label" for="logo">{{ p.hasLogo ? 'Remplacer le logo' : 'Logo' }} (JPEG, PNG ou WebP)</label><input id="logo" name="logo" type="file" accept="image/jpeg,image/png,image/webp"></div>
+            </div>
+            <div class="tm-field"><label class="tm-field__label" for="trade_name">Nom commercial</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="trade_name" name="trade_name" maxlength="120" value="{{ err == 'identite' ? posted.trade_name ?? '' : p.tradeName }}" placeholder="{{ p.companyName }}"></div>
+                <p class="tm-field__help">Vide : la raison sociale « {{ p.companyName }} » est affichée.</p></div>
+            <div class="tm-field"><label class="tm-field__label" for="slogan">Slogan</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="slogan" name="slogan" maxlength="{{ limits.slogan }}" value="{{ err == 'identite' ? posted.slogan ?? '' : pr.slogan }}"></div></div>
+            <twig:Button type="submit">Enregistrer</twig:Button>
+        </form>
+    </section>
+
+    {# PR08.3 #}
+    <section class="tm-card-panel tm-pro-profile__section" id="presentation" aria-labelledby="presentation-title">
+        <h2 id="presentation-title">Présentation</h2>
+        {{ m.alert(error, err, 'presentation') }}
+        <form method="post" action="{{ path('pro_profile_save', {section: 'presentation'}) }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('pro_profile_presentation') }}">
+            {% set description = err == 'presentation' ? posted.description ?? '' : pr.description %}
+            <div class="tm-field" data-controller="char-count" data-char-count-max-value="{{ limits.description }}">
+                <label class="tm-field__label" for="description">Description</label>
+                <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="description" name="description" rows="8" maxlength="{{ limits.description }}" aria-describedby="description_help" data-char-count-target="input" data-action="input->char-count#update">{{ description }}</textarea></div>
+                <p class="tm-field__help" id="description_help">Mise en forme : **texte** pour le gras, une ligne commençant par « - » pour une liste. Pas de coordonnées ni de lien : les clients vous contactent via TrouveMoi. <span data-char-count-target="count">{{ description|length }} / {{ limits.description }}</span></p>
+            </div>
+            <fieldset class="tm-pro-profile__group"><legend>Points forts ({{ limits.strengths }} au maximum)</legend>
+                {% set strengths = err == 'presentation' ? posted.strengths ?? [] : pr.strengths %}
+                {% for i in 0..(limits.strengths - 1) %}<div class="tm-field__control"><input class="tm-field__input" name="strengths[]" maxlength="{{ limits.strength }}" value="{{ strengths[i] ?? '' }}" aria-label="Point fort {{ i + 1 }}" placeholder="{{ i == 0 ? 'Ex. Intervention sous 24 h' }}"></div>{% endfor %}
+            </fieldset>
+            <fieldset class="tm-pro-profile__group tm-pro-profile__checks"><legend>Langues parlées</legend>
+                {% set langs = err == 'presentation' ? posted.languages ?? [] : pr.languages %}
+                {% for code, label in languages %}<label class="tm-check"><input class="tm-check__input" type="checkbox" name="languages[]" value="{{ code }}"{% if code in langs %} checked{% endif %}><span>{{ label }}</span></label>{% endfor %}
+            </fieldset>
+            <div class="tm-field"><label class="tm-field__label" for="years">Années d’expérience</label>
+                <div class="tm-field__control tm-pro-profile__short"><input class="tm-field__input" id="years" name="years" type="number" min="0" max="80" value="{{ err == 'presentation' ? posted.years ?? '' : pr.yearsExperience }}"></div></div>
+            <fieldset class="tm-pro-profile__group tm-pro-profile__checks"><legend>Clients acceptés</legend>
+                {% set accepted = err == 'presentation' ? posted.clients ?? [] : pr.clients %}
+                {% for code, label in clients %}<label class="tm-check"><input class="tm-check__input" type="checkbox" name="clients[]" value="{{ code }}"{% if code in accepted %} checked{% endif %}><span>{{ label }}</span></label>{% endfor %}
+            </fieldset>
+            <twig:Button type="submit">Enregistrer</twig:Button>
+        </form>
+    </section>
+
+    {# PR08.5 #}
+    <section class="tm-card-panel tm-pro-profile__section" id="prestations" aria-labelledby="prestations-title">
+        <h2 id="prestations-title">Prestations et tarifs indicatifs</h2>
+        {{ m.alert(error, err, 'prestations') }}
+        <form method="post" action="{{ path('pro_profile_save', {section: 'prestations'}) }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('pro_profile_prestations') }}">
+            {% set rows = err == 'prestations' ? posted.services ?? [] : p.services|map(s => {title: s.title, price: s.price}) %}
+            {% set count = min(limits.services, max(3, rows|length + 2)) %}
+            <div class="tm-pro-profile__rows">
+                {% for i in 0..(count - 1) %}
+                    <div class="tm-pro-profile__row">
+                        <div class="tm-field__control"><input class="tm-field__input" name="services[{{ i }}][title]" maxlength="{{ limits.service_title }}" value="{{ rows[i].title ?? '' }}" aria-label="Prestation {{ i + 1 }}" placeholder="{{ i == 0 ? 'Ex. Remplacement de chauffe-eau' }}"></div>
+                        <div class="tm-field__control"><input class="tm-field__input" name="services[{{ i }}][price]" maxlength="{{ limits.service_price }}" value="{{ rows[i].price ?? '' }}" aria-label="Tarif indicatif {{ i + 1 }}" placeholder="{{ i == 0 ? 'Ex. à partir de 450 € TTC' }}"></div>
+                    </div>
+                {% endfor %}
+            </div>
+            <p class="tm-field__help">Laissez une ligne vide pour la retirer ; enregistrez pour obtenir de nouvelles lignes ({{ limits.services }} au maximum). Les tarifs sont indicatifs : le devis fait foi.</p>
+            <twig:Button type="submit">Enregistrer</twig:Button>
+        </form>
+    </section>
+
+    {# PR08.6 #}
+    <section class="tm-card-panel tm-pro-profile__section" id="realisations" aria-labelledby="realisations-title">
+        <h2 id="realisations-title">Réalisations ({{ p.portfolio|length }} / {{ portfolio_limits.projects }})</h2>
+        <p class="tm-field__help">Montrez vos chantiers : photos avant / après, ville et date. Les photos sont ré-encodées (métadonnées et position GPS retirées) et analysées avant d’apparaître sur votre fiche.</p>
+        {% for project in p.portfolio %}
+            <article class="tm-pro-portfolio">
+                <header>
+                    <h3>{{ project.title }}</h3>
+                    <p class="tm-caption">{{ [project.city, project.doneOn ? project.doneOn|date('m/Y') : null, project.jobId ? job_names[project.jobId] ?? null : null]|filter(v => v)|join(' · ') }}</p>
+                </header>
+                {% if project.photos is not empty %}
+                    <ul class="tm-pro-portfolio__photos">
+                        {% for photo in project.photos %}
+                            <li>
+                                {% if photo.available and p.public %}<img src="{{ path('public_portfolio_photo', {id: p.profileId, photo: photo.id}) }}" alt="{{ project.title }} — {{ photo_kinds[photo.kind] }}" width="120" height="90" loading="lazy">
+                                {% else %}<span class="tm-pro-portfolio__pending">{{ photo.available ? 'Publiée à la validation de votre dossier' : 'Analyse en cours' }}</span>{% endif %}
+                                <span class="tm-caption">{{ photo_kinds[photo.kind] }}</span>
+                                <form method="post" action="{{ path('pro_portfolio_photo_delete', {id: photo.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('pro_portfolio') }}">
+                                    <button type="submit" class="tm-link-button tm-admin-danger">Supprimer<span class="tm-visually-hidden"> la photo {{ loop.index }}</span></button>
+                                </form>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if project.photos|length < portfolio_limits.photos %}
+                    <form method="post" action="{{ path('pro_portfolio_photo', {id: project.id}) }}" enctype="multipart/form-data" class="tm-pro-portfolio__upload" data-turbo="false">
+                        <input type="hidden" name="_token" value="{{ csrf_token('pro_portfolio') }}">
+                        <div class="tm-field"><label class="tm-field__label" for="photo_{{ project.id }}">Ajouter une photo</label><input id="photo_{{ project.id }}" name="photo" type="file" accept="image/jpeg,image/png,image/webp" required></div>
+                        <div class="tm-field"><label class="tm-field__label" for="kind_{{ project.id }}">Type</label><div class="tm-field__control"><select class="tm-field__input" id="kind_{{ project.id }}" name="kind">{% for k, label in photo_kinds %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select></div></div>
+                        <twig:Button type="submit" variant="secondary" icon="upload" iconPosition="start">Envoyer</twig:Button>
+                    </form>
+                {% endif %}
+                <form method="post" action="{{ path('pro_portfolio_delete', {id: project.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('pro_portfolio') }}">
+                    <button type="submit" class="tm-link-button tm-admin-danger">Supprimer la réalisation<span class="tm-visually-hidden"> « {{ project.title }} »</span></button>
+                </form>
+            </article>
+        {% endfor %}
+        {% if p.portfolio|length < portfolio_limits.projects %}
+            <form method="post" action="{{ path('pro_portfolio_save') }}" class="tm-pro-portfolio__new" data-turbo="false">
+                <input type="hidden" name="_token" value="{{ csrf_token('pro_portfolio') }}">
+                <h3>Nouvelle réalisation</h3>
+                <div class="tm-field"><label class="tm-field__label" for="pf_title">Titre *</label><div class="tm-field__control"><input class="tm-field__input" id="pf_title" name="title" maxlength="100" required placeholder="Ex. Rénovation d’une salle de bains"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="pf_desc">Description</label><div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="pf_desc" name="description" rows="3" maxlength="1000"></textarea></div></div>
+                <div class="tm-pro-profile__row">
+                    <div class="tm-field"><label class="tm-field__label" for="pf_city">Ville</label><div class="tm-field__control"><input class="tm-field__input" id="pf_city" name="city" maxlength="100"></div></div>
+                    <div class="tm-field"><label class="tm-field__label" for="pf_date">Date de réalisation</label><div class="tm-field__control"><input class="tm-field__input" id="pf_date" name="done_on" type="date" max="{{ 'now'|date('Y-m-d') }}"></div></div>
+                </div>
+                {% if job_names is not empty %}
+                    <div class="tm-field"><label class="tm-field__label" for="pf_job">Métier</label><div class="tm-field__control"><select class="tm-field__input" id="pf_job" name="job_id"><option value="">—</option>{% for id, name in job_names %}<option value="{{ id }}">{{ name }}</option>{% endfor %}</select></div></div>
+                {% endif %}
+                <twig:Button type="submit">Ajouter la réalisation</twig:Button>
+            </form>
+        {% endif %}
+    </section>
+
+    {# PR08.8 #}
+    <section class="tm-card-panel tm-pro-profile__section" id="horaires" aria-labelledby="horaires-title">
+        <h2 id="horaires-title">Horaires et contact</h2>
+        {{ m.alert(error, err, 'horaires') }}
+        <form method="post" action="{{ path('pro_profile_save', {section: 'horaires'}) }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('pro_profile_horaires') }}">
+            <p class="tm-field__help">Format 08:00-12:00 ; laissez vide les jours de fermeture.</p>
+            <div class="tm-pro-profile__hours">
+                {% for day in days %}
+                    {% set ranges = err == 'horaires' ? posted.days[day] ?? [] : p.hours.days[day] ?? [] %}
+                    <div class="tm-pro-profile__day">
+                        <span class="tm-pro-profile__day-name">{{ day|capitalize }}</span>
+                        {% for i in 0..(limits.ranges - 1) %}<div class="tm-field__control"><input class="tm-field__input" name="days[{{ day }}][]" value="{{ ranges[i] ?? '' }}" pattern="[0-2][0-9]:[0-5][0-9]-[0-2][0-9]:[0-5][0-9]" aria-label="{{ day|capitalize }}, plage {{ i + 1 }}" placeholder="{{ i == 0 ? '08:00-12:00' : '14:00-18:00' }}"></div>{% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+            <label class="tm-check"><input class="tm-check__input" type="checkbox" name="emergencies" value="1"{% if (err == 'horaires' ? posted.emergencies is defined : p.hours.emergencies) %} checked{% endif %}><span>J’interviens en urgence</span></label>
+            <div class="tm-field"><label class="tm-field__label" for="emergency_note">Précisions sur les urgences</label>
+                <div class="tm-field__control"><input class="tm-field__input" id="emergency_note" name="emergency_note" maxlength="{{ limits.emergency_note }}" value="{{ err == 'horaires' ? posted.emergency_note ?? '' : p.hours.emergencyNote }}" placeholder="Ex. 7 j / 7 pour les fuites"></div></div>
+            {% if p.phoneAllowed %}
+                <label class="tm-check"><input class="tm-check__input" type="checkbox" name="phone_public" value="1"{% if (err == 'horaires' ? posted.phone_public is defined : p.phonePublic) %} checked{% endif %}><span>Afficher mon téléphone sur ma fiche, au clic du visiteur (chaque affichage est comptabilisé)</span></label>
+            {% endif %}
+            <twig:Button type="submit">Enregistrer</twig:Button>
+        </form>
+    </section>
+
+    {# PR08.4 / PR08.7 #}
+    <section class="tm-card-panel tm-pro-profile__section" id="dossier" aria-labelledby="dossier-title">
+        <h2 id="dossier-title">Métiers, zone et justificatifs</h2>
+        <ul class="tm-pro-profile__links">
+            <li><a href="{{ path('artisan_signup_area') }}">Modifier ma zone d’intervention</a></li>
+            <li><a href="{{ path('artisan_signup_insurance') }}">Mettre à jour mes assurances et certifications</a></li>
+            <li><a href="{{ path('artisan_signup_documents') }}">Voir et remplacer mes justificatifs</a> (statut de vérification et échéances)</li>
+        </ul>
+        <p class="tm-caption">Pour changer de métier, écrivez-nous : un métier réglementé demande de nouveaux justificatifs.</p>
+    </section>
+</div>
+{% endblock %}

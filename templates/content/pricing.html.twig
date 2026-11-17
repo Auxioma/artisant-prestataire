@@ -1,0 +1,87 @@
+{#- P13 (Figma 159:1364) — tarifs professionnels : devis offerts, forfaits publiés en BO08 (cartes, mensuel / annuel, comparatif ;
+    texte d'attente tant qu'aucun n'est publié), FAQ tarifs, CTA. Écarts : P-93. -#}
+{% extends 'base.html.twig' %}
+{% block title %}Tarifs professionnels — TrouveMoi{% endblock %}
+{% set canonical_url = url('content_pricing') %}
+{% set meta_description %}{{ free_credits > 0 ? free_credits ~ ' devis offerts à la validation de votre dossier, sans carte bancaire. ' }}Seul l’envoi d’un devis consomme un crédit.{% endset %}
+{% block meta %}
+{% endblock %}
+{% block body %}
+<div class="tm-pricing" data-controller="analytics" data-analytics-auto-event-value="pricing_view">
+    <header class="tm-pricing__hero">
+        <div class="tm-container">
+            <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Tarifs professionnels'}]" />
+            <h1>{{ plans is empty ? 'Développez votre activité, payez seulement les devis envoyés' : 'Des forfaits simples pour développer votre activité' }}</h1>
+            {% if free_credits > 0 %}<p class="tm-pricing__offer"><twig:Icon name="tag" size="sm" />{{ free_credits }} devis offerts à la validation de votre dossier, sans carte bancaire</p>{% endif %}
+        </div>
+    </header>
+    <div class="tm-container tm-pricing__body">
+        {% if plans is empty %}
+        <section class="tm-card-panel tm-pricing__plans" aria-labelledby="plans-title">
+            <h2 id="plans-title">Nos forfaits</h2>
+            <p>Les forfaits mensuels et annuels seront présentés ici dès leur ouverture. En attendant, démarrez gratuitement :</p>
+            <ul>
+                <li><twig:Icon name="checkC" size="sm" />Consultation des demandes et questions aux clients gratuites</li>
+                <li><twig:Icon name="checkC" size="sm" />Un crédit consommé uniquement à l’envoi effectif d’un devis</li>
+                <li><twig:Icon name="checkC" size="sm" />Profil vérifié visible dans les recherches de votre zone</li>
+            </ul>
+            <twig:Button href="{{ tm_path('identity_register_pro') }}" icon="userPlus" iconPosition="start" data-action="analytics#track" data-analytics-event-param="pro_signup_cta_click" data-analytics-type-param="pricing">Créer mon compte pro</twig:Button>
+        </section>
+        {% else %}
+        {% set yearly = plans|filter(p => p.yearlyCents is not null) is not empty %}
+        <section class="tm-plans" aria-labelledby="plans-title">
+            <h2 id="plans-title" class="tm-visually-hidden">Nos forfaits</h2>
+            {% if yearly %}
+                <fieldset class="tm-plans__period">
+                    <legend class="tm-visually-hidden">Périodicité</legend>
+                    <label><input type="radio" name="periode" value="mois" checked><span>Mensuel</span></label>
+                    <label><input type="radio" name="periode" value="an"><span>Annuel</span></label>
+                </fieldset>
+            {% endif %}
+            <ul class="tm-plans__list">
+                {% for p in plans %}
+                    <li class="tm-plan{{ p.terms.badge ? ' is-highlighted' }}">
+                        <div class="tm-plan__head"><h3>{{ p.terms.name }}</h3>{% if p.terms.badge %}<span class="tm-plan__badge">{{ p.terms.badge }}</span>{% endif %}</div>
+                        <p class="tm-plan__price tm-plan__price--month"><strong>{{ p.monthlyCents|tm_money }}</strong> HT / mois</p>
+                        {% if p.yearlyCents is not null %}
+                            <p class="tm-plan__price tm-plan__price--year"><strong>{{ p.yearlyCents|tm_money }}</strong> HT / an</p>
+                            <p class="tm-plan__sub">ou {{ p.yearlyCents|tm_money }} HT par an</p>
+                        {% endif %}
+                        <p class="tm-plan__quota"><twig:Icon name="file" size="xs" class="tm-icon--inherit" />{{ p.terms.unlimited ? 'Devis illimités (usage raisonnable)' : p.terms.quotesPerPeriod ~ ' devis par mois' }}</p>
+                        {% if p.terms.features is not empty %}
+                            <ul class="tm-plan__features">{% for f in p.terms.features %}<li><twig:Icon name="check" size="xs" class="tm-icon--inherit" />{{ f }}</li>{% endfor %}</ul>
+                        {% endif %}
+                        <twig:Button href="{{ tm_path('identity_register_pro') }}" variant="{{ p.terms.badge ? 'primary' : 'secondary' }}" block>Choisir {{ p.terms.name }}</twig:Button>
+                    </li>
+                {% endfor %}
+            </ul>
+            <details class="tm-plans__compare">
+                <summary>Comparer toutes les fonctionnalités<twig:Icon name="chevD" size="xs" class="tm-icon--inherit" /></summary>
+                <div class="tm-plans__scroll">
+                    <table>
+                        <thead><tr><th scope="col">Fonctionnalité</th>{% for p in plans %}<th scope="col">{{ p.terms.name }}</th>{% endfor %}</tr></thead>
+                        <tbody>
+                            <tr><th scope="row">Devis par mois</th>{% for p in plans %}<td>{{ p.terms.unlimited ? 'Illimités*' : p.terms.quotesPerPeriod }}</td>{% endfor %}</tr>
+                            <tr><th scope="row">Offres &amp; promotions simultanées</th>{% for p in plans %}<td>{{ p.terms.maxOffers ?? 'Illimitées' }}</td>{% endfor %}</tr>
+                            <tr><th scope="row">Statistiques</th>{% for p in plans %}<td>{{ p.terms.advancedStats ? 'Avancées' : 'Base' }}</td>{% endfor %}</tr>
+                            <tr><th scope="row">Mise en avant dans les résultats</th>{% for p in plans %}<td>{{ p.terms.featured ? 'Oui' : '—' }}</td>{% endfor %}</tr>
+                            <tr><th scope="row">Engagement</th>{% for p in plans %}<td>Sans</td>{% endfor %}</tr>
+                        </tbody>
+                    </table>
+                </div>
+                {% if plans|filter(p => p.terms.unlimited) is not empty %}<p class="tm-caption">* Usage raisonnable.</p>{% endif %}
+            </details>
+        </section>
+        {% endif %}
+
+        {% if faq is not empty %}
+            <section aria-labelledby="pricing-faq-title">
+                <h2 class="tm-section-title" id="pricing-faq-title">Questions fréquentes</h2>
+                {% include 'content/help/_accordion.html.twig' with {questions: faq, open_first: true} %}
+            </section>
+        {% endif %}
+    </div>
+    {% include 'catalog/_cta.html.twig' with {title: free_credits > 0 ? 'Commencez avec ' ~ free_credits ~ ' devis offerts' : 'Rejoignez TrouveMoi', text: 'Inscription en quelques minutes, dossier vérifié par notre équipe.', href: tm_path('identity_register_pro'), label: 'Créer mon compte pro', pro: true} only %}
+</div>
+{% if faq is not empty %}{% include 'content/help/_faq_ld.html.twig' with {questions: faq} %}{% endif %}
+{% endblock %}

@@ -1,0 +1,55 @@
+{#- BO03.3 — fiche artisan : profil, métiers, zone, justificatifs, crédits, décisions, suspension. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'artisans' %}
+{% block title %}{{ dossier.name }}{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: dossier.name, crumbs: ['Utilisateurs', 'Artisans'], subtitle: (dossier.manager ? 'Dirigeant : ' ~ dossier.manager ~ ' · ') ~ (dossier.email ?? '')}) }}
+    <p class="tm-verif__head">{{ include('admin/artisans/_status.html.twig', {status: dossier.status, hidden: dossier.hiddenReason is not null}) }}{% if dossier.hiddenReason %}<span class="tm-caption">{{ dossier.hiddenReason }}</span>{% endif %}{% if dossier.status == 'suspended' and dossier.statusComment %}<span class="tm-caption">Motif : {{ dossier.statusComment }}</span>{% endif %}</p>
+    <div class="tm-verif__grid">
+        <section class="tm-admin-panel" aria-labelledby="profil-titre">
+            <h2 id="profil-titre" class="tm-card-title">Profil</h2>
+            <dl class="tm-facts">
+                <div><dt>Raison sociale</dt><dd>{{ dossier.company.company }}</dd></div>
+                <div><dt>SIRET</dt><dd>{{ dossier.company.siret ?? '—' }}</dd></div>
+                <div><dt>Code APE</dt><dd>{{ dossier.company.ape ?? '—' }}</dd></div>
+                <div><dt>Siège</dt><dd>{{ dossier.company.hq ?: '—' }}</dd></div>
+                <div><dt>Métiers</dt><dd>{{ dossier.jobs|join(', ') }}</dd></div>
+                <div><dt>Zone</dt><dd>{{ dossier.area }}</dd></div>
+                <div><dt>Complétude</dt><dd>{{ dossier.completion }} %</dd></div>
+                <div><dt>Crédits restants</dt><dd>{{ credits is null ? 'Aucun (compte non vérifié)' : credits|number_format(0, ',', ' ') ~ ' devis' }}{% if credits is not null and tm_route_exists('admin_billing_artisan') and is_granted('admin.plans.view') %} · <a href="{{ path('admin_billing_artisan', {id: dossier.profileId}) }}">Abonnement et factures</a>{% endif %}</dd></div>
+                <div><dt>Dossier déposé</dt><dd>{{ dossier.submittedAt ? dossier.submittedAt|date('d/m/Y à H:i', 'Europe/Paris') : 'Non envoyé' }}</dd></div>
+            </dl>
+        </section>
+        <section class="tm-admin-panel" aria-labelledby="pieces-titre">
+            <h2 id="pieces-titre" class="tm-card-title">Justificatifs</h2>
+            <ul class="tm-verif__history">
+                {% for doc in dossier.documents %}
+                    <li>{{ doc.slot.label }} — {{ {approved: 'validée', pending_review: 'à vérifier', quarantined: 'analyse antivirus', rejected: 'refusée', expired: 'expirée'}[doc.slot.status] ?? (doc.slot.required ? 'manquante' : 'facultative') }}{{ doc.slot.expiresOn ? ' · échéance ' ~ doc.slot.expiresOn|date('d/m/Y') }}</li>
+                {% endfor %}
+            </ul>
+            <a href="{{ path('admin_artisans_queue', {dossier: dossier.profileId}) }}">Ouvrir le dossier de vérification (visionneuse)</a>
+            {% if dossier.history is not empty %}
+                <h3 class="tm-card-title">Décisions</h3>
+                <ul class="tm-verif__history">{% for h in dossier.history %}<li>{{ {approved: 'Validé', rejected: 'Refusé', more_info: 'Complément demandé'}[h.decision] }} le {{ h.created_at|date('d/m/Y à H:i', 'Europe/Paris') }}</li>{% endfor %}</ul>
+            {% endif %}
+        </section>
+    </div>
+    {% if is_granted('admin.artisans.edit') and dossier.status in ['verified', 'pending_verification', 'suspended'] %}
+    <section class="tm-admin-panel" aria-labelledby="actions-titre">
+        <h2 id="actions-titre" class="tm-card-title">Actions</h2>
+        <form method="post" action="{{ path('admin_artisans_status', {id: dossier.profileId}) }}" class="tm-verif__decision" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('admin_artisan_status_' ~ dossier.profileId) }}">
+            {% if dossier.status == 'suspended' %}
+                <div><twig:Button type="submit" name="action" value="reinstate">Lever la suspension</twig:Button></div>
+            {% else %}
+                <div class="tm-field">
+                    <label class="tm-field__label" for="suspend_reason">Motif de suspension (envoyé à l’artisan)</label>
+                    <div class="tm-field__control"><input class="tm-field__input" id="suspend_reason" name="reason" maxlength="500"></div>
+                </div>
+                <div><twig:Button type="submit" variant="danger" name="action" value="suspend">Suspendre le compte professionnel</twig:Button></div>
+            {% endif %}
+        </form>
+        <p class="tm-caption">Gestes commerciaux sur les crédits, mise en avant et connexion « en tant que » : avec leurs lots. Toutes les actions sont journalisées.</p>
+    </section>
+    {% endif %}
+{% endblock %}

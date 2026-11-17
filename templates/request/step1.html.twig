@@ -1,0 +1,77 @@
+{#- P11.2 — Étape 1 « Votre besoin » (Figma 5:2) : cartes de catégorie, type de prestation (métier), nature des travaux, type de projet. Sans JavaScript, la liste des prestations reste complète (groupée par catégorie). -#}
+{% extends 'request/_layout.html.twig' %}
+
+{% block title %}Votre besoin — Demande de devis — TrouveMoi{% endblock %}
+{% block step_title %}Quel type de travaux souhaitez-vous réaliser ?{% endblock %}
+{% block step_subtitle %}Sélectionnez la prestation qui correspond le mieux à votre projet.{% endblock %}
+
+{% block step_content %}
+    {% set job_id = posted.job_id ?? draft.jobId %}
+    {% set project_type = posted.project_type ?? draft.projectType %}
+    {% set selected_category = null %}
+    {% for category, jobs in categories %}{% if jobs|filter(j => j.id == job_id)|length > 0 %}{% set selected_category = category %}{% endif %}{% endfor %}
+    <form method="post" novalidate data-turbo="false" data-request-tunnel-target="form" data-action="change->request-tunnel#changed input->request-tunnel#changed">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+        <fieldset>
+            <legend class="tm-card-title">Choisissez une catégorie</legend>
+            <div class="tm-radio-cards">
+                {% for category, jobs in categories %}
+                    <label class="tm-radio-card" data-request-tunnel-target="category">
+                        <input type="radio" name="category" value="{{ category }}"{{ category == selected_category ? ' checked' }} data-action="change->request-tunnel#filterJobs">
+                        <span>{{ category }}</span>
+                    </label>
+                {% else %}
+                    <twig:EmptyState title="Aucun métier disponible" text="Le référentiel des métiers n’est pas encore chargé. Réessayez plus tard." />
+                {% endfor %}
+            </div>
+        </fieldset>
+
+        <div class="tm-field tm-field--inset{{ errors.job_id is defined ? ' tm-field--error' }}">
+            <label class="tm-field__label" for="job_id">Type de prestation<abbr class="tm-field__required" title="obligatoire">*</abbr></label>
+            <div class="tm-select">
+                <select class="tm-select__input" id="job_id" name="job_id" data-request-tunnel-target="jobSelect"{{ errors.job_id is defined ? ' aria-invalid="true" aria-describedby="job_id_error"' }}>
+                    <option value="">Choisissez la prestation</option>
+                    {% for category, jobs in categories %}
+                        <optgroup label="{{ category }}">
+                            {% for job in jobs %}
+                                <option value="{{ job.id }}"{{ job.id == job_id ? ' selected' }}{{ target and job.id not in target.jobIds ? ' disabled' }}>{{ job.name }}</option>
+                            {% endfor %}
+                        </optgroup>
+                    {% endfor %}
+                </select>
+                <twig:Icon name="chevD" size="xs" class="tm-select__chevron" />
+            </div>
+            {{ include('request/_error.html.twig', {key: 'job_id'}) }}
+        </div>
+
+        <div class="tm-field tm-field--inset">
+            <label class="tm-field__label" for="work_nature">Nature des travaux</label>
+            <div class="tm-field__control"><input class="tm-field__input" id="work_nature" name="work_nature" type="text" maxlength="120" value="{{ posted.work_nature ?? draft.workNature }}" placeholder="Ex. installation et remplacement"></div>
+            {{ include('request/_error.html.twig', {key: 'work_nature'}) }}
+        </div>
+
+        <hr class="tm-request__divider">
+
+        <fieldset aria-describedby="{{ errors.project_type is defined ? 'project_type_error' }}">
+            <legend>Type de projet<abbr class="tm-field__required" title="obligatoire">*</abbr></legend>
+            <div class="tm-pills">
+                {% for type in project_types %}
+                    <label class="tm-pill"><input type="radio" name="project_type" value="{{ type.value }}"{{ type.value == project_type ? ' checked' }}><span>{{ type.label }}</span></label>
+                {% endfor %}
+            </div>
+            {{ include('request/_error.html.twig', {key: 'project_type'}) }}
+        </fieldset>
+
+        {% if target %}
+            <input type="hidden" name="broadcast" value="0">
+            <twig:Checkbox id="broadcast" name="broadcast" value="1" label="Recevoir aussi d’autres devis d’artisans vérifiés" :checked="draft.broadcastToOthers" />
+        {% endif %}
+
+        {{ include('request/_actions.html.twig') }}
+    </form>
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Choisissez le métier correspondant à la prestation principale.</li>
+    <li><twig:Icon name="check" size="xs" />Vous pourrez détailler les autres besoins ensuite.</li>
+{% endblock %}

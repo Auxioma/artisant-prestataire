@@ -1,0 +1,62 @@
+{#- P11.7 — Étape 6 « Récapitulatif » (Figma 5:219) : lignes compactes (chacune ramène à son étape : récapitulatif modifiable, CDC), confirmation d'exactitude, « jusqu'à {max_devis} devis », diffusion élargie d'une demande directe, captcha invisible. -#}
+{% extends 'request/_layout.html.twig' %}
+
+{% block title %}Récapitulatif — Demande de devis — TrouveMoi{% endblock %}
+{% block step_title %}Vérifiez votre demande avant l’envoi{% endblock %}
+{% block step_subtitle %}Relisez les informations et confirmez la diffusion auprès des professionnels.{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer nonce="{{ csp_nonce('script') }}"></script>
+{% endblock %}
+
+{% block step_content %}
+    {% set count = draft.attachments|length %}
+    {% set rows = [
+        {label: 'Prestation', value: job.name ?? null, step: 1},
+        {label: 'Projet', value: draft.title ?? draft.summary ?? (project_type.label ?? null), step: 2},
+        {label: 'Localisation', value: draft.address ? draft.address.city ~ ' (' ~ draft.address.postal_code ~ ')' : null, step: 4},
+        {label: 'Budget', value: budget.label ?? 'Non précisé', step: 2},
+        {label: 'Période', value: timing ? (timing.value == 'date' and draft.desiredDate ? 'Le ' ~ draft.desiredDate|date('d/m/Y') : timing.label) : null, step: 4},
+        {label: 'Photos', value: count == 0 ? 'Aucune' : count ~ ' fichier' ~ (count > 1 ? 's') ~ ' joint' ~ (count > 1 ? 's'), step: 3},
+    ] %}
+    {% if draft.submitError and not error %}<div class="tm-form-alert" role="alert"><twig:Icon name="alert" size="sm" class="tm-icon--inherit" /><p>Votre demande n’a pas pu être envoyée à l’activation de votre compte : {{ draft.submitError }}</p></div>{% endif %}
+    <h3 class="tm-card-title">Votre demande est presque prête</h3>
+    <ul class="tm-recap-rows">
+        {% for row in rows|filter(r => r.value is not empty) %}
+            <li><a href="{{ path('request_step', {step: row.step}) }}" aria-label="{{ row.label }} : {{ row.value }} (modifier)"><span>{{ row.label }}</span><span>{{ row.value }}</span></a></li>
+        {% endfor %}
+    </ul>
+
+    {% if draft.submitRequestedAt %}
+        {#- RG-040 : envoi demandé avant l'activation du compte ; il partira automatiquement à la validation de l'e-mail. -#}
+        <div class="tm-request__sent-card" role="status">
+            <p class="tm-card-title">Plus qu’une étape : activez votre compte</p>
+            <p class="tm-caption">Cliquez sur le lien que nous venons de vous envoyer par e-mail. Votre demande partira automatiquement aux professionnels dès l’activation, et vous recevrez une confirmation.</p>
+        </div>
+        <p class="tm-caption">Rien reçu ? Vérifiez vos courriers indésirables. Le lien est valable 24 heures ; vous pouvez en demander un nouveau depuis la <a href="{{ path('identity_login') }}">page de connexion</a>.</p>
+    {% else %}
+    <form method="post" novalidate data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+        <twig:Checkbox id="confirm" name="confirm" value="1" label="Je confirme l’exactitude des informations fournies." :checked="posted.confirm is defined" />
+        {{ include('request/_error.html.twig', {key: 'confirm'}) }}
+        <hr class="tm-request__divider">
+        <p class="tm-request__promise-line" role="note"><twig:Icon name="file" size="sm" />Vous recevez jusqu’à {{ max_quotes }} devis gratuits et sans engagement.</p>
+        {% if target %}
+            <input type="hidden" name="broadcast" value="0">
+            <twig:Checkbox id="broadcast" name="broadcast" value="1" label="Recevoir aussi d’autres devis (demande directe diffusée aux autres artisans éligibles)" :checked="draft.broadcastToOthers" />
+        {% endif %}
+        <div class="cf-turnstile" data-sitekey="{{ turnstile_site_key }}" data-action="request" data-size="flexible" data-language="fr" data-appearance="interaction-only"></div>
+        <p class="tm-caption">Protection anti-robot invisible activée · en envoyant, vous acceptez les <a href="{{ path('identity_legal_document', {slug: 'cgu'}) }}">CGU</a>.</p>
+        <div class="tm-request__actions">
+            <button type="submit" class="tm-button tm-button--soft" name="action" value="back" formnovalidate><span class="tm-button__label">← Étape précédente</span></button>
+            <twig:Button type="submit" name="action" value="send">Envoyer ma demande</twig:Button>
+        </div>
+    </form>
+    {% endif %}
+{% endblock %}
+
+{% block step_why %}
+    <li><twig:Icon name="check" size="xs" />Jusqu’à {{ max_quotes }} professionnels pourront répondre.</li>
+    <li><twig:Icon name="check" size="xs" />Vous pourrez suivre chaque réponse dans votre espace client.</li>
+{% endblock %}

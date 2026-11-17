@@ -1,0 +1,167 @@
+{#-
+    C02 — Mes demandes (Figma 159:3905, mobile 239:15124) : en-tête et « Faire une nouvelle demande », recherche, statut
+    (groupes C02.1 : en cours, terminées, expirées ou annulées, brouillons), période, liste (n°, photo, titre, commune,
+    métier, date, statut, devis reçus / max), actions (Clôturer, Relancer, Dupliquer), « Mes demandes en chiffres »,
+    « Besoin d'un professionnel ? ». Écarts : P-74.
+-#}
+{% extends 'client/_space.html.twig' %}
+{% set space_active = 'requests' %}
+{% set space_title = 'Mes demandes' %}
+{% set space_subtitle = 'Suivez et gérez toutes vos demandes de devis, prestations et rendez-vous.' %}
+{% set space_counts = {requests: page.stats.active} %}
+{% block title %}Mes demandes — Espace client — TrouveMoi{% endblock %}
+{% set months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'] %}
+{% block space_content %}
+<div class="tm-crequests">
+    <section class="tm-crequests__main" aria-labelledby="c02-title">
+        <header class="tm-pro-head tm-crequests__head">
+            <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="file" class="tm-icon--inherit" /></span>
+            <div>
+                <h1 id="c02-title">Mes demandes ({{ page.stats.total }})</h1>
+                <p>Retrouvez ici l’ensemble de vos demandes envoyées aux professionnels.</p>
+            </div>
+            <twig:Button href="{{ path('request_new') }}" icon="plus" iconPosition="start" class="tm-crequests__new">Faire une nouvelle demande</twig:Button>
+        </header>
+
+        <nav class="tm-crequests__tabs" aria-label="Groupes de demandes">
+            <a href="{{ path('client_requests') }}"{% if filters.statut == '' %} aria-current="page"{% endif %}>Toutes</a>
+            {% for key, label in groups %}<a href="{{ path('client_requests', {statut: key}) }}"{% if filters.statut == key %} aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}
+        </nav>
+
+        <form class="tm-crequests__filters" method="get" action="{{ path('client_requests') }}" data-controller="autosubmit" role="search">
+            <label class="tm-pro-search tm-crequests__search">
+                <twig:Icon name="search" size="sm" class="tm-icon--inherit" />
+                <span class="tm-visually-hidden">Rechercher une demande</span>
+                <input type="search" name="q" value="{{ filters.q }}" maxlength="80" placeholder="Rechercher une demande (ex. : plomberie, jardin…)">
+            </label>
+            <label class="tm-crequests__select"><span class="tm-visually-hidden">Statut</span>
+                <select name="statut" data-action="change->autosubmit#submit">
+                    <option value="">Tous les statuts</option>
+                    {% for key, label in groups %}<option value="{{ key }}"{{ filters.statut == key ? ' selected' }}>{{ label }}</option>{% endfor %}
+                </select><twig:Icon name="chevD" size="xs" class="tm-icon--inherit" />
+            </label>
+            <label class="tm-crequests__select"><span class="tm-visually-hidden">Période</span>
+                <select name="date" data-action="change->autosubmit#submit">
+                    <option value="">Toutes dates</option>
+                    {% for key, label in periods %}<option value="{{ key }}"{{ filters.date == key ? ' selected' }}>{{ label }}</option>{% endfor %}
+                </select><twig:Icon name="chevD" size="xs" class="tm-icon--inherit" />
+            </label>
+            <button type="submit" class="tm-visually-hidden">Filtrer</button>
+        </form>
+
+        {% set show_draft = page.draft and filters.statut in ['', 'brouillons'] and filters.q == '' %}
+        {% if page.items is empty and not show_draft %}
+            {% if active is not empty %}
+                <twig:EmptyState title="Aucune demande ne correspond à ces critères" text="Modifiez la recherche ou les filtres pour retrouver vos demandes." icon="search">
+                    <twig:Button href="{{ path('client_requests') }}" variant="secondary">Voir toutes mes demandes</twig:Button>
+                </twig:EmptyState>
+            {% else %}
+                <twig:EmptyState title="Vous n’avez pas encore de demande" text="Décrivez votre projet en quelques minutes : les professionnels vérifiés de votre secteur vous envoient leurs devis gratuits." icon="file">
+                    <twig:Button href="{{ path('request_new') }}">Faire une demande</twig:Button>
+                </twig:EmptyState>
+            {% endif %}
+        {% else %}
+            <ul class="tm-crequest-list" aria-label="Demandes">
+                {% if show_draft %}
+                    {% set d = page.draft %}
+                    <li class="tm-crequest is-draft">
+                        <div class="tm-crequest__photo"><twig:Icon name="file" class="tm-icon--inherit" /></div>
+                        <div class="tm-crequest__main">
+                            <p class="tm-crequest__meta">Brouillon · étape {{ d.step }} sur 6</p>
+                            <h2 class="tm-crequest__title">{{ d.title ?? (d.jobName ? 'Demande ' ~ d.jobName|lower : 'Demande de devis') }}</h2>
+                            {% if d.jobName %}<p><twig:Icon name="wrench" size="xs" class="tm-icon--inherit tm-crequest__job" />{{ d.jobName }}</p>{% endif %}
+                        </div>
+                        <p class="tm-crequest__date"><twig:Icon name="calendar" size="sm" class="tm-icon--inherit" /><span>{{ d.updatedAt|date('j', 'Europe/Paris') }} {{ months[(d.updatedAt|date('n', 'Europe/Paris')) - 1] }} {{ d.updatedAt|date('Y', 'Europe/Paris') }}<br>à {{ d.updatedAt|date('H:i', 'Europe/Paris') }}</span></p>
+                        <div class="tm-crequest__state"><span class="tm-cstate is-muted"><twig:Icon name="file" size="xs" class="tm-icon--inherit" />Brouillon</span></div>
+                        <div class="tm-crequest__actions"><twig:Button href="{{ path('request_new') }}" variant="secondary" icon="arrowR">Reprendre</twig:Button></div>
+                    </li>
+                {% endif %}
+                {% for r in page.items %}
+                    {% set closable = r.status in ['pending_moderation', 'open', 'full', 'expired'] %}
+                    {% set relaunchable = r.status == 'expired' and r.relaunchCount < relaunch_max %}
+                    <li class="tm-crequest">
+                        <div class="tm-crequest__photo">
+                            {% if r.photoId %}<img src="{{ path('client_request_photo', {id: r.id, file: r.photoId}) }}" alt="" width="70" height="56" loading="lazy">{% else %}<twig:Icon name="wrench" class="tm-icon--inherit" />{% endif %}
+                        </div>
+                        <div class="tm-crequest__main">
+                            <p class="tm-crequest__meta">N° {{ r.number }}</p>
+                            <h2 class="tm-crequest__title">{{ r.title }}</h2>
+                            <p><twig:Icon name="pin" size="xs" class="tm-icon--inherit" />{{ r.city }}</p>
+                            <p><twig:Icon name="wrench" size="xs" class="tm-icon--inherit tm-crequest__job" />{{ r.jobName }}</p>
+                            {% if r.status not in ['pending_moderation', 'rejected'] %}
+                                <p class="tm-crequest__gauge" aria-label="{{ r.receivedQuotes }} devis reçu{{ r.receivedQuotes > 1 ? 's' }} sur {{ r.maxQuotes }}">
+                                    {% for i in 1..r.maxQuotes %}<span class="{{ i <= r.receivedQuotes ? 'is-on' }}"></span>{% endfor %}
+                                    <em>{{ r.receivedQuotes }}/{{ r.maxQuotes }} devis</em>
+                                </p>
+                            {% endif %}
+                        </div>
+                        <p class="tm-crequest__date"><twig:Icon name="calendar" size="sm" class="tm-icon--inherit" /><span>{{ r.submittedAt|date('j', 'Europe/Paris') }} {{ months[(r.submittedAt|date('n', 'Europe/Paris')) - 1] }} {{ r.submittedAt|date('Y', 'Europe/Paris') }}<br>à {{ r.submittedAt|date('H:i', 'Europe/Paris') }}</span></p>
+                        <div class="tm-crequest__state">{% include 'client/requests/_badge.html.twig' with {r: r} only %}</div>
+                        <div class="tm-crequest__actions">
+                            {% if tm_route_exists('client_request') %}<twig:Button href="{{ path('client_request', {id: r.id}) }}" variant="secondary" icon="eye" iconPosition="start">Voir</twig:Button>{% endif %}
+                            {% if relaunchable %}
+                                <form method="post" action="{{ path('client_request_relaunch', {id: r.id}) }}" data-turbo="false">
+                                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                                    <input type="hidden" name="back" value="{{ app.request.requestUri }}">
+                                    <twig:Button type="submit" variant="secondary" icon="send" iconPosition="start">Relancer</twig:Button>
+                                </form>
+                            {% endif %}
+                            <details class="tm-crequest__more">
+                                <summary aria-label="Autres actions pour la demande {{ r.number }}"><twig:Icon name="more" class="tm-icon--inherit" /></summary>
+                                <div class="tm-crequest__menu">
+                                    {% if r.status in ['pending_moderation', 'open', 'full'] %}
+                                        <a class="tm-crequest__menu-item" href="{{ path('client_request_edit', {id: r.id}) }}"><twig:Icon name="file" size="xs" class="tm-icon--inherit" />{{ r.receivedQuotes == 0 and r.status != 'full' ? 'Modifier' : 'Ajouter un complément' }}</a>
+                                    {% endif %}
+                                    <form method="post" action="{{ path('client_request_duplicate', {id: r.id}) }}" data-turbo="false">
+                                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                                        <button type="submit" class="tm-crequest__menu-item"><twig:Icon name="plus" size="xs" class="tm-icon--inherit" />Dupliquer{% if page.draft %}<small>remplace votre brouillon en cours</small>{% endif %}</button>
+                                    </form>
+                                    {% if closable %}
+                                        <form method="post" action="{{ path('client_request_close', {id: r.id}) }}" class="tm-crequest__close" data-turbo="false">
+                                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                                            <input type="hidden" name="back" value="{{ app.request.requestUri }}">
+                                            <label class="tm-field__label" for="close-{{ r.id }}">Clôturer : pourquoi ?</label>
+                                            <div class="tm-field__control"><select class="tm-field__input" id="close-{{ r.id }}" name="reason" required>
+                                                <option value="">Choisissez un motif</option>
+                                                {% for reason in reasons %}<option value="{{ reason.value }}">{{ reason.label }}</option>{% endfor %}
+                                            </select></div>
+                                            <twig:Button type="submit" variant="danger">Clôturer la demande</twig:Button>
+                                        </form>
+                                    {% endif %}
+                                </div>
+                            </details>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+            <div class="tm-crequests__footer">
+                <p>{{ page.total }} demande{{ page.total > 1 ? 's' }} au total</p>
+                {% if page.pages() > 1 %}
+                    <nav class="tm-crequests__pages" aria-label="Pagination">
+                        {% if page.page > 1 %}<a href="{{ path('client_requests', active|merge({page: page.page - 1})) }}" aria-label="Page précédente"><twig:Icon name="chevL" size="xs" class="tm-icon--inherit" /></a>{% endif %}
+                        {% for n in 1..page.pages() %}{% if n == page.page %}<span aria-current="page">{{ n }}</span>{% else %}<a href="{{ path('client_requests', active|merge({page: n})) }}">{{ n }}</a>{% endif %}{% endfor %}
+                        {% if page.page < page.pages() %}<a href="{{ path('client_requests', active|merge({page: page.page + 1})) }}" aria-label="Page suivante"><twig:Icon name="chevR" size="xs" class="tm-icon--inherit" /></a>{% endif %}
+                    </nav>
+                {% endif %}
+            </div>
+        {% endif %}
+    </section>
+
+    <aside class="tm-crequests__side" aria-label="Synthèse">
+        <section class="tm-pro-card" aria-labelledby="cchiffres-title">
+            <h2 id="cchiffres-title" class="tm-pro-card__title"><twig:Icon name="bars" class="tm-icon--inherit" />Mes demandes en chiffres</h2>
+            <ul class="tm-cfigures">
+                <li><span class="tm-cfigures__icon is-blue"><twig:Icon name="file" size="sm" class="tm-icon--inherit" /></span><strong>{{ page.stats.total }}</strong>Total des demandes</li>
+                <li><span class="tm-cfigures__icon is-orange"><twig:Icon name="hourglass" size="sm" class="tm-icon--inherit" /></span><strong class="is-orange">{{ page.stats.waiting }}</strong>En attente de réponse</li>
+                <li><span class="tm-cfigures__icon is-green"><twig:Icon name="file" size="sm" class="tm-icon--inherit" /></span><strong>{{ page.stats.quoted }}</strong>Devis reçu{{ page.stats.quoted > 1 ? 's' }}</li>
+                <li><span class="tm-cfigures__icon is-green"><twig:Icon name="checkC" size="sm" class="tm-icon--inherit" /></span><strong>{{ page.stats.completed }}</strong>Terminée{{ page.stats.completed > 1 ? 's' }}</li>
+            </ul>
+        </section>
+        <section class="tm-pro-card tm-cneed" aria-labelledby="cneed-title">
+            <h2 id="cneed-title">Besoin d’un professionnel ?</h2>
+            <p>Décrivez votre projet et recevez rapidement des devis adaptés.</p>
+            <twig:Button href="{{ path('request_new') }}" icon="plus" iconPosition="start" block>Créer une demande</twig:Button>
+        </section>
+    </aside>
+</div>
+{% endblock %}

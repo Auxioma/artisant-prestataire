@@ -1,0 +1,33 @@
+{#-
+    Remboursement d'une facture (rôle Finance, ré-authentification faite) : total du solde ou montant partiel, motif,
+    commentaire obligatoire ; avoir Stripe remboursé sur le moyen de paiement d'origine, E-48 à l'artisan. P-103.
+-#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'artisans' %}
+{% set v = invoice.view %}
+{% set p = posted ?? {} %}
+{% block title %}Rembourser la facture {{ v.number }}{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Rembourser la facture ' ~ (v.number ?? ''), crumbs: ['Utilisateurs', 'Artisans', 'Facturation'], subtitle: 'Payé ' ~ v.amountPaidCents|tm_money ~ ' · déjà remboursé ' ~ v.refundedCents|tm_money ~ ' · remboursable ' ~ v.refundableCents()|tm_money}) }}
+    <section class="tm-admin-panel">
+        {% if error %}<p class="tm-field__error" role="alert"><twig:Icon name="alert" size="xs" />{{ error }}</p>{% endif %}
+        <form method="post" data-turbo="false" class="tm-plan-form">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            <fieldset class="tm-promo-type">
+                <legend class="tm-field__label">Montant</legend>
+                <label class="tm-check" for="scope_full"><input class="tm-check__input" type="radio" id="scope_full" name="scope" value="full"{{ (p.scope ?? 'full') == 'full' ? ' checked' }}><span>Rembourser le solde ({{ v.refundableCents()|tm_money }})</span></label>
+                <label class="tm-check" for="scope_partial"><input class="tm-check__input" type="radio" id="scope_partial" name="scope" value="partial"{{ (p.scope ?? '') == 'partial' ? ' checked' }}><span>Remboursement partiel</span></label>
+            </fieldset>
+            <div class="tm-plan-grid">
+                <div class="tm-field"><label class="tm-field__label" for="amount">Montant partiel TTC (€)</label><div class="tm-field__control"><input class="tm-field__input" id="amount" name="amount" inputmode="decimal" placeholder="Ex. : 29,00" value="{{ p.amount ?? '' }}"></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="reason">Motif <span aria-hidden="true">*</span></label><div class="tm-select"><select class="tm-select__input" id="reason" name="reason" required><option value="">Choisir…</option>{% for k, l in reasons %}<option value="{{ k }}"{{ (p.reason ?? '') == k ? ' selected' }}>{{ l }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div></div>
+            </div>
+            <div class="tm-field"><label class="tm-field__label" for="comment">Commentaire <span aria-hidden="true">*</span></label><div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="comment" name="comment" required maxlength="500" rows="3">{{ p.comment ?? '' }}</textarea></div><p class="tm-field__help">Visible dans l’avoir Stripe et au journal ; l’artisan reçoit l’avoir par e-mail (E-48).</p></div>
+            <p class="tm-caption">Le remboursement part sur le moyen de paiement d’origine ; il est définitif. Les crédits de devis ne sont pas modifiés.</p>
+            <div class="tm-promo-actions">
+                <twig:Button href="{{ path('admin_billing_artisan', {id: invoice.artisanId}) }}" variant="secondary">Annuler</twig:Button>
+                <twig:Button type="submit" variant="danger">Rembourser</twig:Button>
+            </div>
+        </form>
+    </section>
+{% endblock %}

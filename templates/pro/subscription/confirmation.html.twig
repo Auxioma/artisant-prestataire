@@ -1,0 +1,31 @@
+{#-
+    PR12.4 — confirmation après Stripe Checkout. Le retour navigateur ne change rien : tant que le webhook de paiement
+    n'a pas activé l'abonnement, « paiement en cours de confirmation » (actualisation automatique ; SEPA : jusqu'à
+    5 jours ouvrés). Une fois actif : forfait activé, crédits disponibles, accès à l'abonnement.
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'subscription' %}
+{% set pending = subscription.status.value == 'incomplete' %}
+{% block meta %}{{ parent() }}{% if pending %}<meta http-equiv="refresh" content="10">{% endif %}{% endblock %}
+{% block title %}{{ pending ? 'Paiement en cours de confirmation' : 'Abonnement activé' }} — Espace pro — TrouveMoi{% endblock %}
+{% block space_content %}
+<div class="tm-psub">
+    <section class="tm-pro-card tm-subscribe__done" aria-live="polite">
+        {% if pending %}
+            <twig:Icon name="hourglass" class="tm-icon--inherit" />
+            <h1>Paiement en cours de confirmation</h1>
+            <p>Merci ! Stripe nous confirme votre paiement dans quelques instants ; cette page s’actualise toute seule. Pour un prélèvement SEPA, la confirmation peut prendre jusqu’à 5 jours ouvrés : vous recevrez un e-mail dès l’activation.</p>
+            <p class="tm-psub__note">Formule {{ plan_name ?? '' }} — aucun crédit n’est ajouté avant la confirmation du paiement.</p>
+        {% elseif subscription.status.isLive() %}
+            <twig:Icon name="checkC" class="tm-icon--inherit" />
+            <h1>Votre forfait {{ plan_name }} est activé</h1>
+            <p>Vos crédits de la période sont disponibles. Votre facture est envoyée par e-mail et sera disponible dans « Mes abonnements ».</p>
+        {% else %}
+            <twig:Icon name="alert" class="tm-icon--inherit" />
+            <h1>Souscription non aboutie</h1>
+            <p>Le paiement n’a pas été confirmé. Aucun montant n’a été débité.</p>
+        {% endif %}
+        <twig:Button href="{{ path('pro_subscription') }}" variant="secondary">Mes abonnements</twig:Button>
+    </section>
+</div>
+{% endblock %}

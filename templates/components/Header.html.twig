@@ -1,0 +1,197 @@
+{#
+    TM / Header (Figma 64:168 desktop, 65:48 mobile — CDC §3.1). Variantes :
+      visitor · client (messagerie, notifications, « Déposer une demande », menu compte)
+      artisan (idem + jauge compacte de crédits, orange à 20 %, rouge à 0) · tunnel (logo + Aide + Quitter)
+    Les compteurs et crédits sont fournis par l'application (aucune valeur métier dans le gabarit).
+#}
+{% props variant = 'visitor', active = null, accountName = null, unreadMessages = 0, unreadNotifications = 0, credits = null, quitHref = null %}
+{# Lien de déconnexion à jeton CSRF de session : seulement pour un utilisateur connecté (planches de démonstration : '#') #}
+{% set logout_href = app.user ? logout_path('main') : '#' %}
+{% set nav = [
+    {key: 'home', label: 'Accueil', href: tm_path('public_home')},
+    {key: 'categories', label: 'Catégories', mega: true},
+    {key: 'pros', label: 'Nos professionnels', href: tm_path('search_directory')},
+    {key: 'how', label: 'Comment ça marche ?', href: tm_path('content_how_it_works')},
+    {key: 'help', label: 'Aide / FAQ', href: tm_path('content_faq')},
+] %}
+{% set accountItems = variant == 'artisan' ? [
+    {label: 'Tableau de bord', icon: 'grid', href: tm_path('pro_dashboard')},
+    {label: 'Demandes', icon: 'file', href: tm_path('pro_requests')},
+    {label: 'Mes devis', icon: 'briefcase', href: tm_path('pro_quotes')},
+    {label: 'Abonnement', icon: 'star', href: tm_path('pro_subscription')},
+    {label: 'Mon profil public', icon: 'user', href: tm_path('pro_profile')},
+] : [
+    {label: 'Tableau de bord', icon: 'grid', href: tm_path('client_dashboard')},
+    {label: 'Mes demandes', icon: 'file', href: tm_path('client_requests')},
+    {label: 'Favoris', icon: 'heart', href: tm_path('client_favorites')},
+    {label: 'Profil', icon: 'user', href: tm_path('client_profile')},
+] %}
+{% set connected = variant in ['client', 'artisan'] %}
+{# P01.1 : méga-menu vide (aucune catégorie active) → élément masqué #}
+{% set categories = tm_main_categories() %}
+{% set nav = categories is empty ? nav|filter(i => i.mega is not defined) : nav %}
+<header {{ attributes.defaults({class: 'tm-header tm-header--' ~ variant}) }} data-controller="header">
+    <div class="tm-header__inner">
+        <twig:Logo href="{{ tm_path('public_home') }}" class="tm-header__logo" />
+
+        {% if variant == 'tunnel' %}
+            <div class="tm-header__actions">
+                <a class="tm-header__help" href="{{ tm_path('content_faq') }}"><twig:Icon name="info" size="xs" class="tm-icon--inherit" />Aide / FAQ</a>
+                <twig:Button variant="tertiary" href="{{ quitHref ?? tm_path('public_home') }}" data-tunnel-quit>Quitter</twig:Button>
+            </div>
+        {% else %}
+            <nav class="tm-header__nav" aria-label="Navigation principale">
+                <ul class="tm-header__menu">
+                    {% for item in nav %}
+                        <li class="tm-header__menu-item"{% if item.mega is defined %} data-controller="disclosure"{% endif %}>
+                            {% if item.mega is defined %}
+                                <button type="button" class="tm-nav-link{{ active == item.key ? ' is-active' }}" aria-expanded="false" aria-controls="tm-mega-menu"
+                                        data-disclosure-target="button" data-action="disclosure#toggle">
+                                    {{ item.label }}<twig:Icon name="chevD" class="tm-nav-link__chevron tm-icon--inherit" />
+                                </button>
+                                <div class="tm-mega" id="tm-mega-menu" hidden data-disclosure-target="panel">
+                                    {% if categories is not empty %}
+                                        <ul class="tm-mega__grid">
+                                            {% for category in categories %}
+                                                <li class="tm-mega__category">
+                                                    <a class="tm-mega__category-link" href="{{ category.href }}">
+                                                        <span class="tm-mega__picto"><twig:Icon name="{{ category.icon }}" size="sm" class="tm-icon--inherit" /></span>{{ category.name }}
+                                                    </a>
+                                                    <ul class="tm-mega__jobs">
+                                                        {% for job in category.jobs %}<li><a class="tm-mega__job" href="{{ job.href }}">{{ job.name }}</a></li>{% endfor %}
+                                                    </ul>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% endif %}
+                                    <div class="tm-mega__footer">
+                                        <a class="tm-mega__all" href="{{ tm_path('catalog_categories') }}">Toutes les catégories<twig:Icon name="arrowR" size="xs" class="tm-icon--inherit" /></a>
+                                        <p class="tm-mega__cta">Vous ne trouvez pas votre métier ? <twig:Button href="{{ tm_path('request_new') }}">Déposer une demande</twig:Button></p>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <a class="tm-nav-link{{ active == item.key ? ' is-active' }}" href="{{ item.href }}"{% if active == item.key %} aria-current="page"{% endif %}>{{ item.label }}</a>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </nav>
+
+            <div class="tm-header__actions">
+                {% if variant == 'visitor' %}
+                    <twig:Button variant="secondary" href="{{ tm_path('identity_login') }}" class="tm-header__desktop-only">Se connecter</twig:Button>
+                    <div class="tm-header__dropdown tm-header__desktop-only" data-controller="disclosure">
+                        <twig:Button aria-expanded="false" aria-controls="tm-signup-menu" data-disclosure-target="button" data-action="disclosure#toggle">Créer mon compte</twig:Button>
+                        <div class="tm-dropdown tm-dropdown--signup" id="tm-signup-menu" hidden data-disclosure-target="panel">
+                            <a class="tm-dropdown__choice" href="{{ tm_path('identity_register_client') }}">
+                                <span class="tm-dropdown__picto"><twig:Icon name="user" size="xs" class="tm-icon--inherit" /></span>
+                                <span><span class="tm-dropdown__title">Je suis particulier / entreprise cliente</span><span class="tm-dropdown__text">Trouver un pro et recevoir des devis</span></span>
+                            </a>
+                            <a class="tm-dropdown__choice" href="{{ tm_path('identity_register_pro') }}">
+                                <span class="tm-dropdown__picto"><twig:Icon name="briefcase" size="xs" class="tm-icon--inherit" /></span>
+                                <span>
+                                    <span class="tm-dropdown__title">Je suis artisan / prestataire</span>
+                                    <span class="tm-dropdown__text">Recevoir des demandes dans ma zone</span>
+                                    <span class="tm-dropdown__offer">{{ tm_setting_int('credits.free_on_signup') }} devis offerts</span>
+                                </span>
+                            </a>
+                            <p class="tm-dropdown__login">Déjà inscrit ? <a href="{{ tm_path('identity_login') }}">Se connecter</a></p>
+                        </div>
+                    </div>
+                {% else %}
+                    {% if variant == 'artisan' and credits %}
+                        <a class="tm-credit-pill tm-credit-pill--{{ credits.state }}" href="{{ tm_path('pro_subscription') }}">
+                            <twig:Icon name="file" size="xs" class="tm-icon--inherit" />{{ credits.remaining|number_format(0, ',', ' ') }}<span class="tm-credit-pill__unit"> devis</span><span class="tm-visually-hidden"> restants — voir mon abonnement</span>
+                        </a>
+                    {% endif %}
+                    <a class="tm-icon-link tm-header__messages" href="{{ tm_path(variant == 'artisan' ? 'pro_messages' : 'client_messages') }}">
+                        <twig:Icon name="msg" class="tm-icon--inherit" />
+                        <span class="tm-visually-hidden">Messagerie{% if unreadMessages > 0 %}, {{ unreadMessages }} non lu{{ unreadMessages > 1 ? 's' }}{% endif %}</span>
+                        {% if unreadMessages > 0 %}<span class="tm-icon-link__count" aria-hidden="true">{{ unreadMessages > 99 ? '99+' : unreadMessages }}</span>{% endif %}
+                    </a>
+                    <a class="tm-icon-link" href="{{ tm_path(variant == 'artisan' ? 'pro_notifications' : 'client_notifications') }}">
+                        <twig:Icon name="bell" class="tm-icon--inherit" />
+                        <span class="tm-visually-hidden">Notifications{% if unreadNotifications > 0 %}, {{ unreadNotifications }} non lue{{ unreadNotifications > 1 ? 's' }}{% endif %}</span>
+                        {% if unreadNotifications > 0 %}<span class="tm-icon-link__count" aria-hidden="true">{{ unreadNotifications > 99 ? '99+' : unreadNotifications }}</span>{% endif %}
+                    </a>
+                    {% if variant == 'client' %}
+                        <twig:Button href="{{ tm_path('request_new') }}" class="tm-header__desktop-only">Déposer une demande</twig:Button>
+                    {% endif %}
+                    <div class="tm-header__dropdown tm-header__desktop-only" data-controller="disclosure">
+                        <button type="button" class="tm-account-button" aria-expanded="false" aria-controls="tm-account-menu" data-disclosure-target="button" data-action="disclosure#toggle">
+                            <twig:Icon name="user" size="xs" class="tm-icon--inherit" />Mon compte<twig:Icon name="chevD" size="xs" class="tm-icon--inherit" />
+                        </button>
+                        <div class="tm-dropdown tm-dropdown--account" id="tm-account-menu" hidden data-disclosure-target="panel">
+                            {% if accountName %}
+                                <p class="tm-dropdown__identity">
+                                    <span class="tm-dropdown__title">{{ accountName }}</span>
+                                    <span class="tm-dropdown__text">{{ variant == 'artisan' ? 'Espace professionnel' ~ (credits ? ' · ' ~ credits.remaining ~ ' devis') : 'Espace client' }}</span>
+                                </p>
+                            {% endif %}
+                            <ul class="tm-dropdown__list">
+                                {% for item in accountItems %}
+                                    <li><a class="tm-dropdown__item" href="{{ item.href }}"><twig:Icon name="{{ item.icon }}" size="xs" class="tm-icon--inherit" />{{ item.label }}</a></li>
+                                {% endfor %}
+                            </ul>
+                            <a class="tm-dropdown__item tm-dropdown__item--danger" href="{{ logout_href }}"><twig:Icon name="x" size="xs" class="tm-icon--inherit" />Se déconnecter</a>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <a class="tm-icon-link tm-header__mobile-only" href="{{ tm_path('search_results') }}">
+                    <twig:Icon name="search" class="tm-icon--inherit" /><span class="tm-visually-hidden">Rechercher un professionnel</span>
+                </a>
+                <button type="button" class="tm-icon-link tm-header__mobile-only" aria-haspopup="dialog" aria-controls="tm-mobile-menu"
+                        data-controller="modal-opener" data-modal-opener-dialog-value="tm-mobile-menu" data-action="modal-opener#open">
+                    <twig:Icon name="menu" class="tm-icon--inherit" /><span class="tm-visually-hidden">Ouvrir le menu</span>
+                </button>
+            </div>
+        {% endif %}
+    </div>
+</header>
+
+{% if variant != 'tunnel' %}
+    {# Menu mobile (Figma 207:9669) : panneau plein écran, accordéon Catégories, boutons pleine largeur #}
+    <dialog class="tm-mobile-menu" id="tm-mobile-menu" aria-label="Menu" data-controller="modal" data-action="click->modal#backdrop close->modal#restoreFocus">
+        <div class="tm-mobile-menu__header">
+            <twig:Logo href="{{ tm_path('public_home') }}" />
+            <button type="button" class="tm-icon-link" data-action="modal#close"><twig:Icon name="x" class="tm-icon--inherit" /><span class="tm-visually-hidden">Fermer le menu</span></button>
+        </div>
+        <nav class="tm-mobile-menu__nav" aria-label="Navigation principale">
+            <ul class="tm-mobile-menu__list">
+                {% if categories is not empty %}
+                <li>
+                    <details class="tm-mobile-menu__accordion">
+                        <summary class="tm-mobile-menu__link">Catégories<twig:Icon name="chevD" size="sm" class="tm-mobile-menu__chevron tm-icon--inherit" /></summary>
+                        <div class="tm-mobile-menu__panel">
+                            {% for category in categories %}
+                                <a class="tm-mobile-menu__category" href="{{ category.href }}"><span class="tm-mega__picto"><twig:Icon name="{{ category.icon }}" size="xs" class="tm-icon--inherit" /></span>{{ category.name }}</a>
+                            {% endfor %}
+                            <a class="tm-mobile-menu__all" href="{{ tm_path('catalog_categories') }}">Toutes les catégories</a>
+                        </div>
+                    </details>
+                </li>
+                {% endif %}
+                {% for item in nav|filter(i => i.mega is not defined and i.key != 'home') %}
+                    <li><a class="tm-mobile-menu__link" href="{{ item.href }}"{% if active == item.key %} aria-current="page"{% endif %}>{{ item.label }}<twig:Icon name="chevR" size="sm" class="tm-icon--inherit" /></a></li>
+                {% endfor %}
+                {% if connected %}
+                    {% for item in accountItems %}
+                        <li><a class="tm-mobile-menu__link" href="{{ item.href }}">{{ item.label }}<twig:Icon name="chevR" size="sm" class="tm-icon--inherit" /></a></li>
+                    {% endfor %}
+                    {# Messagerie : icône de l'en-tête masquée sur les petits écrans, accessible ici. #}
+                    <li class="tm-mobile-menu__narrow-only"><a class="tm-mobile-menu__link" href="{{ tm_path(variant == 'artisan' ? 'pro_messages' : 'client_messages') }}">Messagerie{% if unreadMessages > 0 %} ({{ unreadMessages }}){% endif %}<twig:Icon name="chevR" size="sm" class="tm-icon--inherit" /></a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <div class="tm-mobile-menu__actions">
+            {% if connected %}
+                {% if variant == 'client' %}<twig:Button href="{{ tm_path('request_new') }}" block>Déposer une demande</twig:Button>{% endif %}
+                <twig:Button variant="secondary" href="{{ logout_href }}" block>Se déconnecter</twig:Button>
+            {% else %}
+                <twig:Button variant="secondary" href="{{ tm_path('identity_login') }}" block>Se connecter</twig:Button>
+                <twig:Button href="{{ tm_path('identity_register_choice') }}" block>Créer mon compte</twig:Button>
+            {% endif %}
+        </div>
+    </dialog>
+{% endif %}

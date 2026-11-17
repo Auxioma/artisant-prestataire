@@ -1,0 +1,4 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Vous avez commencé une demande de devis{% if metier %} ({{ metier }}){% endif %} sans l’envoyer. Vos réponses sont enregistrées : il ne reste que quelques étapes pour recevoir des devis gratuits de professionnels vérifiés.</p>
+{{ bouton(lien, 'Reprendre ma demande') }}
+<p class="muted">Sans suite de votre part, ce brouillon est supprimé automatiquement au bout de {{ conservation_jours }} jours.</p>

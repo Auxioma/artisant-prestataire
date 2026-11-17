@@ -1,0 +1,8 @@
+Bonjour {{ prenom }},
+
+{% if suspendu %}Votre compte TrouveMoi a été suspendu par notre équipe.
+Motif : {{ motif }}
+Pendant la suspension, votre profil et vos actions sur la plateforme sont bloqués. Pour toute question ou contestation, contactez-nous : {{ lien_aide }}
+{% else %}Bonne nouvelle : votre compte TrouveMoi est de nouveau actif. Vous pouvez reprendre vos activités sur la plateforme.
+Une question ? {{ lien_aide }}
+{% endif %}

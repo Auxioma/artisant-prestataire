@@ -1,0 +1,6 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Votre compte TrouveMoi a été créé lors de votre demande de devis. Activez-le pour l’envoyer aux professionnels vérifiés de votre secteur.</p>
+{{ bouton(lien, 'Activer mon compte') }}
+<p>Ce lien est valable {{ validite_heures }} heures. Dès l’activation, votre demande est <strong>envoyée automatiquement</strong> et vous recevez un e-mail de confirmation.</p>
+{% if sans_mot_de_passe|default(false) %}<p>Vous avez choisi de créer votre compte plus tard : <strong>ce lien vous connecte directement</strong>. Pour vous reconnecter ensuite, choisissez un mot de passe depuis « Mot de passe oublié » sur la page de connexion.</p>{% endif %}
+<p class="muted">Vous n’êtes pas à l’origine de cette demande ? Ignorez simplement ce message : aucun compte ne sera activé.</p>

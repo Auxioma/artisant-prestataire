@@ -1,0 +1,19 @@
+# SECURITY.md §5. Les limites de connexion (auth.login_*) sont lues dans les paramètres administrables au lot 2 (T-204).
+framework:
+    rate_limiter:
+        autocomplete:    { policy: sliding_window, limit: 30, interval: '10 seconds' }
+        search:          { policy: sliding_window, limit: 60, interval: '1 minute' }
+        signup:          { policy: fixed_window,   limit: 5,  interval: '1 hour' }
+        email_verification_resend: { policy: fixed_window, limit: 5, interval: '1 hour' } # par IP, en plus du délai par compte
+        password_reset_account: { policy: fixed_window, limit: 3, interval: '1 hour' }
+        password_reset_ip:      { policy: fixed_window, limit: 10, interval: '1 hour' }
+        request_upload:  { policy: sliding_window, limit: 30, interval: '1 hour' } # P11.4 : fichiers déposés par IP (visiteurs compris)
+        request_submit:  { policy: fixed_window,   limit: 5,  interval: '1 hour' }
+        message_user:    { policy: sliding_window, limit: 30, interval: '1 hour' }
+        message_thread:  { policy: sliding_window, limit: 10, interval: '1 minute' }
+        phone_reveal:    { policy: fixed_window,   limit: 20, interval: '1 day' }
+        contact:         { policy: fixed_window,   limit: 3,  interval: '1 hour' } # P16 : 3 envois / heure / IP
+        newsletter:      { policy: fixed_window,   limit: 5,  interval: '1 hour' }
+        cookie_consent:  { policy: sliding_window, limit: 30, interval: '1 hour' }
+        stripe_webhook:  { policy: sliding_window, limit: 300, interval: '1 minute' }
+        ical_feed:       { policy: sliding_window, limit: 60, interval: '1 hour' } # PR06.3 : lien iCal privé, par IP

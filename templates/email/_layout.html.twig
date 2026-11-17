@@ -1,0 +1,34 @@
+{#-
+    Gabarit commun des e-mails (BO11.1 : charte, logo, pied de page légal). Les couleurs viennent de
+    App\Notification\Infrastructure\Template\EmailPalette (variable `palette`) : les messageries ignorent les variables
+    CSS. `content` : corps du modèle déjà rendu en bac à sable (variables échappées).
+-#}
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>{{ subject }}</title>
+    <style>
+        body { margin: 0; padding: 0; background: {{ palette.bg }}; font-family: Poppins, 'Segoe UI', Arial, sans-serif; color: {{ palette.ink }}; }
+        a { color: {{ palette.link }}; }
+        p { margin: 0 0 14px; }
+        .muted { color: {{ palette.muted }}; }
+    </style>
+</head>
+<body style="margin:0;padding:0;background:{{ palette.bg }};font-family:Poppins,'Segoe UI',Arial,sans-serif;color:{{ palette.ink }};">
+    {% if preheader %}<div style="display:none;max-height:0;overflow:hidden;opacity:0;">{{ preheader }}</div>{% endif %}
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{{ palette.bg }};padding:24px 12px;">
+        <tr><td align="center">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:{{ palette.white }};border:1px solid {{ palette.line }};border-radius:12px;">
+                <tr><td style="padding:24px 28px 0;font-size:20px;font-weight:700;color:{{ palette.navy }};">TrouveMoi<span style="color:{{ palette.accent }};">.com</span></td></tr>
+                <tr><td style="padding:16px 28px 28px;font-size:15px;line-height:24px;">{{ content|raw }}</td></tr>
+            </table>
+            <p style="max-width:560px;margin:16px auto 0;font-size:12px;line-height:18px;color:{{ palette.muted }};text-align:center;">
+                E-mail de service envoyé par TrouveMoi.com — il ne contient aucune publicité. Merci de ne pas y répondre.
+            </p>
+        </td></tr>
+    </table>
+</body>
+</html>

@@ -1,0 +1,21 @@
+{#- RG-090 — rétractation depuis le lien signé de l'e-mail E-08 (même gabarit que A05) : mot de passe exigé. -#}
+{% extends 'base.html.twig' %}
+{% set header_variant = 'tunnel' %}
+{% block title %}Annuler la suppression de mon compte — TrouveMoi{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block body %}
+<div class="tm-auth-page">
+    <section class="tm-container tm-auth-message">
+        <div class="tm-state-card tm-card-panel">
+            <span class="tm-state-card__icon tm-state-card__icon--info"><twig:Icon name="refresh" class="tm-icon--inherit" /></span>
+            <h1 class="tm-state-card__title">Annuler la suppression de mon compte</h1>
+            <p class="tm-body-sm">Confirmez avec votre mot de passe : votre compte sera réactivé immédiatement, avec toutes ses données.</p>
+            <form method="post" action="{{ action }}" class="tm-state-card__form tm-signup__fields" novalidate>
+                <input type="hidden" name="_token" value="{{ csrf_token('deletion_cancel') }}">
+                {% include 'client/profile/_password.html.twig' with {id: 'cancel_password', name: 'password', label: 'Mot de passe', autocomplete: 'current-password', error: error} %}
+                <twig:Button type="submit" block>Annuler la suppression</twig:Button>
+            </form>
+        </div>
+    </section>
+</div>
+{% endblock %}

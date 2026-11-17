@@ -1,0 +1,10 @@
+<p>Bonjour {{ prenom }},</p>
+{% if expiree %}
+<p>Votre demande <strong>n° {{ numero }}</strong> ({{ metier }} à {{ ville }}) a expiré sans devis accepté. Elle n’est plus proposée aux professionnels.</p>
+{% if relance_possible %}<p>Vous pouvez la relancer une fois, avec vos réponses et vos photos, depuis votre espace.</p>{% endif %}
+{{ bouton(lien, relance_possible ? 'Relancer ma demande' : 'Voir ma demande') }}
+{% else %}
+<p>Votre demande <strong>n° {{ numero }}</strong> ({{ metier }} à {{ ville }}) expire le <strong>{{ date_expiration|date('d/m/Y à H:i', 'Europe/Paris') }}</strong>.</p>
+<p>{% if devis > 0 %}Vous avez reçu {{ devis }} devis : comparez-les et acceptez celui qui vous convient avant cette date.{% else %}Vous n’avez pas encore reçu de devis. Sans devis accepté, elle sera close automatiquement à cette date.{% endif %}</p>
+{{ bouton(lien, 'Voir ma demande') }}
+{% endif %}

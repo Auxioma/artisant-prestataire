@@ -1,0 +1,23 @@
+{#- BO01 (Figma 186:75) — socle : files d'attente disponibles ; indicateurs et graphiques avec les données qu'ils mesurent. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'dashboard' %}
+{% block title %}Tableau de bord{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Tableau de bord', subtitle: 'Bonjour ' ~ app.user.name ~ ' — ' ~ app.user.role.label}) }}
+    <div class="tm-admin-grid">
+        <section class="tm-admin-panel" aria-labelledby="files-titre">
+            <h2 id="files-titre" class="tm-card-title">Files d’attente</h2>
+            <ul class="tm-admin-queues">
+                {% for queue in queues|filter(q => is_granted(q.permission)) %}
+                    <li><twig:Icon name="{{ queue.icon }}" size="sm" class="tm-icon--inherit" />{% if queue.route is defined %}<a href="{{ path(queue.route, queue.params ?? {}) }}">{{ queue.label }}</a>{% else %}<span>{{ queue.label }}</span>{% endif %}<span class="tm-admin-count{{ queue.count > 0 ? ' tm-admin-count--todo' }}">{{ queue.count }}</span></li>
+                {% else %}
+                    <li>Aucune file d’attente pour votre rôle.</li>
+                {% endfor %}
+            </ul>
+        </section>
+        <section class="tm-admin-panel" aria-labelledby="kpi-titre">
+            <h2 id="kpi-titre" class="tm-card-title">Indicateurs clés</h2>
+            <twig:EmptyState icon="grid" title="Bientôt disponibles" text="Visiteurs, demandes, devis, taux d’acceptation, MRR… s’afficheront ici au fur et à mesure de la mise en service des fonctionnalités qu’ils mesurent." />
+        </section>
+    </div>
+{% endblock %}

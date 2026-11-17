@@ -1,0 +1,7 @@
+{# Squelette de chargement (annexe B) : décoratif ; l'état de chargement est annoncé par le conteneur (aria-busy). #}
+{% props lines = 3, widths = ['w120', 'w200', 'w160', 'w140'] %}
+<div {{ attributes.defaults({class: 'tm-skeleton-group'}) }} aria-hidden="true">
+    {% for i in 1..lines %}
+        <span class="tm-skeleton tm-skeleton--{{ widths[(i - 1) % widths|length] }}"></span>
+    {% endfor %}
+</div>

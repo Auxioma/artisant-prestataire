@@ -1,0 +1,179 @@
+{#-
+    PR02 — Mes demandes (Figma 159:3176) : en-tête, recherche, filtres en pastilles (PR02.1 : métier, statut, date, distance,
+    budget, délai, demandes directes, tri), cartes de demande (PR02.2), « Mes demandes en chiffres », « Conseil TrouveMoi ».
+    RG-112 : prénom et commune seulement. Écarts (actions des lots suivants, équipe, accès rapides) : P-72.
+-#}
+{% extends 'pro/_space.html.twig' %}
+{% set space_active = 'requests' %}
+{% block title %}Mes demandes — Espace pro — TrouveMoi{% endblock %}
+{% set state_badges = {
+    unread: {label: 'Nouveau', icon: 'dots', class: 'is-new'},
+    viewed: {label: 'À traiter', icon: 'clock', class: 'is-todo'},
+    ignored: {label: 'Ignorée', icon: 'eyeOff', class: 'is-muted'},
+    unavailable: {label: 'Plus disponible', icon: 'hourglass', class: 'is-muted'},
+    preview: {label: 'Aperçu', icon: 'eye', class: 'is-todo'},
+} %}
+{% macro pill(name, icon, label, options, value, all) %}
+    <label class="tm-pro-filter{{ value != '' ? ' is-set' }}">
+        <twig:Icon name="{{ icon }}" size="sm" class="tm-icon--inherit" />
+        <span class="tm-visually-hidden">{{ label }}</span>
+        <select name="{{ name }}" data-action="change->autosubmit#submit">
+            <option value="">{{ all }}</option>
+            {% for key, text in options %}<option value="{{ key }}"{{ value == key ? ' selected' }}>{{ text }}</option>{% endfor %}
+        </select>
+        <twig:Icon name="chevD" size="xs" class="tm-icon--inherit tm-pro-filter__chev" />
+    </label>
+{% endmacro %}
+{% import _self as m %}
+{% block space_content %}
+<div class="tm-pro-requests">
+    <section class="tm-pro-requests__main" aria-labelledby="pr02-title">
+        <header class="tm-pro-head">
+            <span class="tm-pro-head__picto" aria-hidden="true"><twig:Icon name="fileEuro" class="tm-icon--inherit" /></span>
+            <div>
+                <h1 id="pr02-title">Mes demandes</h1>
+                <p>Retrouvez toutes les demandes reçues de vos futurs clients.</p>
+            </div>
+        </header>
+
+        {% if page is null %}
+            <twig:EmptyState title="Votre espace « Demandes » s’ouvre avec la validation de votre dossier" text="Les demandes compatibles avec vos métiers et votre zone vous seront proposées dès que votre compte professionnel sera vérifié." icon="shield">
+                {% if tm_route_exists('artisan_signup_submitted') %}<twig:Button href="{{ path('artisan_signup_submitted') }}" variant="secondary">Suivre mon dossier</twig:Button>{% endif %}
+            </twig:EmptyState>
+        {% else %}
+            {% if not page.artisan.verified %}
+                <p class="tm-pro-notice" role="status"><twig:Icon name="info" size="sm" class="tm-icon--inherit" />Vous pourrez répondre dès la vérification de votre compte. En attendant, voici un aperçu des demandes de votre zone.</p>
+            {% endif %}
+
+            <form class="tm-pro-filters" method="get" action="{{ path('pro_requests') }}" data-controller="autosubmit" role="search">
+                <div class="tm-pro-filters__search">
+                    <label class="tm-pro-search">
+                        <twig:Icon name="search" size="sm" class="tm-icon--inherit" />
+                        <span class="tm-visually-hidden">Rechercher une demande</span>
+                        <input type="search" name="q" value="{{ filters.q }}" maxlength="80" placeholder="Rechercher une demande (service, ville, n° de demande…)">
+                    </label>
+                    <button type="submit" class="tm-visually-hidden">Rechercher</button>
+                </div>
+                <div class="tm-pro-filters__pills">
+                    {% if page.artisan.jobs|length > 1 %}{{ m.pill('metier', 'wrench', 'Métier', page.artisan.jobs, filters.metier, 'Métier / Service') }}{% endif %}
+                    {{ m.pill('statut', 'layers', 'Statut', states|map((s, k) => s.label), filters.statut, 'Statut') }}
+                    {{ m.pill('date', 'calendar', 'Date de dépôt', periods, filters.date, 'Date') }}
+                    {{ m.pill('distance', 'pin', 'Distance', distances, filters.distance, 'Distance') }}
+                    {% set budget_options = {} %}{% for b in budgets %}{% set budget_options = budget_options|merge({(b.value): b.label}) %}{% endfor %}
+                    {{ m.pill('budget', 'euro', 'Budget', budget_options, filters.budget, 'Budget') }}
+                    {% set timing_options = {} %}{% for t in timings %}{% set timing_options = timing_options|merge({(t.value): t.label}) %}{% endfor %}
+                    {{ m.pill('delai', 'zap', 'Délai souhaité', timing_options, filters.delai, 'Délai') }}
+                    <label class="tm-pro-filter tm-pro-filter--check{{ filters.directes ? ' is-set' }}">
+                        <input type="checkbox" name="directes" value="1"{{ filters.directes ? ' checked' }} data-action="change->autosubmit#submit">
+                        <span>Demandes directes</span>
+                    </label>
+                    {{ m.pill('tri', 'sliders', 'Trier', sorts, filters.tri, 'Plus récentes') }}
+                    {% if active is not empty %}
+                        <a class="tm-pro-reset" href="{{ path('pro_requests') }}"><twig:Icon name="refresh" size="xs" class="tm-icon--inherit" />Réinitialiser</a>
+                    {% endif %}
+                </div>
+            </form>
+
+            {% if page.items is empty %}
+                {% if active is not empty %}
+                    <twig:EmptyState title="Aucune demande ne correspond à ces critères" text="Modifiez ou réinitialisez les filtres pour retrouver toutes vos demandes." icon="search">
+                        <twig:Button href="{{ path('pro_requests') }}" variant="secondary">Réinitialiser les filtres</twig:Button>
+                    </twig:EmptyState>
+                {% else %}
+                    <twig:EmptyState title="Aucune demande pour le moment dans votre zone" text="Pour en recevoir davantage, élargissez votre zone d’intervention ou ajoutez des métiers à votre profil." icon="file">
+                        <twig:Button href="{{ path('pro_profile') }}#dossier" variant="secondary">Modifier mon profil</twig:Button>
+                    </twig:EmptyState>
+                {% endif %}
+            {% else %}
+                <ul class="tm-pro-request-list" aria-label="Demandes ({{ page.total }})">
+                    {% for r in page.items %}
+                        {% set badge = state_badges[r.state.value] %}
+                        {% set detail = tm_route_exists('pro_request') ? path('pro_request', {id: r.id}) : null %}
+                        <li class="tm-pro-request{{ r.state.value in ['ignored', 'unavailable'] ? ' is-muted' }}">
+                            <div class="tm-pro-request__photo">
+                                {% if r.photoId %}
+                                    <img src="{{ path('pro_request_photo', {id: r.id, file: r.photoId}) }}" alt="" width="96" height="78" loading="lazy">
+                                {% else %}
+                                    <twig:Icon name="wrench" class="tm-icon--inherit" />
+                                {% endif %}
+                            </div>
+                            <div class="tm-pro-request__who">
+                                <h2 class="tm-pro-request__title">{% if detail %}<a href="{{ detail }}">{{ r.title }}</a>{% else %}{{ r.title }}{% endif %}</h2>
+                                {% if r.clientFirstName %}<p class="tm-pro-request__client"><twig:Icon name="user" size="xs" class="tm-icon--inherit" />{{ r.clientFirstName }}</p>{% endif %}
+                                <p><twig:Icon name="pin" size="xs" class="tm-icon--inherit" />{{ r.city }}{% if r.distanceKm is not null %} · {{ r.distanceKm }} km{% endif %}</p>
+                                <p><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" /><time datetime="{{ r.submittedAt|date('c') }}">{{ r.submittedAt|date('d/m/Y à H:i', 'Europe/Paris') }}</time></p>
+                            </div>
+                            <div class="tm-pro-request__what">
+                                <p class="tm-pro-request__tags">
+                                    <span class="tm-pro-tag"><twig:Icon name="layers" size="xs" class="tm-icon--inherit" />{{ r.jobName }}</span>
+                                    {% if r.direct %}<twig:Badge variant="direct">Demande directe</twig:Badge>{% endif %}
+                                </p>
+                                <p class="tm-pro-request__excerpt">{{ r.excerpt }}</p>
+                                {% if r.budget %}<p class="tm-pro-request__budget"><twig:Icon name="euro" size="xs" class="tm-icon--inherit" />Budget : {{ r.budget }}</p>{% endif %}
+                                <p><twig:Icon name="calendar" size="xs" class="tm-icon--inherit" />Intervention souhaitée : {{ r.timing|lower }}</p>
+                                <p class="tm-pro-request__meta">{{ r.quotesSent }}/{{ r.maxQuotes }} devis déjà envoyés · {{ r.photos }} photo{{ r.photos > 1 ? 's' }}</p>
+                            </div>
+                            <div class="tm-pro-request__state">
+                                <span class="tm-pro-state {{ badge.class }}"><twig:Icon name="{{ badge.icon }}" size="xs" class="tm-icon--inherit" />{{ badge.label }}</span>
+                            </div>
+                            <div class="tm-pro-request__actions">
+                                {% if detail %}<twig:Button href="{{ detail }}" variant="secondary" icon="eye" iconPosition="start">Voir</twig:Button>{% endif %}
+                                {% if r.state.value == 'ignored' %}
+                                    <form method="post" action="{{ path('pro_request_ignore', {id: r.id}) }}" data-turbo="false">
+                                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                                        <input type="hidden" name="restore" value="1">
+                                        <input type="hidden" name="back" value="{{ app.request.requestUri }}">
+                                        <twig:Button type="submit" variant="secondary" icon="refresh" iconPosition="start">Rétablir</twig:Button>
+                                    </form>
+                                {% elseif page.artisan.verified and r.state.value in ['unread', 'viewed'] %}
+                                    <details class="tm-pro-ignore">
+                                        <summary class="tm-button tm-button--secondary"><twig:Icon name="eyeOff" size="xs" class="tm-icon--inherit" /><span class="tm-button__label">Ignorer</span></summary>
+                                        <form method="post" action="{{ path('pro_request_ignore', {id: r.id}) }}" data-turbo="false">
+                                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                                            <input type="hidden" name="back" value="{{ app.request.requestUri }}">
+                                            <label class="tm-field__label" for="reason-{{ r.id }}">Motif (facultatif)</label>
+                                            <div class="tm-field__control"><select class="tm-field__input" id="reason-{{ r.id }}" name="reason">
+                                                <option value="">Sans motif</option>
+                                                {% for reason in reasons %}<option value="{{ reason.value }}">{{ reason.label }}</option>{% endfor %}
+                                            </select></div>
+                                            <twig:Button type="submit" variant="secondary">Ignorer cette demande</twig:Button>
+                                        </form>
+                                    </details>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+                {% if page.pages() > 1 %}
+                    <nav class="tm-directory__pagination" aria-label="Pagination">
+                        <ul>
+                            {% for n in 1..page.pages() %}
+                                <li>{% if n == page.page %}<span aria-current="page">{{ n }}</span>{% else %}<a href="{{ path('pro_requests', active|merge({page: n})) }}">{{ n }}</a>{% endif %}</li>
+                            {% endfor %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% endif %}
+        {% endif %}
+    </section>
+
+    {% if page %}
+    <aside class="tm-pro-requests__side" aria-label="Synthèse">
+        <section class="tm-pro-card" aria-labelledby="chiffres-title">
+            <h2 id="chiffres-title" class="tm-pro-card__title"><twig:Icon name="bars" class="tm-icon--inherit" />Mes demandes en chiffres</h2>
+            <ul class="tm-pro-figures">
+                <li><twig:Icon name="fileEuro" size="sm" class="tm-icon--inherit" />Nouvelles demandes<span class="tm-pro-figure is-new">{{ page.stats.unread }}</span></li>
+                <li><twig:Icon name="zap" size="sm" class="tm-icon--inherit tm-pro-figures__urgent" />Demandes urgentes<span class="tm-pro-figure is-urgent">{{ page.stats.urgent }}</span></li>
+            </ul>
+        </section>
+        <section class="tm-pro-card" aria-labelledby="conseil-title">
+            <h2 id="conseil-title" class="tm-pro-card__title tm-pro-card__title--tip"><twig:Icon name="bulb" class="tm-icon--inherit" />Conseil TrouveMoi</h2>
+            <div class="tm-pro-tip">
+                <p>Répondez rapidement aux demandes pour augmenter vos chances d’obtenir le chantier et améliorer votre note.</p>
+                <img src="{{ asset('images/pro/conseil-medaille.svg') }}" alt="" width="54" height="64">
+            </div>
+        </section>
+    </aside>
+    {% endif %}
+</div>
+{% endblock %}

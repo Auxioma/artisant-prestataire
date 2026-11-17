@@ -1,0 +1,84 @@
+{#- BO02 (Figma 186:694) — comptes clients : recherche, filtres, liste paginée, fiche en panneau latéral et actions. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'clients' %}
+{% block title %}Clients{% endblock %}
+{% set status_labels = {active: 'Actif', pending_email: 'E-mail non vérifié', suspended: 'Suspendu', deletion_requested: 'Suppression demandée', anonymized: 'Supprimé'} %}
+{% set status_variants = {active: 'available', pending_email: 'pending', suspended: 'refused', deletion_requested: 'pending', anonymized: 'neutral'} %}
+{% macro status(s, labels, variants) %}<twig:Badge variant="{{ variants[s] ?? 'neutral' }}">{{ labels[s] ?? s }}</twig:Badge>{% endmacro %}
+{% block body %}
+    {% import _self as m %}
+    {{ include('admin/_page_header.html.twig', {title: 'Clients', crumbs: ['Utilisateurs'], subtitle: page.total|number_format(0, ',', ' ') ~ ' compte' ~ (page.total > 1 ? 's') ~ ' client' ~ (page.total > 1 ? 's')}) }}
+    <div class="tm-users{{ record ? ' has-record' }}">
+        <section class="tm-admin-panel" aria-labelledby="liste-titre">
+            <h2 id="liste-titre" class="tm-visually-hidden">Liste des clients</h2>
+            <form method="get" class="tm-users__filters" role="search">
+                <twig:Field id="q" name="q" type="search" label="Rechercher" value="{{ filters.q }}" placeholder="Nom, e-mail, téléphone" icon="search" />
+                <div class="tm-field"><label class="tm-field__label" for="statut">Statut</label><div class="tm-select"><select class="tm-select__input" id="statut" name="statut"><option value="">Tous</option>{% for v, l in status_labels %}<option value="{{ v }}"{{ filters.statut == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div></div>
+                <div class="tm-field"><label class="tm-field__label" for="type">Type</label><div class="tm-select"><select class="tm-select__input" id="type" name="type"><option value="">Tous</option><option value="particulier"{{ filters.type == 'particulier' ? ' selected' }}>Particulier</option><option value="professionnel"{{ filters.type == 'professionnel' ? ' selected' }}>Professionnel</option></select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div></div>
+                <twig:Button type="submit" variant="secondary" icon="search" iconPosition="start">Filtrer</twig:Button>
+            </form>
+            <div class="tm-admin-table-wrap">
+                <table class="tm-admin-table">
+                    <thead><tr><th scope="col">Nom</th><th scope="col">E-mail</th><th scope="col">Type</th><th scope="col">Statut</th><th scope="col">Inscription</th><th scope="col">Dernière connexion</th></tr></thead>
+                    <tbody>
+                    {% for c in page.items %}
+                        <tr{{ record and record.id == c.id ? ' class="is-selected"' }}>
+                            <th scope="row"><a href="{{ path('admin_clients', filters|merge({page: page.page, client: c.id})) }}">{{ c.status == 'anonymized' ? 'Compte supprimé' : c.name }}</a></th>
+                            <td>{{ c.status == 'anonymized' ? '—' : c.email }}</td>
+                            <td>{{ c.type == 'professionnel' ? 'Professionnel' : 'Particulier' }}</td>
+                            <td>{{ m.status(c.status, status_labels, status_variants) }}</td>
+                            <td>{{ c.created_at|date('d/m/Y', 'Europe/Paris') }}</td>
+                            <td>{{ c.last_login_at ? c.last_login_at|date('d/m/Y H:i', 'Europe/Paris') : '—' }}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="6">Aucun client ne correspond à ces critères.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {{ include('admin/_pagination.html.twig', {page: page, route: 'admin_clients', params: filters}) }}
+        </section>
+
+        {% if record %}
+        <aside class="tm-admin-panel tm-users__record" aria-labelledby="fiche-titre">
+            <header class="tm-users__record-head">
+                <h2 id="fiche-titre" class="tm-card-title">{{ record.status == 'anonymized' ? 'Compte supprimé' : record.name }}</h2>
+                <a class="tm-users__close" href="{{ path('admin_clients', filters|merge({page: page.page})) }}" aria-label="Fermer la fiche"><twig:Icon name="x" size="sm" class="tm-icon--inherit" /></a>
+                <p class="tm-caption">Client depuis le {{ record.created_at|date('d/m/Y', 'Europe/Paris') }}</p>
+                <p>{{ m.status(record.status, status_labels, status_variants) }}{% if record.verified %} <twig:Badge variant="verified">E-mail vérifié</twig:Badge>{% endif %}</p>
+            </header>
+            <dl class="tm-facts">
+                <div><dt>E-mail</dt><dd>{{ record.email }}</dd></div>
+                <div><dt>Téléphone</dt><dd>{{ record.phone ?? '—' }}</dd></div>
+                <div><dt>Type</dt><dd>{{ record.type == 'professionnel' ? 'Professionnel' ~ (record.company ? ' · ' ~ record.company) : 'Particulier' }}</dd></div>
+                <div><dt>Code postal</dt><dd>{{ record.postal_code ?? '—' }}</dd></div>
+                <div><dt>Documents acceptés</dt><dd>{% for l in record.legal %}{{ l.type|upper }} v{{ l.version }}{{ not loop.last ? ' · ' }}{% else %}—{% endfor %}</dd></div>
+                <div><dt>Newsletter</dt><dd>{{ record.newsletter ? 'oui' : 'non' }}</dd></div>
+                <div><dt>Cookies</dt><dd>{{ record.cookies ? 'choix enregistré' : 'aucun choix' }}</dd></div>
+                <div><dt>Demandes / devis / avis</dt><dd>Avec les lots Demandes et Avis</dd></div>
+            </dl>
+            <h3 class="tm-card-title">Appareils de connexion</h3>
+            <ul class="tm-verif__history">
+                {% for d in record.devices %}<li>{{ d.description }} · vu le {{ d.last_seen_at|date('d/m/Y H:i', 'Europe/Paris') }}{{ d.revoked ? ' · révoqué' }}</li>{% else %}<li>Aucune connexion enregistrée.</li>{% endfor %}
+            </ul>
+            {% if is_granted('admin.clients.edit') and record.status != 'anonymized' %}
+                <form method="post" action="{{ path('admin_clients_action', {id: record.id}) }}" class="tm-users__actions" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token('admin_client_' ~ record.id) }}">
+                    {% if not record.verified %}<twig:Button type="submit" variant="secondary" name="action" value="resend" block>Renvoyer la validation</twig:Button>{% endif %}
+                    <twig:Button type="submit" variant="secondary" name="action" value="reset" block>Envoyer un lien de réinitialisation</twig:Button>
+                    {% if record.status == 'suspended' %}
+                        <twig:Button type="submit" name="action" value="reinstate" block>Réactiver le compte</twig:Button>
+                    {% else %}
+                        <div class="tm-field">
+                            <label class="tm-field__label" for="suspend_reason">Motif de suspension (envoyé au titulaire)</label>
+                            <div class="tm-field__control"><input class="tm-field__input" id="suspend_reason" name="reason" maxlength="500"></div>
+                        </div>
+                        <twig:Button type="submit" variant="danger" name="action" value="suspend" block>Suspendre</twig:Button>
+                    {% endif %}
+                </form>
+                <p class="tm-caption">Modification, suppression (RGPD) et connexion « en tant que » arrivent avec leurs lots ; toutes les actions sont journalisées.</p>
+            {% endif %}
+        </aside>
+        {% endif %}
+    </div>
+{% endblock %}

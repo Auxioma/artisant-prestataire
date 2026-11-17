@@ -1,0 +1,4 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Nous avons procédé au remboursement de <strong>{{ montant }}</strong>{% if facture %} sur votre facture <strong>{{ facture }}</strong>{% endif %}. Le montant est recrédité sur le moyen de paiement utilisé, sous quelques jours selon votre banque.</p>
+<p>L’avoir correspondant{% if avoir %} (<strong>{{ avoir }}</strong>){% endif %} est disponible : <a href="{{ document }}">consulter l’avoir</a>.</p>
+{{ bouton(lien, 'Voir mes factures') }}

@@ -1,0 +1,50 @@
+{#-
+    C08 « Notifications » (Figma 231:13176) : « Tout marquer comme lu », filtres Toutes / Devis / Rendez-vous / Messages /
+    Avis / Compte, liste (icône par famille, texte, date relative, non lues en gras avec pastille, chevron), pagination.
+    Commun aux espaces client et artisan. Écarts : P-122.
+-#}
+{% extends layout %}
+{% set space_active = 'notifications' %}
+{% set space_title = 'Notifications' %}
+{% set space_subtitle = 'Toutes vos alertes : devis, messages et rendez-vous.' %}
+{% set space_banner_title = 'Notifications' %}
+{% set space_banner_text = space_subtitle %}
+{% block title %}Notifications — TrouveMoi{% endblock %}
+{% macro when(at) %}{% set s = 'now'|date('U') - at|date('U') %}{% if s < 60 %}À l’instant{% elseif s < 3600 %}Il y a {{ (s / 60)|round(0, 'floor') }} min{% elseif s < 86400 %}Il y a {{ (s / 3600)|round(0, 'floor') }} h{% elseif s < 172800 %}Hier{% else %}{{ at|date('d/m/Y', 'Europe/Paris') }}{% endif %}{% endmacro %}
+{% import _self as m %}
+{% block space_content %}
+<div class="tm-notif">
+    <h1 class="tm-visually-hidden">Notifications</h1>
+    <div class="tm-notif__bar">
+        <form method="post" action="{{ path(space ~ '_notifications_read') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+            <twig:Button type="submit" variant="secondary" disabled="{{ view.unread == 0 }}">Tout marquer comme lu</twig:Button>
+        </form>
+    </div>
+    <nav class="tm-notif__filters" aria-label="Filtrer les notifications">
+        <a href="{{ path(space ~ '_notifications') }}"{% if type is null %} aria-current="page"{% endif %}>Toutes{% if type is null %}<twig:Icon name="x" size="xs" class="tm-icon--inherit" />{% endif %}</a>
+        {% for t in types %}<a href="{{ path(space ~ '_notifications', {type: t.value}) }}"{% if type == t %} aria-current="page"{% endif %}>{{ t.label() }}</a>{% endfor %}
+    </nav>
+    {% if view.items is empty %}
+        <div class="tm-pro-card"><twig:EmptyState title="Aucune notification" text="Vos alertes sur les devis, messages, rendez-vous et avis apparaîtront ici (conservées 90 jours)." icon="bell" /></div>
+    {% else %}
+        <ul class="tm-notif__list">
+            {% for n in view.items %}
+                <li class="{{ n.read ? 'is-read' : 'is-unread' }}">
+                    <a href="{{ path(space ~ '_notification_open', {id: n.id}) }}">
+                        <span class="tm-notif__icon is-{{ n.type.value }}" aria-hidden="true"><twig:Icon name="{{ n.type.icon() }}" size="sm" class="tm-icon--inherit" /></span>
+                        <span class="tm-notif__text"><span class="tm-notif__body">{{ n.body }}</span><time datetime="{{ n.at|date('c') }}">{{ m.when(n.at) }}</time></span>
+                        {% if not n.read %}<span class="tm-notif__dot"><span class="tm-visually-hidden">Non lue</span></span>{% endif %}
+                        <twig:Icon name="chevR" size="sm" class="tm-icon--inherit" />
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+        {% if view.pages() > 1 %}
+            <nav class="tm-msg-list__pages" aria-label="Pagination des notifications">
+                {% for p in 1..view.pages() %}{% if p == view.page %}<span aria-current="page">{{ p }}</span>{% else %}<a href="{{ path(space ~ '_notifications', {type: type ? type.value : null, page: p}|filter(v => v is not null)) }}">{{ p }}</a>{% endif %}{% endfor %}
+            </nav>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

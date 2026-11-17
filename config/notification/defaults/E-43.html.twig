@@ -1,0 +1,10 @@
+<p>Bonjour {{ prenom }},</p>
+{% if changement == 'cancel_scheduled' %}
+<p>La résiliation de votre forfait <strong>{{ forfait }}</strong> est programmée. Il reste actif, sans frais supplémentaires, jusqu’au <strong>{{ date }}</strong> : vos crédits restent utilisables jusque-là.</p>
+<p>Vous pouvez annuler cette résiliation à tout moment avant cette date.</p>
+{% elseif changement == 'cancel_undone' %}
+<p>La résiliation de votre forfait <strong>{{ forfait }}</strong> est annulée : votre abonnement continue normalement.</p>
+{% else %}
+<p>Votre changement de forfait est pris en compte : vous bénéficiez désormais du forfait <strong>{{ forfait }}</strong>.</p>
+{% endif %}
+{{ bouton(lien, 'Voir mon abonnement') }}

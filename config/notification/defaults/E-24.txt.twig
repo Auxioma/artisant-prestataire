@@ -1,0 +1,8 @@
+Bonjour {{ prenom }},
+
+{% if valide %}Votre justificatif « {{ piece }} » a été contrôlé et validé par notre équipe.
+{% else %}Votre justificatif « {{ piece }} » n’a pas pu être accepté.
+Motif : {{ motif }}
+Merci d’en déposer une nouvelle version depuis votre dossier.
+{% endif %}
+{{ lien }}
