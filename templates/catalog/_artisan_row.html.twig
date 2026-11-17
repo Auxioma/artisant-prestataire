@@ -3,9 +3,9 @@
 <twig:CardArtisanRow
     name="{{ a.name }}"
     href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}"
-    trades="{{ a.jobIds|map(id => job_names[id] ?? null)|filter(n => n)|join(' · ') }}"
+    trades="{{ a.jobIds|map(id => (job_names[id] ?? null))|filter(n => n)|join(' · ') }}"
     location="{{ a.communeName ? a.communeName ~ (a.departmentCode ? ' (' ~ a.departmentCode ~ ')') : '' }}"
-    :distance="show_distance ?? false ? a.distanceKm : null"
+    :distance="(show_distance ?? false) ? a.distanceKm : null"
     description="{{ a.shortDescription }}"
     :rating="a.reviewsCount > 0 ? a.ratingAverage : null"
     :reviewsCount="a.reviewsCount"

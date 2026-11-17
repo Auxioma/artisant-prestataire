@@ -100,7 +100,7 @@
                                 name="{{ a.name }}"
                                 anchor="resultat-{{ loop.index }}"
                                 href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}"
-                                trades="{{ a.jobIds|map(id => job_names[id] ?? null)|filter(n => n)|join(' · ') }}"
+                                trades="{{ a.jobIds|map(id => (job_names[id] ?? null))|filter(n => n)|join(' · ') }}"
                                 location="{{ a.communeName ?? '—' }}{{ a.departmentCode ? ' (' ~ a.departmentCode ~ ')' }}"
                                 :distance="a.distanceKm"
                                 description="{{ a.shortDescription }}"

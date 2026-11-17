@@ -17,7 +17,6 @@ doctrine:
     orm:
         validate_xml_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore
-        enable_native_lazy_objects: true
         auto_mapping: false
         # Les mappings XML de chaque module sont déclarés ici à mesure que les modules arrivent, sur ce modèle :
         #   Catalog:

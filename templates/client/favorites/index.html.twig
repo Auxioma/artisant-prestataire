@@ -51,7 +51,7 @@
                             <h2>{% if f.active %}<a href="{{ tm_artisan_url(f.artisanId, f.name, f.communeName) }}">{{ f.name }}</a>{% else %}{{ f.name }}{% endif %}</h2>
                             {% if f.active %}
                                 {% if f.communeName %}<p><twig:Icon name="pin" size="xs" class="tm-icon--inherit" />{{ f.communeName }}{{ f.departmentCode ? ' (' ~ f.departmentCode ~ ')' }}</p>{% endif %}
-                                {% if f.jobIds is not empty %}<p><twig:Icon name="wrench" size="xs" class="tm-icon--inherit" />{{ f.jobIds|map(id => jobs[id] ?? null)|filter(n => n)|join(' · ') }}</p>{% endif %}
+                                {% if f.jobIds is not empty %}<p><twig:Icon name="wrench" size="xs" class="tm-icon--inherit" />{{ f.jobIds|map(id => (jobs[id] ?? null))|filter(n => n)|join(' · ') }}</p>{% endif %}
                             {% else %}
                                 <p class="tm-fav__gone">Plus disponible sur TrouveMoi</p>
                             {% endif %}

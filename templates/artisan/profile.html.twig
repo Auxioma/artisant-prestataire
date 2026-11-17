@@ -88,8 +88,8 @@
                 {% if pres and (pres.yearsExperience is not null or pres.languages is not empty or pres.clients is not empty) %}
                     <dl class="tm-profile__facts-list">
                         {% if pres.yearsExperience is not null %}<div><dt>Expérience</dt><dd>{{ pres.yearsExperience }} an{{ pres.yearsExperience > 1 ? 's' }}</dd></div>{% endif %}
-                        {% if pres.languages is not empty %}<div><dt>Langues parlées</dt><dd>{{ pres.languages|map(l => languages[l] ?? l)|join(', ') }}</dd></div>{% endif %}
-                        {% if pres.clients is not empty %}<div><dt>Clients acceptés</dt><dd>{{ pres.clients|map(c => clients[c] ?? c)|join(', ') }}</dd></div>{% endif %}
+                        {% if pres.languages is not empty %}<div><dt>Langues parlées</dt><dd>{{ pres.languages|map(l => (languages[l] ?? l))|join(', ') }}</dd></div>{% endif %}
+                        {% if pres.clients is not empty %}<div><dt>Clients acceptés</dt><dd>{{ pres.clients|map(c => (clients[c] ?? c))|join(', ') }}</dd></div>{% endif %}
                     </dl>
                 {% endif %}
                 {% if jobs is not empty %}
@@ -293,7 +293,7 @@
                             <twig:CardArtisan
                                 name="{{ a.name }}"
                                 href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}"
-                                trades="{{ a.jobIds|map(id => similar_jobs[id].name ?? null)|filter(n => n)|join(' · ') }}"
+                                trades="{{ a.jobIds|map(id => (similar_jobs[id].name ?? null))|filter(n => n)|join(' · ') }}"
                                 location="{{ a.communeName ? a.communeName ~ (a.departmentCode ? ' (' ~ a.departmentCode ~ ')') : '' }}"
                                 :rating="a.reviewsCount > 0 ? a.ratingAverage : null"
                                 :reviewsCount="a.reviewsCount"

@@ -107,7 +107,7 @@
 {% if cond.executionDelay %}<p>Durée des travaux : {{ cond.executionDelay }}</p>{% endif %}
 {% if cond.startDate %}<p>Début possible : {{ cond.startDate|date('d/m/Y') }}</p>{% endif %}
 {% if cond.paymentTerms %}<p>Conditions de paiement : {{ cond.paymentTerms }}</p>{% endif %}
-{% if cond.paymentMethods is not empty %}<p>Moyens de paiement acceptés : {{ cond.paymentMethods|map(m => {virement: 'virement', cheque: 'chèque', carte: 'carte bancaire', especes: 'espèces'}[m] ?? m)|join(', ') }}</p>{% endif %}
+{% if cond.paymentMethods is not empty %}<p>Moyens de paiement acceptés : {{ cond.paymentMethods|map(m => ({virement: 'virement', cheque: 'chèque', carte: 'carte bancaire', especes: 'espèces'}[m] ?? m))|join(', ') }}</p>{% endif %}
 {% if cond.guarantees %}<p>Garanties : {{ cond.guarantees }}</p>{% endif %}
 {% if cond.specialConditions %}<p>Conditions particulières : {{ cond.specialConditions }}</p>{% endif %}
 {% if cond.clientNote %}<p>Note : {{ cond.clientNote }}</p>{% endif %}

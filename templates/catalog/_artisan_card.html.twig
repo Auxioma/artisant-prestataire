@@ -3,7 +3,7 @@
 <twig:CardArtisan
     name="{{ a.name }}"
     href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}"
-    trades="{{ a.jobIds|map(id => job_names[id] ?? null)|filter(n => n)|join(' · ') }}"
+    trades="{{ a.jobIds|map(id => (job_names[id] ?? null))|filter(n => n)|join(' · ') }}"
     location="{{ a.communeName ? a.communeName ~ (a.departmentCode ? ' (' ~ a.departmentCode ~ ')') : '' }}"
     :rating="a.reviewsCount > 0 ? a.ratingAverage : null"
     :reviewsCount="a.reviewsCount"

@@ -2,13 +2,11 @@
 flysystem:
     storages:
         quarantine.storage:
-            adapter: 'asyncaws'
-            options: { client: 'app.s3_client', bucket: '%env(S3_BUCKET_QUARANTINE)%' }
+            asyncaws: { client: 'app.s3_client', bucket: '%env(S3_BUCKET_QUARANTINE)%' }
             visibility: private
             directory_visibility: private
         documents.storage:
-            adapter: 'asyncaws'
-            options: { client: 'app.s3_client', bucket: '%env(S3_BUCKET_DOCUMENTS)%' }
+            asyncaws: { client: 'app.s3_client', bucket: '%env(S3_BUCKET_DOCUMENTS)%' }
             visibility: private
             directory_visibility: private
 

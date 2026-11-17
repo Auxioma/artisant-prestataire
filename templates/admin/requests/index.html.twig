@@ -9,6 +9,9 @@
 
 {#- RG-062 : artisans ayant reçu la demande ; une demande publiée sans destinataire est signalée (zone non couverte). -#}
 {% macro dispatched(r) %}{% if r.status in ['draft', 'pending_moderation', 'rejected'] %}—{% elseif r.dispatched == 0 and r.status in ['open', 'full'] %}<twig:Badge variant="refused">Aucun artisan</twig:Badge>{% else %}{{ r.dispatched }}{% endif %}{% endmacro %}
+{% macro select(id, label, options, value) %}
+    <div class="tm-select"><label class="tm-visually-hidden" for="{{ id }}">{{ label }}</label><select class="tm-select__input" id="{{ id }}" name="{{ id }}"><option value="">{{ label }}</option>{% for v, l in options %}<option value="{{ v }}"{{ value == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
+{% endmacro %}
 
 {% block body %}
     {% import _self as m %}
@@ -26,14 +29,11 @@
             <h2 id="liste-titre" class="tm-visually-hidden">Liste des demandes</h2>
             <form method="get" class="tm-admin-filters" role="search">
                 <div class="tm-field tm-admin-filters__search"><label class="tm-visually-hidden" for="q">Rechercher</label><div class="tm-field__control"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><input class="tm-field__input" id="q" name="q" type="search" value="{{ filters.q }}" placeholder="N° de demande, métier, ville"></div></div>
-                {% macro select(id, label, options, value) %}
-                    <div class="tm-select"><label class="tm-visually-hidden" for="{{ id }}">{{ label }}</label><select class="tm-select__input" id="{{ id }}" name="{{ id }}"><option value="">{{ label }}</option>{% for v, l in options %}<option value="{{ v }}"{{ value == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
-                {% endmacro %}
-                {{ _self.select('statut', 'Statut', statuses|filter(s => s.value != 'draft')|reduce((acc, s) => acc|merge({(s.value): s.adminLabel}), {}), filters.statut) }}
-                {{ _self.select('metier', 'Métier', jobs, filters.metier) }}
-                {{ _self.select('departement', 'Département', departments|map((n, c) => c ~ ' — ' ~ n), filters.departement) }}
-                {{ _self.select('source', 'Source', sources|reduce((acc, s) => acc|merge({(s.value): s.label}), {}), filters.source) }}
-                {{ _self.select('score', 'Score', {'1': 'Score ≥ ' ~ threshold}, filters.score) }}
+                {{ m.select('statut', 'Statut', statuses|filter(s => s.value != 'draft')|reduce((acc, s) => acc|merge({(s.value): s.adminLabel}), {}), filters.statut) }}
+                {{ m.select('metier', 'Métier', jobs, filters.metier) }}
+                {{ m.select('departement', 'Département', departments|map((n, c) => c ~ ' — ' ~ n), filters.departement) }}
+                {{ m.select('source', 'Source', sources|reduce((acc, s) => acc|merge({(s.value): s.label}), {}), filters.source) }}
+                {{ m.select('score', 'Score', {'1': 'Score ≥ ' ~ threshold}, filters.score) }}
                 <twig:Button type="submit" variant="secondary" icon="search" iconPosition="start">Filtrer</twig:Button>
             </form>
 
