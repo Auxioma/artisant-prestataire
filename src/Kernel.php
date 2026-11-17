@@ -17,4 +17,14 @@ class Kernel extends BaseKernel
     {
         $container->addCompilerPass(new ExternalHttpClientsPass());
     }
+
+    /**
+     * Symfony 8.1 (recette framework-bundle) : toute autre valeur d'APP_ENV est refusée au démarrage.
+     *
+     * @return list<string>
+     */
+    private function getAllowedEnvs(): array
+    {
+        return ['prod', 'dev', 'test'];
+    }
 }
