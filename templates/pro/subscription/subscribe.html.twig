@@ -27,7 +27,7 @@
         <p class="tm-subscribe__notice" role="status"><twig:Icon name="info" size="sm" class="tm-icon--inherit" />Le paiement en ligne n’est pas encore ouvert : vous pourrez confirmer votre abonnement très bientôt.</p>
     {% endif %}
 
-    <form method="post" action="{{ path('pro_subscribe', query) }}" class="tm-subscribe__form" novalidate>
+    <form method="post" action="{{ path('pro_subscribe', query) }}" class="tm-subscribe__form" novalidate data-turbo="false">
         <input type="hidden" name="_token" value="{{ csrf_token('pro_subscribe') }}">
         <input type="hidden" name="attempt" value="{{ attempt }}">
         <div class="tm-subscribe__grid">

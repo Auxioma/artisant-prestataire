@@ -67,7 +67,7 @@
                                         <td class="is-num">{{ i.amountHtCents|tm_money }}</td>
                                         <td class="is-num">{{ i.amountTtcCents|tm_money }}</td>
                                         <td><span class="tm-pro-state {{ invoice_class[i.status] ?? 'is-muted' }}">{{ i.statusLabel() }}</span></td>
-                                        <td>{% if i.archived or i.hostedUrl %}<a class="tm-psub__dl" href="{{ path('pro_invoice_pdf', {id: i.id}) }}"><twig:Icon name="download" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Télécharger la facture {{ i.number }}</span></a>{% endif %}</td>
+                                        <td>{% if i.archived or i.hostedUrl %}<a class="tm-psub__dl" href="{{ path('pro_invoice_pdf', {id: i.id}) }}" data-turbo="false"><twig:Icon name="download" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Télécharger la facture {{ i.number }}</span></a>{% endif %}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -241,7 +241,7 @@
                                         <twig:Icon name="file" size="sm" class="tm-icon--inherit" />
                                         <span>{{ m.month(i.periodStart ?? i.issuedAt, months) }}</span>
                                         <strong>{{ i.amountTtcCents|tm_money }}</strong>
-                                        {% if i.archived or i.hostedUrl %}<a class="tm-psub__dl" href="{{ path('pro_invoice_pdf', {id: i.id}) }}"><twig:Icon name="download" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Télécharger la facture {{ i.number }}</span></a>{% endif %}
+                                        {% if i.archived or i.hostedUrl %}<a class="tm-psub__dl" href="{{ path('pro_invoice_pdf', {id: i.id}) }}" data-turbo="false"><twig:Icon name="download" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Télécharger la facture {{ i.number }}</span></a>{% endif %}
                                     </li>
                                 {% endfor %}
                             </ul>
@@ -261,7 +261,7 @@
                             <p class="tm-psub__empty">Aucun moyen de paiement enregistré : il sera ajouté de façon sécurisée lors de votre souscription.</p>
                         {% endif %}
                         {% if view.hasCustomer %}
-                            <form method="post" action="{{ path('pro_payment_portal') }}">
+                            <form method="post" action="{{ path('pro_payment_portal') }}" data-turbo="false">
                                 <input type="hidden" name="_token" value="{{ csrf_token('pro_payment_portal') }}">
                                 <twig:Button type="submit" variant="secondary" block icon="edit" iconPosition="start">Modifier</twig:Button>
                             </form>
