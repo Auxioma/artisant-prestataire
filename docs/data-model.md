@@ -189,6 +189,7 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 | `admin.admin_user` | id, email, password_hash, totp_secret 🔒 (chiffré), backup_codes_hash, status, last_login_at | séparé de `identity.user` (ADR-0013) |
 | `admin.role` / `role_permission` / `admin_user_role` | presets + rôles personnalisés ; `max_manual_credits` | — |
 | `admin.setting` / `setting_history` | key, value (jsonb), type / before, after, admin_id, reason, changed_at | ADR-0007 |
+| `admin.scheduled_export` | id, kind (clé de la source), period_label, file_id → `shared.stored_file` (usage `scheduled_export`, CSV chiffré), row_count, created_at, expires_at (90 jours) | BO15.2, T-806c2 |
 | `admin.audit_log` | id, occurred_at, actor_type, actor_id, impersonator_id, action, subject_type, subject_id, ip_hash, ua_summary, context (jsonb sans PII en clair), prev_hash, hash | **append-only** + **chaînage de hash** (inviolabilité) · partitionné par mois · rétention 1 an (BO15.1) |
 | `admin.export_job` | id, admin_id, kind, filters, contains_pii, status, file_key, expires_at | journalisé (BO15.2) |
 | `admin.support_ticket` (V2) | … | BO16 |

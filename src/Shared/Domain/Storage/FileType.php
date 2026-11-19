@@ -15,6 +15,8 @@ enum FileType: string
     case Avif = 'image/avif';
     /** Archive produite par l'application (export RGPD) : jamais acceptée en dépôt. */
     case Zip = 'application/zip';
+    /** Export CSV produit par l'application (exports planifiés BO15.2) : jamais accepté en dépôt. */
+    case Csv = 'text/csv';
 
     public function extension(): string
     {
@@ -25,11 +27,12 @@ enum FileType: string
             self::Pdf => 'pdf',
             self::Zip => 'zip',
             self::Avif => 'avif',
+            self::Csv => 'csv',
         };
     }
 
     public function isImage(): bool
     {
-        return self::Pdf !== $this && self::Zip !== $this;
+        return !\in_array($this, [self::Pdf, self::Zip, self::Csv], true);
     }
 }

@@ -25,6 +25,8 @@ enum FilePurpose: string
     case DataExport = 'data_export';
     /** BO10.7 — médiathèque du CMS (images publiques, variantes WebP / AVIF générées). */
     case Media = 'media';
+    /** BO15.2 — export CSV planifié du back-office (données personnelles possibles : chiffré, téléchargement journalisé). */
+    case ScheduledExport = 'scheduled_export';
 
     /** @return list<FileType> */
     public function allowedTypes(): array
@@ -36,6 +38,7 @@ enum FilePurpose: string
             self::QuotePdf => [FileType::Pdf],
             self::DataExport => [FileType::Zip],
             self::Media => [FileType::Jpeg, FileType::Png, FileType::Webp],
+            self::ScheduledExport => [FileType::Csv],
         };
     }
 
@@ -55,6 +58,6 @@ enum FilePurpose: string
 
     public function encryptedAtRest(): bool
     {
-        return self::ArtisanDocument === $this || self::ContactAttachment === $this || self::DataExport === $this;
+        return \in_array($this, [self::ArtisanDocument, self::ContactAttachment, self::DataExport, self::ScheduledExport], true);
     }
 }
