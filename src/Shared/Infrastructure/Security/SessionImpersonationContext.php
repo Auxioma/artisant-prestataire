@@ -18,7 +18,8 @@ final readonly class SessionImpersonationContext implements ImpersonationContext
     public function current(): ?ImpersonationSession
     {
         $request = $this->requests->getMainRequest();
-        if (null === $request || !$request->hasSession() || !$request->hasPreviousSession()) {
+        // Requêtes sans état (webhooks…) : ne jamais toucher à la session, même si un cookie est présent.
+        if (null === $request || true === $request->attributes->get('_stateless') || !$request->hasSession() || !$request->hasPreviousSession()) {
             return null;
         }
         $value = $request->getSession()->get(self::SESSION_KEY);
