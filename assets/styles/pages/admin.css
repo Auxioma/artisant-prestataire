@@ -760,6 +760,11 @@
     .tm-bo15-exports a { display: flex; gap: 12px; align-items: center; padding: 14px 0; color: var(--tm-navy); font-weight: var(--font-weight-semibold); text-decoration: none; }
     .tm-bo15-exports a:hover span { text-decoration: underline; }
     .tm-bo15-exports .tm-icon--inherit { color: var(--color-link); }
+    .tm-bo15-schedules, .tm-bo15-files { margin: 0; padding: 0; list-style: none; }
+    .tm-bo15-schedules li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--tm-line); color: var(--tm-navy); font-weight: var(--font-weight-semibold); }
+    .tm-bo15-schedules li .tm-icon--inherit { color: var(--color-link); }
+    .tm-bo15-schedules .tm-caption, .tm-bo15-schedules .tm-bo11-state { grid-column: 2; justify-self: start; font-weight: var(--font-weight-regular); }
+    .tm-bo15-files li { display: grid; gap: 2px; padding: 10px 0; border-bottom: 1px solid var(--tm-line); }
     .tm-bo15-personal { color: var(--color-text-muted); font-weight: var(--font-weight-regular); }
     .tm-bo15-banner { display: flex; gap: 10px; align-items: center; margin: 0 0 var(--space-4); padding: 14px 16px; border-radius: var(--radius-card); background: var(--color-success-bg); color: var(--tm-green); }
     .tm-bo15-banner.is-warn { background: var(--tm-orange-soft); color: var(--tm-orange-ink); }

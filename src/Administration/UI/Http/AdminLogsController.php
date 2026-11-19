@@ -7,6 +7,7 @@ namespace App\Administration\UI\Http;
 use App\Administration\Application\Dashboard\DashboardKpis;
 use App\Administration\Application\Dashboard\DashboardKpisView;
 use App\Administration\Application\Dashboard\DashboardMetric;
+use App\Administration\Application\Exports\ScheduledExportStore;
 use App\Administration\Application\Logs\AuditLogEntry;
 use App\Administration\Application\Logs\AuditLogFilter;
 use App\Administration\Application\Logs\AuditLogPage;
@@ -14,13 +15,20 @@ use App\Administration\Application\Logs\AuditLogQuery;
 use App\Shared\Application\Admin\AdminExportJournal;
 use App\Shared\Application\Admin\FinanceBreakdown;
 use App\Shared\Application\Admin\FinanceBreakdownView;
+use App\Shared\Application\Admin\ScheduledExportSource;
 use App\Shared\Application\Admin\StripeWebhookLog;
 use App\Shared\Application\Bus\QueryBus;
+use App\Shared\Application\Security\CurrentAdministrator;
+use App\Shared\Application\Storage\FileReader;
+use App\Shared\Application\Storage\StoredFileNotFound;
 use App\Shared\Domain\Time\Clock;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -50,6 +58,7 @@ final class AdminLogsController extends AbstractController
         'finance' => ['Finance du mois', 'admin_logs_finance_export', [], 'admin.logs.export', false],
     ];
     private const int RECENT_EXPORTS = 20;
+    private const int SCHEDULED_FILES = 12;
     private const int MONTHS_OFFERED = 24;
     private const int PER_PAGE = 25;
     private const int EXPORT_MAX = 50000;
@@ -66,8 +75,13 @@ final class AdminLogsController extends AbstractController
         'billing.refund' => 'Remboursement', 'billing.free_credit_granted' => 'Crédits gratuits attribués',
     ];
 
-    public function __construct(private readonly QueryBus $queries)
-    {
+    /** @param iterable<ScheduledExportSource> $scheduled */
+    public function __construct(
+        private readonly QueryBus $queries,
+        private readonly ScheduledExportStore $scheduledFiles,
+        #[AutowireIterator(ScheduledExportSource::TAG)]
+        private readonly iterable $scheduled,
+    ) {
     }
 
     #[Route('', name: 'admin_logs', methods: ['GET'])]
@@ -106,7 +120,13 @@ final class AdminLogsController extends AbstractController
                 return [] === $parts ? 'aucun' : implode(' · ', $parts);
             }, $recent->rows);
 
-            return $this->render('admin/logs/index.html.twig', $data + ['exports' => $exports, 'recent' => $recent, 'recent_filters' => $filters, 'export_labels' => array_map(static fn (array $e): string => $e[0], self::EXPORTS)]);
+            $schedules = [];
+            foreach ($this->scheduled as $source) {
+                $schedules[$source->key()] = ['label' => $source->label(), 'schedule' => $source->schedule()];
+            }
+            $labels = array_map(static fn (array $e): string => $e[0], self::EXPORTS) + array_map(static fn (array $s): string => $s['label'].' (planifié)', array_combine(array_map(static fn (string $k): string => 'planifie_'.$k, array_keys($schedules)), $schedules));
+
+            return $this->render('admin/logs/index.html.twig', $data + ['exports' => $exports, 'recent' => $recent, 'recent_filters' => $filters, 'export_labels' => $labels, 'schedules' => $schedules, 'scheduled_files' => $this->scheduledFiles->latest(self::SCHEDULED_FILES)]);
         }
 
         if ('webhooks' === $tab) {
@@ -148,6 +168,34 @@ final class AdminLogsController extends AbstractController
         $response->headers->set('Content-Disposition', 'attachment; filename="journal-'.$tab.'-'.$clock->now()->format('Y-m-d').'.csv"');
 
         return $response;
+    }
+
+    /** BO15.2 — téléchargement d'un export planifié : fichier déchiffré à la volée, téléchargement journalisé. */
+    #[Route('/exports/{id}', name: 'admin_logs_scheduled_download', requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['GET'])]
+    #[IsGranted('admin.logs.export')]
+    public function scheduledDownload(Request $request, string $id, FileReader $files, AdminExportJournal $journal, CurrentAdministrator $admin, Clock $clock): StreamedResponse
+    {
+        $export = $this->scheduledFiles->find($id);
+        if (null === $export || $export->expiresAt <= $clock->now()) {
+            throw new NotFoundHttpException();
+        }
+        try {
+            $file = $files->available($export->fileId);
+            $stream = $files->openForActor($file->id, 'admin', $admin->id(), $request->getClientIp());
+        } catch (StoredFileNotFound) {
+            throw new NotFoundHttpException();
+        }
+        $journal->record('planifie_'.$export->kind, ['periode' => $export->periodLabel], $export->rows, $request->getClientIp());
+
+        return new StreamedResponse(static function () use ($stream): void {
+            fpassthru($stream);
+            fclose($stream);
+        }, Response::HTTP_OK, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, $file->downloadName()),
+            'Cache-Control' => 'private, no-store',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     #[Route('/finance.csv', name: 'admin_logs_finance_export', methods: ['GET'])]

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Functional\Administration;
 
+use App\Administration\Application\Exports\GenerateScheduledExport;
+use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Infrastructure\Persistence\DbalValue;
 use App\Tests\Support\AdminSession;
 use Doctrine\DBAL\Connection;
@@ -120,6 +122,37 @@ final class LogsAdminTest extends WebTestCase
         self::assertStringContainsString('Clients', $recent);
         self::assertStringContainsString('statut : active', $recent, 'filtres journalisés');
         self::assertStringContainsString('Journal d’envoi des e-mails', $recent);
+    }
+
+    public function testScheduledExportsAreEncryptedListedDownloadedAndPurged(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+        $connection = self::getContainer()->get(Connection::class);
+        $bus = self::getContainer()->get(CommandBus::class);
+        \assert($connection instanceof Connection && $bus instanceof CommandBus);
+        $bus->dispatch(new GenerateScheduledExport('artisans_actifs'));
+        $bus->dispatch(new GenerateScheduledExport('factures_mois'));
+        self::assertSame(2, DbalValue::int($connection->fetchOne('SELECT count(*) FROM admin.scheduled_export')));
+        self::assertSame(0, DbalValue::int($connection->fetchOne("SELECT count(*) FROM shared.stored_file f JOIN admin.scheduled_export e ON e.file_id = f.id WHERE f.wrapped_dek IS NULL OR f.purpose <> 'scheduled_export'")), 'fichiers chiffrés');
+
+        $this->adminSession($client, '0190f5e4-0000-7000-8000-0000000a8065', 'finance');
+        $page = $client->request('GET', '/admin/logs?onglet=exports');
+        self::assertStringContainsString('Hebdomadaire · lundi 06:00', $page->filter('.tm-bo15-schedules')->text());
+        self::assertCount(2, $page->filter('.tm-bo15-files li'));
+        $client->click($page->filter('.tm-bo15-files a')->reduce(static fn ($a): bool => str_contains($a->text(), 'Artisans actifs'))->link());
+        self::assertResponseIsSuccessful();
+        self::assertStringStartsWith("\u{FEFF}nom;siret;metiers;code_postal;completude;verifie_le\n", (string) $client->getInternalResponse()->getContent());
+        self::assertSame(1, DbalValue::int($connection->fetchOne("SELECT count(*) FROM admin.audit_log WHERE action = 'admin.export' AND subject_id = 'planifie_artisans_actifs'")), 'téléchargement journalisé');
+
+        // Arrivé à expiration : détruit au passage suivant, plus téléchargeable.
+        $old = DbalValue::string($connection->fetchOne("SELECT id FROM admin.scheduled_export WHERE kind = 'factures_mois'"));
+        $connection->executeStatement("UPDATE admin.scheduled_export SET created_at = now() - interval '100 days', expires_at = now() - interval '1 day' WHERE id = :id", ['id' => $old]);
+        $client->request('GET', '/admin/logs/exports/'.$old);
+        self::assertResponseStatusCodeSame(404);
+        $bus->dispatch(new GenerateScheduledExport('factures_mois'));
+        self::assertFalse($connection->fetchOne('SELECT 1 FROM admin.scheduled_export WHERE id = :id', ['id' => $old]));
+        self::assertSame(2, DbalValue::int($connection->fetchOne('SELECT count(*) FROM admin.scheduled_export')));
     }
 
     public function testSupportCannotExportClients(): void

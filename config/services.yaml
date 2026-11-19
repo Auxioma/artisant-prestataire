@@ -28,6 +28,9 @@ services:
             tags: ['app.admin_queue_source']
         App\Shared\Application\Admin\DashboardDailySource:
             tags: ['app.dashboard_daily_source']
+        # BO15.2 : exports planifiés fournis par les modules.
+        App\Shared\Application\Admin\ScheduledExportSource:
+            tags: ['app.scheduled_export_source']
 
     App\:
         resource: '../src/'
@@ -301,6 +304,10 @@ services:
     App\Administration\Application\Dashboard\DashboardKpisHandler:
         arguments:
             $sources: !tagged_iterator app.dashboard_metric_source
+
+    App\Administration\Application\Exports\GenerateScheduledExportHandler:
+        arguments:
+            $sources: !tagged_iterator app.scheduled_export_source
 
     App\Administration\Application\Dashboard\DashboardPanelsHandler:
         arguments:

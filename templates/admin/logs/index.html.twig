@@ -110,7 +110,24 @@
             </section>
             <section class="tm-admin-panel" aria-labelledby="bo15-scheduled">
                 <h2 id="bo15-scheduled" class="tm-card-title">Exports planifiés</h2>
-                <p class="tm-bo15-empty">Bientôt : exports produits automatiquement (artisans actifs chaque lundi, factures du mois le 1er) et disponibles ici.</p>
+                <ul class="tm-bo15-schedules">
+                    {% for key, sch in schedules %}
+                        <li><twig:Icon name="download" size="sm" class="tm-icon--inherit" /><span>{{ sch.label }}{% if key == 'artisans_actifs' %} <span class="tm-bo15-personal">(données personnelles · journalisé)</span>{% endif %}</span><span class="tm-caption">{{ sch.schedule }}</span><span class="tm-bo11-state">Finance</span></li>
+                    {% endfor %}
+                </ul>
+                <h3 class="tm-bo12-sub">Fichiers disponibles</h3>
+                {% if scheduled_files is empty %}
+                    <p class="tm-bo15-empty">Aucun fichier produit pour l’instant : le premier arrivera au prochain passage planifié.</p>
+                {% else %}
+                    <ul class="tm-bo15-files">
+                        {% for f in scheduled_files %}
+                            <li>
+                                {% if is_granted('admin.logs.export') %}<a href="{{ path('admin_logs_scheduled_download', {id: f.id}) }}">{{ schedules[f.kind].label ?? f.kind }} — {{ f.periodLabel }}</a>{% else %}<span>{{ schedules[f.kind].label ?? f.kind }} — {{ f.periodLabel }}</span>{% endif %}
+                                <span class="tm-caption">{{ f.rows|number_format(0, ',', ' ') }} ligne{{ f.rows > 1 ? 's' }} · produit le {{ f.createdAt|date('d/m/Y H:i', 'Europe/Paris') }} · supprimé le {{ f.expiresAt|date('d/m/Y', 'Europe/Paris') }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
             </section>
         </div>
         <section class="tm-admin-panel tm-bo15-card" aria-labelledby="bo15-recent">
