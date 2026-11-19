@@ -23,6 +23,11 @@ services:
         # BO01.1 : indicateurs du tableau de bord fournis par chaque module.
         App\Shared\Application\Admin\DashboardMetricSource:
             tags: ['app.dashboard_metric_source']
+        # BO01.2 et BO01.3 : files d'attente et séries quotidiennes des modules.
+        App\Shared\Application\Admin\AdminQueueSource:
+            tags: ['app.admin_queue_source']
+        App\Shared\Application\Admin\DashboardDailySource:
+            tags: ['app.dashboard_daily_source']
 
     App\:
         resource: '../src/'
@@ -296,6 +301,11 @@ services:
     App\Administration\Application\Dashboard\DashboardKpisHandler:
         arguments:
             $sources: !tagged_iterator app.dashboard_metric_source
+
+    App\Administration\Application\Dashboard\DashboardPanelsHandler:
+        arguments:
+            $queues: !tagged_iterator app.admin_queue_source
+            $daily: !tagged_iterator app.dashboard_daily_source
 
     App\Moderation\Application\Report\ReportHandler:
         arguments:

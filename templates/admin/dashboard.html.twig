@@ -1,9 +1,10 @@
 {#-
     BO01 « Tableau de bord » (Figma 186:75) : choix du mois et export (en-tête), dix indicateurs clés comparés à N-1
-    (BO01.1) puis les autres indicateurs du CDC, files d'attente (BO01.2). Écarts : P-139.
+    (BO01.1) puis les autres indicateurs du CDC, files d'attente (BO01.2), évolution quotidienne (BO01.3). Écarts : P-139, P-140.
 -#}
 {% extends 'admin/base.html.twig' %}
 {% set active_module = 'dashboard' %}
+{% set month_abbr = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'] %}
 {% set month_names = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] %}
 {% macro month_label(ym, names) %}{{ names[ym|split('-')[1] - 1]|capitalize }} {{ ym|split('-')[0] }}{% endmacro %}
 {% macro value(card) %}
@@ -73,13 +74,43 @@
     <div class="tm-bo01-grid">
         <section class="tm-admin-panel" aria-labelledby="files-titre">
             <h2 id="files-titre" class="tm-card-title">Files d’attente</h2>
-            <ul class="tm-admin-queues">
-                {% for queue in queues|filter(q => is_granted(q.permission)) %}
-                    <li><twig:Icon name="{{ queue.icon }}" size="sm" class="tm-icon--inherit" />{% if queue.route is defined %}<a href="{{ path(queue.route, queue.params ?? {}) }}">{{ queue.label }}</a>{% else %}<span>{{ queue.label }}</span>{% endif %}<span class="tm-admin-count{{ queue.count > 0 ? ' tm-admin-count--todo' }}">{{ queue.count }}</span></li>
+            <ul class="tm-bo01-queues">
+                {% for q in queues %}
+                    {% set inner %}<twig:Icon name="{{ q.icon }}" size="sm" class="tm-icon--inherit" /><span class="tm-bo01-queue__label">{{ q.label }}</span>{% if q.count is null %}<span class="tm-admin__soon">Bientôt</span>{% else %}<span class="tm-bo01-queue__count{{ q.count > 0 ? ' is-todo' }}">{{ q.count|number_format(0, ',', ' ') }}</span>{% endif %}{% endset %}
+                    <li class="tm-bo01-queue tm-bo01-queue--{{ q.key|replace({'_': '-'}) }}">
+                        {% if q.href %}<a href="{{ q.href }}">{{ inner }}<twig:Icon name="chevR" size="xs" class="tm-icon--inherit tm-bo01-queue__chev" /></a>{% else %}<span class="tm-bo01-queue__static">{{ inner }}</span>{% endif %}
+                    </li>
                 {% else %}
                     <li>Aucune file d’attente pour votre rôle.</li>
                 {% endfor %}
             </ul>
+        </section>
+
+        <section class="tm-admin-panel" aria-labelledby="evolution-titre">
+            <h2 id="evolution-titre" class="tm-card-title">Évolution quotidienne des demandes et devis</h2>
+            <ul class="tm-bo01-legend" aria-hidden="true"><li class="is-requests">Demandes</li><li class="is-quotes">Devis envoyés</li></ul>
+            {% set n = activity.days|length %}
+            {% set top = max(activity.max, 1) %}
+            {% set h = 200 %}
+            <svg class="tm-bo01-chart" viewBox="0 0 {{ n * 12 }} {{ h }}" preserveAspectRatio="none" role="img" aria-labelledby="evolution-titre evolution-resume">
+                <desc id="evolution-resume">{{ activity.days|reduce((c, d) => c + d.requests, 0) }} demandes et {{ activity.days|reduce((c, d) => c + d.quotes, 0) }} devis envoyés sur la période ; maximum {{ activity.max }} par jour.</desc>
+                {% for d in activity.days %}
+                    {% set hr = (d.requests / top * (h - 4))|round %}{% set hq = (d.quotes / top * (h - 4))|round %}
+                    <rect class="tm-bo01-bar is-requests" x="{{ loop.index0 * 12 + 2 }}" y="{{ h - hr }}" width="4" height="{{ hr }}"><title>{{ d.day|date('d/m', 'Europe/Paris') }} : {{ d.requests }} demande(s)</title></rect>
+                    <rect class="tm-bo01-bar is-quotes" x="{{ loop.index0 * 12 + 6 }}" y="{{ h - hq }}" width="4" height="{{ hq }}"><title>{{ d.day|date('d/m', 'Europe/Paris') }} : {{ d.quotes }} devis</title></rect>
+                {% endfor %}
+            </svg>
+            {% if activity.max == 0 %}<p class="tm-caption tm-bo01-empty">Aucune demande ni aucun devis envoyé sur la période.</p>{% endif %}
+            <ol class="tm-bo01-axis" aria-hidden="true">
+                {% for d in activity.days %}{% if loop.first or loop.last or (loop.index0 % 7 == 0 and loop.revindex0 > 3) %}<li>{{ d.day|date('j', 'Europe/Paris') }} {{ month_abbr[d.day|date('n', 'Europe/Paris') - 1] }}</li>{% endif %}{% endfor %}
+            </ol>
+            <details class="tm-bo01-data">
+                <summary>Voir les données</summary>
+                <div class="tm-admin-table-wrap"><table class="tm-admin-table">
+                    <thead><tr><th scope="col">Jour</th><th scope="col">Demandes</th><th scope="col">Devis envoyés</th></tr></thead>
+                    <tbody>{% for d in activity.days %}<tr><th scope="row">{{ d.day|date('d/m/Y', 'Europe/Paris') }}</th><td>{{ d.requests }}</td><td>{{ d.quotes }}</td></tr>{% endfor %}</tbody>
+                </table></div>
+            </details>
         </section>
     </div>
 {% endblock %}
