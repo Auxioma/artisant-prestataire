@@ -77,8 +77,9 @@
                         <twig:Button type="submit" variant="danger" name="action" value="suspend" block>Suspendre</twig:Button>
                     {% endif %}
                 </form>
-                <p class="tm-caption">Modification, suppression (RGPD) et connexion « en tant que » arrivent avec leurs lots ; toutes les actions sont journalisées.</p>
+                <p class="tm-caption">Modification et suppression (RGPD) arrivent avec leurs lots ; toutes les actions sont journalisées.</p>
             {% endif %}
+            {% if record.status != 'anonymized' %}{{ include('admin/_impersonate.html.twig', {user_id: record.id}) }}{% endif %}
         </aside>
         {% endif %}
     </div>

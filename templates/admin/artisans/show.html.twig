@@ -49,7 +49,13 @@
                 <div><twig:Button type="submit" variant="danger" name="action" value="suspend">Suspendre le compte professionnel</twig:Button></div>
             {% endif %}
         </form>
-        <p class="tm-caption">Gestes commerciaux sur les crédits, mise en avant et connexion « en tant que » : avec leurs lots. Toutes les actions sont journalisées.</p>
+        <p class="tm-caption">Gestes commerciaux sur les crédits et mise en avant : avec leurs lots. Toutes les actions sont journalisées.</p>
+    </section>
+    {% endif %}
+    {% if is_granted('ROLE_SUPER_ADMIN') and dossier.userId %}
+    <section class="tm-admin-panel" aria-labelledby="assistance-titre">
+        <h2 id="assistance-titre" class="tm-card-title">Assistance</h2>
+        {{ include('admin/_impersonate.html.twig', {user_id: dossier.userId}) }}
     </section>
     {% endif %}
 {% endblock %}
