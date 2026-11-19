@@ -1,145 +1,211 @@
-{#- BO12 — SEO : gabarits et surcharges (BO12.1), redirections et 404 (BO12.2), robots (BO12.3), données structurées (BO12.4). -#}
+{#-
+    BO12 « Référencement » (Figma 186:5301) : onglets Meta & gabarits (BO12.1 : gabarit par type de page, compteurs,
+    variables, aperçu du résultat, surcharges page par page), Redirections (BO12.2 : 301 / 302 et 404 dans une même liste,
+    suggestion, import et export CSV), Sitemap & robots (BO12.3 : robots.txt, règles d'indexation RG-023), Données
+    structurées (BO12.4). Colonne de droite : sitemaps et indexation, données structurées. Écarts : P-138.
+-#}
 {% extends 'admin/base.html.twig' %}
 {% set active_module = 'seo' %}
 {% set can_edit = is_granted('admin.seo.edit') %}
-{% block title %}{{ tabs[tab] }} — SEO{% endblock %}
+{% block title %}{{ tabs[tab] }} — Référencement{% endblock %}
+{% macro csrf(id) %}<input type="hidden" name="_token" value="{{ csrf_token(id) }}">{% endmacro %}
+{% import _self as m %}
 {% block body %}
-    {{ include('admin/_page_header.html.twig', {title: 'SEO', crumbs: ['Contenus'], subtitle: 'Balises, redirections, sitemaps et données structurées'}) }}
-    <nav class="tm-admin-tabs" aria-label="Sections SEO">
+    {{ include('admin/_page_header.html.twig', {title: 'Référencement', crumbs: ['Contenus'], subtitle: 'Gabarits, redirections, sitemaps et données structurées'}) }}
+    <nav class="tm-admin-tabs" aria-label="Sections du référencement">
         {% for key, label in tabs %}
             <a class="tm-admin-tab{{ key == tab ? ' is-active' }}" href="{{ path('admin_seo', {onglet: key}) }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}</a>
         {% endfor %}
     </nav>
 
-    {% if tab == 'gabarits' %}
-        <p class="tm-seo-help">Laissez un champ vide pour garder le texte par défaut de la page. Une variable sans valeur est retirée. Le title idéal fait moins de 60 caractères, la description moins de 155.</p>
-        <div class="tm-seo-grid">
-            {% for type, def in types %}
-                {% set tpl = templates[type] ?? {title: null, description: null} %}
-                <section class="tm-admin-panel" aria-labelledby="tpl-{{ type }}">
-                    <h2 class="tm-card-title" id="tpl-{{ type }}">{{ def.label }}</h2>
-                    <form method="post" action="{{ path('admin_seo_template', {type: type}) }}" class="tm-seo-form">
-                        <input type="hidden" name="_token" value="{{ csrf_token('admin_seo_template_' ~ type) }}">
-                        <fieldset {{ can_edit ? '' : 'disabled' }}>
-                            <div class="tm-field"><label class="tm-field__label" for="t_{{ type }}">Title</label>
-                                <div class="tm-field__control"><input class="tm-field__input" id="t_{{ type }}" name="title" value="{{ tpl.title }}" maxlength="200"></div></div>
-                            <div class="tm-field"><label class="tm-field__label" for="d_{{ type }}">Description</label>
-                                <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="d_{{ type }}" name="description" rows="2" maxlength="320">{{ tpl.description }}</textarea></div></div>
-                            <p class="tm-caption">Variables : {{ def.variables|join(', ') }}</p>
-                            {% if can_edit %}<twig:Button type="submit" variant="secondary">Enregistrer</twig:Button>{% endif %}
-                        </fieldset>
+    <div class="tm-bo12">
+        <div class="tm-bo12-main">
+        {% if tab == 'gabarits' %}
+            {% set def = types[type] %}
+            <section class="tm-admin-panel" aria-labelledby="bo12-tpl">
+                <div class="tm-bo12-head">
+                    <h2 class="tm-card-title" id="bo12-tpl">Gabarit : page {{ def.label|split(' (')|first|lower }}</h2>
+                    <form method="get" action="{{ path('admin_seo') }}" class="tm-bo12-type">
+                        <input type="hidden" name="onglet" value="gabarits">
+                        <label class="tm-visually-hidden" for="bo12_type">Type de page</label>
+                        <div class="tm-field__control"><select class="tm-field__input" id="bo12_type" name="type">{% for k, t in types %}<option value="{{ k }}"{{ k == type ? ' selected' }}>{{ t.label }}</option>{% endfor %}</select></div>
+                        <twig:Button type="submit" variant="secondary">Afficher</twig:Button>
+                    </form>
+                </div>
+                <form method="post" action="{{ path('admin_seo_template', {type: type}) }}" class="tm-bo12-form">
+                    {{ m.csrf('admin_seo_template_' ~ type) }}
+                    <fieldset {{ can_edit ? '' : 'disabled' }}>
+                        <legend class="tm-visually-hidden">Gabarit {{ def.label }}</legend>
+                        <div class="tm-field" data-controller="char-count" data-char-count-max-value="{{ advised.title }}">
+                            <label class="tm-field__label" for="bo12_title">Title</label>
+                            <div class="tm-field__control"><input class="tm-field__input" id="bo12_title" name="title" value="{{ template.title }}" maxlength="200" aria-describedby="bo12_title_count" data-char-count-target="input" data-action="input->char-count#update"></div>
+                            <p class="tm-caption" id="bo12_title_count" data-char-count-target="count">{{ (template.title ?? '')|length }} / {{ advised.title }} caractères</p>
+                        </div>
+                        <div class="tm-field" data-controller="char-count" data-char-count-max-value="{{ advised.description }}">
+                            <label class="tm-field__label" for="bo12_desc">Meta description</label>
+                            <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="bo12_desc" name="description" rows="2" maxlength="320" aria-describedby="bo12_desc_count" data-char-count-target="input" data-action="input->char-count#update">{{ template.description }}</textarea></div>
+                            <p class="tm-caption" id="bo12_desc_count" data-char-count-target="count">{{ (template.description ?? '')|length }} / {{ advised.description }} caractères</p>
+                        </div>
+                        <div class="tm-bo11-vars"><span>Variables :</span>{% for v in def.variables %}<span class="tm-bo11-var">{{ v }}</span>{% endfor %}</div>
+                        <div class="tm-bo12-serp" aria-label="Aperçu du résultat de recherche (exemple fictif)">
+                            <p class="tm-bo12-serp__url">trouvemoi.com{{ preview.path|replace({'/': ' › '}) }}</p>
+                            <p class="tm-bo12-serp__title">{{ preview.title ?? 'Texte par défaut de la page' }}</p>
+                            <p class="tm-bo12-serp__desc">{{ preview.description ?? 'Description par défaut de la page.' }}</p>
+                        </div>
+                        <p class="tm-bo12-note"><twig:Icon name="info" size="xs" class="tm-icon--inherit" /> Balises Open Graph héritées du gabarit · surcharge possible page par page. Champ vide : texte par défaut ; variable sans valeur retirée.</p>
+                        {% if can_edit %}<div class="tm-bo12-actions"><twig:Button type="submit">Enregistrer le gabarit</twig:Button></div>{% endif %}
+                    </fieldset>
+                </form>
+            </section>
+
+            <section class="tm-admin-panel" id="surcharges" aria-labelledby="bo12-ovr">
+                <h2 class="tm-card-title" id="bo12-ovr">Surcharges page par page</h2>
+                <p class="tm-seo-help">Remplace le title et / ou la description d’une adresse précise (Open Graph compris), ou la retire de l’indexation (noindex).</p>
+                {% if overrides is not empty %}
+                    <div class="tm-admin-table-wrap"><table class="tm-admin-table">
+                        <thead><tr><th scope="col">Adresse</th><th scope="col">Title</th><th scope="col">Description</th><th scope="col">Indexation</th>{% if can_edit %}<th scope="col"><span class="tm-visually-hidden">Actions</span></th>{% endif %}</tr></thead>
+                        <tbody>
+                        {% for o in overrides %}
+                            <tr>
+                                <th scope="row"><a href="{{ o.path }}">{{ o.path }}</a></th>
+                                <td>{{ o.title ?? '—' }}</td><td>{{ o.description ?? '—' }}</td><td>{{ o.noindex ? 'noindex' : 'par défaut' }}</td>
+                                {% if can_edit %}<td><form method="post" action="{{ path('admin_seo_override') }}">{{ m.csrf('admin_seo_override') }}<input type="hidden" name="path" value="{{ o.path }}"><button class="tm-bo12-icon tm-admin-danger" name="action" value="delete" title="Retirer"><twig:Icon name="trash" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Retirer la surcharge de {{ o.path }}</span></button></form></td>{% endif %}
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table></div>
+                {% endif %}
+                {% if can_edit %}
+                    <form method="post" action="{{ path('admin_seo_override') }}" class="tm-seo-form tm-seo-form--inline">
+                        {{ m.csrf('admin_seo_override') }}
+                        <div class="tm-field"><label class="tm-field__label" for="o_path">Adresse (chemin)</label><div class="tm-field__control"><input class="tm-field__input" id="o_path" name="path" placeholder="/plombier/le-havre-76600" required maxlength="500"></div></div>
+                        <div class="tm-field"><label class="tm-field__label" for="o_title">Title</label><div class="tm-field__control"><input class="tm-field__input" id="o_title" name="title" maxlength="200"></div></div>
+                        <div class="tm-field"><label class="tm-field__label" for="o_desc">Description</label><div class="tm-field__control"><input class="tm-field__input" id="o_desc" name="description" maxlength="320"></div></div>
+                        <label class="tm-check"><input class="tm-check__input" type="checkbox" name="noindex" value="1"><span>noindex</span></label>
+                        <twig:Button type="submit" variant="secondary">Enregistrer</twig:Button>
+                    </form>
+                {% endif %}
+            </section>
+
+        {% elseif tab == 'redirections' %}
+            {% set params = {onglet: 'redirections', q: search, type: type} %}
+            <section class="tm-admin-panel tm-bo12-table-card" aria-labelledby="bo12-red">
+                <h2 class="tm-card-title" id="bo12-red">Redirections et 404</h2>
+                <form method="get" action="{{ path('admin_seo') }}" class="tm-bo11-filters" role="search">
+                    <input type="hidden" name="onglet" value="redirections">
+                    <div class="tm-field__control tm-bo11-search"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><label class="tm-visually-hidden" for="r_q">URL source</label><input class="tm-field__input" type="search" id="r_q" name="q" value="{{ search }}" placeholder="URL source"></div>
+                    <label class="tm-visually-hidden" for="r_type">Type</label>
+                    <div class="tm-field__control"><select class="tm-field__input" id="r_type" name="type"><option value="">Type</option>{% for t in ['301', '302', '404'] %}<option value="{{ t }}"{{ type == t ? ' selected' }}>{{ t }}</option>{% endfor %}</select></div>
+                    <twig:Button type="submit" variant="secondary">Filtrer</twig:Button>
+                    <twig:Button href="{{ path('admin_seo_redirect_export') }}" variant="secondary" icon="download" iconPosition="start">Exporter CSV</twig:Button>
+                </form>
+                {% if redirects.items is empty and not_found is empty %}
+                    <p>Aucune redirection ni erreur 404{{ search ? ' pour « ' ~ search ~ ' »' }}.</p>
+                {% else %}
+                    <div class="tm-admin-table-wrap"><table class="tm-admin-table tm-bo12-table">
+                        <thead><tr><th scope="col">Source</th><th scope="col">Destination</th><th scope="col">Type</th><th scope="col">Utilisations</th>{% if can_edit %}<th scope="col"><span class="tm-visually-hidden">Actions</span></th>{% endif %}</tr></thead>
+                        <tbody>
+                        {% for r in redirects.items %}
+                            <tr>
+                                <th scope="row">{{ r.source }}{{ r.prefix ? '*' }}</th>
+                                <td><a href="{{ r.target }}">{{ r.target }}</a></td>
+                                <td><span class="tm-bo12-code is-ok"><twig:Icon name="check" size="xs" class="tm-icon--inherit" />{{ r.status }}</span></td>
+                                <td>{{ r.hits|number_format(0, ',', ' ') }}</td>
+                                {% if can_edit %}<td><div class="tm-bo12-row-actions">
+                                    <a class="tm-bo12-icon" href="{{ path('admin_seo', {onglet: 'redirections', source: r.source, cible: r.target, code: r.status}) }}#ajout" title="Modifier"><twig:Icon name="edit" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Modifier la redirection {{ r.source }}</span></a>
+                                    <form method="post" action="{{ path('admin_seo_redirect') }}">{{ m.csrf('admin_seo_redirect') }}<input type="hidden" name="id" value="{{ r.id }}"><button class="tm-bo12-icon tm-admin-danger" name="action" value="delete" title="Supprimer"><twig:Icon name="trash" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Supprimer la redirection {{ r.source }}</span></button></form>
+                                </div></td>{% endif %}
+                            </tr>
+                        {% endfor %}
+                        {% for n in not_found %}
+                            <tr class="tm-bo12-missing">
+                                <th scope="row">{{ n.path }}</th>
+                                <td{% if n.last_referer %} title="Dernière origine : {{ n.last_referer }}"{% endif %}>— (404)<span class="tm-caption tm-bo12-origin">vue le {{ n.last_seen_at|date('d/m/Y', 'Europe/Paris') }}</span></td>
+                                <td><span class="tm-bo12-code is-missing"><twig:Icon name="x" size="xs" class="tm-icon--inherit" />404</span></td>
+                                <td>{{ n.hits|number_format(0, ',', ' ') }}</td>
+                                {% if can_edit %}<td><div class="tm-bo12-row-actions">
+                                    {% if n.suggestion %}<a href="{{ path('admin_seo', {onglet: 'redirections', source: n.path, cible: n.suggestion}) }}#ajout">Suggérer : {{ n.suggestion }}</a>{% else %}<a href="{{ path('admin_seo', {onglet: 'redirections', source: n.path}) }}#ajout">Créer la redirection</a>{% endif %}
+                                    <form method="post" action="{{ path('admin_seo_not_found') }}">{{ m.csrf('admin_seo_not_found') }}<input type="hidden" name="path" value="{{ n.path }}"><button class="tm-link-button">Ignorer<span class="tm-visually-hidden"> {{ n.path }}</span></button></form>
+                                </div></td>{% endif %}
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table></div>
+                    {% if redirects.total > per_page %}{{ include('admin/_pagination.html.twig', {page: {page: page, pages: (redirects.total / per_page)|round(0, 'ceil'), perPage: per_page, total: redirects.total}, route: 'admin_seo', params: params}) }}{% endif %}
+                {% endif %}
+            </section>
+            {% if can_edit %}
+                <section class="tm-admin-panel" id="ajout" aria-labelledby="bo12-add">
+                    <h2 class="tm-card-title" id="bo12-add">{{ prefill.source ? 'Créer ou modifier une redirection' : 'Ajouter une redirection' }}</h2>
+                    <form method="post" action="{{ path('admin_seo_redirect') }}" class="tm-seo-form tm-seo-form--inline">
+                        {{ m.csrf('admin_seo_redirect') }}
+                        <div class="tm-field"><label class="tm-field__label" for="r_source">Source</label><div class="tm-field__control"><input class="tm-field__input" id="r_source" name="source" value="{{ prefill.source }}" placeholder="/ancienne-adresse" required></div></div>
+                        <div class="tm-field"><label class="tm-field__label" for="r_target">Destination</label><div class="tm-field__control"><input class="tm-field__input" id="r_target" name="target" value="{{ prefill.target }}" placeholder="/nouvelle-adresse" required></div></div>
+                        <div class="tm-field"><label class="tm-field__label" for="r_status">Type</label><div class="tm-field__control"><select class="tm-field__input" id="r_status" name="status"><option value="301"{{ prefill.status != 302 ? ' selected' }}>301 (définitive)</option><option value="302"{{ prefill.status == 302 ? ' selected' }}>302 (temporaire)</option></select></div></div>
+                        <twig:Button type="submit" name="action" value="save">Enregistrer</twig:Button>
+                    </form>
+                    <h3 class="tm-bo12-sub">Importer un fichier CSV</h3>
+                    <form method="post" action="{{ path('admin_seo_redirect') }}" enctype="multipart/form-data" class="tm-seo-form tm-seo-form--inline">
+                        {{ m.csrf('admin_seo_redirect') }}
+                        <div class="tm-field"><label class="tm-field__label" for="r_csv">Fichier « source;cible;code » (code facultatif, 301 par défaut ; même format que l’export)</label><input id="r_csv" name="csv" type="file" accept=".csv,text/csv" required></div>
+                        <twig:Button type="submit" variant="secondary" name="action" value="import">Importer</twig:Button>
                     </form>
                 </section>
-            {% endfor %}
+            {% endif %}
+
+        {% elseif tab == 'sitemap' %}
+            <section class="tm-admin-panel" aria-labelledby="bo12-robots">
+                <h2 class="tm-card-title" id="bo12-robots">robots.txt et règles d’indexation</h2>
+                <p class="tm-seo-help">Les règles de base (zones privées, lien vers le <a href="{{ path('content_sitemap_index') }}">sitemap</a>) sont toujours présentes ; hors production, le robots.txt interdit toute indexation. <a href="{{ path('content_robots') }}">Voir le robots.txt</a></p>
+                <form method="post" action="{{ path('admin_seo_robots') }}" class="tm-bo12-form">
+                    {{ m.csrf('admin_seo_robots') }}
+                    <fieldset {{ can_edit ? '' : 'disabled' }}>
+                        <legend class="tm-visually-hidden">robots.txt et indexation</legend>
+                        <div class="tm-field"><label class="tm-field__label" for="robots_extra">Lignes ajoutées au robots.txt (une par ligne)</label>
+                            <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="robots_extra" name="robots_extra" rows="5" placeholder="Disallow: /recherche?*tri=">{{ robots_extra }}</textarea></div></div>
+                        <div class="tm-bo13-fields">
+                            {% for s in indexing %}
+                                <div class="tm-field">
+                                    <label class="tm-field__label" for="bo12_{{ loop.index }}">{{ s.label }} <span class="tm-field__required" aria-hidden="true">*</span></label>
+                                    <div class="tm-field__control"><input class="tm-field__input" type="number" id="bo12_{{ loop.index }}" name="{{ s.key }}" value="{{ s.value }}" min="{{ s.min }}" max="{{ s.max }}" required aria-describedby="bo12_{{ loop.index }}_h"></div>
+                                    <p class="tm-caption" id="bo12_{{ loop.index }}_h">{{ s.key }} · {{ s.min }} à {{ s.max }}{{ loop.first ? ' · RG-023' }}</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if can_edit %}<div class="tm-bo12-actions"><twig:Button type="submit">Enregistrer</twig:Button></div>{% endif %}
+                    </fieldset>
+                </form>
+            </section>
+
+        {% else %}
+            <section class="tm-admin-panel" aria-labelledby="bo12-data">
+                <h2 class="tm-card-title" id="bo12-data">Données structurées publiées</h2>
+                {{ include('admin/seo/_schemas.html.twig', {back: 'donnees', detailed: true}) }}
+            </section>
+        {% endif %}
         </div>
 
-    {% elseif tab == 'surcharges' %}
-        <section class="tm-admin-panel" aria-labelledby="ovr-title">
-            <h2 class="tm-card-title" id="ovr-title">Surcharges page par page</h2>
-            <p class="tm-seo-help">Remplace le title et / ou la description d’une adresse précise, ou la retire de l’indexation (noindex).</p>
-            {% if overrides is not empty %}
-                <div class="tm-admin-table-wrap"><table class="tm-admin-table">
-                    <thead><tr><th scope="col">Adresse</th><th scope="col">Title</th><th scope="col">Description</th><th scope="col">Indexation</th>{% if can_edit %}<th scope="col"><span class="tm-visually-hidden">Actions</span></th>{% endif %}</tr></thead>
-                    <tbody>
-                    {% for o in overrides %}
-                        <tr>
-                            <th scope="row"><a href="{{ o.path }}">{{ o.path }}</a></th>
-                            <td>{{ o.title ?? '—' }}</td><td>{{ o.description ?? '—' }}</td><td>{{ o.noindex ? 'noindex' : 'par défaut' }}</td>
-                            {% if can_edit %}<td><form method="post" action="{{ path('admin_seo_override') }}"><input type="hidden" name="_token" value="{{ csrf_token('admin_seo_override') }}"><input type="hidden" name="path" value="{{ o.path }}"><button class="tm-link-button tm-admin-danger" name="action" value="delete">Retirer<span class="tm-visually-hidden"> la surcharge de {{ o.path }}</span></button></form></td>{% endif %}
-                        </tr>
+        <aside class="tm-bo12-aside" aria-label="Indexation">
+            <section class="tm-admin-panel" aria-labelledby="bo12-maps">
+                <h2 class="tm-card-title" id="bo12-maps">Sitemaps &amp; indexation</h2>
+                <ul class="tm-bo12-maps">
+                    {% for segment, count in sitemaps %}
+                        <li><a href="{{ path('content_sitemap_segment', {segment: segment, page: 1}) }}">{{ segment }}.xml</a><strong>{{ count|number_format(0, ',', ' ') }} URL</strong></li>
                     {% endfor %}
-                    </tbody>
-                </table></div>
+                    <li><span>blog.xml</span><span class="tm-caption">V2</span></li>
+                    <li><span>Seuil d’indexation métier × ville</span><span class="tm-bo12-chip">≥ {{ min_pros }} pros (RG-023)</span></li>
+                </ul>
+                <div class="tm-bo12-aside__actions">
+                    {% if can_edit %}<form method="post" action="{{ path('admin_seo_sitemaps') }}">{{ m.csrf('admin_seo_sitemaps') }}<twig:Button type="submit" variant="secondary">Régénérer</twig:Button></form>{% endif %}
+                    <a href="{{ path('admin_seo', {onglet: 'sitemap'}) }}">Éditer robots.txt</a>
+                </div>
+            </section>
+            {% if tab != 'donnees' %}
+                <section class="tm-admin-panel" aria-labelledby="bo12-schemas">
+                    <h2 class="tm-card-title" id="bo12-schemas">Données structurées</h2>
+                    {{ include('admin/seo/_schemas.html.twig', {back: 'gabarits', detailed: false}) }}
+                </section>
             {% endif %}
-            {% if can_edit %}
-                <form method="post" action="{{ path('admin_seo_override') }}" class="tm-seo-form tm-seo-form--inline">
-                    <input type="hidden" name="_token" value="{{ csrf_token('admin_seo_override') }}">
-                    <div class="tm-field"><label class="tm-field__label" for="o_path">Adresse (chemin)</label><div class="tm-field__control"><input class="tm-field__input" id="o_path" name="path" placeholder="/plombier/le-havre-76600" required maxlength="500"></div></div>
-                    <div class="tm-field"><label class="tm-field__label" for="o_title">Title</label><div class="tm-field__control"><input class="tm-field__input" id="o_title" name="title" maxlength="200"></div></div>
-                    <div class="tm-field"><label class="tm-field__label" for="o_desc">Description</label><div class="tm-field__control"><input class="tm-field__input" id="o_desc" name="description" maxlength="320"></div></div>
-                    <label class="tm-check"><input class="tm-check__input" type="checkbox" name="noindex" value="1"><span>noindex</span></label>
-                    <twig:Button type="submit" variant="secondary">Enregistrer</twig:Button>
-                </form>
-            {% endif %}
-        </section>
-
-    {% elseif tab == 'redirections' %}
-        <section class="tm-admin-panel" aria-labelledby="red-title">
-            <h2 class="tm-card-title" id="red-title">Redirections ({{ redirects.total }})</h2>
-            <form method="get" action="{{ path('admin_seo') }}" class="tm-seo-form tm-seo-form--inline" role="search">
-                <input type="hidden" name="onglet" value="redirections">
-                <div class="tm-field"><label class="tm-field__label" for="r_q">Rechercher une adresse</label><div class="tm-field__control"><input class="tm-field__input" id="r_q" name="q" value="{{ search }}"></div></div>
-                <twig:Button type="submit" variant="secondary">Filtrer</twig:Button>
-            </form>
-            {% if redirects.items is not empty %}
-                <div class="tm-admin-table-wrap"><table class="tm-admin-table">
-                    <thead><tr><th scope="col">Source</th><th scope="col">Cible</th><th scope="col">Code</th><th scope="col">Origine</th><th scope="col">Utilisations</th>{% if can_edit %}<th scope="col"><span class="tm-visually-hidden">Actions</span></th>{% endif %}</tr></thead>
-                    <tbody>
-                    {% for r in redirects.items %}
-                        <tr>
-                            <th scope="row">{{ r.source }}{{ r.prefix ? '*' }}</th><td><a href="{{ r.target }}">{{ r.target }}</a></td><td>{{ r.status }}</td><td>{{ r.origin }}</td><td>{{ r.hits }}</td>
-                            {% if can_edit %}<td><form method="post" action="{{ path('admin_seo_redirect') }}"><input type="hidden" name="_token" value="{{ csrf_token('admin_seo_redirect') }}"><input type="hidden" name="id" value="{{ r.id }}"><button class="tm-link-button tm-admin-danger" name="action" value="delete">Supprimer<span class="tm-visually-hidden"> la redirection {{ r.source }}</span></button></form></td>{% endif %}
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table></div>
-                {% if redirects.total > per_page %}{{ include('admin/_pagination.html.twig', {page: {page: page, pages: (redirects.total / per_page)|round(0, 'ceil'), perPage: per_page, total: redirects.total}, route: 'admin_seo', params: {onglet: 'redirections', q: search}}) }}{% endif %}
-            {% else %}<p>Aucune redirection{{ search ? ' pour « ' ~ search ~ ' »' }}.</p>{% endif %}
-            {% if can_edit %}
-                <h3>Ajouter une redirection</h3>
-                <form method="post" action="{{ path('admin_seo_redirect') }}" class="tm-seo-form tm-seo-form--inline">
-                    <input type="hidden" name="_token" value="{{ csrf_token('admin_seo_redirect') }}">
-                    <div class="tm-field"><label class="tm-field__label" for="r_source">Source</label><div class="tm-field__control"><input class="tm-field__input" id="r_source" name="source" value="{{ prefill.source }}" placeholder="/ancienne-adresse" required></div></div>
-                    <div class="tm-field"><label class="tm-field__label" for="r_target">Cible</label><div class="tm-field__control"><input class="tm-field__input" id="r_target" name="target" value="{{ prefill.target }}" placeholder="/nouvelle-adresse" required></div></div>
-                    <div class="tm-field"><label class="tm-field__label" for="r_status">Code</label><div class="tm-field__control"><select class="tm-field__input" id="r_status" name="status"><option value="301">301 (définitive)</option><option value="302">302 (temporaire)</option></select></div></div>
-                    <twig:Button type="submit" name="action" value="save">Enregistrer</twig:Button>
-                </form>
-                <h3>Importer un fichier CSV</h3>
-                <form method="post" action="{{ path('admin_seo_redirect') }}" enctype="multipart/form-data" class="tm-seo-form tm-seo-form--inline">
-                    <input type="hidden" name="_token" value="{{ csrf_token('admin_seo_redirect') }}">
-                    <div class="tm-field"><label class="tm-field__label" for="r_csv">Fichier « source;cible;code » (code facultatif, 301 par défaut)</label><input id="r_csv" name="csv" type="file" accept=".csv,text/csv" required></div>
-                    <twig:Button type="submit" variant="secondary" name="action" value="import">Importer</twig:Button>
-                </form>
-            {% endif %}
-        </section>
-
-    {% elseif tab == '404' %}
-        <section class="tm-admin-panel" aria-labelledby="nf-title">
-            <h2 class="tm-card-title" id="nf-title">Adresses introuvables les plus demandées</h2>
-            {% if not_found is empty %}<p>Aucune erreur 404 enregistrée.</p>{% else %}
-                <div class="tm-admin-table-wrap"><table class="tm-admin-table">
-                    <thead><tr><th scope="col">Adresse</th><th scope="col">Occurrences</th><th scope="col">Dernière origine</th><th scope="col">Dernière fois</th><th scope="col">Suggestion</th>{% if can_edit %}<th scope="col"><span class="tm-visually-hidden">Actions</span></th>{% endif %}</tr></thead>
-                    <tbody>
-                    {% for n in not_found %}
-                        <tr>
-                            <th scope="row">{{ n.path }}</th><td>{{ n.hits }}</td><td>{{ n.last_referer ?? '—' }}</td><td>{{ n.last_seen_at|date('d/m/Y H:i', 'Europe/Paris') }}</td>
-                            <td>{% if n.suggestion %}<a href="{{ n.suggestion }}">{{ n.suggestion }}</a>{% else %}—{% endif %}</td>
-                            {% if can_edit %}<td class="tm-seo-actions">
-                                <a href="{{ path('admin_seo', {onglet: 'redirections', source: n.path, cible: n.suggestion}) }}">Créer la redirection</a>
-                                <form method="post" action="{{ path('admin_seo_not_found') }}"><input type="hidden" name="_token" value="{{ csrf_token('admin_seo_not_found') }}"><input type="hidden" name="path" value="{{ n.path }}"><button class="tm-link-button">Ignorer<span class="tm-visually-hidden"> {{ n.path }}</span></button></form>
-                            </td>{% endif %}
-                        </tr>
-                    {% endfor %}
-                    </tbody>
-                </table></div>
-            {% endif %}
-        </section>
-
-    {% else %}
-        <section class="tm-admin-panel" aria-labelledby="robots-title">
-            <h2 class="tm-card-title" id="robots-title">robots.txt et données structurées</h2>
-            <p class="tm-seo-help">Les règles de base (zones privées, lien vers le <a href="{{ path('content_sitemap_index') }}">sitemap</a>) sont toujours présentes ; hors production, le robots.txt interdit toute indexation. <a href="{{ path('content_robots') }}">Voir le robots.txt</a></p>
-            <form method="post" action="{{ path('admin_seo_robots') }}" class="tm-seo-form">
-                <input type="hidden" name="_token" value="{{ csrf_token('admin_seo_robots') }}">
-                <fieldset {{ can_edit ? '' : 'disabled' }}>
-                    <div class="tm-field"><label class="tm-field__label" for="robots_extra">Lignes ajoutées au robots.txt (une par ligne)</label>
-                        <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="robots_extra" name="robots_extra" rows="4" placeholder="Disallow: /recherche?*tri=">{{ robots_extra }}</textarea></div></div>
-                    <fieldset class="tm-seo-schemas"><legend>Données structurées publiées</legend>
-                        {% for name, s in schemas %}<label class="tm-check"><input class="tm-check__input" type="checkbox" name="schema_{{ name }}" value="1"{% if s.enabled %} checked{% endif %}><span>{{ s.label }}</span></label>{% endfor %}
-                    </fieldset>
-                    {% if can_edit %}<twig:Button type="submit">Enregistrer</twig:Button>{% endif %}
-                </fieldset>
-            </form>
-        </section>
-    {% endif %}
+        </aside>
+    </div>
 {% endblock %}

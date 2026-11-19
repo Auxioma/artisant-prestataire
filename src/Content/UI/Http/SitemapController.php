@@ -124,6 +124,29 @@ final readonly class SitemapController
         return $paths;
     }
 
+    /**
+     * BO12.3 — nombre d'adresses par segment (fichiers pages.xml, metiers.xml…).
+     *
+     * @return array<string, int>
+     */
+    public function counts(): array
+    {
+        $counts = [];
+        foreach (self::SEGMENTS as $segment) {
+            $counts[$segment] = \count($this->entries($segment));
+        }
+
+        return $counts;
+    }
+
+    /** BO12.3 « Régénérer » : vide le cache, les sitemaps sont recalculés à la prochaine lecture. */
+    public function refresh(): void
+    {
+        foreach (self::SEGMENTS as $segment) {
+            $this->cache->delete('sitemap.'.$segment);
+        }
+    }
+
     /** @return list<array{0: string, 1: ?string}> adresse absolue, date de dernière modification (Y-m-d) */
     private function entries(string $segment): array
     {
