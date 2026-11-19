@@ -724,4 +724,12 @@
         .tm-bo01-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); }
         .tm-bo01-grid { grid-template-columns: minmax(0, 400px) minmax(0, 1fr); }
     }
+
+    /* BO15 — journaux (Figma 186:6608) */
+    .tm-bo15-card { min-width: 0; }
+    .tm-bo15-table th, .tm-bo15-table td { vertical-align: top; }
+    .tm-bo15-sub { display: block; font-weight: var(--font-weight-regular); overflow-wrap: anywhere; }
+    .tm-bo15-code { font-family: ui-monospace, monospace; font-size: 13px; overflow-wrap: anywhere; }
+    .tm-bo15-ip { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .tm-bo15-empty { margin: 0; color: var(--color-text-muted); }
 }
