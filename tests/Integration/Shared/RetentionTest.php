@@ -16,7 +16,6 @@ use App\QuoteRequest\Application\Dispatch\DispatchQuoteRequest;
 use App\QuoteRequest\Application\Retention\ArchiveOldRequests;
 use App\QuoteRequest\Application\Retention\RequestArchive;
 use App\QuoteRequest\Application\Submission\SubmitQuoteRequest;
-use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Domain\Audit\AuditRecord;
 use App\Shared\Domain\Event\AccountErased;
 use App\Shared\Infrastructure\Persistence\DbalValue;
@@ -59,7 +58,7 @@ final class RetentionTest extends KernelTestCase
 
     public function testAuditDevicesAndConsentsArePurgedAndChainStaysValid(): void
     {
-        $audit = self::getContainer()->get(AuditTrail::class);
+        $audit = self::getContainer()->get(DbalAuditTrail::class);
         \assert($audit instanceof DbalAuditTrail);
         foreach (['-26 months', '-14 months', '-2 days'] as $i => $ago) {
             $audit->record(new AuditRecord('0190f5e4-0000-7000-8000-00000000880'.$i, new \DateTimeImmutable($ago), 'system', null, 'test.retention'));

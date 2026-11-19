@@ -1,0 +1,13 @@
+{#- BO02.2 / BO03.3 « Se connecter en tant que » (ADR-0013) : super-admin, motif obligatoire, ré-authentification. -#}
+{% if is_granted('ROLE_SUPER_ADMIN') and user_id %}
+    <form method="post" action="{{ path('admin_impersonate', {userId: user_id}) }}" class="tm-impersonate" data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token('admin_impersonate_' ~ user_id) }}">
+        <input type="hidden" name="retour" value="{{ app.request.requestUri }}">
+        <div class="tm-field">
+            <label class="tm-field__label" for="impersonate_reason">Motif de la connexion assistée</label>
+            <div class="tm-field__control"><input class="tm-field__input" id="impersonate_reason" name="motif" minlength="5" maxlength="300" required placeholder="Ex. : reproduire le problème du ticket n° …"></div>
+        </div>
+        <twig:Button type="submit" variant="secondary" icon="eye" iconPosition="start">Se connecter en tant que</twig:Button>
+        <p class="tm-caption">30 minutes au plus, bandeau visible, paiements et sécurité du compte bloqués ; début, fin et actions journalisés.</p>
+    </form>
+{% endif %}

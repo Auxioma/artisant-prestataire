@@ -22,6 +22,18 @@
         <a class="tm-skip-link" href="#contenu">Aller au contenu</a>
         {# CMP placée en tête de document : atteignable au clavier dès l'arrivée (CDC §3.2) #}
         <twig:CookieConsent />
+        {# ADR-0013 : bandeau persistant pendant une connexion assistée par un super-admin #}
+        {% set impersonation = tm_impersonation() %}
+        {% if impersonation %}
+            <div class="tm-impersonation" role="status">
+                <twig:Icon name="eye" size="sm" class="tm-icon--inherit" />
+                <p>Connexion assistée : {{ impersonation.adminName }} agit dans ce compte jusqu’à {{ impersonation.expiresAt|date('H:i', 'Europe/Paris') }}. Paiements, abonnement et sécurité du compte sont bloqués ; toutes les actions sont journalisées.</p>
+                <form method="post" action="{{ path('identity_impersonation_end') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('impersonation_end') }}">
+                    <button type="submit" class="tm-impersonation__end">Terminer</button>
+                </form>
+            </div>
+        {% endif %}
         {# Variante d'en-tête : imposée par la page (tunnel…), sinon selon le profil connecté #}
         {% set header_variant = header_variant ?? (app.user is null ? 'visitor' : (is_granted('ROLE_ARTISAN') ? 'artisan' : 'client')) %}
         {% block header %}<twig:Header variant="{{ header_variant }}" active="{{ active_nav ?? null }}" accountName="{{ app.user ? app.user.userIdentifier : null }}" unreadNotifications="{{ app.user and app.user.id is defined ? tm_unread_notifications(app.user.id) : 0 }}" :credits="header_variant == 'artisan' ? tm_artisan_credits() : null" />{% endblock %}

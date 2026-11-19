@@ -12,6 +12,9 @@ framework:
             # Sitemaps XML (BO12.3) : recalculés au plus toutes les heures.
             cache.sitemap:
                 adapter: cache.app
+            # BO02 / BO03 impersonation : tickets à usage unique, durée de vie d'une minute.
+            cache.impersonation:
+                adapter: cache.app
 
 when@prod:
     framework:
@@ -29,4 +32,7 @@ when@test:
                     adapter: cache.adapter.array
                 cache.sitemap:
                     adapter: cache.adapter.array
+                # Fichiers (et non tableau) : le navigateur de test réinitialise les services entre deux requêtes.
+                cache.impersonation:
+                    adapter: cache.adapter.filesystem
         # Limites de débit en test : voir services.yaml (when@test) — état propre à chaque noyau, conservé entre requêtes.
