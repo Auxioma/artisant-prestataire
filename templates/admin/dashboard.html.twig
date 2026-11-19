@@ -1,6 +1,7 @@
 {#-
     BO01 « Tableau de bord » (Figma 186:75) : choix du mois et export (en-tête), dix indicateurs clés comparés à N-1
-    (BO01.1) puis les autres indicateurs du CDC, files d'attente (BO01.2), évolution quotidienne (BO01.3). Écarts : P-139, P-140.
+    (BO01.1) puis les autres indicateurs du CDC, files d'attente (BO01.2), évolution quotidienne, couverture par département, top métiers et demandes non couvertes
+    (BO01.3). Écarts : P-139, P-140, P-141.
 -#}
 {% extends 'admin/base.html.twig' %}
 {% set active_module = 'dashboard' %}
@@ -113,4 +114,62 @@
             </details>
         </section>
     </div>
+    <div class="tm-bo01-grid tm-bo01-grid--coverage">
+        <section class="tm-admin-panel" aria-labelledby="couverture-titre">
+            <h2 id="couverture-titre" class="tm-card-title">Couverture : demandes sans devis par département</h2>
+            {% if coverage.departments is empty %}
+                <p class="tm-bo01-empty-line">Aucune demande déposée sur la période.</p>
+            {% else %}
+                <ul class="tm-bo01-coverage">
+                    {% for d in coverage.departments %}
+                        {% set pct = (d.rate * 100)|round %}
+                        <li>
+                            <span class="tm-bo01-coverage__dept">{{ d.code }} {{ d.name }}</span>
+                            <meter class="tm-bo01-coverage__bar is-{{ d.severity }}" min="0" max="1" value="{{ d.rate }}" aria-label="{{ d.code }} {{ d.name }} : {{ pct }} % sans devis">{{ pct }} %</meter>
+                            <strong>{{ pct }} %</strong>
+                            <span class="tm-caption tm-bo01-coverage__count">{{ d.uncovered }} / {{ d.requests }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <p class="tm-caption">Départements les plus demandés sur la période · nombre de demandes sans devis / déposées. La carte de France viendra avec le fond de carte (P-51).</p>
+            {% endif %}
+        </section>
+
+        <section class="tm-admin-panel" aria-labelledby="metiers-titre">
+            <h2 id="metiers-titre" class="tm-card-title">Top métiers (demandes)</h2>
+            {% if coverage.jobs is empty %}
+                <p class="tm-bo01-empty-line">Aucune demande déposée sur la période.</p>
+            {% else %}
+                <ol class="tm-bo01-jobs">
+                    {% for j in coverage.jobs %}<li><span>{{ j.name }}</span><strong>{{ j.requests|number_format(0, ',', ' ') }}</strong></li>{% endfor %}
+                </ol>
+            {% endif %}
+        </section>
+    </div>
+
+    <section class="tm-admin-panel tm-bo01-gaps" aria-labelledby="non-couvertes-titre">
+        <h2 id="non-couvertes-titre" class="tm-card-title">Demandes non couvertes (métier × zone)</h2>
+        {% if coverage.gaps is empty %}
+            <p class="tm-bo01-empty-line">Toutes les demandes de la période ont reçu au moins un devis.</p>
+        {% else %}
+            <div class="tm-admin-table-wrap"><table class="tm-admin-table">
+                <thead><tr><th scope="col">Métier</th><th scope="col">Zone</th><th scope="col">Demandes sans devis</th><th scope="col">Artisans actifs</th><th scope="col">Action</th></tr></thead>
+                <tbody>
+                    {% for g in coverage.gaps %}
+                        <tr>
+                            <th scope="row">{{ g.job }}</th>
+                            <td>{{ g.department }} ({{ g.department_code }})</td>
+                            <td>{{ g.uncovered }}</td>
+                            <td>{{ g.artisans }}</td>
+                            <td>
+                                {% if g.artisans == 0 and is_granted('admin.artisans.view') %}<a href="{{ path('admin_artisans_queue') }}">Recruter des artisans</a>
+                                {% elseif is_granted('admin.requests.view') %}<a href="{{ path('admin_requests', {metier: g.job_id, departement: g.department_code, statut: 'open'}) }}">Étendre la zone</a>
+                                {% else %}—{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table></div>
+        {% endif %}
+    </section>
 {% endblock %}
