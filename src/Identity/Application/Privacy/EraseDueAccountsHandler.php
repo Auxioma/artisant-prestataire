@@ -49,6 +49,7 @@ final readonly class EraseDueAccountsHandler implements CommandHandler
             $user = $this->users->get($id);
             $email = $user->email();
             $firstName = $user->firstName();
+            $inactive = null !== $user->inactivityNoticeAt();
             $avatar = $this->profiles->find($id)?->erase($now);
             $user->anonymize($now);
             $this->devices->forget($id->value);
@@ -66,7 +67,7 @@ final readonly class EraseDueAccountsHandler implements CommandHandler
                 subjectType: 'user',
                 subjectId: $id->value,
             ));
-            $this->mailer->sendAccountDeleted($email, $firstName);
+            $this->mailer->sendAccountDeleted($email, $firstName, $inactive, $inactive ? $this->settings->int(SettingKey::GdprInactiveYears) : 0);
         }
     }
 }

@@ -1,0 +1,6 @@
+<p>Bonjour {{ prenom }},</p>
+<p>Vous ne vous êtes pas connecté à TrouveMoi depuis plus de {{ annees }} ans. Pour protéger vos données, nous supprimerons votre compte le <strong>{{ date_effacement|date('d/m/Y', 'Europe/Paris') }}</strong> : vos données personnelles seront effacées.</p>
+<p>Vous souhaitez le conserver ? Il suffit de vous connecter avant cette date.</p>
+{{ bouton(lien_connexion, 'Me connecter') }}
+<p>Sinon, vous n’avez rien à faire.</p>
+<p class="muted">Une question ? <a href="{{ lien_aide }}">Contactez-nous</a>.</p>

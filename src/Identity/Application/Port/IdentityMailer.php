@@ -45,6 +45,9 @@ interface IdentityMailer
     /** E-08 : demande de suppression enregistrée, date d'effacement et lien d'annulation (valable jusqu'à cette date). */
     public function sendDeletionRequested(Email $to, string $firstName, string $userId, \DateTimeImmutable $effectiveAt): void;
 
-    /** E-09 : compte effacé (envoyé à l'adresse d'origine, avant anonymisation). */
-    public function sendAccountDeleted(Email $to, string $firstName): void;
+    /** E-09 : compte effacé (envoyé à l'adresse d'origine, avant anonymisation) ; $inactive : effacé faute de connexion. */
+    public function sendAccountDeleted(Email $to, string $firstName, bool $inactive = false, int $years = 0): void;
+
+    /** E-09b : compte inactif depuis $years ans, effacé le $effectiveAt sauf connexion d'ici là (CDC §11). */
+    public function sendInactivityNotice(Email $to, string $firstName, int $years, \DateTimeImmutable $effectiveAt): void;
 }

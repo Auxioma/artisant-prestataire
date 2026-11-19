@@ -67,4 +67,28 @@ final readonly class DoctrineUserRepository implements UserRepository
             ['before' => $before->format(\DATE_ATOM)],
         ));
     }
+
+    public function inactiveSince(\DateTimeImmutable $before): array
+    {
+        return array_map(static fn (mixed $id): UserId => new UserId(DbalValue::string($id)), $this->em->getConnection()->fetchFirstColumn(
+            "SELECT u.id FROM identity.user_account u
+              WHERE u.status IN ('active', 'pending_email') AND u.inactivity_notice_at IS NULL
+                AND coalesce(u.last_login_at, u.created_at) <= :before
+                AND NOT EXISTS (SELECT 1 FROM artisan.artisan_profile p JOIN billing.subscription s ON s.artisan_id = p.id
+                                 WHERE p.user_id = u.id AND s.status IN ('active', 'past_due'))
+              ORDER BY coalesce(u.last_login_at, u.created_at)",
+            ['before' => $before->format(\DATE_ATOM)],
+        ));
+    }
+
+    public function unansweredInactivityNotices(\DateTimeImmutable $before): array
+    {
+        return array_map(static fn (mixed $id): UserId => new UserId(DbalValue::string($id)), $this->em->getConnection()->fetchFirstColumn(
+            "SELECT id FROM identity.user_account
+              WHERE status IN ('active', 'pending_email') AND inactivity_notice_at <= :before
+                AND (last_login_at IS NULL OR last_login_at < inactivity_notice_at)
+              ORDER BY inactivity_notice_at",
+            ['before' => $before->format(\DATE_ATOM)],
+        ));
+    }
 }
