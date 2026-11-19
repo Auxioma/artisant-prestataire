@@ -9,6 +9,8 @@ use App\Administration\Application\Dashboard\DashboardActivityView;
 use App\Administration\Application\Dashboard\DashboardKpis;
 use App\Administration\Application\Dashboard\DashboardKpisView;
 use App\Administration\Application\Dashboard\DashboardQueues;
+use App\Shared\Application\Admin\DashboardCoverage;
+use App\Shared\Application\Admin\DashboardCoverageView;
 use App\Shared\Application\Bus\QueryBus;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,8 +21,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * BO01 « Tableau de bord » (Figma 186:75) : indicateurs du mois choisi comparés à N-1 (BO01.1) et export CSV,
- * files d'attente avec lien vers la liste filtrée (BO01.2), évolution quotidienne des demandes et devis (BO01.3).
- * Écarts : P-139, P-140.
+ * files d'attente avec lien vers la liste filtrée (BO01.2), évolution quotidienne des demandes et devis, couverture
+ * par département, top métiers, demandes non couvertes (BO01.3). Écarts : P-139, P-140, P-141.
  */
 final class AdminDashboardController extends AbstractController
 {
@@ -52,6 +54,8 @@ final class AdminDashboardController extends AbstractController
         $counts = \is_array($counts) ? $counts : [];
         $activity = $this->queries->ask(new DashboardActivity($kpis->from, $kpis->to));
         \assert($activity instanceof DashboardActivityView);
+        $coverage = $this->queries->ask(new DashboardCoverage($kpis->from, $kpis->to));
+        \assert($coverage instanceof DashboardCoverageView);
         $queues = [];
         foreach (self::QUEUES as $key => [$label, $icon, $permission, $route, $params]) {
             if ($this->isGranted($permission)) {
@@ -60,7 +64,7 @@ final class AdminDashboardController extends AbstractController
             }
         }
 
-        return $this->render('admin/dashboard.html.twig', ['kpis' => $kpis, 'months' => $this->months(), 'queues' => $queues, 'activity' => $activity]);
+        return $this->render('admin/dashboard.html.twig', ['kpis' => $kpis, 'months' => $this->months(), 'queues' => $queues, 'activity' => $activity, 'coverage' => $coverage]);
     }
 
     #[Route('/admin/tableau-de-bord.csv', name: 'admin_dashboard_export', methods: ['GET'])]
