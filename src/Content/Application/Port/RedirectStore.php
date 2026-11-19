@@ -13,11 +13,11 @@ interface RedirectStore
     public function redirect(string $source, string $target, bool $prefix, string $origin, int $status = 301): void;
 
     /**
-     * BO12.2 — redirections enregistrées, filtrées sur la source ou la cible.
+     * BO12.2 — redirections enregistrées, filtrées sur la source ou la cible et, si donné, sur le code (301 / 302).
      *
      * @return array{total: int, items: list<array{id: int, source: string, target: string, status: int, prefix: bool, origin: string, hits: int, updated_at: string}>}
      */
-    public function list(string $search, int $offset, int $limit): array;
+    public function list(string $search, int $offset, int $limit, ?int $status = null): array;
 
     public function delete(int $id): void;
 

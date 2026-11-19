@@ -33,10 +33,10 @@ final readonly class DbalRedirectStore implements RedirectStore
         });
     }
 
-    public function list(string $search, int $offset, int $limit): array
+    public function list(string $search, int $offset, int $limit, ?int $status = null): array
     {
-        $where = "(CAST(:q AS text) = '' OR source_path ILIKE :like OR target_path ILIKE :like)";
-        $params = ['q' => $search, 'like' => '%'.addcslashes($search, '%_\\').'%'];
+        $where = "(CAST(:q AS text) = '' OR source_path ILIKE :like OR target_path ILIKE :like) AND (CAST(:status AS smallint) IS NULL OR status_code = CAST(:status AS smallint))";
+        $params = ['q' => $search, 'like' => '%'.addcslashes($search, '%_\\').'%', 'status' => $status];
         $total = DbalValue::int($this->connection->fetchOne('SELECT count(*) FROM content.redirect WHERE '.$where, $params));
         $rows = $this->connection->fetchAllAssociative(
             'SELECT * FROM content.redirect WHERE '.$where.' ORDER BY updated_at DESC, id DESC OFFSET :offset LIMIT :limit',

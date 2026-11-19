@@ -1,0 +1,15 @@
+{#- BO12.4 — interrupteurs des données structurées (carte latérale et onglet « Données structurées »). -#}
+<form method="post" action="{{ path('admin_seo_schemas') }}" class="tm-bo12-form">
+    <input type="hidden" name="_token" value="{{ csrf_token('admin_seo_schemas') }}">
+    <input type="hidden" name="back" value="{{ back }}">
+    <fieldset {{ is_granted('admin.seo.edit') ? '' : 'disabled' }}>
+        <legend class="tm-visually-hidden">Types de données structurées publiés</legend>
+        <div class="tm-bo12-schemas">
+            {% for name, s in schemas %}
+                <label class="tm-check"><input class="tm-check__input" type="checkbox" name="schema_{{ name }}" value="1"{% if s.enabled %} checked{% endif %}><span>{{ s.label }}{% if detailed %}<span class="tm-caption tm-bo12-schema-help">{{ s.help }}</span>{% endif %}</span></label>
+            {% endfor %}
+        </div>
+        <p class="tm-caption">À valider avec le test des résultats enrichis de Google avant la mise en production.</p>
+        {% if is_granted('admin.seo.edit') %}<div class="tm-bo12-actions"><twig:Button type="submit" variant="secondary">Enregistrer</twig:Button></div>{% endif %}
+    </fieldset>
+</form>
