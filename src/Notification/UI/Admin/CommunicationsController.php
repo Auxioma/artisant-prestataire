@@ -11,6 +11,7 @@ use App\Notification\Application\Admin\TemplateAdminCommand;
 use App\Notification\Application\Admin\TemplateAdminQuery;
 use App\Notification\Application\Admin\TemplateAdminRejected;
 use App\Notification\Application\Admin\TemplateDetail;
+use App\Shared\Application\Admin\AdminExportJournal;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Security\CurrentAdministrator;
@@ -151,12 +152,14 @@ final class CommunicationsController extends AbstractController
 
     #[Route('/journal.csv', name: 'admin_notifications_log_export', methods: ['GET'])]
     #[IsGranted('admin.notifications.view')]
-    public function export(Request $request): StreamedResponse
+    public function export(Request $request, AdminExportJournal $journal): StreamedResponse
     {
         $queries = $this->queries;
+        $ip = $request->getClientIp();
         $filters = [$request->query->getString('journal_modele') ?: null, $request->query->getString('journal_statut') ?: null, $request->query->getString('journal_destinataire') ?: null];
 
-        return new StreamedResponse(static function () use ($queries, $filters): void {
+        return new StreamedResponse(static function () use ($queries, $filters, $journal, $ip): void {
+            $count = 0;
             $out = fopen('php://output', 'w');
             \assert(false !== $out);
             fputcsv($out, ['date', 'destinataire', 'modele', 'version', 'canal', 'statut', 'erreur'], ';', '"', '');
@@ -166,10 +169,13 @@ final class CommunicationsController extends AbstractController
                 \assert($result instanceof DeliveryLogPage);
                 foreach ($result->rows as $row) {
                     fputcsv($out, [$row['at']->format(\DATE_ATOM), $row['recipient'] ?? '', $row['code'], $row['version'], $row['channel'], $row['status'], $row['error'] ?? ''], ';', '"', '');
+                    ++$count;
                 }
                 ++$page;
             } while ($page <= $result->pages());
             fclose($out);
+            // BO15.2 : destinataires (même masqués) = données personnelles → export journalisé.
+            $journal->record('journal_envois', array_filter(['modele' => $filters[0] ?? '', 'statut' => $filters[1] ?? '', 'destinataire' => null === $filters[2] ? '' : 'filtré'], static fn (string $v): bool => '' !== $v), $count, $ip);
         }, Response::HTTP_OK, ['Content-Type' => 'text/csv; charset=UTF-8', 'Content-Disposition' => 'attachment; filename="journal-envois.csv"', 'Cache-Control' => 'no-store']);
     }
 

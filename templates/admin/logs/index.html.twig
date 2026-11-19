@@ -2,7 +2,8 @@
     BO15 « Finance, journaux et exports » (Figma 186:6608) : onglets ; BO15.1 journal d'audit des actions admin et
     connexions (recherche, module, admin, période ; date, admin, action, objet, IP masquée ; export CSV journalisé),
     webhooks Stripe (type, statut, tentatives, erreur) ; BO15.3 finance du mois (MRR, ARR, encaissé, remboursements,
-    impayés, LTV comparés à N-1), MRR par forfait, cohortes de rétention, rapprochement Stripe. Exports : T-806c.
+    impayés, LTV comparés à N-1), MRR par forfait, cohortes de rétention, rapprochement Stripe ; BO15.2 exports
+    disponibles selon le rôle et exports récents journalisés.
     Écarts : P-142, P-143.
 -#}
 {% extends 'admin/base.html.twig' %}
@@ -34,11 +35,7 @@
     {% endif %}
     <nav class="tm-admin-tabs" aria-label="Journaux">
         {% for key, label in tabs %}
-            {% if key in soon %}
-                <span class="tm-admin-tab is-disabled">{{ label }} <span class="tm-admin__soon">Bientôt</span></span>
-            {% else %}
-                <a class="tm-admin-tab{{ key == tab ? ' is-active' }}" href="{{ path('admin_logs', {onglet: key}) }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}</a>
-            {% endif %}
+            <a class="tm-admin-tab{{ key == tab ? ' is-active' }}" href="{{ path('admin_logs', {onglet: key}) }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}</a>
         {% endfor %}
     </nav>
 
@@ -97,6 +94,47 @@
             {% else %}Rapprochement du {{ rec.finished_at|date('d/m/Y H:i', 'Europe/Paris') }} : {{ rec.checked|number_format(0, ',', ' ') }} élément{{ rec.checked > 1 ? 's' }} vérifié{{ rec.checked > 1 ? 's' }}, {{ rec.issues }} écart{{ rec.issues > 1 ? 's' }}{{ rec.stripe_checked ? '' : ' (Stripe non interrogé)' }}{% if breakdown.openIssues > 0 %} · {{ breakdown.openIssues }} à traiter{% endif %}{% endif %}
             {% if breakdown.webhooksProcessedRate is not null %} · webhooks traités {{ (breakdown.webhooksProcessedRate * 100)|round }} %{% endif %}
         </p>
+
+    {% elseif tab == 'exports' %}
+        <div class="tm-bo15-grid">
+            <section class="tm-admin-panel" aria-labelledby="bo15-exports">
+                <h2 id="bo15-exports" class="tm-card-title">Exports CSV</h2>
+                <p class="tm-seo-help">Depuis une liste, l’export reprend ses filtres ; ici il porte sur toute la liste. Un export contenant des données personnelles est journalisé (qui, quand, filtres, nombre de lignes).</p>
+                <ul class="tm-bo15-exports">
+                    {% for e in exports %}
+                        <li><a href="{{ e.href }}"><twig:Icon name="download" size="sm" class="tm-icon--inherit" /><span>{{ e.label }}{% if e.personal %} <span class="tm-bo15-personal">(données personnelles · journalisé)</span>{% endif %}</span></a></li>
+                    {% else %}
+                        <li>Aucun export pour votre rôle.</li>
+                    {% endfor %}
+                </ul>
+            </section>
+            <section class="tm-admin-panel" aria-labelledby="bo15-scheduled">
+                <h2 id="bo15-scheduled" class="tm-card-title">Exports planifiés</h2>
+                <p class="tm-bo15-empty">Bientôt : exports produits automatiquement (artisans actifs chaque lundi, factures du mois le 1er) et disponibles ici.</p>
+            </section>
+        </div>
+        <section class="tm-admin-panel tm-bo15-card" aria-labelledby="bo15-recent">
+            <h2 id="bo15-recent" class="tm-card-title">Exports récents (journalisés)</h2>
+            {% if recent.rows is empty %}
+                <p class="tm-bo15-empty">Aucun export journalisé pour l’instant.</p>
+            {% else %}
+                <div class="tm-admin-table-wrap"><table class="tm-admin-table tm-bo15-table">
+                    <thead><tr><th scope="col">Date</th><th scope="col">Admin</th><th scope="col">Export</th><th scope="col">Filtres</th><th scope="col">Lignes</th><th scope="col">IP</th></tr></thead>
+                    <tbody>
+                        {% for r in recent.rows %}
+                            <tr>
+                                <td>{{ r.occurredAt|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+                                <td>{{ r.actorName ?? '—' }}</td>
+                                <th scope="row">{{ export_labels[r.subjectId] ?? r.subjectId }}</th>
+                                <td>{{ recent_filters[loop.index0] }}</td>
+                                <td>{{ r.context.rows ?? '—' }}</td>
+                                <td class="tm-bo15-ip">{{ r.maskedIp ?? '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+            {% endif %}
+        </section>
 
     {% elseif tab == 'webhooks' %}
         <section class="tm-admin-panel tm-bo15-card" aria-labelledby="bo15-hooks">
