@@ -23,6 +23,7 @@
 {% import _self as m %}
 {% block space_content %}
 <div class="tm-reviews">
+    <h1 class="tm-visually-hidden">Mes avis</h1>
     <nav class="tm-reviews__tabs" aria-label="Mes avis">
         <a href="{{ path('client_reviews') }}"{% if tab == 'a-donner' %} aria-current="page"{% endif %}>À donner ({{ view.toGive|filter(t => t.open)|length }})</a>
         <a href="{{ path('client_reviews', {onglet: 'publies'}) }}"{% if tab == 'publies' %} aria-current="page"{% endif %}>Publiés ({{ view.mine|length }})</a>

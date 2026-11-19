@@ -193,7 +193,7 @@
     .tm-rdv-track__steps .is-done { color: var(--tm-navy); }
     .tm-rdv-track__steps .is-done span { background: var(--tm-green); color: var(--color-text-inverse); }
     .tm-rdv-track__steps .is-current { color: var(--tm-navy); font-weight: var(--font-weight-semibold); }
-    .tm-rdv-track__steps .is-current span { background: var(--tm-orange); color: var(--color-text-inverse); }
+    .tm-rdv-track__steps .is-current span { background: var(--tm-orange); color: var(--tm-navy); }
     .tm-rdv-track__when { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 14px; color: var(--tm-navy); }
     @media (min-width: 900px) {
         .tm-rdv__card { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; align-items: center; }
