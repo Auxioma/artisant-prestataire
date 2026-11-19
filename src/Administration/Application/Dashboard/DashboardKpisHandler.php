@@ -41,16 +41,20 @@ final readonly class DashboardKpisHandler implements QueryHandler
         $previous = $this->collect($previousFrom, $previousTo);
         $featured = [];
         $others = [];
+        $finance = [];
         foreach (DashboardMetric::cases() as $metric) {
             $card = $this->card($metric, $values[$metric->value] ?? null, $metric->snapshotOnly() ? null : ($previous[$metric->value] ?? null));
             if ($metric->featured()) {
                 $featured[] = $card;
-            } else {
+            } elseif (!$metric->financeOnly()) {
                 $others[] = $card;
+            }
+            if ($metric->finance()) {
+                $finance[] = $card;
             }
         }
 
-        return new DashboardKpisView($from->format('Y-m'), $from, $to, $previousFrom, $previousTo, $featured, $others);
+        return new DashboardKpisView($from->format('Y-m'), $from, $to, $previousFrom, $previousTo, $featured, $others, $finance);
     }
 
     /** @return array<string, int|float|null> */

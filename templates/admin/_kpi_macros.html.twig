@@ -1,0 +1,35 @@
+{#- Cartes d'indicateurs du back-office (BO01.1, BO15.3) : valeur selon l'unité, écart avec N-1 et son sens. -#}
+{% macro month_label(ym, names) %}{{ names[ym|split('-')[1] - 1]|capitalize }} {{ ym|split('-')[0] }}{% endmacro %}
+{% macro value(card) %}
+    {%- set v = card.value -%}
+    {%- if v is null -%}—
+    {%- elseif card.unit == 'rate' -%}{% set p = (v * 100)|round(1) %}{{ p == p|round ? p|number_format(0, ',', ' ') : p|number_format(1, ',', ' ') }} %
+    {%- elseif card.unit == 'minutes' -%}{% set m = v|round %}{{ m >= 60 ? (m // 60) ~ ' h ' ~ '%02d'|format(m % 60) : m ~ ' min' }}
+    {%- elseif card.unit == 'cents' -%}{{ (v / 100)|number_format(0, ',', ' ') }} €
+    {%- elseif card.unit == 'rating' -%}{{ v|number_format(1, ',', ' ') }} / 5
+    {%- else -%}{{ v|number_format(0, ',', ' ') }}
+    {%- endif -%}
+{% endmacro %}
+{% macro delta(card) %}
+    {%- set d = card.delta -%}
+    {%- if card.deltaUnit == 'pts' or card.deltaUnit == '' -%}{% set shown = d|round(1) %}{% set text = shown == shown|round ? shown|abs|number_format(0, ',', ' ') : shown|abs|number_format(1, ',', ' ') %}
+    {%- else -%}{% set shown = d|round %}{% set text = shown|abs|number_format(0, ',', ' ') %}
+    {%- endif -%}
+    {{ shown > 0 ? '+' : (shown < 0 ? '−' : '') }}{{ text }}{{ card.deltaUnit ? ' ' ~ card.deltaUnit }}
+{% endmacro %}
+{% macro card(card) %}
+    {% import _self as m %}
+    <li class="tm-bo01-kpi">
+        <span class="tm-bo01-kpi__label">{{ card.label }}</span>
+        <strong class="tm-bo01-kpi__value">{{ m.value(card) }}</strong>
+        {% if card.metric.snapshotOnly() %}
+            <span class="tm-bo01-kpi__delta is-warn">À relancer</span>
+        {% elseif card.value is null and card.key == 'visitors' %}
+            <span class="tm-bo01-kpi__delta">Non mesuré (aucun outil d’audience)</span>
+        {% elseif card.delta is null %}
+            <span class="tm-bo01-kpi__delta">{{ card.previous is null ? 'Pas de référence N-1' : 'N-1 : ' ~ m.value({value: card.previous, unit: card.unit}) }}</span>
+        {% else %}
+            <span class="tm-bo01-kpi__delta"><span class="is-{{ card.tone }}">{{ m.delta(card) }}</span> vs N-1</span>
+        {% endif %}
+    </li>
+{% endmacro %}

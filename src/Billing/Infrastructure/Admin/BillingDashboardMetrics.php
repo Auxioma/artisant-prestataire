@@ -16,7 +16,10 @@ use Doctrine\DBAL\Connection;
  * - nouveaux abonnés : premier abonnement payé démarré sur la période ;
  * - churn : abonnements résiliés sur la période / abonnés actifs au début ;
  * - conversion gratuit → payant : artisans vérifiés avant la période, jamais abonnés jusque-là, abonnés pendant ;
- * - artisans à 0 crédit non abonnés : état actuel (aucun historique des soldes).
+ * - artisans à 0 crédit non abonnés : état actuel (aucun historique des soldes) ;
+ * - BO15.3 : ARR = MRR × 12 ; encaissé = montants payés des factures réglées sur la période (TTC) ; remboursements =
+ *   avoirs remboursés sur la période ; impayés = reste dû des factures émises sur la période et toujours ouvertes ou
+ *   échouées ; LTV = ARPU / churn de la période (null sans résiliation).
  */
 final readonly class BillingDashboardMetrics implements DashboardMetricSource
 {
@@ -48,6 +51,14 @@ final readonly class BillingDashboardMetrics implements DashboardMetricSource
             $period,
         ) ?: [];
         $eligible = DbalValue::int($conversion['eligible'] ?? 0);
+        $money = $this->connection->fetchAssociative(
+            "SELECT (SELECT coalesce(sum(amount_paid_cents), 0) FROM billing.invoice WHERE status = 'paid' AND paid_at >= :from AND paid_at < :to) AS collected,
+                    (SELECT coalesce(sum(refunded_cents), 0) FROM billing.credit_note WHERE created_at >= :from AND created_at < :to) AS refunds,
+                    (SELECT coalesce(sum(amount_ttc_cents - amount_paid_cents), 0) FROM billing.invoice WHERE status IN ('open', 'uncollectible') AND issued_at >= :from AND issued_at < :to) AS unpaid",
+            $period,
+        ) ?: [];
+        $churn = 0 === $activeAtStart ? null : $cancelled / $activeAtStart;
+        $arpu = 0 === $active ? null : $mrr / $active;
         $zeroCredit = DbalValue::int($this->connection->fetchOne(
             "SELECT count(*) FROM artisan.artisan_profile a
                LEFT JOIN billing.credit_balance b ON b.artisan_id = a.id
@@ -60,8 +71,13 @@ final readonly class BillingDashboardMetrics implements DashboardMetricSource
             'mrr_cents' => $mrr,
             'active_subscribers' => $active,
             'new_subscribers' => $newSubscribers,
-            'churn_rate' => 0 === $activeAtStart ? null : $cancelled / $activeAtStart,
-            'arpu_cents' => 0 === $active ? null : $mrr / $active,
+            'churn_rate' => $churn,
+            'arpu_cents' => $arpu,
+            'arr_cents' => $mrr * self::MONTHS_PER_YEAR,
+            'collected_cents' => DbalValue::int($money['collected'] ?? 0),
+            'refunds_cents' => DbalValue::int($money['refunds'] ?? 0),
+            'unpaid_cents' => DbalValue::int($money['unpaid'] ?? 0),
+            'ltv_cents' => null === $arpu || null === $churn || 0 === $cancelled ? null : $arpu / $churn,
             'free_to_paid_rate' => 0 === $eligible ? null : DbalValue::int($conversion['converted'] ?? 0) / $eligible,
             'zero_credit_unsubscribed' => $zeroCredit,
         ];

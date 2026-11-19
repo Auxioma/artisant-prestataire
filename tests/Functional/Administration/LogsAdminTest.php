@@ -9,7 +9,7 @@ use App\Tests\Support\AdminSession;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-/** T-806a — BO15.1 : journal d'audit filtré, IP masquée, connexions, webhooks Stripe, export CSV journalisé, droits. */
+/** T-806a / T-806b — BO15.1 et BO15.3 : journal d'audit filtré, IP masquée, connexions, webhooks Stripe, export CSV journalisé, droits. */
 final class LogsAdminTest extends WebTestCase
 {
     use AdminSession;
@@ -24,14 +24,14 @@ final class LogsAdminTest extends WebTestCase
         \assert($connection instanceof Connection);
         $this->adminSession($client, self::FINANCE, 'finance');
 
-        $page = $client->request('GET', '/admin/logs');
+        $page = $client->request('GET', '/admin/logs?onglet=audit');
         self::assertResponseIsSuccessful();
         self::assertSame('Journal d’audit', $page->filter('.tm-admin-tab.is-active')->text());
         $table = $page->filter('.tm-bo15-table')->text();
         self::assertStringContainsString('Connexion au back-office', $table, 'sa propre connexion est journalisée');
         self::assertStringContainsString('•••', $table, 'IP masquée');
         self::assertStringNotContainsString('127.0.0.1', $table);
-        self::assertStringContainsString('Bientôt', $page->filter('.tm-admin-tabs')->text(), 'finance et exports à venir');
+        self::assertStringContainsString('Bientôt', $page->filter('.tm-admin-tabs')->text(), 'exports à venir');
 
         $page = $client->request('GET', '/admin/logs?module=billing&periode=7');
         self::assertCount(0, $page->filter('.tm-bo15-table'), 'aucune action billing de cet admin');
@@ -56,6 +56,41 @@ final class LogsAdminTest extends WebTestCase
         self::assertSame(self::FINANCE, $exported['actor_id']);
         self::assertSame('audit_log', $exported['subject_type']);
         self::assertEquals(['filters' => 'periode=1', 'rows' => substr_count($csv, "\n") - 1], DbalValue::json($exported['context']));
+    }
+
+    public function testFinanceTabShowsMonthlyFiguresPlansCohortsAndReconciliation(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+        $connection = self::getContainer()->get(Connection::class);
+        \assert($connection instanceof Connection);
+        $plan = '0190f5e4-0000-7000-8000-0000000b8061';
+        $connection->executeStatement("INSERT INTO billing.plan (id, slug, name, visibility, status, position, created_at, updated_at) VALUES (:p, 'formule-bo15-fictive', 'Formule BO15 Fictive', 'public', 'published', 9, now(), now())", ['p' => $plan]);
+        $connection->executeStatement("INSERT INTO billing.plan_price (id, plan_id, interval, amount_cents, currency, active, created_at) VALUES ('0190f5e4-0000-7000-8000-0000000b8062', :p, 'month', 2900, 'EUR', true, now())", ['p' => $plan]);
+        $connection->executeStatement("INSERT INTO billing.credit_account (artisan_id, user_id, created_at) VALUES ('0190f5e4-0000-7000-8000-0000000c8061', '0190f5e4-0000-7000-8000-0000000d8061', now())");
+        $connection->executeStatement("INSERT INTO billing.subscription (id, artisan_id, plan_id, plan_price_id, interval, status, stripe_subscription_id, current_period_start, current_period_end, created_at, updated_at) VALUES ('0190f5e4-0000-7000-8000-0000000e8061', '0190f5e4-0000-7000-8000-0000000c8061', :p, '0190f5e4-0000-7000-8000-0000000b8062', 'month', 'active', 'sub_bo15', now() - interval '3 days', now() + interval '27 days', now(), now())", ['p' => $plan]);
+        $connection->executeStatement("INSERT INTO billing.invoice (id, artisan_id, stripe_invoice_id, number, status, currency, amount_ht_cents, vat_cents, amount_ttc_cents, amount_paid_cents, issued_at, paid_at, updated_at) VALUES ('0190f5e4-0000-7000-8000-00000001d861', '0190f5e4-0000-7000-8000-0000000c8061', 'in_bo15', 'TM-BO15-1', 'paid', 'EUR', 2900, 580, 3480, 3480, now() - interval '3 days', now() - interval '3 days', now())");
+        $connection->executeStatement("INSERT INTO billing.subscription_period (id, subscription_id, stripe_invoice_id, period_start, period_end, credits, amount_paid_cents, created_at) VALUES ('0190f5e4-0000-7000-8000-00000001e861', '0190f5e4-0000-7000-8000-0000000e8061', 'in_bo15', now() - interval '3 days', now() + interval '27 days', 20, 3480, now())");
+        $connection->executeStatement("INSERT INTO billing.reconciliation_run (id, started_at, finished_at, stripe_checked, checked, issues) VALUES ('0190f5e4-0000-7000-8000-00000001f861', now() - interval '1 hour', now() - interval '59 minutes', true, 1204, 0)");
+        $this->adminSession($client, self::FINANCE, 'finance');
+
+        $client->request('GET', '/admin/finance');
+        self::assertResponseRedirects('/admin/logs?onglet=finance', 301);
+        $page = $client->request('GET', '/admin/logs');
+        self::assertResponseIsSuccessful();
+        self::assertSame('Finance', $page->filter('.tm-admin-tab.is-active')->text(), 'onglet par défaut');
+        self::assertCount(6, $page->filter('.tm-bo15-kpis .tm-bo01-kpi'));
+        self::assertStringContainsString('29 €', $page->filter('.tm-bo15-kpis')->text(), 'MRR HT');
+        self::assertStringContainsString('348 €', $page->filter('.tm-bo15-kpis')->text(), 'ARR');
+        self::assertStringContainsString('Formule BO15 Fictive', $page->filter('.tm-bo15-plans')->text());
+        self::assertCount(4, $page->filter('.tm-bo15-cohorts tbody tr'));
+        self::assertStringContainsString('1 204 éléments vérifiés, 0 écart', $page->filter('.tm-bo15-banner')->text());
+
+        $client->request('GET', '/admin/logs/finance.csv');
+        self::assertResponseIsSuccessful();
+        $csv = (string) $client->getInternalResponse()->getContent();
+        self::assertStringStartsWith("rubrique;libelle;valeur;valeur_n_1;ecart;unite_ecart\n", $csv);
+        self::assertStringContainsString('mrr_par_forfait;"Formule BO15 Fictive";2900', $csv);
     }
 
     public function testModeratorCannotOpenTheJournal(): void
