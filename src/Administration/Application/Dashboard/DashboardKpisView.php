@@ -9,6 +9,7 @@ final readonly class DashboardKpisView
     /**
      * @param list<KpiCard> $featured cartes de la maquette, dans l'ordre
      * @param list<KpiCard> $others   autres indicateurs du CDC
+     * @param list<KpiCard> $finance  cartes de l'onglet Finance (BO15.3)
      */
     public function __construct(
         public string $month,
@@ -18,6 +19,7 @@ final readonly class DashboardKpisView
         public \DateTimeImmutable $previousTo,
         public array $featured,
         public array $others,
+        public array $finance = [],
     ) {
     }
 

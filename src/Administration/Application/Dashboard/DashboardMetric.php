@@ -27,6 +27,16 @@ enum DashboardMetric: string
     case ReviewAverage = 'review_average';
     case NewSubscribers = 'new_subscribers';
     case Arpu = 'arpu_cents';
+    case Arr = 'arr_cents';
+    case Collected = 'collected_cents';
+    case Refunds = 'refunds_cents';
+    case Unpaid = 'unpaid_cents';
+    case Ltv = 'ltv_cents';
+
+    /** BO15.3 — cartes de l'onglet Finance (Figma 186:6608), dans l'ordre ; seules ces cartes y figurent. */
+    private const array FINANCE = [self::Mrr, self::Arr, self::Collected, self::Refunds, self::Unpaid, self::Ltv];
+    /** Indicateurs propres à la finance : absents du tableau de bord. */
+    private const array FINANCE_ONLY = [self::Arr, self::Collected, self::Refunds, self::Unpaid, self::Ltv];
 
     private const array FEATURED = [
         self::Visitors, self::RequestsSubmitted, self::RequestsWithQuoteRate, self::FirstQuoteDelay, self::AcceptanceRate,
@@ -53,6 +63,11 @@ enum DashboardMetric: string
             self::ReviewAverage => 'Note moyenne des avis',
             self::NewSubscribers => 'Nouveaux abonnés',
             self::Arpu => 'ARPU (revenu moyen par abonné)',
+            self::Arr => 'ARR',
+            self::Collected => 'Encaissé (mois)',
+            self::Refunds => 'Remboursements',
+            self::Unpaid => 'Impayés',
+            self::Ltv => 'LTV moyenne',
         };
     }
 
@@ -61,7 +76,7 @@ enum DashboardMetric: string
         return match ($this) {
             self::RequestsWithQuoteRate, self::AcceptanceRate, self::FreeToPaidRate, self::ChurnRate => MetricUnit::Rate,
             self::FirstQuoteDelay => MetricUnit::Minutes,
-            self::Mrr, self::Arpu => MetricUnit::Cents,
+            self::Mrr, self::Arpu, self::Arr, self::Collected, self::Refunds, self::Unpaid, self::Ltv => MetricUnit::Cents,
             self::ReviewAverage => MetricUnit::Rating,
             default => MetricUnit::Count,
         };
@@ -72,10 +87,22 @@ enum DashboardMetric: string
         return \in_array($this, self::FEATURED, true);
     }
 
+    /** Carte de l'onglet Finance (BO15.3). */
+    public function finance(): bool
+    {
+        return \in_array($this, self::FINANCE, true);
+    }
+
+    /** Affiché seulement dans l'onglet Finance. */
+    public function financeOnly(): bool
+    {
+        return \in_array($this, self::FINANCE_ONLY, true);
+    }
+
     /** Une baisse est une bonne nouvelle (délai, churn). */
     public function lowerIsBetter(): bool
     {
-        return \in_array($this, [self::FirstQuoteDelay, self::ChurnRate], true);
+        return \in_array($this, [self::FirstQuoteDelay, self::ChurnRate, self::Refunds, self::Unpaid], true);
     }
 
     /** État actuel sans historique : pas de comparaison N-1, carte « À relancer ». */

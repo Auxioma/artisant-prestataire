@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Administration\UI\Http;
 
+use App\Administration\Application\Dashboard\DashboardKpis;
+use App\Administration\Application\Dashboard\DashboardKpisView;
+use App\Administration\Application\Dashboard\DashboardMetric;
 use App\Administration\Application\Logs\AuditLogEntry;
 use App\Administration\Application\Logs\AuditLogFilter;
 use App\Administration\Application\Logs\AuditLogPage;
 use App\Administration\Application\Logs\AuditLogQuery;
+use App\Shared\Application\Admin\FinanceBreakdown;
+use App\Shared\Application\Admin\FinanceBreakdownView;
 use App\Shared\Application\Admin\StripeWebhookLog;
 use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Application\Bus\QueryBus;
@@ -23,15 +28,17 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * BO15.1 « Finance, journaux et exports » (/admin/logs, Figma 186:6608) — journal d'audit des actions admin et
- * connexions (filtres, IP masquée, export CSV lui-même journalisé), webhooks Stripe reçus. Écarts : P-142.
+ * BO15 « Finance, journaux et exports » (/admin/logs, Figma 186:6608) — finance du mois comparée à N-1, MRR par
+ * forfait, cohortes, rapprochement (BO15.3) ; journal d'audit des actions admin et connexions (filtres, IP masquée,
+ * export CSV lui-même journalisé), webhooks Stripe reçus (BO15.1). Écarts : P-142, P-143.
  */
 #[Route('/admin/logs')]
 final class AdminLogsController extends AbstractController
 {
     public const array TABS = ['finance' => 'Finance', 'audit' => 'Journal d’audit', 'connexions' => 'Connexions', 'webhooks' => 'Webhooks Stripe', 'exports' => 'Exports'];
-    /** Onglets à venir (T-806b finance, T-806c exports). */
-    public const array SOON = ['finance', 'exports'];
+    /** Onglet à venir (T-806c exports). */
+    public const array SOON = ['exports'];
+    private const int MONTHS_OFFERED = 24;
     private const int PER_PAGE = 25;
     private const int EXPORT_MAX = 50000;
     private const string UUID = '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/';
@@ -53,12 +60,19 @@ final class AdminLogsController extends AbstractController
 
     #[Route('', name: 'admin_logs', methods: ['GET'])]
     #[IsGranted('admin.logs.view')]
-    public function index(Request $request): Response
+    public function index(Request $request, Clock $clock): Response
     {
-        $tab = $request->query->getString('onglet', 'audit');
-        $tab = \array_key_exists($tab, self::TABS) && !\in_array($tab, self::SOON, true) ? $tab : 'audit';
+        $tab = $request->query->getString('onglet', 'finance');
+        $tab = \array_key_exists($tab, self::TABS) && !\in_array($tab, self::SOON, true) ? $tab : 'finance';
         $page = max(1, $request->query->getInt('page', 1));
         $data = ['tab' => $tab, 'tabs' => self::TABS, 'soon' => self::SOON, 'periods' => AuditLogFilter::PERIODS, 'labels' => self::LABELS];
+
+        if ('finance' === $tab) {
+            [$kpis, $breakdown] = $this->finances($request, $clock);
+            $conversion = array_values(array_filter($kpis->featured, static fn ($c): bool => DashboardMetric::FreeToPaidRate === $c->metric))[0] ?? null;
+
+            return $this->render('admin/logs/index.html.twig', $data + ['kpis' => $kpis, 'breakdown' => $breakdown, 'conversion' => $conversion, 'months' => $this->months($clock)]);
+        }
 
         if ('webhooks' === $tab) {
             $status = $request->query->getString('statut');
@@ -109,6 +123,53 @@ final class AdminLogsController extends AbstractController
         $response->headers->set('Content-Disposition', 'attachment; filename="journal-'.$tab.'-'.$clock->now()->format('Y-m-d').'.csv"');
 
         return $response;
+    }
+
+    #[Route('/finance.csv', name: 'admin_logs_finance_export', methods: ['GET'])]
+    #[IsGranted('admin.logs.export')]
+    public function financeExport(Request $request, Clock $clock): StreamedResponse
+    {
+        [$kpis, $breakdown] = $this->finances($request, $clock);
+        $response = new StreamedResponse(static function () use ($kpis, $breakdown): void {
+            $out = fopen('php://output', 'w');
+            \assert(\is_resource($out));
+            fputcsv($out, ['rubrique', 'libelle', 'valeur', 'valeur_n_1', 'ecart', 'unite_ecart'], ';', '"', '');
+            foreach ($kpis->finance as $card) {
+                fputcsv($out, ['indicateur', $card->label(), (string) ($card->value ?? ''), (string) ($card->previous ?? ''), null === $card->delta ? '' : (string) round($card->delta, 2), $card->deltaUnit], ';', '"', '');
+            }
+            foreach ($breakdown->plans as $plan) {
+                fputcsv($out, ['mrr_par_forfait', $plan['label'], (string) $plan['mrr_cents'], '', '', ''], ';', '"', '');
+            }
+            fclose($out);
+        });
+        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+        $response->headers->set('Content-Disposition', 'attachment; filename="finance-'.$kpis->month.'.csv"');
+
+        return $response;
+    }
+
+    /** @return array{0: DashboardKpisView, 1: FinanceBreakdownView} */
+    private function finances(Request $request, Clock $clock): array
+    {
+        $month = $request->query->getString('mois');
+        $kpis = $this->queries->ask(new DashboardKpis('' === $month ? null : $month, $clock->now()));
+        \assert($kpis instanceof DashboardKpisView);
+        $breakdown = $this->queries->ask(new FinanceBreakdown($kpis->from, $kpis->to, $clock->now()));
+        \assert($breakdown instanceof FinanceBreakdownView);
+
+        return [$kpis, $breakdown];
+    }
+
+    /** @return list<string> */
+    private function months(Clock $clock): array
+    {
+        $month = $clock->now()->setTimezone(new \DateTimeZone('Europe/Paris'))->modify('first day of this month');
+        $months = [];
+        for ($i = 0; $i < self::MONTHS_OFFERED; ++$i) {
+            $months[] = $month->modify(\sprintf('-%d months', $i))->format('Y-m');
+        }
+
+        return $months;
     }
 
     private function filter(Request $request, string $tab): AuditLogFilter
