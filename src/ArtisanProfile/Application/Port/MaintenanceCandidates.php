@@ -15,6 +15,14 @@ interface MaintenanceCandidates
     public function documentsExpiringBy(\DateTimeImmutable $horizon): array;
 
     /**
+     * CDC §11 — pièces encore conservées d'artisans dont la relation a pris fin avant `$before` : compte effacé
+     * (anonymisé) ou dossier refusé.
+     *
+     * @return list<string> identifiants de pièce
+     */
+    public function documentsOfRelationsEndedBefore(\DateTimeImmutable $before): array;
+
+    /**
      * Profils vérifiés, non masqués, déclarant une assurance échue avant `$before`.
      *
      * @return list<string>
