@@ -1,0 +1,90 @@
+{#-
+    BO15 « Finance, journaux et exports » (Figma 186:6608) : onglets ; BO15.1 journal d'audit des actions admin et
+    connexions (recherche, module, admin, période ; date, admin, action, objet, IP masquée ; export CSV journalisé),
+    webhooks Stripe (type, statut, tentatives, erreur). Finance et exports : T-806b / T-806c. Écarts : P-142.
+-#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'logs' %}
+{% block title %}{{ tabs[tab] }} — Journaux{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Finance, journaux et exports', crumbs: ['Système'], subtitle: 'Journal d’audit conservé 1 an · adresses IP masquées'}) }}
+    <nav class="tm-admin-tabs" aria-label="Journaux">
+        {% for key, label in tabs %}
+            {% if key in soon %}
+                <span class="tm-admin-tab is-disabled">{{ label }} <span class="tm-admin__soon">Bientôt</span></span>
+            {% else %}
+                <a class="tm-admin-tab{{ key == tab ? ' is-active' }}" href="{{ path('admin_logs', {onglet: key}) }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}</a>
+            {% endif %}
+        {% endfor %}
+    </nav>
+
+    {% if tab == 'webhooks' %}
+        <section class="tm-admin-panel tm-bo15-card" aria-labelledby="bo15-hooks">
+            <h2 id="bo15-hooks" class="tm-card-title">Webhooks Stripe reçus</h2>
+            <form method="get" action="{{ path('admin_logs') }}" class="tm-bo11-filters" role="search">
+                <input type="hidden" name="onglet" value="webhooks">
+                <label class="tm-visually-hidden" for="bo15_statut">Statut</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="bo15_statut" name="statut"><option value="">Statut</option>{% for v, l in {received: 'Reçu', processed: 'Traité', ignored: 'Ignoré', failed: 'En échec'} %}<option value="{{ v }}"{{ status == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select></div>
+                <twig:Button type="submit" variant="secondary">Filtrer</twig:Button>
+            </form>
+            {% if webhooks.rows is empty %}
+                <p class="tm-bo15-empty">Aucun événement Stripe reçu{{ status ? ' avec ce statut' }}.</p>
+            {% else %}
+                <div class="tm-admin-table-wrap"><table class="tm-admin-table">
+                    <thead><tr><th scope="col">Reçu le</th><th scope="col">Type</th><th scope="col">Mode</th><th scope="col">Statut</th><th scope="col">Tentatives</th><th scope="col">Erreur</th></tr></thead>
+                    <tbody>
+                        {% for e in webhooks.rows %}
+                            <tr>
+                                <td>{{ e.received_at|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+                                <th scope="row"><span class="tm-bo15-code">{{ e.type }}</span><span class="tm-caption tm-bo15-sub">{{ e.event_id }}</span></th>
+                                <td>{{ e.livemode ? 'Production' : 'Test' }}</td>
+                                <td><span class="tm-bo11-state is-{{ e.status == 'processed' ? 'delivered' : (e.status == 'failed' ? 'failed' : 'queued') }}">{{ {received: 'Reçu', processed: 'Traité', ignored: 'Ignoré', failed: 'En échec'}[e.status] ?? e.status }}</span></td>
+                                <td>{{ e.attempts }}</td>
+                                <td>{{ e.last_error ?? '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+                {{ include('admin/_pagination.html.twig', {page: {page: page, pages: (webhooks.total / per_page)|round(0, 'ceil'), perPage: per_page, total: webhooks.total}, route: 'admin_logs', params: {onglet: 'webhooks', statut: status}}) }}
+            {% endif %}
+        </section>
+    {% else %}
+        {% set params = filter.toArray()|merge({onglet: tab}) %}
+        <section class="tm-admin-panel tm-bo15-card" aria-labelledby="bo15-log">
+            <h2 id="bo15-log" class="tm-card-title">{{ tab == 'connexions' ? 'Connexions (clients, artisans, administrateurs · conservation 1 an)' : 'Journal d’audit (actions admin · conservation 1 an)' }}</h2>
+            <form method="get" action="{{ path('admin_logs') }}" class="tm-bo11-filters" role="search">
+                <input type="hidden" name="onglet" value="{{ tab }}">
+                <div class="tm-field__control tm-bo11-search"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><label class="tm-visually-hidden" for="bo15_q">Admin, action, objet</label><input class="tm-field__input" type="search" id="bo15_q" name="q" value="{{ filter.search }}" placeholder="Admin, action, objet"></div>
+                <label class="tm-visually-hidden" for="bo15_module">Module</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="bo15_module" name="module"><option value="">Module</option>{% for mo in log.modules %}<option value="{{ mo }}"{{ filter.module == mo ? ' selected' }}>{{ mo }}</option>{% endfor %}</select></div>
+                {% if tab == 'audit' %}
+                    <label class="tm-visually-hidden" for="bo15_admin">Admin</label>
+                    <div class="tm-field__control"><select class="tm-field__input" id="bo15_admin" name="admin"><option value="">Admin</option>{% for id, name in log.admins %}<option value="{{ id }}"{{ filter.adminId == id ? ' selected' }}>{{ name }}</option>{% endfor %}</select></div>
+                {% endif %}
+                <label class="tm-visually-hidden" for="bo15_periode">Période</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="bo15_periode" name="periode"><option value="">Période</option>{% for d, l in periods %}<option value="{{ d }}"{{ filter.days == d ? ' selected' }}>{{ l }}</option>{% endfor %}</select></div>
+                <twig:Button type="submit" variant="secondary">Filtrer</twig:Button>
+                {% if is_granted('admin.logs.export') %}<twig:Button href="{{ path('admin_logs_export', params) }}" variant="secondary" icon="download" iconPosition="start">Exporter CSV</twig:Button>{% endif %}
+            </form>
+            {% if log.rows is empty %}
+                <p class="tm-bo15-empty">Aucune entrée ne correspond.</p>
+            {% else %}
+                <div class="tm-admin-table-wrap"><table class="tm-admin-table tm-bo15-table">
+                    <thead><tr><th scope="col">Date</th><th scope="col">{{ tab == 'connexions' ? 'Compte' : 'Admin' }}</th><th scope="col">Action</th><th scope="col">Objet</th><th scope="col">IP</th></tr></thead>
+                    <tbody>
+                        {% for r in log.rows %}
+                            <tr>
+                                <td>{{ r.occurredAt|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+                                <td>{{ r.actorName ?? '—' }}{% if r.impersonated %} <span class="tm-bo11-state">impersonation</span>{% endif %}</td>
+                                <th scope="row">{{ labels[r.action] ?? r.action }}{% if labels[r.action] is defined %}<span class="tm-caption tm-bo15-sub">{{ r.action }}</span>{% endif %}</th>
+                                <td>{% if r.subjectType %}{% set text = r.subjectType ~ (r.subjectId ? ' #' ~ r.subjectId|slice(0, 8) : '') %}{% if links[loop.index0] %}<a href="{{ links[loop.index0] }}">{{ text }}</a>{% else %}{{ text }}{% endif %}{% else %}—{% endif %}</td>
+                                <td class="tm-bo15-ip">{{ r.maskedIp ?? '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+                {{ include('admin/_pagination.html.twig', {page: {page: log.page, pages: log.pages(), perPage: log.perPage, total: log.total}, route: 'admin_logs', params: params}) }}
+            {% endif %}
+        </section>
+    {% endif %}
+{% endblock %}
