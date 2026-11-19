@@ -7,7 +7,7 @@ namespace App\Tests\Functional\Administration;
 use App\Tests\Support\AdminSession;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-/** T-805a — BO01 : indicateurs du mois (requêtes réelles de chaque module), choix du mois, export CSV réservé. */
+/** T-805a / T-805b — BO01 : indicateurs du mois, export CSV réservé, files d'attente selon le rôle, évolution quotidienne. */
 final class DashboardAdminTest extends WebTestCase
 {
     use AdminSession;
@@ -26,6 +26,17 @@ final class DashboardAdminTest extends WebTestCase
         self::assertStringContainsString('Note moyenne des avis', $page->filter('.tm-bo01-more')->text());
         self::assertSame('2026-10', $page->filter('#bo01_mois option[selected]')->attr('value'));
 
+        // BO01.2 : les sept files de la maquette, clic → liste filtrée.
+        self::assertCount(7, $page->filter('.tm-bo01-queue'));
+        self::assertSame('/admin/artisans?statut=documents', $page->filter('.tm-bo01-queue--documents-pending a')->attr('href'));
+        self::assertSame('/admin/moderation/signalements', $page->filter('.tm-bo01-queue--reports-open a')->attr('href'));
+        self::assertStringContainsString('Bientôt', $page->filter('.tm-bo01-queue--support-tickets')->text());
+        // BO01.3 : une paire de barres par jour d'octobre.
+        self::assertCount(62, $page->filter('.tm-bo01-chart rect'));
+        self::assertCount(31, $page->filter('.tm-bo01-data tbody tr'));
+        $client->request('GET', '/admin/artisans?statut=documents');
+        self::assertResponseIsSuccessful();
+
         $client->request('GET', '/admin/tableau-de-bord.csv?mois=2026-10');
         self::assertResponseIsSuccessful();
         $csv = (string) $client->getInternalResponse()->getContent();
@@ -43,6 +54,8 @@ final class DashboardAdminTest extends WebTestCase
         $page = $client->request('GET', '/admin');
         self::assertResponseIsSuccessful();
         self::assertCount(0, $page->filter('a[href*="tableau-de-bord.csv"]'));
+        self::assertCount(0, $page->filter('.tm-bo01-queue--payments-failed'), 'files limitées aux droits du rôle');
+        self::assertCount(6, $page->filter('.tm-bo01-queue'));
         $client->request('GET', '/admin/tableau-de-bord.csv');
         self::assertResponseStatusCodeSame(403);
     }
