@@ -12,12 +12,14 @@ use App\Identity\Application\Admin\SuspendUser;
 use App\Identity\Application\EmailVerification\ResendEmailVerification;
 use App\Identity\Application\PasswordReset\RequestPasswordReset;
 use App\Identity\Domain\User\IdentityRuleViolation;
+use App\Shared\Application\Admin\AdminExportJournal;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Security\CurrentAdministrator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -31,6 +33,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class ClientsController extends AbstractController
 {
     private const int PER_PAGE = 25;
+    private const int EXPORT_BATCH = 100;
+    private const int EXPORT_MAX = 50000;
 
     public function __construct(private readonly CommandBus $commands, private readonly QueryBus $queries, private readonly CurrentAdministrator $admin)
     {
@@ -55,6 +59,39 @@ final class ClientsController extends AbstractController
             'filters' => $filters,
             'record' => \is_array($record) ? $record : null,
         ], new Response(status: '' !== $selected && !\is_array($record) ? Response::HTTP_NOT_FOUND : Response::HTTP_OK));
+    }
+
+    /** BO15.2 — export CSV de la liste filtrée : données personnelles, donc journalisé (admin.export). */
+    #[Route('/export.csv', name: 'admin_clients_export', methods: ['GET'])]
+    #[IsGranted('admin.clients.export')]
+    public function export(Request $request, AdminExportJournal $journal): StreamedResponse
+    {
+        $filters = array_filter(['q' => mb_substr(trim($request->query->getString('q')), 0, 100), 'statut' => $request->query->getString('statut'), 'type' => $request->query->getString('type')], static fn (string $v): bool => '' !== $v);
+        $rows = [];
+        for ($page = 1; \count($rows) < self::EXPORT_MAX; ++$page) {
+            $result = $this->queries->ask(new ClientList($filters['q'] ?? '', ($filters['statut'] ?? '') ?: null, ($filters['type'] ?? '') ?: null, $page, self::EXPORT_BATCH));
+            \assert($result instanceof ClientListPage);
+            $rows = [...$rows, ...$result->items];
+            if ($page >= $result->pages()) {
+                break;
+            }
+        }
+        $journal->record('clients', $filters, \count($rows), $request->getClientIp());
+        $response = new StreamedResponse(static function () use ($rows): void {
+            $out = fopen('php://output', 'w');
+            \assert(\is_resource($out));
+            fputcsv($out, ['nom', 'email', 'telephone', 'type', 'statut', 'email_verifie', 'inscrit_le', 'derniere_connexion'], ';', '"', '');
+            $zone = new \DateTimeZone('Europe/Paris');
+            foreach ($rows as $r) {
+                fputcsv($out, [$r['name'], $r['email'], $r['phone'] ?? '', $r['type'], $r['status'], $r['verified'] ? 'oui' : 'non', $r['created_at']->setTimezone($zone)->format('Y-m-d H:i'), $r['last_login_at']?->setTimezone($zone)->format('Y-m-d H:i') ?? ''], ';', '"', '');
+            }
+            fclose($out);
+        });
+        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+        $response->headers->set('Content-Disposition', 'attachment; filename="clients.csv"');
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
     }
 
     #[Route('/{id}/action', name: 'admin_clients_action', requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['POST'])]

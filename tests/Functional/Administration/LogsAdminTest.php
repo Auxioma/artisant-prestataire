@@ -9,7 +9,7 @@ use App\Tests\Support\AdminSession;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-/** T-806a / T-806b — BO15.1 et BO15.3 : journal d'audit filtré, IP masquée, connexions, webhooks Stripe, export CSV journalisé, droits. */
+/** T-806a / T-806b / T-806c — BO15.1, BO15.2 et BO15.3 : journal d'audit filtré, IP masquée, connexions, webhooks Stripe, export CSV journalisé, droits. */
 final class LogsAdminTest extends WebTestCase
 {
     use AdminSession;
@@ -31,7 +31,6 @@ final class LogsAdminTest extends WebTestCase
         self::assertStringContainsString('Connexion au back-office', $table, 'sa propre connexion est journalisée');
         self::assertStringContainsString('•••', $table, 'IP masquée');
         self::assertStringNotContainsString('127.0.0.1', $table);
-        self::assertStringContainsString('Bientôt', $page->filter('.tm-admin-tabs')->text(), 'exports à venir');
 
         $page = $client->request('GET', '/admin/logs?module=billing&periode=7');
         self::assertCount(0, $page->filter('.tm-bo15-table'), 'aucune action billing de cet admin');
@@ -51,10 +50,10 @@ final class LogsAdminTest extends WebTestCase
         $csv = (string) $client->getInternalResponse()->getContent();
         self::assertStringStartsWith("date;auteur;type_auteur;action;objet;id_objet;ip_masquee;en_impersonation\n", $csv);
         self::assertStringContainsString(';admin.login;', $csv);
-        $exported = $connection->fetchAssociative("SELECT actor_id, subject_type, context FROM admin.audit_log WHERE action = 'admin.export' ORDER BY seq DESC LIMIT 1");
+        $exported = $connection->fetchAssociative("SELECT actor_id, subject_type, subject_id, context FROM admin.audit_log WHERE action = 'admin.export' ORDER BY seq DESC LIMIT 1");
         self::assertIsArray($exported, 'l’export est journalisé');
         self::assertSame(self::FINANCE, $exported['actor_id']);
-        self::assertSame('audit_log', $exported['subject_type']);
+        self::assertSame(['export', 'journal_audit'], [$exported['subject_type'], $exported['subject_id']]);
         self::assertEquals(['filters' => 'periode=1', 'rows' => substr_count($csv, "\n") - 1], DbalValue::json($exported['context']));
     }
 
@@ -91,6 +90,47 @@ final class LogsAdminTest extends WebTestCase
         $csv = (string) $client->getInternalResponse()->getContent();
         self::assertStringStartsWith("rubrique;libelle;valeur;valeur_n_1;ecart;unite_ecart\n", $csv);
         self::assertStringContainsString('mrr_par_forfait;"Formule BO15 Fictive";2900', $csv);
+    }
+
+    public function testPersonalDataExportsAreJournaledAndListed(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+        $connection = self::getContainer()->get(Connection::class);
+        \assert($connection instanceof Connection);
+        $this->adminSession($client, '0190f5e4-0000-7000-8000-0000000a8063', 'super_admin');
+
+        $page = $client->request('GET', '/admin/logs?onglet=exports');
+        self::assertResponseIsSuccessful();
+        self::assertCount(10, $page->filter('.tm-bo15-exports li'), 'super-admin : tous les exports');
+        self::assertStringContainsString('Clients (données personnelles · journalisé)', $page->filter('.tm-bo15-exports')->text());
+        self::assertStringContainsString('Aucun export journalisé', $page->filter('#bo15-recent')->ancestors()->first()->text());
+
+        $client->request('GET', '/admin/clients/export.csv?statut=active');
+        self::assertResponseIsSuccessful();
+        self::assertStringStartsWith("nom;email;telephone;type;statut;email_verifie;inscrit_le;derniere_connexion\n", (string) $client->getInternalResponse()->getContent());
+        $client->request('GET', '/admin/artisans/export.csv');
+        self::assertStringStartsWith("nom;siret;metiers;departement;statut;masque;completude;credits;inscrit_le\n", (string) $client->getInternalResponse()->getContent());
+        $client->request('GET', '/admin/communications/journal.csv');
+        self::assertResponseIsSuccessful();
+        self::assertSame(['artisans', 'clients', 'journal_envois'], array_map(DbalValue::string(...), $connection->fetchFirstColumn("SELECT subject_id FROM admin.audit_log WHERE action = 'admin.export' ORDER BY subject_id")));
+
+        $page = $client->request('GET', '/admin/logs?onglet=exports');
+        $recent = $page->filter('#bo15-recent')->ancestors()->first()->text();
+        self::assertStringContainsString('Clients', $recent);
+        self::assertStringContainsString('statut : active', $recent, 'filtres journalisés');
+        self::assertStringContainsString('Journal d’envoi des e-mails', $recent);
+    }
+
+    public function testSupportCannotExportClients(): void
+    {
+        $client = self::createClient();
+        $client->disableReboot();
+        $this->adminSession($client, '0190f5e4-0000-7000-8000-0000000a8064', 'support');
+        $page = $client->request('GET', '/admin/clients');
+        self::assertCount(0, $page->filter('a[href*="clients/export.csv"]'));
+        $client->request('GET', '/admin/clients/export.csv');
+        self::assertResponseStatusCodeSame(403);
     }
 
     public function testModeratorCannotOpenTheJournal(): void

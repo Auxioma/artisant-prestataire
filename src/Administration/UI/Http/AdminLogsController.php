@@ -11,14 +11,11 @@ use App\Administration\Application\Logs\AuditLogEntry;
 use App\Administration\Application\Logs\AuditLogFilter;
 use App\Administration\Application\Logs\AuditLogPage;
 use App\Administration\Application\Logs\AuditLogQuery;
+use App\Shared\Application\Admin\AdminExportJournal;
 use App\Shared\Application\Admin\FinanceBreakdown;
 use App\Shared\Application\Admin\FinanceBreakdownView;
 use App\Shared\Application\Admin\StripeWebhookLog;
-use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Application\Bus\QueryBus;
-use App\Shared\Application\Security\CurrentAdministrator;
-use App\Shared\Domain\Audit\AuditRecord;
-use App\Shared\Domain\Identifier\IdGenerator;
 use App\Shared\Domain\Time\Clock;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,8 +33,23 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class AdminLogsController extends AbstractController
 {
     public const array TABS = ['finance' => 'Finance', 'audit' => 'Journal d’audit', 'connexions' => 'Connexions', 'webhooks' => 'Webhooks Stripe', 'exports' => 'Exports'];
-    /** Onglet à venir (T-806c exports). */
-    public const array SOON = ['exports'];
+    /**
+     * BO15.2 — exports disponibles : libellé, route et paramètres, droit requis, données personnelles (→ journalisé).
+     * Depuis cet onglet l'export porte sur toute la liste ; depuis la liste, il reprend ses filtres.
+     */
+    private const array EXPORTS = [
+        'clients' => ['Clients', 'admin_clients_export', [], 'admin.clients.export', true],
+        'artisans' => ['Artisans', 'admin_artisans_export', [], 'admin.artisans.export', true],
+        'journal_audit' => ['Journal d’audit (actions admin)', 'admin_logs_export', ['onglet' => 'audit'], 'admin.logs.export', true],
+        'journal_connexions' => ['Connexions', 'admin_logs_export', ['onglet' => 'connexions'], 'admin.logs.export', true],
+        'journal_envois' => ['Journal d’envoi des e-mails', 'admin_notifications_log_export', [], 'admin.notifications.view', true],
+        'demandes' => ['Demandes', 'admin_requests_export', [], 'admin.requests.export', false],
+        'codes_promo' => ['Codes promo', 'admin_promo_export', [], 'admin.plans.export', false],
+        'redirections' => ['Redirections (référencement)', 'admin_seo_redirect_export', [], 'admin.seo.view', false],
+        'tableau_de_bord' => ['Tableau de bord du mois', 'admin_dashboard_export', [], 'admin.dashboard.export', false],
+        'finance' => ['Finance du mois', 'admin_logs_finance_export', [], 'admin.logs.export', false],
+    ];
+    private const int RECENT_EXPORTS = 20;
     private const int MONTHS_OFFERED = 24;
     private const int PER_PAGE = 25;
     private const int EXPORT_MAX = 50000;
@@ -63,15 +75,38 @@ final class AdminLogsController extends AbstractController
     public function index(Request $request, Clock $clock): Response
     {
         $tab = $request->query->getString('onglet', 'finance');
-        $tab = \array_key_exists($tab, self::TABS) && !\in_array($tab, self::SOON, true) ? $tab : 'finance';
+        $tab = \array_key_exists($tab, self::TABS) ? $tab : 'finance';
         $page = max(1, $request->query->getInt('page', 1));
-        $data = ['tab' => $tab, 'tabs' => self::TABS, 'soon' => self::SOON, 'periods' => AuditLogFilter::PERIODS, 'labels' => self::LABELS];
+        $data = ['tab' => $tab, 'tabs' => self::TABS, 'periods' => AuditLogFilter::PERIODS, 'labels' => self::LABELS];
 
         if ('finance' === $tab) {
             [$kpis, $breakdown] = $this->finances($request, $clock);
             $conversion = array_values(array_filter($kpis->featured, static fn ($c): bool => DashboardMetric::FreeToPaidRate === $c->metric))[0] ?? null;
 
             return $this->render('admin/logs/index.html.twig', $data + ['kpis' => $kpis, 'breakdown' => $breakdown, 'conversion' => $conversion, 'months' => $this->months($clock)]);
+        }
+
+        if ('exports' === $tab) {
+            $exports = [];
+            foreach (self::EXPORTS as $key => [$label, $route, $params, $permission, $personal]) {
+                if ($this->isGranted($permission)) {
+                    $exports[] = ['key' => $key, 'label' => $label, 'href' => $this->generateUrl($route, $params), 'personal' => $personal];
+                }
+            }
+            $recent = $this->queries->ask(new AuditLogQuery(new AuditLogFilter(AuditLogFilter::VIEW_AUDIT, AdminExportJournal::ACTION), 1, self::RECENT_EXPORTS));
+            \assert($recent instanceof AuditLogPage);
+
+            $filters = array_map(static function (AuditLogEntry $e): string {
+                parse_str(\is_string($e->context['filters'] ?? null) ? $e->context['filters'] : '', $parsed);
+                $parts = [];
+                foreach ($parsed as $name => $value) {
+                    $parts[] = $name.' : '.(\is_string($value) ? $value : '…');
+                }
+
+                return [] === $parts ? 'aucun' : implode(' · ', $parts);
+            }, $recent->rows);
+
+            return $this->render('admin/logs/index.html.twig', $data + ['exports' => $exports, 'recent' => $recent, 'recent_filters' => $filters, 'export_labels' => array_map(static fn (array $e): string => $e[0], self::EXPORTS)]);
         }
 
         if ('webhooks' === $tab) {
@@ -91,24 +126,14 @@ final class AdminLogsController extends AbstractController
 
     #[Route('/export.csv', name: 'admin_logs_export', methods: ['GET'])]
     #[IsGranted('admin.logs.export')]
-    public function export(Request $request, AuditTrail $audit, IdGenerator $ids, Clock $clock, CurrentAdministrator $admin): StreamedResponse
+    public function export(Request $request, AdminExportJournal $journal, Clock $clock): StreamedResponse
     {
         $tab = AuditLogFilter::VIEW_LOGINS === $request->query->getString('onglet') ? AuditLogFilter::VIEW_LOGINS : AuditLogFilter::VIEW_AUDIT;
         $filter = $this->filter($request, $tab);
         $log = $this->queries->ask(new AuditLogQuery($filter, 1, self::EXPORT_MAX));
         \assert($log instanceof AuditLogPage);
         // BO15.2 : un export de journal contient des données personnelles (noms, IP masquées) → il est lui-même journalisé.
-        $audit->record(new AuditRecord(
-            id: $ids->next(),
-            occurredAt: $clock->now(),
-            actorType: 'admin',
-            actorId: $admin->id(),
-            action: 'admin.export',
-            subjectType: 'audit_log',
-            subjectId: $tab,
-            ip: $request->getClientIp(),
-            context: ['filters' => http_build_query($filter->toArray()), 'rows' => \count($log->rows)],
-        ));
+        $journal->record('journal_'.$tab, $filter->toArray(), \count($log->rows), $request->getClientIp());
         $rows = $log->rows;
         $response = new StreamedResponse(static function () use ($rows): void {
             $out = fopen('php://output', 'w');
