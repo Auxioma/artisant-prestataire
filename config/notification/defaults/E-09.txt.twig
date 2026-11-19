@@ -1,6 +1,6 @@
 Bonjour {{ prenom }},
 
-Comme vous l’avez demandé, votre compte TrouveMoi a été supprimé et vos données personnelles ont été effacées. Seules les informations que la loi nous oblige à conserver le restent, sans lien avec votre identité (preuves d’acceptation des conditions, journaux de sécurité pendant un an).
+{% if inactivite %}Faute de connexion depuis plus de {{ annees }} ans et comme annoncé, votre compte TrouveMoi a été supprimé{% else %}Comme vous l’avez demandé, votre compte TrouveMoi a été supprimé{% endif %} et vos données personnelles ont été effacées. Seules les informations que la loi nous oblige à conserver le restent, sans lien avec votre identité (preuves d’acceptation des conditions, journaux de sécurité pendant un an).
 
 Ce message est le dernier que vous recevrez de notre part. Merci d’avoir utilisé TrouveMoi.
 

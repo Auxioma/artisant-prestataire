@@ -113,9 +113,14 @@ final readonly class NotificationIdentityMailer implements IdentityMailer
         $this->notify('E-08', $to, ['prenom' => $firstName, 'date_effacement' => $effectiveAt, 'lien_annulation' => $cancel, 'lien_aide' => $this->absolute('content_contact')]);
     }
 
-    public function sendAccountDeleted(Email $to, string $firstName): void
+    public function sendAccountDeleted(Email $to, string $firstName, bool $inactive = false, int $years = 0): void
     {
-        $this->notify('E-09', $to, ['prenom' => $firstName, 'lien_aide' => $this->absolute('content_contact')]);
+        $this->notify('E-09', $to, ['prenom' => $firstName, 'lien_aide' => $this->absolute('content_contact'), 'inactivite' => $inactive, 'annees' => $years]);
+    }
+
+    public function sendInactivityNotice(Email $to, string $firstName, int $years, \DateTimeImmutable $effectiveAt): void
+    {
+        $this->notify('E-09b', $to, ['prenom' => $firstName, 'annees' => $years, 'date_effacement' => $effectiveAt, 'lien_connexion' => $this->absolute('identity_login'), 'lien_aide' => $this->absolute('content_contact')]);
     }
 
     private function absolute(string $route): string

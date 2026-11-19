@@ -19,6 +19,7 @@
         <field name="passwordChangedAt" type="datetimetz_immutable" column="password_changed_at"/>
         <field name="passwordless" type="boolean"/>
         <field name="deletionRequestedAt" type="datetimetz_immutable" column="deletion_requested_at" nullable="true"/>
+        <field name="inactivityNoticeAt" type="datetimetz_immutable" column="inactivity_notice_at" nullable="true"/>
         <field name="anonymizedAt" type="datetimetz_immutable" column="anonymized_at" nullable="true"/>
         <field name="createdAt" type="datetimetz_immutable" column="created_at"/>
         <field name="updatedAt" type="datetimetz_immutable" column="updated_at"/>

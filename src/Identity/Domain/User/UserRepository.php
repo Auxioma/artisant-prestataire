@@ -30,4 +30,19 @@ interface UserRepository
      * @return list<UserId>
      */
     public function dueForErasure(\DateTimeImmutable $before): array;
+
+    /**
+     * CDC §11 — comptes actifs sans connexion (ni création) depuis $before, pas encore relancés ; les artisans dont
+     * l'abonnement est en cours en sont exclus (la relation continue).
+     *
+     * @return list<UserId>
+     */
+    public function inactiveSince(\DateTimeImmutable $before): array;
+
+    /**
+     * Comptes relancés avant $before et restés sans connexion depuis.
+     *
+     * @return list<UserId>
+     */
+    public function unansweredInactivityNotices(\DateTimeImmutable $before): array;
 }
