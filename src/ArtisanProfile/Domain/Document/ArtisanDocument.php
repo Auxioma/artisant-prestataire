@@ -122,6 +122,14 @@ final class ArtisanDocument extends AggregateRoot
         return true;
     }
 
+    /** CDC §11 — conservation échue (fin de la relation + documents.retention_after_relation_years) : fichier détruit. */
+    public function shredForRetention(\DateTimeImmutable $now): void
+    {
+        $this->status = DocumentStatus::Shredded;
+        $this->reason = 'retention';
+        $this->updatedAt = $now;
+    }
+
     /** Remplacé par une nouvelle pièce du même type : le fichier est détruit (crypto-shredding) par le cas d'usage. */
     public function supersede(\DateTimeImmutable $now): void
     {

@@ -15,6 +15,20 @@ final readonly class DbalMaintenanceCandidates implements MaintenanceCandidates
     }
 
     /** @return list<string> */
+    public function documentsOfRelationsEndedBefore(\DateTimeImmutable $before): array
+    {
+        return $this->ids(
+            "SELECT d.id FROM artisan.document d
+               JOIN artisan.artisan_profile p ON p.id = d.artisan_id
+               JOIN identity.user_account u ON u.id = p.user_id
+              WHERE d.status <> 'shredded'
+                AND ((u.status = 'anonymized' AND u.anonymized_at <= :before)
+                  OR (p.status = 'rejected' AND p.status_changed_at <= :before))
+              ORDER BY d.uploaded_at",
+            ['before' => $before->format(\DATE_ATOM)],
+        );
+    }
+
     public function documentsExpiringBy(\DateTimeImmutable $horizon): array
     {
         return $this->ids("SELECT id FROM artisan.document WHERE status IN ('approved', 'pending_review') AND expires_on <= :horizon ORDER BY expires_on", ['horizon' => $horizon->format('Y-m-d')]);

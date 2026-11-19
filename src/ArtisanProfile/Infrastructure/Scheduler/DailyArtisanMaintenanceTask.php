@@ -6,6 +6,7 @@ namespace App\ArtisanProfile\Infrastructure\Scheduler;
 
 use App\ArtisanProfile\Application\Agenda\RefreshAgendas;
 use App\ArtisanProfile\Application\Maintenance\HideUninsuredProfiles;
+use App\ArtisanProfile\Application\Maintenance\PurgeEndedRelationDocuments;
 use App\ArtisanProfile\Application\Maintenance\SendDocumentExpiryAlerts;
 use App\ArtisanProfile\Application\Maintenance\SendSignupReminders;
 use App\Shared\Application\Bus\CommandBus;
@@ -25,5 +26,6 @@ final readonly class DailyArtisanMaintenanceTask
         $this->commands->dispatch(new HideUninsuredProfiles());
         $this->commands->dispatch(new SendSignupReminders());
         $this->commands->dispatch(new RefreshAgendas());
+        $this->commands->dispatch(new PurgeEndedRelationDocuments());
     }
 }
