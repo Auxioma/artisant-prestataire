@@ -35,5 +35,7 @@ final class MaintenanceTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $client->request('GET', '/healthz');
         self::assertResponseIsSuccessful();
+        $client->request('GET', '/readyz');
+        self::assertResponseIsSuccessful('l’orchestrateur ne retire pas les instances pendant la maintenance');
     }
 }
