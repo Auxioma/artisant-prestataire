@@ -1,6 +1,11 @@
 {#- P01.2 — hero : photo prioritaire (LCP), voile marine réglable, H1 et sous-titre éditables, recherche métier / lieu avec géolocalisation et dernier lieu mémorisé. -#}
 <header class="tm-home-hero tm-home-hero--veil-{{ ((s.veil ?? 30) / 10)|round * 10 }}">
-    <img class="tm-home-hero__image" src="{{ asset('images/auth/a02-banner@1x.webp') }}" alt="{{ s.image_alt ?? '' }}" width="1440" height="380" fetchpriority="high" decoding="async">
+    {# CDC §8 / P01.2 : photo prioritaire (LCP), AVIF puis WebP avec srcset, préchargée (home.html.twig), sans lazy-load. #}
+    <picture>
+        <source type="image/avif" srcset="{{ asset('images/auth/a02-banner-960.avif') }} 960w, {{ asset('images/auth/a02-banner@1x.avif') }} 1440w" sizes="100vw">
+        <source type="image/webp" srcset="{{ asset('images/auth/a02-banner-960.webp') }} 960w, {{ asset('images/auth/a02-banner@1x.webp') }} 1440w" sizes="100vw">
+        <img class="tm-home-hero__image" src="{{ asset('images/auth/a02-banner@1x.webp') }}" alt="{{ s.image_alt ?? '' }}" width="1440" height="380" fetchpriority="high" decoding="async">
+    </picture>
     <div class="tm-container tm-home-hero__content">
         <h1 class="tm-home-hero__title">{{ s.title }}</h1>
         {% if s.subtitle %}<p class="tm-home-hero__subtitle">{{ s.subtitle }}</p>{% endif %}

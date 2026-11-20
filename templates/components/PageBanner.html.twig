@@ -5,7 +5,12 @@
 #}
 {% props title, subtitle = null, image %}
 <header {{ attributes.defaults({class: 'tm-page-banner'}) }}>
-    <img class="tm-page-banner__image" src="{{ asset(image ~ '@1x.webp') }}" alt="" width="1440" height="380" fetchpriority="high" decoding="async">
+    {# CDC §8 : photo prioritaire (LCP) en AVIF puis WebP, 960 / 1 440 px selon la largeur d'écran. #}
+    <picture>
+        <source type="image/avif" srcset="{{ asset(image ~ '-960.avif') }} 960w, {{ asset(image ~ '@1x.avif') }} 1440w" sizes="100vw">
+        <source type="image/webp" srcset="{{ asset(image ~ '-960.webp') }} 960w, {{ asset(image ~ '@1x.webp') }} 1440w" sizes="100vw">
+        <img class="tm-page-banner__image" src="{{ asset(image ~ '@1x.webp') }}" alt="" width="1440" height="380" fetchpriority="high" decoding="async">
+    </picture>
     <div class="tm-page-banner__veil"></div>
     <div class="tm-container tm-page-banner__content">
         <h1 class="tm-page-banner__title">{{ title }}</h1>
