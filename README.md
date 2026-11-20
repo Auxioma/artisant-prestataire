@@ -16,6 +16,18 @@ open http://localhost:8090/healthz
 Services de développement : Mailpit http://localhost:8025 · Meilisearch http://localhost:7700 · S3 (SeaweedFS) http://localhost:8333 · PostgreSQL `127.0.0.1:5434`.
 Les ports se changent via les variables `TM_HTTP_PORT`, `TM_DB_PORT`, `TM_REDIS_PORT`, `TM_MEILI_PORT`, `TM_MAILPIT_PORT` et `TM_S3_PORT`, à placer dans `.env.local` ou dans l'environnement. Les images sont multi-architecture (Apple Silicon compris).
 
+## Installation sans Docker (serveur)
+
+PostgreSQL 16 + PostGIS 3 requis. Avant la première migration, un superutilisateur crée les extensions
+(le propriétaire de la base n'en a pas le droit) :
+
+```bash
+sudo -u postgres psql -d trouvemoi -f ops/postgres/extensions.sql
+bin/console doctrine:migrations:migrate -n
+```
+
+Procédure complète de mise en production : [docs/exploitation.md](docs/exploitation.md).
+
 ## Référentiel géographique
 
 ```bash
