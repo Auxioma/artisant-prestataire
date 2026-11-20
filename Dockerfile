@@ -21,6 +21,7 @@ FROM base AS prod
 ENV APP_ENV=prod
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 COPY --link docker/php/conf.d/20-prod.ini $PHP_INI_DIR/conf.d/
+COPY --link docker/frankenphp/Caddyfile /etc/frankenphp/Caddyfile
 USER app
 COPY --chown=app:app --link composer.json composer.lock symfony.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-progress

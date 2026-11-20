@@ -1,3 +1,4 @@
+/* stimulusFetch: 'lazy' */
 import { Controller } from '@hotwired/stimulus';
 
 /* P02.3 mobile : panneau de filtres replié par défaut (bouton « Filtres (n) ») ; toujours ouvert sur grand écran. */

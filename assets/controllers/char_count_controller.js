@@ -1,3 +1,4 @@
+/* stimulusFetch: 'lazy' */
 import { Controller } from '@hotwired/stimulus';
 
 /* Compteur de caractères d'un champ limité (annoncé aux lecteurs d'écran à l'approche de la limite). */

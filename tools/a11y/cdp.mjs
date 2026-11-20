@@ -29,6 +29,8 @@ await send('Page.enable'); await send('Runtime.enable');
 let width = 1440, height = 900;
 const api = {
   wait: sleep,
+  /** Commande CDP brute (émulation réseau, processeur, scripts injectés au chargement). */
+  send: async (method, params = {}) => (await send(method, params)).result,
   size: async (w, h) => { width = w; height = h; await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: w < 600 }); },
   go: async (url) => { await send('Page.navigate', { url }); await sleep(300); },
   js: async (expr) => (await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true })).result?.result?.value,

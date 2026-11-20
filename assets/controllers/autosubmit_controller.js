@@ -1,3 +1,4 @@
+/* stimulusFetch: 'lazy' */
 import { Controller } from '@hotwired/stimulus';
 
 /* Filtres et tri appliqués dès le changement (P02.3 « application instantanée ») ; sans JavaScript, bouton « Appliquer ». */
