@@ -18,7 +18,7 @@ use Twig\Environment;
  */
 final readonly class MaintenanceSubscriber implements EventSubscriberInterface
 {
-    private const array OPEN_PREFIXES = ['/admin', '/healthz', '/assets', '/_wdt', '/_profiler'];
+    private const array OPEN_PREFIXES = ['/admin', '/healthz', '/readyz', '/assets', '/_wdt', '/_profiler'];
     private const int SECONDS_PER_MINUTE = 60;
     private const int BEFORE_ROUTING = 64;
 
