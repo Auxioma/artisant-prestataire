@@ -169,6 +169,7 @@ enum SettingKey: string
     case SeoRobotsExtra = 'seo.robots_extra';
     case SiteMaintenance = 'site.maintenance';
     case SiteMaintenanceRetryMinutes = 'site.maintenance_retry_minutes';
+    case SitePublicCacheSeconds = 'site.public_cache_seconds';
 
     // Identité de la plateforme (BO13) — réseaux sociaux du pied de page (vides = non affichés)
     case SocialFacebook = 'social.facebook';
@@ -339,6 +340,7 @@ enum SettingKey: string
             self::SeoRobotsExtra => $d(T::StringList, [], 'Lignes ajoutées au robots.txt (BO12.3)', proposed: true),
             self::SiteMaintenance => $d(T::Boolean, false, 'Mode maintenance du site public (P18 : 503, back-office accessible)', proposed: true),
             self::SiteMaintenanceRetryMinutes => $d(T::Integer, 30, 'Maintenance : délai annoncé avant nouvel essai (Retry-After, min)', 1, 1440, proposed: true),
+            self::SitePublicCacheSeconds => $d(T::Integer, 300, 'Cache partagé (CDN) des pages publiques pour les visiteurs non connectés, en secondes (0 = désactivé, CDC §8)', 0, 3600, proposed: true),
 
             self::SocialFacebook => $d(T::NullableUrl, null, 'Page Facebook', choices: ['facebook.com'], proposed: true),
             self::SocialInstagram => $d(T::NullableUrl, null, 'Compte Instagram', choices: ['instagram.com'], proposed: true),

@@ -51,8 +51,36 @@ qui cassent le chargement des mappings Doctrine.
 
 Compression déjà active (zstd, br, gzip) ; polices WOFF2 en sous-ensemble latin, 400 et 600 préchargées.
 
+## Cache des pages publiques (T-904b)
+
+`PublicPageCacheSubscriber` : pour un visiteur **sans cookie de session** (`tm_sess`), les pages publiques sans donnée
+personnelle (accueil, recherche, annuaire, catégories, métiers, villes, fiches artisans, aide, « Comment ça marche ? »,
+tarifs, pages CMS, documents légaux, accessibilité) répondent
+`Cache-Control: max-age=0, public, s-maxage=300` et `Vary: Cookie`. Le navigateur revalide toujours ; seul un cache
+partagé (CDN) garde la page, 300 s par défaut (`site.public_cache_seconds`, BO13 « Maintenance », 0 = désactivé).
+
+Restent privées : toute requête avec cookie de session (connecté, connexion assistée), toute réponse qui dépose un
+cookie ou n'est pas un 200, les formulaires (connexion, inscription, contact, tunnel), l'espace client / pro, le
+back-office, les API.
+
+### Réglages du CDN (à la mise en place, T-906)
+
+- Respecter `s-maxage` ; **ne pas mettre en cache** une requête qui porte le cookie `tm_sess` (règle de contournement),
+  et ne pas dériver la clé de cache des autres cookies (`tm_consent`, `tm_cid`, `tm_demande`) : remplacer
+  `Vary: Cookie` par cette règle, sinon chaque combinaison de cookies crée une entrée.
+- **Purger le cache HTML à chaque mise en production** : une page en cache référence les fichiers compilés de la
+  version précédente, supprimés par la nouvelle image.
+- Les modifications du CMS, des paramètres ou des fiches apparaissent aux visiteurs anonymes au plus tard après
+  `site.public_cache_seconds`.
+- Fichiers compilés `/assets/*` : cache d'un an (`immutable`), sans purge nécessaire.
+
+### Images hors écran
+
+Déjà en place : cartes artisans, réalisations et photos d'avis en `loading="lazy"`, composant `Media` (médiathèque :
+AVIF / WebP 480 / 960 / 1 600 px, `loading="lazy"` par défaut, dimensions intrinsèques). Les images au-dessus de la
+ligne de flottaison (bannières, logo) restent chargées d'emblée.
+
 ## Suite
 
-- T-904b : cache HTTP des pages publiques pour les visiteurs anonymes (CDN), images de la médiathèque, chargement
-  différé hors écran, nouvelle mesure.
-- Après la mise en ligne : mesures terrain (CrUX ou mesure réelle) pour l'INP et le 75e percentile réel.
+- Après le choix de l'hébergeur : CDN (règles ci-dessus), puis mesures terrain (CrUX ou mesure réelle) pour l'INP et
+  le 75e percentile réel, et TTFB servi depuis le CDN.
