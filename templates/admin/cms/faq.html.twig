@@ -1,0 +1,89 @@
+{#- BO10.4 « FAQ / Aide » (pas de maquette dédiée, P-131) : rubriques, questions, publics, ordre, statistiques de votes. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'cms' %}
+{% set can_edit = is_granted('admin.cms.edit') %}
+{% block title %}FAQ / Aide — CMS{% endblock %}
+{% macro small(label, action, id, csrf_id, variant, topic) %}
+    <form method="post" action="{{ path('admin_cms_faq_action') }}" class="tm-cms-inline" data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="{{ action }}"><input type="hidden" name="id" value="{{ id }}">{% if topic %}<input type="hidden" name="topic" value="{{ topic }}">{% endif %}
+        <twig:Button type="submit" variant="{{ variant }}">{{ label }}</twig:Button>
+    </form>
+{% endmacro %}
+{% macro rate(item) %}{% set r = item.helpfulRate() %}{{ r is null ? 'Aucun vote' : r ~ ' % utile (' ~ (item.helpfulYes + item.helpfulNo) ~ ' vote' ~ ((item.helpfulYes + item.helpfulNo) > 1 ? 's') ~ ')' }}{% endmacro %}
+{% import _self as m %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'FAQ / Aide', crumbs: ['Contenus', 'CMS'], subtitle: topics|length ~ ' rubrique' ~ (topics|length > 1 ? 's') ~ ' · affichées sur /aide'}) }}
+    {{ include('admin/cms/_tabs.html.twig', {current: 'faq'}) }}
+
+    <div class="tm-admin-grid">
+        <section class="tm-admin-panel" aria-labelledby="topics-title">
+            <h2 id="topics-title" class="tm-card-title">Rubriques</h2>
+            <ol class="tm-faq-admin__topics">
+                {% for t in topics %}
+                    <li class="{{ current and current.id == t.id ? 'is-current' }}">
+                        <a href="{{ path('admin_cms_faq', {rubrique: t.id}) }}"{{ current and current.id == t.id ? ' aria-current="true"' }}><twig:Icon name="{{ t.icon }}" size="sm" class="tm-icon--inherit" /><strong>{{ t.title }}</strong>{% if not t.active %} <span class="tm-admin-status">Masquée</span>{% endif %}</a>
+                        <span class="tm-caption">{{ t.questions }} question{{ t.questions > 1 ? 's' }} · {{ m.rate(t) }}</span>
+                        {% if can_edit %}
+                            <span class="tm-admin-actions">
+                                {% if not loop.first %}{{ m.small('Monter', 'topic_up', t.id, csrf_id, 'secondary') }}{% endif %}
+                                {% if not loop.last %}{{ m.small('Descendre', 'topic_down', t.id, csrf_id, 'secondary') }}{% endif %}
+                            </span>
+                        {% endif %}
+                    </li>
+                {% else %}
+                    <li><twig:EmptyState title="Aucune rubrique" text="Créez une première rubrique de l’aide." icon="help" /></li>
+                {% endfor %}
+            </ol>
+            {% if can_edit %}
+                <details class="tm-media-card__edit">
+                    <summary>Nouvelle rubrique</summary>
+                    {% include 'admin/cms/_faq_topic_form.html.twig' with {t: null} %}
+                </details>
+            {% endif %}
+        </section>
+
+        {% if current %}
+            <section class="tm-admin-panel" aria-labelledby="questions-title">
+                <h2 id="questions-title" class="tm-card-title">{{ current.title }}</h2>
+                <p class="tm-caption">/aide/{{ current.slug }} · {{ m.rate(current) }}</p>
+                {% if can_edit %}
+                    <details class="tm-media-card__edit">
+                        <summary>Modifier la rubrique</summary>
+                        {% include 'admin/cms/_faq_topic_form.html.twig' with {t: current} %}
+                        {% if current.questions == 0 %}{{ m.small('Supprimer la rubrique', 'topic_delete', current.id, csrf_id, 'danger') }}{% endif %}
+                    </details>
+                {% endif %}
+                <ol class="tm-page-blocks">
+                    {% for q in questions %}
+                        <li class="tm-page-block">
+                            <div class="tm-page-block__head">
+                                <h3>{{ q.question }}</h3>
+                                <span class="tm-admin-status{{ q.published ? ' is-published' }}">{{ q.published ? 'Publiée' : 'Masquée' }}</span>
+                            </div>
+                            <p class="tm-caption">{{ audiences[q.audience] }} · {{ m.rate(q) }} · modifiée le {{ q.updatedAt|date('d/m/Y', 'Europe/Paris') }}</p>
+                            {% if can_edit %}
+                                <div class="tm-admin-actions">
+                                    {% if not loop.first %}{{ m.small('Monter', 'question_up', q.id, csrf_id, 'secondary', current.id) }}{% endif %}
+                                    {% if not loop.last %}{{ m.small('Descendre', 'question_down', q.id, csrf_id, 'secondary', current.id) }}{% endif %}
+                                    {{ m.small('Supprimer', 'question_delete', q.id, csrf_id, 'danger', current.id) }}
+                                </div>
+                                <details class="tm-media-card__edit">
+                                    <summary>Modifier</summary>
+                                    {% include 'admin/cms/_faq_question_form.html.twig' with {q: q} %}
+                                </details>
+                            {% endif %}
+                        </li>
+                    {% else %}
+                        <li><twig:EmptyState title="Aucune question" text="Ajoutez la première question de cette rubrique." icon="help" /></li>
+                    {% endfor %}
+                </ol>
+                {% if can_edit %}
+                    <details class="tm-media-card__edit">
+                        <summary>Nouvelle question</summary>
+                        {% include 'admin/cms/_faq_question_form.html.twig' with {q: null} %}
+                    </details>
+                {% endif %}
+            </section>
+        {% endif %}
+    </div>
+{% endblock %}

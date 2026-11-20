@@ -11,6 +11,10 @@ framework:
         cookie_samesite: lax
         cookie_lifetime: 0
         gc_maxlifetime: 7200
+        # T-906a : sessions dans Redis (clés « sf_s… », expiration = gc_maxlifetime), partagées entre les instances et
+        # révocables d'un coup en cas d'incident (docs/incidents.md). Redis doit être en `maxmemory-policy noeviction` :
+        # il porte aussi le cache et les files Messenger (docs/exploitation.md).
+        handler_id: '%env(REDIS_URL)%'
 
     # Clients HTTP sortants : un client par service, hôte fixe, délais bornés (anti-SSRF — cadrage §5.3).
     http_client:

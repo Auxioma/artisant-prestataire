@@ -3,10 +3,14 @@
     À remplacer par le SVG officiel dès réception (description Figma 64:8).
 #}
 {% props tone = 'clair', href = null, width = 188 %}
+{# CDC §8 : AVIF (2 fois plus léger) puis WebP. #}
 {% set img %}
-    <img class="tm-logo__img" src="{{ asset('images/brand/logo-' ~ tone ~ '@2x.webp') }}"
-         srcset="{{ asset('images/brand/logo-' ~ tone ~ '@2x.webp') }} 2x, {{ asset('images/brand/logo-' ~ tone ~ '@3x.webp') }} 3x"
-         width="{{ width }}" height="{{ (width * 306 / 1027)|round }}" alt="TrouveMoi.com — Prestataires & Artisans" decoding="async">
+    <picture>
+        <source type="image/avif" srcset="{{ asset('images/brand/logo-' ~ tone ~ '@2x.avif') }} 2x, {{ asset('images/brand/logo-' ~ tone ~ '@3x.avif') }} 3x">
+        <img class="tm-logo__img" src="{{ asset('images/brand/logo-' ~ tone ~ '@2x.webp') }}"
+             srcset="{{ asset('images/brand/logo-' ~ tone ~ '@2x.webp') }} 2x, {{ asset('images/brand/logo-' ~ tone ~ '@3x.webp') }} 3x"
+             width="{{ width }}" height="{{ (width * 306 / 1027)|round }}" alt="TrouveMoi.com — Prestataires & Artisans" decoding="async">
+    </picture>
 {% endset %}
 {% if href %}
     <a {{ attributes.defaults({class: 'tm-logo', href: href}) }}>{{ img }}<span class="tm-visually-hidden"> — accueil</span></a>

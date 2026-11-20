@@ -14,6 +14,13 @@ interface SettingStore
     public function find(SettingKey $key): mixed;
 
     /**
+     * Valeurs enregistrées (JSON décodé) indexées par clé ; une clé absente n'a jamais été enregistrée.
+     *
+     * @return array<string, mixed>
+     */
+    public function all(): array;
+
+    /**
      * Enregistre la nouvelle valeur et ajoute une ligne d'historique (avant/après), dans la transaction courante.
      *
      * @return bool false si la valeur est identique (aucune écriture)

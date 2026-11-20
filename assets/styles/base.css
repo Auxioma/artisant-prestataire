@@ -146,6 +146,12 @@
     }
 
     /* Lien d'évitement « Aller au contenu » (CDC §9) */
+    /* ADR-0013 — bandeau de connexion assistée */
+    .tm-impersonation { position: sticky; top: 0; z-index: 60; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 16px; background: var(--tm-orange-soft); color: var(--tm-orange-ink); font-weight: var(--font-weight-semibold); }
+    .tm-impersonation p { flex: 1 1 280px; margin: 0; }
+    .tm-impersonation form { margin: 0; }
+    .tm-impersonation__end { min-height: 36px; padding: 6px 16px; border: 1px solid currentcolor; border-radius: var(--radius-pill); background: var(--color-surface); color: inherit; font: inherit; cursor: pointer; }
+    .tm-impersonation__end:focus-visible { box-shadow: var(--focus-ring); outline: none; }
     .tm-skip-link {
         position: absolute;
         top: var(--space-2);
@@ -201,4 +207,19 @@
     .tm-icon--xs { width: var(--icon-size-xs); height: var(--icon-size-xs); }
     .tm-icon--trade { color: var(--color-icon-trade); }
     .tm-icon--inherit { color: inherit; }
+}
+
+/* BO10.7 — images de la médiathèque : recadrage par point focal (object-position, sans style en ligne) */
+@layer base {
+    .tm-media { display: block; }
+    .tm-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
+    .tm-focal--tl img { object-position: 0 0; }
+    .tm-focal--tc img { object-position: 50% 0; }
+    .tm-focal--tr img { object-position: 100% 0; }
+    .tm-focal--cl img { object-position: 0 50%; }
+    .tm-focal--cc img { object-position: 50% 50%; }
+    .tm-focal--cr img { object-position: 100% 50%; }
+    .tm-focal--bl img { object-position: 0 100%; }
+    .tm-focal--bc img { object-position: 50% 100%; }
+    .tm-focal--br img { object-position: 100% 100%; }
 }

@@ -1,0 +1,15 @@
+{#- BO10.2 — page éditoriale à blocs (texte, image, CTA, cartes, FAQ, carrousel de professionnels, bannière). P-130. -#}
+{% extends 'base.html.twig' %}
+{% block title %}{{ page.metaTitle ?? page.title }} — TrouveMoi{% endblock %}
+{% set canonical_url = url('content_page', {slug: page.slug}) %}
+{% if page.metaDescription %}{% set meta_description = page.metaDescription %}{% endif %}
+{% set noindex = page.noindex or preview %}
+{% block body %}
+{% if preview %}<p class="tm-cms-preview-flag" role="status">Aperçu du brouillon — non visible du public</p>{% endif %}
+<article class="tm-page">
+    <header class="tm-container tm-page__head"><h1>{{ page.title }}</h1></header>
+    {% for block in blocks %}
+        {% include 'content/page/_' ~ block.type ~ '.html.twig' with {b: block.data, id: block.id} %}
+    {% endfor %}
+</article>
+{% endblock %}

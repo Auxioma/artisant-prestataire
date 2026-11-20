@@ -1,0 +1,105 @@
+{#- CDC §9 (T-903b) — déclaration d'accessibilité RGAA 4.1, mise en page des documents légaux (P17). État de conformité : P-153. -#}
+{% extends 'base.html.twig' %}
+{% block title %}Déclaration d’accessibilité — TrouveMoi{% endblock %}
+{% set canonical_url = url('content_accessibility') %}
+{% set meta_description = 'Déclaration d’accessibilité de TrouveMoi.com : état de conformité au RGAA 4.1, contenus non accessibles, contact et voies de recours.' %}
+{% set contact_url = contact_reason ? tm_path('content_contact', {motif: contact_reason}) : tm_path('content_contact') %}
+{% set toc = [
+    {id: 'etat', label: 'État de conformité'},
+    {id: 'resultats', label: 'Résultats des tests'},
+    {id: 'non-accessibles', label: 'Contenus non accessibles'},
+    {id: 'etablissement', label: 'Établissement de cette déclaration'},
+    {id: 'retour', label: 'Retour d’information et contact'},
+    {id: 'recours', label: 'Voies de recours'},
+    {id: 'schema', label: 'Schéma pluriannuel'},
+] %}
+{% block body %}
+<article class="tm-container tm-legal">
+    <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Accessibilité'}]" />
+    <h1>Déclaration d’accessibilité</h1>
+    <p class="tm-caption">Établie le 20/11/2026</p>
+    <div class="tm-legal__layout">
+        <nav class="tm-legal__toc" aria-labelledby="toc-title">
+            <h2 id="toc-title">Sommaire</h2>
+            <ul>{% for entry in toc %}<li><a href="#{{ entry.id }}">{{ entry.label }}</a></li>{% endfor %}</ul>
+        </nav>
+        <div class="tm-legal__content">
+            <p>Auxioma s’engage à rendre le site TrouveMoi.com accessible conformément à l’article 47 de la loi n° 2005-102 du 11 février 2005. Cette déclaration s’applique au site <strong>trouvemoi.com</strong> : pages publiques, espace client, espace professionnel.</p>
+
+            <section aria-labelledby="etat">
+                <h2 id="etat">État de conformité</h2>
+                <p>Le site TrouveMoi.com est <strong>non conforme</strong> avec le référentiel général d’amélioration de l’accessibilité (RGAA), version 4.1 : aucun audit de conformité complet n’a encore été réalisé.</p>
+            </section>
+
+            <section aria-labelledby="resultats">
+                <h2 id="resultats">Résultats des tests</h2>
+                <p>Un audit interne a été mené en novembre 2026, sans taux de conformité calculé :</p>
+                <ul>
+                    <li>contrôles automatisés (images, contrastes, liens et boutons, titres, champs de formulaire, langue, structure) sur 49 pages des parcours publics, client, professionnel et d’administration : plus aucun défaut relevé après corrections ;</li>
+                    <li>contrôles manuels sur les pages publiques et les formulaires : navigation au clavier, visibilité du focus, lien d’évitement, affichage à 200 % et à 320 pixels de large.</li>
+                </ul>
+            </section>
+
+            <section aria-labelledby="non-accessibles">
+                <h2 id="non-accessibles">Contenus non accessibles</h2>
+                <h3>Non-conformités connues</h3>
+                <ul>
+                    <li>Les devis au format PDF ne sont pas balisés pour les lecteurs d’écran. Leur contenu est consultable en HTML dans l’espace client et l’espace professionnel.</li>
+                    <li>La restitution par les lecteurs d’écran (NVDA, VoiceOver) des messages d’erreur, des messages de statut et des composants interactifs n’a pas encore été vérifiée.</li>
+                </ul>
+                <h3>Contenus tiers non soumis à l’obligation</h3>
+                <ul>
+                    <li>Le contrôle anti-robot des formulaires de connexion, d’inscription, de contact et de demande de devis (Cloudflare Turnstile) : sa largeur minimale de 300 pixels impose un défilement horizontal sur les écrans plus étroits, et sa restitution dépend du fournisseur.</li>
+                    <li>La page de paiement des abonnements professionnels, hébergée par Stripe.</li>
+                </ul>
+            </section>
+
+            <section aria-labelledby="etablissement">
+                <h2 id="etablissement">Établissement de cette déclaration</h2>
+                <h3>Technologies utilisées</h3>
+                <p>HTML5, CSS, JavaScript, SVG, WAI-ARIA.</p>
+                <h3>Environnement de test</h3>
+                <p>Google Chrome sur macOS, navigation au clavier, fenêtres de 1 280, 640 et 320 pixels de large.</p>
+                <h3>Outils pour évaluer l’accessibilité</h3>
+                <p>Contrôles automatisés internes et parcours au clavier automatisés, vérification visuelle.</p>
+                <h3>Pages vérifiées</h3>
+                <ul>
+                    <li>Accueil, catégories, annuaire des professionnels, fiche d’un professionnel</li>
+                    <li>Demande de devis (toutes les étapes)</li>
+                    <li>Connexion, inscription client et professionnelle, mot de passe oublié</li>
+                    <li>Aide, contact, « Comment ça marche ? », tarifs, documents légaux, page introuvable</li>
+                    <li>Espace client : tableau de bord, demandes, comparaison des devis, messages, avis, notifications</li>
+                    <li>Espace professionnel : tableau de bord, demandes, éditeur de devis, profil, abonnement, agenda, avis</li>
+                </ul>
+            </section>
+
+            <section aria-labelledby="retour">
+                <h2 id="retour">Retour d’information et contact</h2>
+                <p>Si vous n’arrivez pas à accéder à un contenu ou à un service, contactez-nous pour être orienté vers une alternative accessible ou obtenir le contenu sous une autre forme. Nous répondons sous {{ reply_hours }} h ouvrées.</p>
+                <p><a class="tm-button tm-button--secondary" href="{{ contact_url }}">Signaler un problème</a></p>
+            </section>
+
+            <section aria-labelledby="recours">
+                <h2 id="recours">Voies de recours</h2>
+                <p>Si vous nous avez signalé un défaut d’accessibilité qui vous empêche d’accéder à un contenu ou à un service et que vous n’avez pas obtenu de réponse satisfaisante, vous pouvez :</p>
+                <ul>
+                    <li>écrire un message au Défenseur des droits (<a href="https://formulaire.defenseurdesdroits.fr/" rel="noopener">formulaire en ligne</a>) ;</li>
+                    <li>contacter le délégué du Défenseur des droits dans votre région (<a href="https://www.defenseurdesdroits.fr/carte-des-delegues" rel="noopener">carte des délégués</a>) ;</li>
+                    <li>envoyer un courrier, gratuit et sans affranchissement, à : Défenseur des droits, Libre réponse 71120, 75342 Paris CEDEX 07.</li>
+                </ul>
+            </section>
+
+            <section aria-labelledby="schema">
+                <h2 id="schema">Schéma pluriannuel</h2>
+                <p>Schéma pluriannuel de mise en accessibilité 2027-2029 :</p>
+                <ul>
+                    <li><strong>2027</strong> : audit de conformité complet par un prestataire indépendant, sur un échantillon représentatif ; correction des non-conformités bloquantes ; vérification avec NVDA et VoiceOver ; publication du taux de conformité ;</li>
+                    <li><strong>2028</strong> : version accessible des devis PDF ; contrôle d’accessibilité intégré à chaque mise en production ; sensibilisation des personnes qui publient des contenus ;</li>
+                    <li><strong>2029</strong> : nouvel audit complet et mise à jour de cette déclaration.</li>
+                </ul>
+                <p>Chaque année, un plan d’action détaille les opérations prévues ; il est publié sur cette page.</p>
+            </section>
+        </div>
+    </div>
+</article>
+{% endblock %}

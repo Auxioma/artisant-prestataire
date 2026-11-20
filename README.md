@@ -16,6 +16,28 @@ open http://localhost:8090/healthz
 Services de développement : Mailpit http://localhost:8025 · Meilisearch http://localhost:7700 · S3 (SeaweedFS) http://localhost:8333 · PostgreSQL `127.0.0.1:5434`.
 Les ports se changent via les variables `TM_HTTP_PORT`, `TM_DB_PORT`, `TM_REDIS_PORT`, `TM_MEILI_PORT`, `TM_MAILPIT_PORT` et `TM_S3_PORT`, à placer dans `.env.local` ou dans l'environnement. Les images sont multi-architecture (Apple Silicon compris).
 
+## Installation sans Docker (serveur)
+
+Prérequis : PHP 8.4 (extensions `intl`, `pdo_pgsql`, `redis`, `sodium`, `zip`, `gd`, `exif`, `apcu`),
+PostgreSQL 16 + PostGIS 3, **Redis** (cache, sessions et files Messenger), Meilisearch.
+
+1. **Redis obligatoire** : dans `.env.local`, `MESSENGER_TRANSPORT_DSN` et `REDIS_URL` pointent vers Redis
+   (ex. `redis://127.0.0.1:6379`). Ne pas mettre `doctrine://` : les transports utilisent des options propres aux
+   flux Redis, et les commandes qui construisent les transports (`make:migration`, `messenger:*`…) échouent
+   avec « Unknown option found: [stream, group] ».
+2. **Extensions PostgreSQL** : avant la première migration, un superutilisateur les crée (le propriétaire de la
+   base n'en a pas le droit ; sinon « permission denied to create extension "postgis" »).
+3. Les commandes se lancent **à la racine du projet** (là où se trouve `bin/`), pas dans `public/`.
+4. En production, on **applique** les migrations livrées (`doctrine:migrations:migrate`) ; on n'en génère jamais
+   (`make:migration` est un outil de développement).
+
+```bash
+sudo -u postgres psql -d trouvemoi -f ops/postgres/extensions.sql
+bin/console doctrine:migrations:migrate -n
+```
+
+Procédure complète de mise en production : [docs/exploitation.md](docs/exploitation.md).
+
 ## Référentiel géographique
 
 ```bash

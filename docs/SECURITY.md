@@ -193,11 +193,34 @@ Le back-office applique une CSP plus restrictive (sans Stripe.js) et `Cache-Cont
 
 ## 7. Checklist pré-production (pentest)
 
-- [ ] Pentest externe (boîte grise) sur www + admin + webhook, rapport et corrections
-- [ ] Revue de la configuration TLS (SSL Labs A+), HSTS, DNS (CAA, DMARC `p=reject`)
-- [ ] Restauration de sauvegarde testée (RPO 24 h, RTO à définir)
-- [ ] Rotation des secrets de test → prod, clés Stripe live restreintes (restricted keys)
-- [ ] `APP_DEBUG=0`, profiler absent, `/_error` inaccessible
-- [ ] Revue des droits PostgreSQL (rôle applicatif sans DDL, REVOKE sur le ledger et l'audit)
-- [ ] AIPD réalisée (vérification d'identité, modération automatisée — §11)
-- [ ] `security.txt` publié, procédure de gestion d'incident et de notification CNIL (72 h)
+- [ ] Pentest externe (boîte grise) sur www + admin + webhook, rapport et corrections — cahier des charges prêt :
+  `docs/pentest.md` ; à commander par le porteur
+- [ ] Revue de la configuration TLS (SSL Labs A+), HSTS, DNS (CAA, DMARC `p=reject`) — enregistrements et étapes :
+  `docs/exploitation.md` §7, à appliquer à la mise en ligne ; HSTS déjà envoyé en production (`nelmio_security.forced_ssl`)
+- [~] Restauration de sauvegarde testée (RPO 24 h, RTO à définir) — scripts testés sur la base de test
+  (`ops/backup/`, `docs/exploitation.md` §4) ; à refaire sur la production chaque mois, RTO 4 h proposé
+- [ ] Rotation des secrets de test → prod, clés Stripe live restreintes (restricted keys) — porteur, à la mise en ligne
+- [x] `APP_DEBUG=0`, profiler absent, `/_error` inaccessible — `ProductionConfigurationTest` démarre le noyau `prod` :
+  pas de mode débogage, pas de profileur (paquet absent), aucune route `/_error`, `/_profiler`, `/_wdt`, `/_dev`
+- [x] Revue des droits PostgreSQL — `ops/postgres/roles.sql` (rôle propriétaire pour les migrations, rôle applicatif
+  sans droit de structure et propriétaire d'aucune table, sans UPDATE / DELETE sur les tables en ajout seul) ;
+  vérifié sur une copie de la base. **À appliquer au déploiement** (T-906). Risque résiduel : P-156
+- [~] AIPD réalisée (vérification d'identité, modération automatisée — §11) — projet `docs/aipd.md` (T-905b) ; reste la
+  validation et la signature du responsable de traitement
+- [x] `security.txt` publié (`/.well-known/security.txt`, RFC 9116, contact `SECURITY_CONTACT` à confirmer) ;
+  procédure d'incident et de notification CNIL (72 h) : `docs/incidents.md` (noms de l'astreinte à compléter),
+  intégrité du journal d'audit vérifiable par `app:audit:verify`
+
+### Vérifications automatisées ajoutées avant le pentest (T-905a, 20/11/2026)
+
+| Contrôle | Test | Résultat |
+|---|---|---|
+| Carte du contrôle d'accès (§6 IDOR / ASVS 4.1.1, 4.1.3) : toutes les routes de `/admin`, `/espace-pro`, `/espace-client`, `/inscription/pro/`, toutes méthodes, avec des identifiants d'essai | `AccessControlMapTest` | anonyme, client et artisan refusés hors de leur espace (≈ 550 couples route / méthode, jamais de 2xx ni de 5xx) ; une nouvelle route est couverte d'office |
+| Journaux sans e-mail ni téléphone (§6 Logs / ASVS 7.1.1) après connexion échouée et réussie, mot de passe oublié, contact | `LogsWithoutPersonalDataTest` | aucune occurrence, tous canaux et niveaux |
+| Surface de débogage en production | `ProductionConfigurationTest` | absente |
+| Dépendances (ASVS 14.2.1) | `composer audit`, `importmap:audit` | aucune vulnérabilité connue au 20/11/2026 |
+| `security.txt` | `SecurityTxtTest` | contact, expiration glissante < 1 an, adresse canonique |
+
+Déjà couverts par les tests des modules : CSRF (formulaires, Turbo / Live), limites de débit (429 + `Retry-After`),
+fichiers (EICAR, polyglotte, PDF avec JavaScript, taille), webhook Stripe (signature, rejeu), énumération (connexion,
+mot de passe oublié, inscription), en-têtes (`SecurityHeadersTest`).

@@ -35,6 +35,9 @@ final readonly class DbalArtisanListHandler implements QueryHandler
         }
         if ('hidden' === $query->status) {
             $where[] = 'p.hidden_at IS NOT NULL';
+        } elseif ('documents' === $query->status) {
+            // BO01.2 « Justificatifs à contrôler » : au moins une pièce déposée en attente de contrôle.
+            $where[] = "EXISTS (SELECT 1 FROM artisan.document d WHERE d.artisan_id = p.id AND d.status = 'pending_review')";
         } elseif (\in_array($query->status, self::STATUSES, true)) {
             $where[] = 'p.status = :status';
             $params['status'] = $query->status;

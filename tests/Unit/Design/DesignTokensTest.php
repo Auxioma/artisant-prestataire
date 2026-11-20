@@ -149,7 +149,7 @@ final class DesignTokensTest extends TestCase
     {
         $sprite = (string) file_get_contents(self::ROOT.'/assets/icons/sprite.svg');
         preg_match_all('/<symbol id="([A-Za-z-]+)"/', $sprite, $symbols);
-        self::assertCount(78, $symbols[1], '39 icônes Figma V2 + cookie + étoile et cœur pleins + 5 réseaux sociaux + 11 des écrans A01/A02 (T-202) + connexion (T-204) + 14 de l’espace pro (T-405b, dont fileEuro propre à la maquette) + 2 de l’espace client (T-406a) + crayon du back-office (T-601b) + téléchargement des factures (T-605a) + trombone des pièces jointes (T-701d)');
+        self::assertCount(79, $symbols[1], '39 icônes Figma V2 + cookie + étoile et cœur pleins + 5 réseaux sociaux + 11 des écrans A01/A02 (T-202) + connexion (T-204) + 14 de l’espace pro (T-405b, dont fileEuro propre à la maquette) + 2 de l’espace client (T-406a) + crayon du back-office (T-601b) + téléchargement des factures (T-605a) + trombone des pièces jointes (T-701d) + corbeille des redirections (T-803)');
 
         foreach (glob(self::ROOT.'/templates/{,*/,*/*/}*.twig', \GLOB_BRACE) ?: [] as $file) {
             preg_match_all('/<twig:Icon[^>]*\sname="([A-Za-z-]+)"/', (string) file_get_contents($file), $used);

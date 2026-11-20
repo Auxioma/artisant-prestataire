@@ -20,6 +20,17 @@ services:
         # BO05.2 : contenus signalables décrits par chaque module.
         App\Shared\Application\Moderation\ReportableContent:
             tags: ['app.reportable_content']
+        # BO01.1 : indicateurs du tableau de bord fournis par chaque module.
+        App\Shared\Application\Admin\DashboardMetricSource:
+            tags: ['app.dashboard_metric_source']
+        # BO01.2 et BO01.3 : files d'attente et séries quotidiennes des modules.
+        App\Shared\Application\Admin\AdminQueueSource:
+            tags: ['app.admin_queue_source']
+        App\Shared\Application\Admin\DashboardDailySource:
+            tags: ['app.dashboard_daily_source']
+        # BO15.2 : exports planifiés fournis par les modules.
+        App\Shared\Application\Admin\ScheduledExportSource:
+            tags: ['app.scheduled_export_source']
 
     App\:
         resource: '../src/'
@@ -289,6 +300,19 @@ services:
     App\Identity\Application\Privacy\BuildDataExport:
         arguments:
             $sources: !tagged_iterator app.personal_data_source
+
+    App\Administration\Application\Dashboard\DashboardKpisHandler:
+        arguments:
+            $sources: !tagged_iterator app.dashboard_metric_source
+
+    App\Administration\Application\Exports\GenerateScheduledExportHandler:
+        arguments:
+            $sources: !tagged_iterator app.scheduled_export_source
+
+    App\Administration\Application\Dashboard\DashboardPanelsHandler:
+        arguments:
+            $queues: !tagged_iterator app.admin_queue_source
+            $daily: !tagged_iterator app.dashboard_daily_source
 
     App\Moderation\Application\Report\ReportHandler:
         arguments:

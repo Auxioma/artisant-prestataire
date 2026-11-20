@@ -11,6 +11,8 @@ use App\Catalog\Application\Query\MainCategories;
 use App\Content\Application\Faq\FaqQuery;
 use App\Content\Application\Faq\FaqQuestion;
 use App\Content\Application\Faq\FaqTopic;
+use App\Content\Application\Page\PageQuery;
+use App\Content\Application\Page\PageView;
 use App\Search\Application\Directory\CountArtisans;
 use App\Search\Application\Directory\SitemapArtisans;
 use App\Search\Application\Directory\SitemapLocalPages;
@@ -122,6 +124,29 @@ final readonly class SitemapController
         return $paths;
     }
 
+    /**
+     * BO12.3 — nombre d'adresses par segment (fichiers pages.xml, metiers.xml…).
+     *
+     * @return array<string, int>
+     */
+    public function counts(): array
+    {
+        $counts = [];
+        foreach (self::SEGMENTS as $segment) {
+            $counts[$segment] = \count($this->entries($segment));
+        }
+
+        return $counts;
+    }
+
+    /** BO12.3 « Régénérer » : vide le cache, les sitemaps sont recalculés à la prochaine lecture. */
+    public function refresh(): void
+    {
+        foreach (self::SEGMENTS as $segment) {
+            $this->cache->delete('sitemap.'.$segment);
+        }
+    }
+
     /** @return list<array{0: string, 1: ?string}> adresse absolue, date de dernière modification (Y-m-d) */
     private function entries(string $segment): array
     {
@@ -153,6 +178,14 @@ final readonly class SitemapController
         foreach (\is_array($legal) ? $legal : [] as $slug => $date) {
             if (\is_string($slug) && $date instanceof \DateTimeImmutable) {
                 $entries[] = [$this->url('identity_legal_document', ['slug' => $slug]), $date->format('Y-m-d')];
+            }
+        }
+        // BO10.2 — pages éditoriales publiées et indexables.
+        $now = new \DateTimeImmutable();
+        $cmsPages = $this->queries->ask(new PageQuery());
+        foreach (\is_array($cmsPages) ? $cmsPages : [] as $page) {
+            if ($page instanceof PageView && !$page->noindex && 'published' === $page->status($now)) {
+                $entries[] = [$this->url('content_page', ['slug' => $page->slug]), $page->updatedAt->format('Y-m-d')];
             }
         }
         $topics = $this->queries->ask(FaqQuery::topics());

@@ -104,8 +104,8 @@ final readonly class LoginSubscriber implements EventSubscriberInterface
     public function onLoginSuccess(LoginSuccessEvent $event): void
     {
         $user = $event->getUser();
-        if (!$user instanceof SecurityUser) {
-            return;
+        if (!$user instanceof SecurityUser || $event->getAuthenticator() instanceof ImpersonationAuthenticator) {
+            return; // connexion assistée : ni appareil, ni dernière connexion, ni compteur (journalisée par le back-office)
         }
         $request = $event->getRequest();
         $rememberMe = $event->getAuthenticator() instanceof RememberMeAuthenticator;

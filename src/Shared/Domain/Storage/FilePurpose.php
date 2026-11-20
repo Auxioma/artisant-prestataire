@@ -23,6 +23,10 @@ enum FilePurpose: string
     case ClientAvatar = 'client_avatar';
     /** Archive « Télécharger mes données » (C07.4), générée par l'application. */
     case DataExport = 'data_export';
+    /** BO10.7 — médiathèque du CMS (images publiques, variantes WebP / AVIF générées). */
+    case Media = 'media';
+    /** BO15.2 — export CSV planifié du back-office (données personnelles possibles : chiffré, téléchargement journalisé). */
+    case ScheduledExport = 'scheduled_export';
 
     /** @return list<FileType> */
     public function allowedTypes(): array
@@ -33,6 +37,8 @@ enum FilePurpose: string
             self::ArtisanLogo, self::ReviewPhoto, self::PortfolioPhoto, self::ClientAvatar => [FileType::Jpeg, FileType::Png, FileType::Webp],
             self::QuotePdf => [FileType::Pdf],
             self::DataExport => [FileType::Zip],
+            self::Media => [FileType::Jpeg, FileType::Png, FileType::Webp],
+            self::ScheduledExport => [FileType::Csv],
         };
     }
 
@@ -47,11 +53,11 @@ enum FilePurpose: string
      */
     public function isPublic(): bool
     {
-        return self::ArtisanLogo === $this || self::PortfolioPhoto === $this || self::ReviewPhoto === $this;
+        return self::ArtisanLogo === $this || self::PortfolioPhoto === $this || self::ReviewPhoto === $this || self::Media === $this;
     }
 
     public function encryptedAtRest(): bool
     {
-        return self::ArtisanDocument === $this || self::ContactAttachment === $this || self::DataExport === $this;
+        return \in_array($this, [self::ArtisanDocument, self::ContactAttachment, self::DataExport, self::ScheduledExport], true);
     }
 }

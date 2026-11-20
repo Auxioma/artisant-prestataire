@@ -11,6 +11,7 @@ use App\ArtisanProfile\Application\Verification\ReinstateArtisan;
 use App\ArtisanProfile\Application\Verification\SuspendArtisan;
 use App\ArtisanProfile\Application\Verification\VerificationDossier;
 use App\ArtisanProfile\Domain\Profile\ArtisanRuleViolation;
+use App\Shared\Application\Admin\AdminExportJournal;
 use App\Shared\Application\Billing\RemainingCredits;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Bus\QueryBus;
@@ -18,6 +19,7 @@ use App\Shared\Application\Security\CurrentAdministrator;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -30,6 +32,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/admin/artisans')]
 final class ArtisansController extends AbstractController
 {
+    private const int EXPORT_BATCH = 100;
+    private const int EXPORT_MAX = 50000;
     private const int PER_PAGE = 25;
 
     public function __construct(private readonly CommandBus $commands, private readonly QueryBus $queries, private readonly CurrentAdministrator $admin)
@@ -45,6 +49,38 @@ final class ArtisansController extends AbstractController
         \assert($page instanceof ArtisanListPage);
 
         return $this->render('admin/artisans/list.html.twig', ['page' => $page, 'filters' => $filters]);
+    }
+
+    /** BO15.2 — export CSV de la liste filtrée : raison sociale, SIRET (entrepreneurs individuels) → journalisé. */
+    #[Route('/export.csv', name: 'admin_artisans_export', methods: ['GET'])]
+    #[IsGranted('admin.artisans.export')]
+    public function export(Request $request, AdminExportJournal $journal): StreamedResponse
+    {
+        $filters = array_filter(['q' => mb_substr(trim($request->query->getString('q')), 0, 100), 'statut' => $request->query->getString('statut')], static fn (string $v): bool => '' !== $v);
+        $rows = [];
+        for ($page = 1; \count($rows) < self::EXPORT_MAX; ++$page) {
+            $result = $this->queries->ask(new ArtisanList($filters['q'] ?? '', ($filters['statut'] ?? '') ?: null, $page, self::EXPORT_BATCH));
+            \assert($result instanceof ArtisanListPage);
+            $rows = [...$rows, ...$result->items];
+            if ($page >= $result->pages()) {
+                break;
+            }
+        }
+        $journal->record('artisans', $filters, \count($rows), $request->getClientIp());
+        $response = new StreamedResponse(static function () use ($rows): void {
+            $out = fopen('php://output', 'w');
+            \assert(\is_resource($out));
+            fputcsv($out, ['nom', 'siret', 'metiers', 'departement', 'statut', 'masque', 'completude', 'credits', 'inscrit_le'], ';', '"', '');
+            foreach ($rows as $r) {
+                fputcsv($out, [$r['name'], $r['siret'] ?? '', $r['jobs'], $r['department'] ?? '', $r['status'], $r['hidden'] ? 'oui' : 'non', (string) $r['completion'], null === $r['credits'] ? '' : (string) $r['credits'], $r['created_at']->setTimezone(new \DateTimeZone('Europe/Paris'))->format('Y-m-d H:i')], ';', '"', '');
+            }
+            fclose($out);
+        });
+        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
+        $response->headers->set('Content-Disposition', 'attachment; filename="artisans.csv"');
+        $response->headers->set('Cache-Control', 'no-store');
+
+        return $response;
     }
 
     #[Route('/{id}', name: 'admin_artisans_show', requirements: ['id' => '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'], methods: ['GET'])]

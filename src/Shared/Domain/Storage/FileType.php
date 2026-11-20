@@ -11,8 +11,12 @@ enum FileType: string
     case Png = 'image/png';
     case Webp = 'image/webp';
     case Pdf = 'application/pdf';
+    /** Variante produite par l'application (médiathèque BO10.7) : jamais acceptée en dépôt. */
+    case Avif = 'image/avif';
     /** Archive produite par l'application (export RGPD) : jamais acceptée en dépôt. */
     case Zip = 'application/zip';
+    /** Export CSV produit par l'application (exports planifiés BO15.2) : jamais accepté en dépôt. */
+    case Csv = 'text/csv';
 
     public function extension(): string
     {
@@ -22,11 +26,13 @@ enum FileType: string
             self::Webp => 'webp',
             self::Pdf => 'pdf',
             self::Zip => 'zip',
+            self::Avif => 'avif',
+            self::Csv => 'csv',
         };
     }
 
     public function isImage(): bool
     {
-        return self::Pdf !== $this && self::Zip !== $this;
+        return !\in_array($this, [self::Pdf, self::Zip, self::Csv], true);
     }
 }

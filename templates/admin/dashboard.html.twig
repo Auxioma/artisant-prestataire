@@ -1,23 +1,141 @@
-{#- BO01 (Figma 186:75) — socle : files d'attente disponibles ; indicateurs et graphiques avec les données qu'ils mesurent. -#}
+{#-
+    BO01 « Tableau de bord » (Figma 186:75) : choix du mois et export (en-tête), dix indicateurs clés comparés à N-1
+    (BO01.1) puis les autres indicateurs du CDC, files d'attente (BO01.2), évolution quotidienne, couverture par département, top métiers et demandes non couvertes
+    (BO01.3). Écarts : P-139, P-140, P-141.
+-#}
 {% extends 'admin/base.html.twig' %}
 {% set active_module = 'dashboard' %}
+{% set month_abbr = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'] %}
+{% set month_names = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] %}
+{% import 'admin/_kpi_macros.html.twig' as m %}
 {% block title %}Tableau de bord{% endblock %}
 {% block body %}
-    {{ include('admin/_page_header.html.twig', {title: 'Tableau de bord', subtitle: 'Bonjour ' ~ app.user.name ~ ' — ' ~ app.user.role.label}) }}
-    <div class="tm-admin-grid">
+    <nav class="tm-admin-crumbs" aria-label="Fil d’Ariane"><ol><li><a href="{{ path('admin_dashboard') }}">Back-office</a></li><li aria-current="page">Tableau de bord</li></ol></nav>
+    <div class="tm-admin-head">
+        <div>
+            <h1>Tableau de bord</h1>
+            <p class="tm-admin-head__sub">Activité du 1er au {{ kpis.lastDay|date('j', 'Europe/Paris') }} {{ month_names[kpis.from|date('n', 'Europe/Paris') - 1] }} {{ kpis.from|date('Y', 'Europe/Paris') }} · comparaison avec {{ month_names[kpis.previousFrom|date('n', 'Europe/Paris') - 1] }} {{ kpis.previousFrom|date('Y', 'Europe/Paris') }}</p>
+        </div>
+        <div class="tm-bo01-actions">
+            <form method="get" action="{{ path('admin_dashboard') }}" data-controller="autosubmit" class="tm-bo01-month">
+                <label class="tm-visually-hidden" for="bo01_mois">Mois affiché</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="bo01_mois" name="mois" data-action="change->autosubmit#submit">
+                    {% for ym in months %}<option value="{{ ym }}"{{ ym == kpis.month ? ' selected' }}>{{ m.month_label(ym, month_names) }}</option>{% endfor %}
+                </select></div>
+                <noscript><twig:Button type="submit" variant="secondary">Afficher</twig:Button></noscript>
+            </form>
+            {% if is_granted('admin.dashboard.export') %}<twig:Button href="{{ path('admin_dashboard_export', {mois: kpis.month}) }}" variant="secondary">Exporter</twig:Button>{% endif %}
+        </div>
+    </div>
+
+    <ul class="tm-bo01-kpis" aria-label="Indicateurs clés">
+        {% for card in kpis.featured %}{{ m.card(card) }}{% endfor %}
+    </ul>
+    <details class="tm-bo01-more">
+        <summary>Tous les indicateurs ({{ kpis.others|length }} de plus)</summary>
+        <ul class="tm-bo01-kpis tm-bo01-kpis--more" aria-label="Autres indicateurs">
+            {% for card in kpis.others %}{{ m.card(card) }}{% endfor %}
+        </ul>
+    </details>
+
+    <div class="tm-bo01-grid">
         <section class="tm-admin-panel" aria-labelledby="files-titre">
             <h2 id="files-titre" class="tm-card-title">Files d’attente</h2>
-            <ul class="tm-admin-queues">
-                {% for queue in queues|filter(q => is_granted(q.permission)) %}
-                    <li><twig:Icon name="{{ queue.icon }}" size="sm" class="tm-icon--inherit" />{% if queue.route is defined %}<a href="{{ path(queue.route, queue.params ?? {}) }}">{{ queue.label }}</a>{% else %}<span>{{ queue.label }}</span>{% endif %}<span class="tm-admin-count{{ queue.count > 0 ? ' tm-admin-count--todo' }}">{{ queue.count }}</span></li>
+            <ul class="tm-bo01-queues">
+                {% for q in queues %}
+                    {% set inner %}<twig:Icon name="{{ q.icon }}" size="sm" class="tm-icon--inherit" /><span class="tm-bo01-queue__label">{{ q.label }}</span>{% if q.count is null %}<span class="tm-admin__soon">Bientôt</span>{% else %}<span class="tm-bo01-queue__count{{ q.count > 0 ? ' is-todo' }}">{{ q.count|number_format(0, ',', ' ') }}</span>{% endif %}{% endset %}
+                    <li class="tm-bo01-queue tm-bo01-queue--{{ q.key|replace({'_': '-'}) }}">
+                        {% if q.href %}<a href="{{ q.href }}">{{ inner }}<twig:Icon name="chevR" size="xs" class="tm-icon--inherit tm-bo01-queue__chev" /></a>{% else %}<span class="tm-bo01-queue__static">{{ inner }}</span>{% endif %}
+                    </li>
                 {% else %}
                     <li>Aucune file d’attente pour votre rôle.</li>
                 {% endfor %}
             </ul>
         </section>
-        <section class="tm-admin-panel" aria-labelledby="kpi-titre">
-            <h2 id="kpi-titre" class="tm-card-title">Indicateurs clés</h2>
-            <twig:EmptyState icon="grid" title="Bientôt disponibles" text="Visiteurs, demandes, devis, taux d’acceptation, MRR… s’afficheront ici au fur et à mesure de la mise en service des fonctionnalités qu’ils mesurent." />
+
+        <section class="tm-admin-panel" aria-labelledby="evolution-titre">
+            <h2 id="evolution-titre" class="tm-card-title">Évolution quotidienne des demandes et devis</h2>
+            <ul class="tm-bo01-legend" aria-hidden="true"><li class="is-requests">Demandes</li><li class="is-quotes">Devis envoyés</li></ul>
+            {% set n = activity.days|length %}
+            {% set top = max(activity.max, 1) %}
+            {% set h = 200 %}
+            <svg class="tm-bo01-chart" viewBox="0 0 {{ n * 12 }} {{ h }}" preserveAspectRatio="none" role="img" aria-labelledby="evolution-titre evolution-resume">
+                <desc id="evolution-resume">{{ activity.days|reduce((c, d) => c + d.requests, 0) }} demandes et {{ activity.days|reduce((c, d) => c + d.quotes, 0) }} devis envoyés sur la période ; maximum {{ activity.max }} par jour.</desc>
+                {% for d in activity.days %}
+                    {% set hr = (d.requests / top * (h - 4))|round %}{% set hq = (d.quotes / top * (h - 4))|round %}
+                    <rect class="tm-bo01-bar is-requests" x="{{ loop.index0 * 12 + 2 }}" y="{{ h - hr }}" width="4" height="{{ hr }}"><title>{{ d.day|date('d/m', 'Europe/Paris') }} : {{ d.requests }} demande(s)</title></rect>
+                    <rect class="tm-bo01-bar is-quotes" x="{{ loop.index0 * 12 + 6 }}" y="{{ h - hq }}" width="4" height="{{ hq }}"><title>{{ d.day|date('d/m', 'Europe/Paris') }} : {{ d.quotes }} devis</title></rect>
+                {% endfor %}
+            </svg>
+            {% if activity.max == 0 %}<p class="tm-caption tm-bo01-empty">Aucune demande ni aucun devis envoyé sur la période.</p>{% endif %}
+            <ol class="tm-bo01-axis" aria-hidden="true">
+                {% for d in activity.days %}{% if loop.first or loop.last or (loop.index0 % 7 == 0 and loop.revindex0 > 3) %}<li>{{ d.day|date('j', 'Europe/Paris') }} {{ month_abbr[d.day|date('n', 'Europe/Paris') - 1] }}</li>{% endif %}{% endfor %}
+            </ol>
+            <details class="tm-bo01-data">
+                <summary>Voir les données</summary>
+                <div class="tm-admin-table-wrap"><table class="tm-admin-table">
+                    <thead><tr><th scope="col">Jour</th><th scope="col">Demandes</th><th scope="col">Devis envoyés</th></tr></thead>
+                    <tbody>{% for d in activity.days %}<tr><th scope="row">{{ d.day|date('d/m/Y', 'Europe/Paris') }}</th><td>{{ d.requests }}</td><td>{{ d.quotes }}</td></tr>{% endfor %}</tbody>
+                </table></div>
+            </details>
         </section>
     </div>
+    <div class="tm-bo01-grid tm-bo01-grid--coverage">
+        <section class="tm-admin-panel" aria-labelledby="couverture-titre">
+            <h2 id="couverture-titre" class="tm-card-title">Couverture : demandes sans devis par département</h2>
+            {% if coverage.departments is empty %}
+                <p class="tm-bo01-empty-line">Aucune demande déposée sur la période.</p>
+            {% else %}
+                <ul class="tm-bo01-coverage">
+                    {% for d in coverage.departments %}
+                        {% set pct = (d.rate * 100)|round %}
+                        <li>
+                            <span class="tm-bo01-coverage__dept">{{ d.code }} {{ d.name }}</span>
+                            <meter class="tm-bo01-coverage__bar is-{{ d.severity }}" min="0" max="1" value="{{ d.rate }}" aria-label="{{ d.code }} {{ d.name }} : {{ pct }} % sans devis">{{ pct }} %</meter>
+                            <strong>{{ pct }} %</strong>
+                            <span class="tm-caption tm-bo01-coverage__count">{{ d.uncovered }} / {{ d.requests }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <p class="tm-caption">Départements les plus demandés sur la période · nombre de demandes sans devis / déposées. La carte de France viendra avec le fond de carte (P-51).</p>
+            {% endif %}
+        </section>
+
+        <section class="tm-admin-panel" aria-labelledby="metiers-titre">
+            <h2 id="metiers-titre" class="tm-card-title">Top métiers (demandes)</h2>
+            {% if coverage.jobs is empty %}
+                <p class="tm-bo01-empty-line">Aucune demande déposée sur la période.</p>
+            {% else %}
+                <ol class="tm-bo01-jobs">
+                    {% for j in coverage.jobs %}<li><span>{{ j.name }}</span><strong>{{ j.requests|number_format(0, ',', ' ') }}</strong></li>{% endfor %}
+                </ol>
+            {% endif %}
+        </section>
+    </div>
+
+    <section class="tm-admin-panel tm-bo01-gaps" aria-labelledby="non-couvertes-titre">
+        <h2 id="non-couvertes-titre" class="tm-card-title">Demandes non couvertes (métier × zone)</h2>
+        {% if coverage.gaps is empty %}
+            <p class="tm-bo01-empty-line">Toutes les demandes de la période ont reçu au moins un devis.</p>
+        {% else %}
+            <div class="tm-admin-table-wrap"><table class="tm-admin-table">
+                <thead><tr><th scope="col">Métier</th><th scope="col">Zone</th><th scope="col">Demandes sans devis</th><th scope="col">Artisans actifs</th><th scope="col">Action</th></tr></thead>
+                <tbody>
+                    {% for g in coverage.gaps %}
+                        <tr>
+                            <th scope="row">{{ g.job }}</th>
+                            <td>{{ g.department }} ({{ g.department_code }})</td>
+                            <td>{{ g.uncovered }}</td>
+                            <td>{{ g.artisans }}</td>
+                            <td>
+                                {% if g.artisans == 0 and is_granted('admin.artisans.view') %}<a href="{{ path('admin_artisans_queue') }}">Recruter des artisans</a>
+                                {% elseif is_granted('admin.requests.view') %}<a href="{{ path('admin_requests', {metier: g.job_id, departement: g.department_code, statut: 'open'}) }}">Étendre la zone</a>
+                                {% else %}—{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table></div>
+        {% endif %}
+    </section>
 {% endblock %}

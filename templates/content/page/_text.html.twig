@@ -1,0 +1,5 @@
+<section class="tm-container tm-page__block tm-page__text">
+    {% if b.title %}<h2>{{ b.title }}</h2>{% endif %}
+    {# |raw justifié : HTML assaini à l'enregistrement (app.content_sanitizer). #}
+    <div class="tm-page__prose">{{ b.html|raw }}</div>
+</section>

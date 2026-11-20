@@ -1,3 +1,4 @@
+/* stimulusFetch: 'lazy' */
 import { Controller } from '@hotwired/stimulus';
 
 /* BO04.1 — sélection de lignes : « n sélectionnée(s) », case « tout sélectionner ». */

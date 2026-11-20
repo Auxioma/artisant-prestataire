@@ -32,8 +32,14 @@
 /.php-cs-fixer.cache
 /var/deptrac/
 /var/phpstan/
+.env.local
 .env.*.local
 /config/secrets/*/*.decrypt.private.php
 ###< trouvemoi ###
-config.bat
-node_modules
+
+# Captures HTML temporaires des contrôles visuels et d’accessibilité (jamais versionnées)
+/public/tmp-*.html
+/tools/a11y/rapport.json
+/tools/a11y/rapport-assist.json
+/tools/a11y/*.png
+/tools/perf/rapport.json

@@ -178,6 +178,7 @@
 
     .tm-signup {
         display: grid;
+        grid-template-columns: minmax(0, 1fr); /* RGAA 10.11 : aucune colonne plus large que l'écran à 320 px */
         gap: var(--space-4);
         padding-top: var(--space-2);
     }
@@ -237,6 +238,7 @@
 
     .tm-signup__fields {
         display: grid;
+        grid-template-columns: minmax(0, 1fr);
         gap: 13px;
     }
 
@@ -445,7 +447,7 @@
 
     .tm-pro-signup__intro .tm-stepper { width: 100%; max-width: 980px; }
 
-    .tm-pro-signup__grid { display: grid; gap: var(--space-4); align-items: start; }
+    .tm-pro-signup__grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); align-items: start; }
 
     .tm-pro-signup__why {
         display: grid;

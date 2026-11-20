@@ -1,0 +1,14 @@
+{#- Rubrique de l'aide : `t` (FaqAdminTopic ou null pour une création). -#}
+{% set k = t ? t.id : 'new' %}
+<form method="post" action="{{ path('admin_cms_faq_action') }}" class="tm-media-form" data-turbo="false">
+    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="topic_save">{% if t %}<input type="hidden" name="id" value="{{ t.id }}">{% endif %}
+    <twig:Field id="topic_title_{{ k }}" name="data[title]" label="Titre" required maxlength="120" value="{{ t ? t.title : '' }}" />
+    <twig:Field id="topic_description_{{ k }}" name="data[description]" label="Description" required maxlength="300" value="{{ t ? t.description : '' }}" />
+    <twig:Field id="topic_slug_{{ k }}" name="data[slug]" label="Adresse (facultative)" maxlength="100" value="{{ t ? t.slug : '' }}" help="/aide/… — par défaut, tirée du titre." />
+    <div class="tm-field">
+        <label class="tm-field__label" for="topic_icon_{{ k }}">Icône</label>
+        <div class="tm-field__control"><select class="tm-field__input" id="topic_icon_{{ k }}" name="data[icon]">{% for v, l in icons %}<option value="{{ v }}"{{ t and t.icon == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select></div>
+    </div>
+    {% if t %}<label class="tm-check"><input class="tm-check__input" type="checkbox" name="active" value="1"{% if t.active %} checked{% endif %}><span>Rubrique visible sur le site</span></label>{% endif %}
+    <twig:Button type="submit" variant="secondary">{{ t ? 'Enregistrer' : 'Créer la rubrique' }}</twig:Button>
+</form>

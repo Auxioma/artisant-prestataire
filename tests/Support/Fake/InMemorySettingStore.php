@@ -19,6 +19,11 @@ final class InMemorySettingStore implements SettingStore
         return $this->values[$key->value] ?? null;
     }
 
+    public function all(): array
+    {
+        return $this->values;
+    }
+
     public function save(SettingKey $key, mixed $value, ?string $adminId, string $reason, \DateTimeImmutable $changedAt): bool
     {
         $before = $this->values[$key->value] ?? null;

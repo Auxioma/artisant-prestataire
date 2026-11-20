@@ -1,0 +1,18 @@
+{#- Onglets du CMS (BO10) ; `current` : accueil, medias, pages, faq, menus, libelles. Rubriques non livrées : « Bientôt ». -#}
+{% set cms_tabs = [
+    {key: 'accueil', route: 'admin_cms', label: 'Page d’accueil'},
+    {key: 'pages', route: 'admin_cms_pages', label: 'Pages'},
+    {key: 'faq', route: 'admin_cms_faq', label: 'FAQ / Aide'},
+    {key: 'menus', route: 'admin_cms_menus', label: 'Menus'},
+    {key: 'libelles', route: 'admin_cms_labels', label: 'Libellés'},
+    {key: 'medias', route: 'admin_cms_media', label: 'Médiathèque'},
+] %}
+<nav class="tm-admin-tabs" aria-label="Rubriques du CMS">
+    {% for t in cms_tabs %}
+        {% if tm_route_exists(t.route) %}
+            <a class="tm-admin-tab{{ t.key == current ? ' is-active' }}" href="{{ path(t.route) }}"{{ t.key == current ? ' aria-current="page"' }}>{{ t.label }}</a>
+        {% else %}
+            <span class="tm-admin-tab is-disabled">{{ t.label }} <span class="tm-admin__soon">Bientôt</span></span>
+        {% endif %}
+    {% endfor %}
+</nav>

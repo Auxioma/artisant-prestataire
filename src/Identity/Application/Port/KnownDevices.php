@@ -33,4 +33,7 @@ interface KnownDevices
 
     /** RG-090 : effacement des appareils d'un compte supprimé. */
     public function forget(string $userId): void;
+
+    /** CDC §11 « logs de connexion 1 an » : appareils non revus depuis `$before`. */
+    public function forgetIdleBefore(\DateTimeImmutable $before): int;
 }

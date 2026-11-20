@@ -1,0 +1,9 @@
+Bonjour {{ prenom }},
+
+Vous ne vous êtes pas connecté à TrouveMoi depuis plus de {{ annees }} ans. Pour protéger vos données, nous supprimerons votre compte le {{ date_effacement|date('d/m/Y', 'Europe/Paris') }} : vos données personnelles seront effacées.
+
+Vous souhaitez le conserver ? Il suffit de vous connecter avant cette date : {{ lien_connexion }}
+
+Sinon, vous n’avez rien à faire.
+
+Une question ? Contactez-nous : {{ lien_aide }}

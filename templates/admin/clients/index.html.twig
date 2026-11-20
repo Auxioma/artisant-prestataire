@@ -16,6 +16,7 @@
                 <div class="tm-field"><label class="tm-field__label" for="statut">Statut</label><div class="tm-select"><select class="tm-select__input" id="statut" name="statut"><option value="">Tous</option>{% for v, l in status_labels %}<option value="{{ v }}"{{ filters.statut == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div></div>
                 <div class="tm-field"><label class="tm-field__label" for="type">Type</label><div class="tm-select"><select class="tm-select__input" id="type" name="type"><option value="">Tous</option><option value="particulier"{{ filters.type == 'particulier' ? ' selected' }}>Particulier</option><option value="professionnel"{{ filters.type == 'professionnel' ? ' selected' }}>Professionnel</option></select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div></div>
                 <twig:Button type="submit" variant="secondary" icon="search" iconPosition="start">Filtrer</twig:Button>
+                {% if is_granted('admin.clients.export') %}<twig:Button href="{{ path('admin_clients_export', filters|filter(v => v != '')) }}" variant="secondary" icon="download" iconPosition="start" title="Export journalisé (données personnelles)">Exporter CSV</twig:Button>{% endif %}
             </form>
             <div class="tm-admin-table-wrap">
                 <table class="tm-admin-table">
@@ -76,8 +77,9 @@
                         <twig:Button type="submit" variant="danger" name="action" value="suspend" block>Suspendre</twig:Button>
                     {% endif %}
                 </form>
-                <p class="tm-caption">Modification, suppression (RGPD) et connexion « en tant que » arrivent avec leurs lots ; toutes les actions sont journalisées.</p>
+                <p class="tm-caption">Modification et suppression (RGPD) arrivent avec leurs lots ; toutes les actions sont journalisées.</p>
             {% endif %}
+            {% if record.status != 'anonymized' %}{{ include('admin/_impersonate.html.twig', {user_id: record.id}) }}{% endif %}
         </aside>
         {% endif %}
     </div>

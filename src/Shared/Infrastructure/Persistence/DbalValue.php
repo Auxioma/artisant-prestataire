@@ -36,6 +36,19 @@ final class DbalValue
         throw new \UnexpectedValueException(\sprintf('Entier attendu depuis la base, %s reçu.', get_debug_type($value)));
     }
 
+    /** Agrégat numérique (avg, sum, numeric) : null si aucune ligne. */
+    public static function nullableFloat(mixed $value): ?float
+    {
+        if (null === $value) {
+            return null;
+        }
+        if (\is_int($value) || \is_float($value) || (\is_string($value) && is_numeric($value))) {
+            return (float) $value;
+        }
+
+        throw new \UnexpectedValueException(\sprintf('Nombre attendu depuis la base, %s reçu.', get_debug_type($value)));
+    }
+
     public static function json(mixed $value): mixed
     {
         return json_decode(self::string($value), true, 16, \JSON_THROW_ON_ERROR);

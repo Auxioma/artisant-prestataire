@@ -39,6 +39,8 @@ final class User extends AggregateRoot
     /** P11.6 « Créer mon compte plus tard » : aucun mot de passe choisi ; le lien d'activation connecte (lien magique). */
     private bool $passwordless = false;
     private ?\DateTimeImmutable $deletionRequestedAt = null;
+    /** CDC §11 — relance d'inactivité (E-09b) ; une connexion l'efface. */
+    private ?\DateTimeImmutable $inactivityNoticeAt = null;
     private ?\DateTimeImmutable $anonymizedAt = null;
     private \DateTimeImmutable $updatedAt;
     private int $version = 1;
@@ -156,6 +158,37 @@ final class User extends AggregateRoot
     {
         $this->assertCanLogIn();
         $this->lastLoginAt = $now;
+        $this->inactivityNoticeAt = null;
+    }
+
+    /** CDC §11 — compte inactif depuis gdpr.inactive_years : relancé une fois avant anonymisation. */
+    public function noticeInactivity(\DateTimeImmutable $now): void
+    {
+        $this->assertNotAnonymized();
+        if (null !== $this->inactivityNoticeAt || !\in_array($this->status, [UserStatus::Active, UserStatus::PendingEmail], true)) {
+            return;
+        }
+        $this->inactivityNoticeAt = $now;
+        $this->touch($now);
+    }
+
+    /**
+     * CDC §11 — relance restée sans connexion : l'effacement est programmé à la date de la relance (le délai de grâce a
+     * couru depuis), puis réalisé par EraseDueAccounts comme une suppression demandée.
+     */
+    public function scheduleErasureForInactivity(\DateTimeImmutable $now): void
+    {
+        if (null === $this->inactivityNoticeAt || !\in_array($this->status, [UserStatus::Active, UserStatus::PendingEmail], true)) {
+            throw new IdentityRuleViolation('Aucune relance d’inactivité en attente.');
+        }
+        $this->status = UserStatus::DeletionRequested;
+        $this->deletionRequestedAt = $this->inactivityNoticeAt;
+        $this->touch($now);
+    }
+
+    public function inactivityNoticeAt(): ?\DateTimeImmutable
+    {
+        return $this->inactivityNoticeAt;
     }
 
     /** Le compte peut-il se connecter (statut) ? Levée sinon. */

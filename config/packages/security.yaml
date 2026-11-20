@@ -58,6 +58,9 @@ security:
             provider: app_users
             user_checker: App\Identity\Infrastructure\Security\UserChecker
             entry_point: form_login
+            # ADR-0013 : connexion assistée ouverte par un super-admin du back-office (ticket à usage unique)
+            custom_authenticators:
+                - App\Identity\Infrastructure\Security\ImpersonationAuthenticator
             # A04 : formulaire, CSRF, redirection en liste blanche (LoginSuccessHandler) ; RG-045 : LoginSubscriber
             form_login:
                 login_path: identity_login

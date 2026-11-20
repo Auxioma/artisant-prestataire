@@ -169,6 +169,7 @@ enum SettingKey: string
     case SeoRobotsExtra = 'seo.robots_extra';
     case SiteMaintenance = 'site.maintenance';
     case SiteMaintenanceRetryMinutes = 'site.maintenance_retry_minutes';
+    case SitePublicCacheSeconds = 'site.public_cache_seconds';
 
     // Identité de la plateforme (BO13) — réseaux sociaux du pied de page (vides = non affichés)
     case SocialFacebook = 'social.facebook';
@@ -328,7 +329,7 @@ enum SettingKey: string
             self::CookiesPolicyVersion => $d(T::Integer, 1, 'Version de la politique cookies (l\'incrémenter redemande le consentement)', 1, 10_000, proposed: true),
             self::CookiesConsentMonths => $d(T::Integer, 6, 'Durée du consentement cookies (mois)', 1, 13),
             self::NewsletterProvider => $d(T::Choice, 'brevo', 'Outil de newsletter (Q25)', choices: ['brevo', 'mailchimp', 'internal'], proposed: true),
-            self::ContactReasons => $d(T::StringList, ['Question sur une demande ou un devis', 'Mon compte', 'Abonnement et facturation (professionnels)', 'Signalement d’un contenu ou d’un professionnel', 'Partenariat', 'Presse', 'Autre'], 'Motifs du formulaire de contact (P16)', proposed: true),
+            self::ContactReasons => $d(T::StringList, ['Question sur une demande ou un devis', 'Mon compte', 'Abonnement et facturation (professionnels)', 'Signalement d’un contenu ou d’un professionnel', 'Accessibilité', 'Partenariat', 'Presse', 'Autre'], 'Motifs du formulaire de contact (P16)', proposed: true),
             self::ContactMaxFileMb => $d(T::Integer, 5, 'Contact : poids maximum de la pièce jointe (Mo)', 1, 20),
             self::ContactReplyHours => $d(T::Integer, 48, 'Contact : délai de réponse annoncé (heures ouvrées)', 1, 240),
             self::SeoSchemaOrganization => $d(T::Boolean, true, 'Données structurées Organization / WebSite (accueil, BO12.4)'),
@@ -339,6 +340,7 @@ enum SettingKey: string
             self::SeoRobotsExtra => $d(T::StringList, [], 'Lignes ajoutées au robots.txt (BO12.3)', proposed: true),
             self::SiteMaintenance => $d(T::Boolean, false, 'Mode maintenance du site public (P18 : 503, back-office accessible)', proposed: true),
             self::SiteMaintenanceRetryMinutes => $d(T::Integer, 30, 'Maintenance : délai annoncé avant nouvel essai (Retry-After, min)', 1, 1440, proposed: true),
+            self::SitePublicCacheSeconds => $d(T::Integer, 300, 'Cache partagé (CDN) des pages publiques pour les visiteurs non connectés, en secondes (0 = désactivé, CDC §8)', 0, 3600, proposed: true),
 
             self::SocialFacebook => $d(T::NullableUrl, null, 'Page Facebook', choices: ['facebook.com'], proposed: true),
             self::SocialInstagram => $d(T::NullableUrl, null, 'Compte Instagram', choices: ['instagram.com'], proposed: true),

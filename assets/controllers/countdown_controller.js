@@ -1,3 +1,4 @@
+/* stimulusFetch: 'lazy' */
 import { Controller } from '@hotwired/stimulus';
 
 /* Délai avant un nouvel envoi (CDC A02 : « bouton renvoyer, délai 60 s ») ; le serveur applique le même délai. */

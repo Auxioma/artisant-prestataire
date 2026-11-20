@@ -47,7 +47,12 @@ notifications:
         label: "Suppression de compte effective"
         recipient: "Tous"
         channels: [email]
-        variables: [prenom, lien_aide]
+        variables: [prenom, lien_aide, inactivite, annees]
+    'E-09b':
+        label: "Compte inactif : suppression prévue sauf connexion (CDC §11)"
+        recipient: "Tous"
+        channels: [email]
+        variables: [prenom, annees, date_effacement, lien_connexion, lien_aide]
     'E-10':
         label: "Demande de devis envoyée (récapitulatif)"
         recipient: "Client"

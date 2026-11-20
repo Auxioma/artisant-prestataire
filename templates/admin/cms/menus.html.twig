@@ -1,0 +1,64 @@
+{#- BO10.5 « Menus » (pas de maquette dédiée, P-132) : menu principal, pied de page, menus « Mon compte ». -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'cms' %}
+{% set can_edit = is_granted('admin.cms.edit') %}
+{% block title %}Menus — CMS{% endblock %}
+{% macro small(label, action, item, csrf_id, variant) %}
+    <form method="post" action="{{ path('admin_cms_menus_action') }}" class="tm-cms-inline" data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="{{ action }}"><input type="hidden" name="id" value="{{ item.id }}"><input type="hidden" name="menu" value="{{ item.menu }}">
+        <twig:Button type="submit" variant="{{ variant }}">{{ label }}</twig:Button>
+    </form>
+{% endmacro %}
+{% macro form(item, menu, audiences, specials, csrf_id) %}
+    {% set k = item ? item.id : 'new-' ~ menu %}
+    {% set special = item and item.link starts with 'special:' %}
+    <form method="post" action="{{ path('admin_cms_menus_action') }}" class="tm-media-form" data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="save"><input type="hidden" name="data[menu]" value="{{ menu }}">{% if item %}<input type="hidden" name="id" value="{{ item.id }}">{% endif %}
+        <twig:Field id="label_{{ k }}" name="data[label]" label="Libellé" required maxlength="60" value="{{ item ? item.label : '' }}" />
+        {% if special %}
+            <p class="tm-caption">Élément spécial : {{ specials[item.link] }}.</p>
+        {% else %}
+            <twig:Field id="link_{{ k }}" name="data[link]" label="Lien" required maxlength="500" value="{{ item ? item.link : '' }}" help="/chemin du site, https://… ou route:nom (liens d’origine)." />
+            <label class="tm-check"><input class="tm-check__input" type="checkbox" name="new_tab" value="1"{% if item and item.newTab %} checked{% endif %}><span>Ouvrir dans un nouvel onglet</span></label>
+        {% endif %}
+        <div class="tm-field">
+            <label class="tm-field__label" for="audience_{{ k }}">Visible par</label>
+            <div class="tm-field__control"><select class="tm-field__input" id="audience_{{ k }}" name="data[audience]">{% for v, l in audiences %}<option value="{{ v }}"{{ item and item.audience == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select></div>
+        </div>
+        {% if item %}<label class="tm-check"><input class="tm-check__input" type="checkbox" name="active" value="1"{% if item.active %} checked{% endif %}><span>Affiché</span></label>{% endif %}
+        <twig:Button type="submit" variant="secondary">{{ item ? 'Enregistrer' : 'Ajouter le lien' }}</twig:Button>
+    </form>
+{% endmacro %}
+{% import _self as m %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Menus', crumbs: ['Contenus', 'CMS'], subtitle: 'Menu principal, pied de page et menus « Mon compte » · le méga-menu reprend les catégories du référentiel'}) }}
+    {{ include('admin/cms/_tabs.html.twig', {current: 'menus'}) }}
+    <div class="tm-menus-admin">
+        {% for menu, items in menus %}
+            <section class="tm-admin-panel" id="menu-{{ menu }}" aria-labelledby="menu-title-{{ menu }}">
+                <h2 id="menu-title-{{ menu }}" class="tm-card-title">{{ labels[menu] }}</h2>
+                <ol class="tm-page-blocks">
+                    {% for item in items %}
+                        <li class="tm-page-block">
+                            <div class="tm-page-block__head">
+                                <h3>{{ item.label }}{% if not item.active %} <span class="tm-admin-status">Masqué</span>{% endif %}</h3>
+                                <span class="tm-caption">{{ item.link starts with 'special:' ? specials[item.link] : item.link }} · {{ audiences[item.audience] }}</span>
+                            </div>
+                            {% if can_edit %}
+                                <div class="tm-admin-actions">
+                                    {% if not loop.first %}{{ m.small('Monter', 'up', item, csrf_id, 'secondary') }}{% endif %}
+                                    {% if not loop.last %}{{ m.small('Descendre', 'down', item, csrf_id, 'secondary') }}{% endif %}
+                                    {% if not (item.link starts with 'special:') %}{{ m.small('Supprimer', 'delete', item, csrf_id, 'danger') }}{% endif %}
+                                </div>
+                                <details class="tm-media-card__edit"><summary>Modifier</summary>{{ m.form(item, menu, audiences, specials, csrf_id) }}</details>
+                            {% endif %}
+                        </li>
+                    {% else %}
+                        <li class="tm-caption">Menu vide : rien n’est affiché.</li>
+                    {% endfor %}
+                </ol>
+                {% if can_edit %}<details class="tm-media-card__edit"><summary>Ajouter un lien</summary>{{ m.form(null, menu, audiences, specials, csrf_id) }}</details>{% endif %}
+            </section>
+        {% endfor %}
+    </div>
+{% endblock %}

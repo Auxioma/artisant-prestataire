@@ -1,0 +1,138 @@
+{#-
+    BO11 « Emails, notifications et newsletter » (Figma 186:4802) : onglets ; BO11.1 modèles (recherche code ou
+    déclencheur, destinataire, canal, export ; code, déclencheur, canaux E / I / S, statut ; éditeur : objet,
+    pré-en-tête, variables, aperçu rendu, version texte, test, enregistrement) ; BO11.2 journal d'envoi. Écarts : P-136.
+-#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'notifications' %}
+{% set can_edit = is_granted('admin.notifications.edit') %}
+{% block title %}Emails et notifications{% endblock %}
+{% macro channels(t) %}<span class="tm-bo11-channels">{% for c, l in {email: 'E', in_app: 'I', sms: 'S'} %}<span class="tm-bo11-channel{{ t.has(c) ? ' is-on' }}" title="{{ {email: 'E-mail', in_app: 'Sur le site', sms: 'SMS'}[c] }}{{ t.has(c) ? '' : ' (non)' }}">{{ l }}</span>{% endfor %}</span>{% endmacro %}
+{% import _self as m %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Emails, notifications et newsletter', crumbs: ['Contenus'], subtitle: all_count ~ ' modèles · gabarit HTML commun aux couleurs de la charte'}) }}
+    <nav class="tm-admin-tabs" aria-label="Communications">
+        <a class="tm-admin-tab is-active" href="{{ path('admin_notifications') }}" aria-current="page">Modèles ({{ all_count }})</a>
+        <a class="tm-admin-tab" href="#journal">Journal d’envoi</a>
+        <span class="tm-admin-tab is-disabled">Newsletter <span class="tm-admin__soon">Bientôt</span></span>
+    </nav>
+
+    <div class="tm-bo11">
+        <section class="tm-admin-panel" aria-labelledby="bo11-list-title">
+            <h2 id="bo11-list-title" class="tm-card-title">Modèles</h2>
+            <form method="get" class="tm-bo11-filters" role="search">
+                <div class="tm-field__control tm-bo11-search"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><label class="tm-visually-hidden" for="bo11_q">Code ou déclencheur</label><input class="tm-field__input" type="search" id="bo11_q" name="q" value="{{ filters.q ?? '' }}" placeholder="Code ou déclencheur"></div>
+                <label class="tm-visually-hidden" for="bo11_dest">Destinataire</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="bo11_dest" name="destinataire"><option value="">Destinataire</option>{% for r in recipients %}<option value="{{ r }}"{{ (filters.destinataire ?? '') == r ? ' selected' }}>{{ r }}</option>{% endfor %}</select></div>
+                <label class="tm-visually-hidden" for="bo11_canal">Canal</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="bo11_canal" name="canal"><option value="">Canal</option>{% for v, l in {email: 'E-mail', in_app: 'Sur le site', sms: 'SMS'} %}<option value="{{ v }}"{{ (filters.canal ?? '') == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select></div>
+                <twig:Button type="submit" variant="secondary">Filtrer</twig:Button>
+            </form>
+            <div class="tm-admin-table-wrap">
+                <table class="tm-admin-table tm-bo11-table">
+                    <thead><tr><th scope="col">Code</th><th scope="col">Déclencheur</th><th scope="col">Canaux</th><th scope="col">Statut</th></tr></thead>
+                    <tbody>
+                        {% for t in templates %}
+                            <tr{% if current and current.code == t.code %} class="is-current"{% endif %}>
+                                <th scope="row"><a href="{{ path('admin_notifications', filters|merge({modele: t.code})) }}#editeur"{% if current and current.code == t.code %} aria-current="true"{% endif %}>{{ t.code }}</a></th>
+                                <td>{{ t.label }}</td>
+                                <td>{{ m.channels(t) }}</td>
+                                <td><span class="tm-admin-status{{ t.active ? ' is-published' }}">{{ t.active ? 'Actif' : 'Inactif' }}</span></td>
+                            </tr>
+                        {% else %}
+                            <tr><td colspan="4">Aucun modèle ne correspond.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="tm-bo11-pager">
+                <p class="tm-caption">{{ filtered_count == 0 ? 0 : (page - 1) * per_page + 1 }}–{{ min(page * per_page, filtered_count) }} sur {{ filtered_count }}</p>
+                {% if pages > 1 %}<nav class="tm-msg-list__pages" aria-label="Pages des modèles">{% for p in max(1, page - 2)..min(pages, page + 2) %}{% if p == page %}<span aria-current="page">{{ p }}</span>{% else %}<a href="{{ path('admin_notifications', filters|merge({page: p})) }}">{{ p }}</a>{% endif %}{% endfor %}</nav>{% endif %}
+            </div>
+        </section>
+
+        {% if current %}
+            {% set c = draft ?? {subject: current.subject, preheader: current.preheader, body_html: current.bodyHtml, body_text: current.bodyText, in_app_body: current.inAppBody, active: current.active} %}
+            <section class="tm-admin-panel tm-bo11-editor" id="editeur" aria-labelledby="bo11-edit-title">
+                <h2 id="bo11-edit-title" class="tm-card-title">Éditer : {{ current.code }} · {{ current.label }}</h2>
+                <p class="tm-caption">Destinataire : {{ current.recipient }} · version {{ current.version }}{{ current.customized ? ' · personnalisée' }}{% if draft %} · <strong>brouillon non enregistré</strong>{% endif %}</p>
+                <form method="post" action="{{ path('admin_notifications_template', {code: current.code}) }}" class="tm-media-form" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
+                    <fieldset class="tm-page-block__fields"{% if not can_edit %} disabled{% endif %}>
+                        <legend class="tm-visually-hidden">Contenu du modèle {{ current.code }}</legend>
+                        {% if current.has('email') %}
+                            <twig:Field id="bo11_subject" name="data[subject]" label="Objet" required maxlength="200" value="{{ c.subject }}" />
+                            <twig:Field id="bo11_preheader" name="data[preheader]" label="Pré-en-tête" required maxlength="200" value="{{ c.preheader }}" />
+                        {% endif %}
+                        <div class="tm-bo11-vars"><span>Variables :</span>{% for v in current.variables %}<code class="tm-bo11-var">{{ '{{ ' ~ v ~ ' }}' }}</code>{% else %}<span class="tm-caption">aucune</span>{% endfor %}</div>
+                        <div class="tm-bo11-preview">
+                            <iframe src="{{ path('admin_notifications_preview', {code: current.code, brouillon: draft ? 1 : null, vue: text_view ? 'texte' : null}|filter(v => v is not null)) }}" title="Aperçu {{ text_view ? 'de la version texte' : 'de l’e-mail' }} {{ current.code }}" sandbox loading="lazy"></iframe>
+                        </div>
+                        <details class="tm-media-card__edit"{% if draft %} open{% endif %}>
+                            <summary>Modifier le corps du message</summary>
+                            {% if current.has('email') %}
+                                <div class="tm-field"><label class="tm-field__label" for="bo11_html">Corps HTML</label><div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea tm-bo11-code" id="bo11_html" name="data[body_html]" rows="10">{{ c.body_html }}</textarea></div><p class="tm-caption">Syntaxe Twig en bac à sable : <code>{{ '{{ prenom }}' }}</code>, <code>{{ "{{ bouton(lien, 'Libellé') }}" }}</code>. Le gabarit commun (logo, pied de page légal) est ajouté automatiquement.</p></div>
+                                <div class="tm-field"><label class="tm-field__label" for="bo11_text">Version texte</label><div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea tm-bo11-code" id="bo11_text" name="data[body_text]" rows="6">{{ c.body_text }}</textarea></div></div>
+                            {% endif %}
+                            {% if current.has('in_app') %}<twig:Field id="bo11_in_app" name="data[in_app_body]" label="Notification sur le site" maxlength="500" value="{{ c.in_app_body }}" />{% endif %}
+                            <label class="tm-check"><input class="tm-check__input" type="checkbox" name="active" value="1"{% if c.active %} checked{% endif %}><span>Modèle actif (envoyé)</span></label>
+                        </details>
+                    </fieldset>
+                    <div class="tm-admin-actions">
+                        {% if can_edit and current.has('email') %}<twig:Button type="submit" variant="secondary" name="action" value="test">Envoyer un test</twig:Button>{% endif %}
+                        <twig:Button href="{{ path('admin_notifications', filters|merge({modele: current.code, vue: text_view ? null : 'texte'})|filter(v => v is not null)) }}#editeur" variant="secondary">{{ text_view ? 'Version HTML' : 'Version texte' }}</twig:Button>
+                        {% if can_edit %}<twig:Button type="submit" variant="secondary" name="action" value="preview">Aperçu des modifications</twig:Button>{% endif %}
+                        {% if can_edit %}<twig:Button type="submit" name="action" value="save">Enregistrer</twig:Button>{% endif %}
+                    </div>
+                </form>
+                {% if versions|length > 1 %}
+                    <details class="tm-media-card__edit">
+                        <summary>Historique des versions ({{ versions|length }})</summary>
+                        <ol class="tm-bo11-versions">
+                            {% for v in versions %}
+                                <li><span>Version {{ v.version }} · {{ v.createdAt|date('d/m/Y H:i', 'Europe/Paris') }}{{ v.createdBy ? '' : ' · catalogue' }}</span>
+                                    {% if can_edit and v.version != current.version %}<form method="post" action="{{ path('admin_notifications_template', {code: current.code}) }}" class="tm-cms-inline" data-turbo="false"><input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="restore"><input type="hidden" name="version" value="{{ v.version }}"><twig:Button type="submit" variant="tertiary">Restaurer</twig:Button></form>{% endif %}
+                                </li>
+                            {% endfor %}
+                        </ol>
+                    </details>
+                {% endif %}
+            </section>
+        {% endif %}
+    </div>
+
+    <section class="tm-admin-panel tm-bo11-log" id="journal" aria-labelledby="bo11-log-title">
+        <h2 id="bo11-log-title" class="tm-card-title">Journal d’envoi</h2>
+        <form method="get" action="{{ path('admin_notifications') }}#journal" class="tm-bo11-filters" role="search">
+            <div class="tm-field__control tm-bo11-search"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><label class="tm-visually-hidden" for="journal_dest">Destinataire (adresse exacte)</label><input class="tm-field__input" type="search" id="journal_dest" name="journal_destinataire" value="{{ filters.journal_destinataire ?? '' }}" placeholder="Destinataire (adresse exacte)"></div>
+            <label class="tm-visually-hidden" for="journal_modele">Modèle</label>
+            <div class="tm-field__control"><input class="tm-field__input" type="text" id="journal_modele" name="journal_modele" value="{{ filters.journal_modele ?? '' }}" placeholder="Modèle (E-12…)" maxlength="10"></div>
+            <label class="tm-visually-hidden" for="journal_statut">Statut</label>
+            <div class="tm-field__control"><select class="tm-field__input" id="journal_statut" name="journal_statut"><option value="">Statut</option>{% for v, l in statuses %}<option value="{{ v }}"{{ (filters.journal_statut ?? '') == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select></div>
+            <twig:Button type="submit" variant="secondary">Filtrer</twig:Button>
+            <twig:Button href="{{ path('admin_notifications_log_export', filters|filter((v, k) => k starts with 'journal_' and k != 'journal_page')) }}" variant="secondary" icon="download" iconPosition="start">Exporter CSV</twig:Button>
+        </form>
+        <div class="tm-admin-table-wrap">
+            <table class="tm-admin-table">
+                <thead><tr><th scope="col">Date</th><th scope="col">Destinataire</th><th scope="col">Modèle</th><th scope="col">Canal</th><th scope="col">Statut</th></tr></thead>
+                <tbody>
+                    {% for r in log.rows %}
+                        <tr>
+                            <td>{{ r.at|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+                            <td>{{ r.recipient ?? (r.channel == 'in_app' ? 'Notification sur le site' : '—') }}</td>
+                            <td><a href="{{ path('admin_notifications', {modele: r.code}) }}#editeur">{{ r.code }}</a> <span class="tm-caption">v{{ r.version }}</span></td>
+                            <td>{{ {email: 'E-mail', in_app: 'Sur le site', sms: 'SMS'}[r.channel] }}</td>
+                            <td><span class="tm-bo11-state is-{{ r.status }}"{% if r.error %} title="{{ r.error }}"{% endif %}>{{ statuses[r.status] }}</span>{% if r.error %} <span class="tm-caption">{{ r.error }}</span>{% endif %}</td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="5">Aucun envoi ne correspond.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="tm-bo11-pager">
+            <p class="tm-caption">{{ log.total == 0 ? 0 : (log.page - 1) * log.perPage + 1 }}–{{ min(log.page * log.perPage, log.total) }} sur {{ log.total|number_format(0, ',', ' ') }}</p>
+            {% if log.pages() > 1 %}<nav class="tm-msg-list__pages" aria-label="Pages du journal">{% for p in max(1, log.page - 2)..min(log.pages(), log.page + 2) %}{% if p == log.page %}<span aria-current="page">{{ p }}</span>{% else %}<a href="{{ path('admin_notifications', filters|merge({journal_page: p})) }}#journal">{{ p }}</a>{% endif %}{% endfor %}</nav>{% endif %}
+        </div>
+    </section>
+{% endblock %}

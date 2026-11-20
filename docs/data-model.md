@@ -189,6 +189,8 @@ Légende : **PK** clé primaire · **UQ** unicité · **IX** index · **FK** cl�
 | `admin.admin_user` | id, email, password_hash, totp_secret 🔒 (chiffré), backup_codes_hash, status, last_login_at | séparé de `identity.user` (ADR-0013) |
 | `admin.role` / `role_permission` / `admin_user_role` | presets + rôles personnalisés ; `max_manual_credits` | — |
 | `admin.setting` / `setting_history` | key, value (jsonb), type / before, after, admin_id, reason, changed_at | ADR-0007 |
+| `admin.scheduled_export` | id, kind (clé de la source), period_label, file_id → `shared.stored_file` (usage `scheduled_export`, CSV chiffré), row_count, created_at, expires_at (90 jours) | BO15.2, T-806c2 |
+| `identity.user_account.inactivity_notice_at` | date de la relance d'inactivité (E-09b), effacée à la connexion ; relance sans suite → effacement daté de la relance | §11, T-808b1 |
 | `admin.audit_log` | id, occurred_at, actor_type, actor_id, impersonator_id, action, subject_type, subject_id, ip_hash, ua_summary, context (jsonb sans PII en clair), prev_hash, hash | **append-only** + **chaînage de hash** (inviolabilité) · partitionné par mois · rétention 1 an (BO15.1) |
 | `admin.export_job` | id, admin_id, kind, filters, contains_pii, status, file_key, expires_at | journalisé (BO15.2) |
 | `admin.support_ticket` (V2) | … | BO16 |
@@ -259,3 +261,20 @@ Les IP sont stockées **hachées** (HMAC avec un sel tournant) sauf dans l'Audit
 | Table | Colonnes | Contraintes |
 |---|---|---|
 | `report` | id, subject_type (`avis`/`profil`/`demande`), subject_id, subject_title, subject_excerpt (instantané, preuve), subject_owner_id, reporter_id (FK compte, mis à vide à l'effacement), reason, details, status (`open`/`dismissed`/`actioned`), decided_by, decided_at, decision_note (réponse au signalant), created_at | **CK** ouvert ⇔ non décidé ; **UQ** un signalement ouvert par signalant et par contenu ; IX file des ouverts |
+
+### Schéma `content` — médiathèque (T-801a)
+
+| Table | Colonnes | Contraintes |
+|---|---|---|
+| `media` | id, file_id (FK `shared.stored_file`, usage `media`, public), title, alt (obligatoire), focal (`tl`…`br`), width, height, variants (jsonb : format → largeur → fichier), status (`processing`/`ready`/`failed`), created_by, created_at, updated_at | **CK** texte alternatif non vide ; **UQ** fichier ; `stored_file` : type `image/avif` |
+| `page` (T-801b) | id, slug (UQ, minuscules-tirets), title, meta_title, meta_description, noindex, draft (jsonb : blocs `{id, type, data}`), live + live_at (version en ligne), pending + pending_at (version programmée, visible dès son heure), created_at, updated_at, updated_by | **CK** version et date vont ensemble ; usage d'une image recherché dans les trois versions |
+| `menu_item` (T-801d) | id, menu (`main`, `footer_useful`, `footer_info`, `footer_help`, `account_client`, `account_pro`), label, link (`route:nom?p=v`, `/chemin`, `https://…`, `special:categories|cookies`), icon, new_tab, audience (`all`/`visitor`/`client`/`artisan`), position, active, updated_at | **CK** libellé non vide ; amorcé par la migration avec les menus existants |
+| `ui_label` (T-801e) | key (`rubrique.cle`), locale (`fr`), default_text (relevé dans les gabarits), text (modifié, facultatif), updated_at, updated_by | **PK** (key, locale) ; texte modifié non vide |
+
+### Rétention (T-808a)
+
+| Table | Colonnes | Contraintes |
+|---|---|---|
+| `request.quote_request.archived_at` | date d'archivage (contenu libre, adresse, pièces jointes effacés) | IX demandes closes archivables |
+| `admin.audit_anchor` | id, purged_through_seq, last_hash, purged_count, purged_at | point de reprise de la vérification de la chaîne après purge ; `admin.audit_log` : suppression autorisée seulement avec `app.audit_retention` posé dans la transaction |
+| `messaging.message` | texte remplaçable seulement avec `app.message_scrub` (effacement RGPD) | sinon non modifiable |

@@ -1,0 +1,225 @@
+{#-
+    BO15 « Finance, journaux et exports » (Figma 186:6608) : onglets ; BO15.1 journal d'audit des actions admin et
+    connexions (recherche, module, admin, période ; date, admin, action, objet, IP masquée ; export CSV journalisé),
+    webhooks Stripe (type, statut, tentatives, erreur) ; BO15.3 finance du mois (MRR, ARR, encaissé, remboursements,
+    impayés, LTV comparés à N-1), MRR par forfait, cohortes de rétention, rapprochement Stripe ; BO15.2 exports
+    disponibles selon le rôle et exports récents journalisés.
+    Écarts : P-142, P-143.
+-#}
+{% extends 'admin/base.html.twig' %}
+{% import 'admin/_kpi_macros.html.twig' as m %}
+{% set active_module = 'logs' %}
+{% set month_names = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] %}
+{% set month_abbr = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'] %}
+{% block title %}{{ tabs[tab] }} — Journaux{% endblock %}
+{% block body %}
+    {% if tab == 'finance' %}
+        <nav class="tm-admin-crumbs" aria-label="Fil d’Ariane"><ol><li><a href="{{ path('admin_dashboard') }}">Back-office</a></li><li>Système</li><li aria-current="page">Finance</li></ol></nav>
+        <div class="tm-admin-head">
+            <div>
+                <h1>Finance, journaux et exports</h1>
+                <p class="tm-admin-head__sub">{{ m.month_label(kpis.month, month_names) }} · rapprochement Stripe quotidien</p>
+            </div>
+            <div class="tm-bo01-actions">
+                <form method="get" action="{{ path('admin_logs') }}" data-controller="autosubmit" class="tm-bo01-month">
+                    <input type="hidden" name="onglet" value="finance">
+                    <label class="tm-visually-hidden" for="bo15_mois">Mois affiché</label>
+                    <div class="tm-field__control"><select class="tm-field__input" id="bo15_mois" name="mois" data-action="change->autosubmit#submit">{% for ym in months %}<option value="{{ ym }}"{{ ym == kpis.month ? ' selected' }}>{{ m.month_label(ym, month_names) }}</option>{% endfor %}</select></div>
+                    <noscript><twig:Button type="submit" variant="secondary">Afficher</twig:Button></noscript>
+                </form>
+                {% if is_granted('admin.logs.export') %}<twig:Button href="{{ path('admin_logs_finance_export', {mois: kpis.month}) }}" variant="secondary">Exporter</twig:Button>{% endif %}
+            </div>
+        </div>
+    {% else %}
+        {{ include('admin/_page_header.html.twig', {title: 'Finance, journaux et exports', crumbs: ['Système'], subtitle: 'Journal d’audit conservé 1 an · adresses IP masquées'}) }}
+    {% endif %}
+    <nav class="tm-admin-tabs" aria-label="Journaux">
+        {% for key, label in tabs %}
+            <a class="tm-admin-tab{{ key == tab ? ' is-active' }}" href="{{ path('admin_logs', {onglet: key}) }}"{% if key == tab %} aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+    </nav>
+
+    {% if tab == 'finance' %}
+        <ul class="tm-bo01-kpis tm-bo15-kpis" aria-label="Indicateurs financiers">
+            {% for card in kpis.finance %}
+                {% if card.key == 'unpaid_cents' %}
+                    <li class="tm-bo01-kpi">
+                        <span class="tm-bo01-kpi__label">{{ card.label }}</span>
+                        <strong class="tm-bo01-kpi__value">{{ m.value(card) }}</strong>
+                        <span class="tm-bo01-kpi__delta"><span class="is-{{ breakdown.unpaidArtisans > 0 ? 'bad' : 'neutral' }}">{{ breakdown.unpaidArtisans }} artisan{{ breakdown.unpaidArtisans > 1 ? 's' }}</span>{% if card.delta is not null %} · {{ m.delta(card) }} vs N-1{% endif %}</span>
+                    </li>
+                {% else %}{{ m.card(card) }}{% endif %}
+            {% endfor %}
+        </ul>
+
+        <div class="tm-bo15-grid">
+            <section class="tm-admin-panel" aria-labelledby="bo15-plans">
+                <h2 id="bo15-plans" class="tm-card-title">Répartition du MRR par forfait</h2>
+                {% if breakdown.plans is empty %}
+                    <p class="tm-bo15-empty">Aucun abonnement en cours à la fin de la période.</p>
+                {% else %}
+                    {% set top = max(breakdown.plans|map(p => p.mrr_cents)) %}
+                    <ul class="tm-bo15-plans">
+                        {% for p in breakdown.plans %}
+                            <li><span>{{ p.label }}</span><meter class="tm-bo15-plan-bar is-{{ p.label == 'Annuels (lissés)' ? 'annual' : loop.index0 % 3 }}" min="0" max="{{ max(top, 1) }}" value="{{ p.mrr_cents }}" aria-label="{{ p.label }}">{{ (p.mrr_cents / 100)|number_format(0, ',', ' ') }} €</meter><strong>{{ (p.mrr_cents / 100)|number_format(0, ',', ' ') }} €</strong></li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                <p class="tm-caption">Codes promo utilisés sur la période : {{ breakdown.promoRedemptions }}</p>
+            </section>
+
+            <section class="tm-admin-panel" aria-labelledby="bo15-cohorts">
+                <h2 id="bo15-cohorts" class="tm-card-title">Cohortes de rétention (abonnés)</h2>
+                <div class="tm-admin-table-wrap"><table class="tm-bo15-cohorts">
+                    <thead><tr><th scope="col">Cohorte</th>{% for k in constant('App\\Shared\\Application\\Admin\\FinanceBreakdownView::RETENTION_MONTHS') %}<th scope="col">M{{ k }}</th>{% endfor %}</tr></thead>
+                    <tbody>
+                        {% for c in breakdown.cohorts %}
+                            <tr>
+                                <th scope="row">{{ month_abbr[c.month|split('-')[1] - 1]|capitalize }} {{ c.month|split('-')[0] }}<span class="tm-caption tm-bo15-sub">{{ c.size }} abonné{{ c.size > 1 ? 's' }}</span></th>
+                                {% for k, r in c.retention %}
+                                    <td>{% if r is null %}<span class="tm-bo15-cell">—</span>{% else %}{% set pct = (r * 100)|round %}<span class="tm-bo15-cell is-{{ pct >= 90 ? 'high' : (pct >= 85 ? 'mid' : 'low') }}">{{ pct }} %</span>{% endif %}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+                <p class="tm-bo15-conversion"><span>Conversion fin de crédit gratuit → abonnement</span><strong>{{ conversion ? m.value(conversion) : '—' }}</strong></p>
+            </section>
+        </div>
+
+        {% set rec = breakdown.reconciliation %}
+        <p class="tm-bo15-banner{{ rec is null or rec.issues > 0 or breakdown.openIssues > 0 ? ' is-warn' }}" role="status">
+            <twig:Icon name="{{ rec is null or rec.issues > 0 or breakdown.openIssues > 0 ? 'alert' : 'check' }}" size="sm" class="tm-icon--inherit" />
+            {% if rec is null %}Aucun rapprochement Stripe terminé pour l’instant.
+            {% else %}Rapprochement du {{ rec.finished_at|date('d/m/Y H:i', 'Europe/Paris') }} : {{ rec.checked|number_format(0, ',', ' ') }} élément{{ rec.checked > 1 ? 's' }} vérifié{{ rec.checked > 1 ? 's' }}, {{ rec.issues }} écart{{ rec.issues > 1 ? 's' }}{{ rec.stripe_checked ? '' : ' (Stripe non interrogé)' }}{% if breakdown.openIssues > 0 %} · {{ breakdown.openIssues }} à traiter{% endif %}{% endif %}
+            {% if breakdown.webhooksProcessedRate is not null %} · webhooks traités {{ (breakdown.webhooksProcessedRate * 100)|round }} %{% endif %}
+        </p>
+
+    {% elseif tab == 'exports' %}
+        <div class="tm-bo15-grid">
+            <section class="tm-admin-panel" aria-labelledby="bo15-exports">
+                <h2 id="bo15-exports" class="tm-card-title">Exports CSV</h2>
+                <p class="tm-seo-help">Depuis une liste, l’export reprend ses filtres ; ici il porte sur toute la liste. Un export contenant des données personnelles est journalisé (qui, quand, filtres, nombre de lignes).</p>
+                <ul class="tm-bo15-exports">
+                    {% for e in exports %}
+                        <li><a href="{{ e.href }}"><twig:Icon name="download" size="sm" class="tm-icon--inherit" /><span>{{ e.label }}{% if e.personal %} <span class="tm-bo15-personal">(données personnelles · journalisé)</span>{% endif %}</span></a></li>
+                    {% else %}
+                        <li>Aucun export pour votre rôle.</li>
+                    {% endfor %}
+                </ul>
+            </section>
+            <section class="tm-admin-panel" aria-labelledby="bo15-scheduled">
+                <h2 id="bo15-scheduled" class="tm-card-title">Exports planifiés</h2>
+                <ul class="tm-bo15-schedules">
+                    {% for key, sch in schedules %}
+                        <li><twig:Icon name="download" size="sm" class="tm-icon--inherit" /><span>{{ sch.label }}{% if key == 'artisans_actifs' %} <span class="tm-bo15-personal">(données personnelles · journalisé)</span>{% endif %}</span><span class="tm-caption">{{ sch.schedule }}</span><span class="tm-bo11-state">Finance</span></li>
+                    {% endfor %}
+                </ul>
+                <h3 class="tm-bo12-sub">Fichiers disponibles</h3>
+                {% if scheduled_files is empty %}
+                    <p class="tm-bo15-empty">Aucun fichier produit pour l’instant : le premier arrivera au prochain passage planifié.</p>
+                {% else %}
+                    <ul class="tm-bo15-files">
+                        {% for f in scheduled_files %}
+                            <li>
+                                {% if is_granted('admin.logs.export') %}<a href="{{ path('admin_logs_scheduled_download', {id: f.id}) }}">{{ schedules[f.kind].label ?? f.kind }} — {{ f.periodLabel }}</a>{% else %}<span>{{ schedules[f.kind].label ?? f.kind }} — {{ f.periodLabel }}</span>{% endif %}
+                                <span class="tm-caption">{{ f.rows|number_format(0, ',', ' ') }} ligne{{ f.rows > 1 ? 's' }} · produit le {{ f.createdAt|date('d/m/Y H:i', 'Europe/Paris') }} · supprimé le {{ f.expiresAt|date('d/m/Y', 'Europe/Paris') }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </section>
+        </div>
+        <section class="tm-admin-panel tm-bo15-card" aria-labelledby="bo15-recent">
+            <h2 id="bo15-recent" class="tm-card-title">Exports récents (journalisés)</h2>
+            {% if recent.rows is empty %}
+                <p class="tm-bo15-empty">Aucun export journalisé pour l’instant.</p>
+            {% else %}
+                <div class="tm-admin-table-wrap"><table class="tm-admin-table tm-bo15-table">
+                    <thead><tr><th scope="col">Date</th><th scope="col">Admin</th><th scope="col">Export</th><th scope="col">Filtres</th><th scope="col">Lignes</th><th scope="col">IP</th></tr></thead>
+                    <tbody>
+                        {% for r in recent.rows %}
+                            <tr>
+                                <td>{{ r.occurredAt|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+                                <td>{{ r.actorName ?? '—' }}</td>
+                                <th scope="row">{{ export_labels[r.subjectId] ?? r.subjectId }}</th>
+                                <td>{{ recent_filters[loop.index0] }}</td>
+                                <td>{{ r.context.rows ?? '—' }}</td>
+                                <td class="tm-bo15-ip">{{ r.maskedIp ?? '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+            {% endif %}
+        </section>
+
+    {% elseif tab == 'webhooks' %}
+        <section class="tm-admin-panel tm-bo15-card" aria-labelledby="bo15-hooks">
+            <h2 id="bo15-hooks" class="tm-card-title">Webhooks Stripe reçus</h2>
+            <form method="get" action="{{ path('admin_logs') }}" class="tm-bo11-filters" role="search">
+                <input type="hidden" name="onglet" value="webhooks">
+                <label class="tm-visually-hidden" for="bo15_statut">Statut</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="bo15_statut" name="statut"><option value="">Statut</option>{% for v, l in {received: 'Reçu', processed: 'Traité', ignored: 'Ignoré', failed: 'En échec'} %}<option value="{{ v }}"{{ status == v ? ' selected' }}>{{ l }}</option>{% endfor %}</select></div>
+                <twig:Button type="submit" variant="secondary">Filtrer</twig:Button>
+            </form>
+            {% if webhooks.rows is empty %}
+                <p class="tm-bo15-empty">Aucun événement Stripe reçu{{ status ? ' avec ce statut' }}.</p>
+            {% else %}
+                <div class="tm-admin-table-wrap"><table class="tm-admin-table">
+                    <thead><tr><th scope="col">Reçu le</th><th scope="col">Type</th><th scope="col">Mode</th><th scope="col">Statut</th><th scope="col">Tentatives</th><th scope="col">Erreur</th></tr></thead>
+                    <tbody>
+                        {% for e in webhooks.rows %}
+                            <tr>
+                                <td>{{ e.received_at|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+                                <th scope="row"><span class="tm-bo15-code">{{ e.type }}</span><span class="tm-caption tm-bo15-sub">{{ e.event_id }}</span></th>
+                                <td>{{ e.livemode ? 'Production' : 'Test' }}</td>
+                                <td><span class="tm-bo11-state is-{{ e.status == 'processed' ? 'delivered' : (e.status == 'failed' ? 'failed' : 'queued') }}">{{ {received: 'Reçu', processed: 'Traité', ignored: 'Ignoré', failed: 'En échec'}[e.status] ?? e.status }}</span></td>
+                                <td>{{ e.attempts }}</td>
+                                <td>{{ e.last_error ?? '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+                {{ include('admin/_pagination.html.twig', {page: {page: page, pages: (webhooks.total / per_page)|round(0, 'ceil'), perPage: per_page, total: webhooks.total}, route: 'admin_logs', params: {onglet: 'webhooks', statut: status}}) }}
+            {% endif %}
+        </section>
+    {% else %}
+        {% set params = filter.toArray()|merge({onglet: tab}) %}
+        <section class="tm-admin-panel tm-bo15-card" aria-labelledby="bo15-log">
+            <h2 id="bo15-log" class="tm-card-title">{{ tab == 'connexions' ? 'Connexions (clients, artisans, administrateurs · conservation 1 an)' : 'Journal d’audit (actions admin · conservation 1 an)' }}</h2>
+            <form method="get" action="{{ path('admin_logs') }}" class="tm-bo11-filters" role="search">
+                <input type="hidden" name="onglet" value="{{ tab }}">
+                <div class="tm-field__control tm-bo11-search"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><label class="tm-visually-hidden" for="bo15_q">Admin, action, objet</label><input class="tm-field__input" type="search" id="bo15_q" name="q" value="{{ filter.search }}" placeholder="Admin, action, objet"></div>
+                <label class="tm-visually-hidden" for="bo15_module">Module</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="bo15_module" name="module"><option value="">Module</option>{% for mo in log.modules %}<option value="{{ mo }}"{{ filter.module == mo ? ' selected' }}>{{ mo }}</option>{% endfor %}</select></div>
+                {% if tab == 'audit' %}
+                    <label class="tm-visually-hidden" for="bo15_admin">Admin</label>
+                    <div class="tm-field__control"><select class="tm-field__input" id="bo15_admin" name="admin"><option value="">Admin</option>{% for id, name in log.admins %}<option value="{{ id }}"{{ filter.adminId == id ? ' selected' }}>{{ name }}</option>{% endfor %}</select></div>
+                {% endif %}
+                <label class="tm-visually-hidden" for="bo15_periode">Période</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="bo15_periode" name="periode"><option value="">Période</option>{% for d, l in periods %}<option value="{{ d }}"{{ filter.days == d ? ' selected' }}>{{ l }}</option>{% endfor %}</select></div>
+                <twig:Button type="submit" variant="secondary">Filtrer</twig:Button>
+                {% if is_granted('admin.logs.export') %}<twig:Button href="{{ path('admin_logs_export', params) }}" variant="secondary" icon="download" iconPosition="start">Exporter CSV</twig:Button>{% endif %}
+            </form>
+            {% if log.rows is empty %}
+                <p class="tm-bo15-empty">Aucune entrée ne correspond.</p>
+            {% else %}
+                <div class="tm-admin-table-wrap"><table class="tm-admin-table tm-bo15-table">
+                    <thead><tr><th scope="col">Date</th><th scope="col">{{ tab == 'connexions' ? 'Compte' : 'Admin' }}</th><th scope="col">Action</th><th scope="col">Objet</th><th scope="col">IP</th></tr></thead>
+                    <tbody>
+                        {% for r in log.rows %}
+                            <tr>
+                                <td>{{ r.occurredAt|date('d/m/Y H:i', 'Europe/Paris') }}</td>
+                                <td>{{ r.actorName ?? '—' }}{% if r.impersonated %} <span class="tm-bo11-state">impersonation</span>{% endif %}</td>
+                                <th scope="row">{{ labels[r.action] ?? r.action }}{% if labels[r.action] is defined %}<span class="tm-caption tm-bo15-sub">{{ r.action }}</span>{% endif %}</th>
+                                <td>{% if r.subjectType %}{% set text = r.subjectType ~ (r.subjectId ? ' #' ~ r.subjectId|slice(0, 8) : '') %}{% if links[loop.index0] %}<a href="{{ links[loop.index0] }}">{{ text }}</a>{% else %}{{ text }}{% endif %}{% else %}—{% endif %}</td>
+                                <td class="tm-bo15-ip">{{ r.maskedIp ?? '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+                {{ include('admin/_pagination.html.twig', {page: {page: log.page, pages: log.pages(), perPage: log.perPage, total: log.total}, route: 'admin_logs', params: params}) }}
+            {% endif %}
+        </section>
+    {% endif %}
+{% endblock %}

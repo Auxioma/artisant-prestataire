@@ -1,0 +1,31 @@
+# Caddyfile de production (CDC §8) : celui de l'image FrankenPHP, plus un cache long sur les fichiers compilés par
+# AssetMapper. Leur nom contient l'empreinte du contenu (app-9pN4oZv.js) : un changement produit une nouvelle adresse,
+# le navigateur et le CDN peuvent donc les garder un an sans revalider. Le matcher `file` exclut les 404.
+{
+	skip_install_trust
+	{$CADDY_GLOBAL_OPTIONS}
+	frankenphp {
+		{$FRANKENPHP_CONFIG}
+	}
+}
+
+{$CADDY_EXTRA_CONFIG}
+
+{$SERVER_NAME:localhost} {
+	root {$SERVER_ROOT:public/}
+
+	@compressible not path /.well-known/mercure
+	encode @compressible zstd br gzip
+
+	@fingerprinted {
+		path /assets/*
+		file
+	}
+	header @fingerprinted Cache-Control "public, max-age=31536000, immutable"
+
+	{$CADDY_SERVER_EXTRA_DIRECTIVES}
+
+	php_server
+}
+
+import Caddyfile.d/*.caddyfile

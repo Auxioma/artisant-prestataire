@@ -18,6 +18,18 @@ final class SeoPageTypes
         'department' => ['label' => 'Département (P05)', 'variables' => ['{departement}', '{code}', '{nb_pros}']],
         'artisan' => ['label' => 'Fiche artisan (P10)', 'variables' => ['{nom}', '{metier}', '{ville}', '{a_ville}']],
     ];
+    /** BO12.1 — valeurs d'exemple (fictives) de l'aperçu du résultat de recherche, et l'adresse affichée. */
+    public const array SAMPLES = [
+        'category' => ['path' => '/categories/plomberie', 'values' => ['categorie' => 'Plomberie', 'nb_pros' => 48]],
+        'job' => ['path' => '/metiers/plombier', 'values' => ['metier' => 'Plombier', 'categorie' => 'Plomberie', 'nb_pros' => 48]],
+        'job_city' => ['path' => '/plombier/le-havre-76600', 'values' => ['metier' => 'Plombier', 'ville' => 'Le Havre', 'a_ville' => 'au Havre', 'cp' => '76600', 'departement' => 'Seine-Maritime', 'nb_pros' => 24]],
+        'city' => ['path' => '/villes/le-havre-76600', 'values' => ['ville' => 'Le Havre', 'a_ville' => 'au Havre', 'cp' => '76600', 'departement' => 'Seine-Maritime', 'nb_pros' => 312]],
+        'department' => ['path' => '/departements/76-seine-maritime', 'values' => ['departement' => 'Seine-Maritime', 'code' => '76', 'nb_pros' => 1240]],
+        'artisan' => ['path' => '/pro/atelier-exemple', 'values' => ['nom' => 'Atelier Exemple (fictif)', 'metier' => 'Plombier', 'ville' => 'Le Havre', 'a_ville' => 'au Havre']],
+    ];
+    /** Longueurs conseillées affichées par les compteurs (au-delà, Google tronque). */
+    public const int TITLE_ADVISED = 60;
+    public const int DESCRIPTION_ADVISED = 155;
     public const int TITLE_MAX = 200;
     public const int DESCRIPTION_MAX = 320;
 
