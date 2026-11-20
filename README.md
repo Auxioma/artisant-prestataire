@@ -18,8 +18,18 @@ Les ports se changent via les variables `TM_HTTP_PORT`, `TM_DB_PORT`, `TM_REDIS_
 
 ## Installation sans Docker (serveur)
 
-PostgreSQL 16 + PostGIS 3 requis. Avant la première migration, un superutilisateur crée les extensions
-(le propriétaire de la base n'en a pas le droit) :
+Prérequis : PHP 8.4 (extensions `intl`, `pdo_pgsql`, `redis`, `sodium`, `zip`, `gd`, `exif`, `apcu`),
+PostgreSQL 16 + PostGIS 3, **Redis** (cache, sessions et files Messenger), Meilisearch.
+
+1. **Redis obligatoire** : dans `.env.local`, `MESSENGER_TRANSPORT_DSN` et `REDIS_URL` pointent vers Redis
+   (ex. `redis://127.0.0.1:6379`). Ne pas mettre `doctrine://` : les transports utilisent des options propres aux
+   flux Redis, et les commandes qui construisent les transports (`make:migration`, `messenger:*`…) échouent
+   avec « Unknown option found: [stream, group] ».
+2. **Extensions PostgreSQL** : avant la première migration, un superutilisateur les crée (le propriétaire de la
+   base n'en a pas le droit ; sinon « permission denied to create extension "postgis" »).
+3. Les commandes se lancent **à la racine du projet** (là où se trouve `bin/`), pas dans `public/`.
+4. En production, on **applique** les migrations livrées (`doctrine:migrations:migrate`) ; on n'en génère jamais
+   (`make:migration` est un outil de développement).
 
 ```bash
 sudo -u postgres psql -d trouvemoi -f ops/postgres/extensions.sql
