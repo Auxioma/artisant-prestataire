@@ -1,4 +1,7 @@
-{#- P18.1 — page d'erreur : picto, message, recherche, catégories populaires et accueil ; événement error_page_view (code, URL d'origine). -#}
+{#-
+    P18.1 — page d'erreur (Figma 162:2385) : picto, « Erreur NNN », titre, texte, recherche d'un service (vers l'annuaire
+    filtré par métier), catégories populaires en pastilles, retour à l'accueil ; événement error_page_view (code, URL).
+-#}
 <section class="tm-container tm-error-page" data-controller="analytics" data-analytics-auto-event-value="error_page_view"
          data-analytics-auto-params-value="{{ {code: code, url: app.request.pathInfo|slice(0, 200)}|json_encode }}">
     <span class="tm-error-page__picto" aria-hidden="true"><twig:Icon name="{{ icon }}" /></span>
@@ -6,14 +9,23 @@
     <h1>{{ title }}</h1>
     <p class="tm-error-page__text">{{ text }}</p>
     {% if search ?? true %}
-        {% include 'catalog/_search_bar.html.twig' with {job: null, place: null} only %}
-        {% set categories = tm_main_categories()|slice(0, 6) %}
+        <form method="get" action="{{ path('search_directory') }}" class="tm-error-page__search" role="search" data-turbo="false">
+            <div class="tm-error-page__field" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="metier">
+                <twig:Icon name="search" size="sm" class="tm-icon--inherit" />
+                <label class="tm-visually-hidden" for="error_job">Quel service recherchez-vous ?</label>
+                <input class="tm-error-page__input" id="error_job" type="text" placeholder="Quel service recherchez-vous ?" autocomplete="off" maxlength="80" data-autocomplete-target="input" data-action="input->autocomplete#suggest">
+                <input type="hidden" name="metier" data-autocomplete-target="value">
+                <ul class="tm-area__suggestions" role="listbox" aria-label="Métiers proposés" hidden data-autocomplete-target="list"></ul>
+            </div>
+            <twig:Button type="submit" variant="search">Rechercher</twig:Button>
+        </form>
+        {% set categories = tm_main_categories()|slice(0, 4) %}
         {% if categories is not empty %}
-            <nav aria-label="Catégories populaires">
-                <h2 class="tm-error-page__subtitle">Catégories populaires</h2>
-                <ul class="tm-error-page__links">{% for c in categories %}<li><a href="{{ c.href }}">{{ c.name }}</a></li>{% endfor %}</ul>
+            <nav class="tm-error-page__popular" aria-labelledby="error-popular">
+                <span id="error-popular" class="tm-error-page__popular-label">Catégories populaires :</span>
+                <ul class="tm-error-page__chips">{% for c in categories %}<li><a class="tm-error-page__chip" href="{{ c.href }}">{{ c.name }}</a></li>{% endfor %}</ul>
             </nav>
         {% endif %}
     {% endif %}
-    <twig:Button href="{{ path('public_home') }}" variant="secondary" icon="home" iconPosition="start">Retour à l’accueil</twig:Button>
+    <twig:Button href="{{ path('public_home') }}" variant="secondary">Retour à l’accueil</twig:Button>
 </section>
