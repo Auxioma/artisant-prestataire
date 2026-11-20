@@ -9,6 +9,8 @@
     .tm-home-hero { position: relative; isolation: isolate; overflow: hidden; color: var(--color-surface); }
     .tm-home-hero__image { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
     .tm-home-hero::before { content: ''; position: absolute; inset: 0; z-index: -1; background: var(--tm-navy); opacity: var(--_veil, .3); }
+    /* RGAA 3.2 : dégradé marine derrière le titre et le sous-titre, quel que soit le voile réglé dans le CMS (P-151). */
+    .tm-home-hero::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, color-mix(in srgb, var(--tm-navy) 72%, transparent) 0%, color-mix(in srgb, var(--tm-navy) 45%, transparent) 45%, transparent 75%); pointer-events: none; }
     .tm-home-hero--veil-0 { --_veil: 0; }
     .tm-home-hero--veil-10 { --_veil: .1; }
     .tm-home-hero--veil-20 { --_veil: .2; }
