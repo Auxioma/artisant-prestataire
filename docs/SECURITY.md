@@ -203,7 +203,8 @@ Le back-office applique une CSP plus restrictive (sans Stripe.js) et `Cache-Cont
 - [x] Revue des droits PostgreSQL — `ops/postgres/roles.sql` (rôle propriétaire pour les migrations, rôle applicatif
   sans droit de structure et propriétaire d'aucune table, sans UPDATE / DELETE sur les tables en ajout seul) ;
   vérifié sur une copie de la base. **À appliquer au déploiement** (T-906). Risque résiduel : P-156
-- [ ] AIPD réalisée (vérification d'identité, modération automatisée — §11) — projet : T-905b, validation du porteur
+- [~] AIPD réalisée (vérification d'identité, modération automatisée — §11) — projet `docs/aipd.md` (T-905b) ; reste la
+  validation et la signature du responsable de traitement
 - [~] `security.txt` publié (`/.well-known/security.txt`, RFC 9116, contact `SECURITY_CONTACT` à confirmer) ;
   procédure d'incident et de notification CNIL (72 h) : T-905c
 
