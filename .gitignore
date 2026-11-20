@@ -40,3 +40,4 @@
 # Captures HTML temporaires des contrôles visuels et d’accessibilité (jamais versionnées)
 /public/tmp-*.html
 /tools/a11y/rapport.json
+/tools/a11y/rapport-assist.json
