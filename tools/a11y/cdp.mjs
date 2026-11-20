@@ -32,6 +32,13 @@ const api = {
   size: async (w, h) => { width = w; height = h; await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: w < 600 }); },
   go: async (url) => { await send('Page.navigate', { url }); await sleep(300); },
   js: async (expr) => (await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true })).result?.result?.value,
+  /** Frappe clavier réelle (focus « clavier » : :focus-visible s'applique comme pour un utilisateur). */
+  press: async (key, shift = false) => {
+    const codes = { Tab: 9, Enter: 13, Escape: 27, Space: 32 };
+    const base = { key, code: key, windowsVirtualKeyCode: codes[key] ?? 0, modifiers: shift ? 8 : 0 };
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', ...base });
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', ...base });
+  },
   shot: async (name, full = false) => {
     const p = { format: 'png' };
     if (full) { const h = await api.js('document.documentElement.scrollHeight'); p.clip = { x: 0, y: 0, width, height: h, scale: 1 }; p.captureBeyondViewport = true; }

@@ -48,7 +48,52 @@ Résultat après corrections : **aucun constat restant** sur les 49 pages, hors 
 
 ### Limites
 
-Un contrôle automatique couvre une partie seulement du RGAA. Restent à vérifier manuellement (T-903b) : navigation et
-ordre au clavier, visibilité du focus, pertinence des alternatives et des intitulés, messages d'erreur et de statut
-(lecteur d'écran), zoom à 200 % et reformatage à 320 px, contenus en mouvement, compatibilité NVDA / VoiceOver, puis
-rédaction de la déclaration d'accessibilité.
+Un contrôle automatique couvre une partie seulement du RGAA : voir l'audit manuel ci-dessous.
+
+## 2. Audit manuel assisté (T-903b, 20/11/2026)
+
+### Méthode
+
+`tools/a11y/rgaa-assist.mjs` (même pilote Chrome) :
+
+| Critère RGAA | Contrôle |
+|---|---|
+| 10.7 | 40 appuis réels sur Tab (focus « clavier ») ; chaque élément atteint est comparé à son aspect une fois quitté, sur lui-même, son parent et son grand-parent (indicateur porté par `:focus-within`) |
+| 12.7 | Le premier Tab atteint le lien d'évitement « Aller au contenu » |
+| 10.11 | Pas de défilement horizontal dans une fenêtre de 320 px |
+| 10.4 | Pas de défilement horizontal dans une fenêtre de 640 px (zoom 200 % d'un écran de 1 280 px) |
+
+Lancement : `PAGES="/,/connexion" node tools/a11y/cdp.mjs tools/a11y/rgaa-assist.mjs` (rapport
+`tools/a11y/rapport-assist.json`, non suivi). Pages : parcours publics (accueil, annuaire, catégories, fiche artisan,
+tunnel de demande, connexion, inscriptions, aide, contact, tarifs, documents légaux, 404, déclaration).
+
+### Résultats et corrections
+
+| Page | Constat | Critère | Correction |
+|---|---|---|---|
+| Connexion, contact, inscriptions | Champs à largeur minimale intrinsèque : la page déborde à 320 px | 10.11 | `.tm-field` en grille `minmax(0, 1fr)`, champ `min-width: 0` ; grilles des formulaires d'inscription idem |
+| Tunnel de demande, inscription pro | En-tête (logo + « Aide / FAQ » + « Quitter ») trop large à 320 px | 10.11 | Logo réduit sous 360 px, écart réduit sous 1 024 px |
+| Page 404 | Grille centrée qui déborde à 320 px | 10.11 | `minmax(0, 1fr)` |
+| Déclaration d'accessibilité | Bouton à libellé long sur une ligne | 10.11 | Libellé raccourci |
+
+Focus visible (10.7) et lien d'évitement (12.7) : conformes sur les pages contrôlées, hors cas ci-dessous.
+
+### Écarts acceptés (P-153)
+
+- **Cloudflare Turnstile** (contenu tiers) : largeur minimale de 300 px, éléments internes sans indicateur de focus
+  propre ; déclaré dans les contenus tiers.
+- **/connexion** : le champ e-mail reçoit le focus au chargement, donc le premier Tab ne mène pas au lien d'évitement
+  (accessible par Maj+Tab) ; conservé, la page n'ayant qu'un objectif.
+
+### Restant à vérifier (hors outil)
+
+- Restitution avec NVDA (Windows, Firefox) et VoiceOver (macOS / iOS, Safari) : messages d'erreur des formulaires,
+  messages de statut (`role="status"`), modales, menu des catégories, autocomplétion, accordéons.
+- Pertinence des alternatives et des intitulés (lecture humaine).
+- Audit complet des 106 critères par un tiers pour calculer un taux de conformité.
+
+## 3. Déclaration d'accessibilité
+
+Publiée sur `/accessibilite`, avec la mention « Accessibilité : non conforme » au pied de page (menu `footer_info`,
+modifiable en BO10.5). L'état passera à « partiellement conforme » ou « totalement conforme » seulement après un audit
+complet ; mettre alors à jour la page, le libellé du pied de page et la date d'établissement.
