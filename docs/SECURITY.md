@@ -193,7 +193,8 @@ Le back-office applique une CSP plus restrictive (sans Stripe.js) et `Cache-Cont
 
 ## 7. Checklist pré-production (pentest)
 
-- [ ] Pentest externe (boîte grise) sur www + admin + webhook, rapport et corrections — cahier des charges : T-905c
+- [ ] Pentest externe (boîte grise) sur www + admin + webhook, rapport et corrections — cahier des charges prêt :
+  `docs/pentest.md` ; à commander par le porteur
 - [ ] Revue de la configuration TLS (SSL Labs A+), HSTS, DNS (CAA, DMARC `p=reject`) — à la mise en ligne (T-906) ;
   HSTS déjà envoyé en production (`nelmio_security.forced_ssl`)
 - [ ] Restauration de sauvegarde testée (RPO 24 h, RTO à définir) — T-906
@@ -205,8 +206,9 @@ Le back-office applique une CSP plus restrictive (sans Stripe.js) et `Cache-Cont
   vérifié sur une copie de la base. **À appliquer au déploiement** (T-906). Risque résiduel : P-156
 - [~] AIPD réalisée (vérification d'identité, modération automatisée — §11) — projet `docs/aipd.md` (T-905b) ; reste la
   validation et la signature du responsable de traitement
-- [~] `security.txt` publié (`/.well-known/security.txt`, RFC 9116, contact `SECURITY_CONTACT` à confirmer) ;
-  procédure d'incident et de notification CNIL (72 h) : T-905c
+- [x] `security.txt` publié (`/.well-known/security.txt`, RFC 9116, contact `SECURITY_CONTACT` à confirmer) ;
+  procédure d'incident et de notification CNIL (72 h) : `docs/incidents.md` (noms de l'astreinte à compléter),
+  intégrité du journal d'audit vérifiable par `app:audit:verify`
 
 ### Vérifications automatisées ajoutées avant le pentest (T-905a, 20/11/2026)
 
