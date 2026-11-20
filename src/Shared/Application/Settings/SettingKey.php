@@ -328,7 +328,7 @@ enum SettingKey: string
             self::CookiesPolicyVersion => $d(T::Integer, 1, 'Version de la politique cookies (l\'incrémenter redemande le consentement)', 1, 10_000, proposed: true),
             self::CookiesConsentMonths => $d(T::Integer, 6, 'Durée du consentement cookies (mois)', 1, 13),
             self::NewsletterProvider => $d(T::Choice, 'brevo', 'Outil de newsletter (Q25)', choices: ['brevo', 'mailchimp', 'internal'], proposed: true),
-            self::ContactReasons => $d(T::StringList, ['Question sur une demande ou un devis', 'Mon compte', 'Abonnement et facturation (professionnels)', 'Signalement d’un contenu ou d’un professionnel', 'Partenariat', 'Presse', 'Autre'], 'Motifs du formulaire de contact (P16)', proposed: true),
+            self::ContactReasons => $d(T::StringList, ['Question sur une demande ou un devis', 'Mon compte', 'Abonnement et facturation (professionnels)', 'Signalement d’un contenu ou d’un professionnel', 'Accessibilité', 'Partenariat', 'Presse', 'Autre'], 'Motifs du formulaire de contact (P16)', proposed: true),
             self::ContactMaxFileMb => $d(T::Integer, 5, 'Contact : poids maximum de la pièce jointe (Mo)', 1, 20),
             self::ContactReplyHours => $d(T::Integer, 48, 'Contact : délai de réponse annoncé (heures ouvrées)', 1, 240),
             self::SeoSchemaOrganization => $d(T::Boolean, true, 'Données structurées Organization / WebSite (accueil, BO12.4)'),

@@ -13,7 +13,7 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: var(--space-8);
+        gap: var(--space-4);
         max-width: calc(var(--container-max) + 2 * var(--container-gutter));
         height: 64px;
         margin-inline: auto;
@@ -22,7 +22,7 @@
     }
 
     @media (min-width: 1024px) {
-        .tm-header__inner { height: 80px; padding-inline: var(--container-gutter); }
+        .tm-header__inner { height: 80px; gap: var(--space-8); padding-inline: var(--container-gutter); }
         .tm-header.is-scrolled .tm-header__inner { height: 64px; }
     }
 
@@ -32,6 +32,10 @@
 
     @media (max-width: 1023px) {
         .tm-header__logo .tm-logo__img { width: 160px; }
+    }
+    /* RGAA 10.11 : à 320 px, logo réduit pour que l'en-tête (logo, Aide, Quitter) tienne sans défilement horizontal. */
+    @media (max-width: 359px) {
+        .tm-header__logo .tm-logo__img { width: 128px; }
     }
 
     .tm-header__nav { display: none; flex: 1; }

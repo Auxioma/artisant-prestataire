@@ -2,8 +2,10 @@
 @layer components {
     .tm-field {
         display: grid;
+        grid-template-columns: minmax(0, 1fr); /* RGAA 10.11 : le champ suit la largeur disponible (320 px) */
         align-content: start;
         gap: 6px;
+        min-width: 0;
     }
 
     /* Conteneur des champs d'un formulaire composé : espacement vertical régulier */
@@ -52,6 +54,7 @@
 
     .tm-field__input {
         flex: 1;
+        width: 100%;
         min-width: 0;
         border: 0;
         padding: 0;
