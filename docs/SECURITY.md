@@ -197,7 +197,8 @@ Le back-office applique une CSP plus restrictive (sans Stripe.js) et `Cache-Cont
   `docs/pentest.md` ; à commander par le porteur
 - [ ] Revue de la configuration TLS (SSL Labs A+), HSTS, DNS (CAA, DMARC `p=reject`) — à la mise en ligne (T-906) ;
   HSTS déjà envoyé en production (`nelmio_security.forced_ssl`)
-- [ ] Restauration de sauvegarde testée (RPO 24 h, RTO à définir) — T-906
+- [~] Restauration de sauvegarde testée (RPO 24 h, RTO à définir) — scripts testés sur la base de test
+  (`ops/backup/`, `docs/exploitation.md` §4) ; à refaire sur la production chaque mois, RTO 4 h proposé
 - [ ] Rotation des secrets de test → prod, clés Stripe live restreintes (restricted keys) — porteur, à la mise en ligne
 - [x] `APP_DEBUG=0`, profiler absent, `/_error` inaccessible — `ProductionConfigurationTest` démarre le noyau `prod` :
   pas de mode débogage, pas de profileur (paquet absent), aucune route `/_error`, `/_profiler`, `/_wdt`, `/_dev`
