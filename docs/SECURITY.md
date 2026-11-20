@@ -195,8 +195,8 @@ Le back-office applique une CSP plus restrictive (sans Stripe.js) et `Cache-Cont
 
 - [ ] Pentest externe (boîte grise) sur www + admin + webhook, rapport et corrections — cahier des charges prêt :
   `docs/pentest.md` ; à commander par le porteur
-- [ ] Revue de la configuration TLS (SSL Labs A+), HSTS, DNS (CAA, DMARC `p=reject`) — à la mise en ligne (T-906) ;
-  HSTS déjà envoyé en production (`nelmio_security.forced_ssl`)
+- [ ] Revue de la configuration TLS (SSL Labs A+), HSTS, DNS (CAA, DMARC `p=reject`) — enregistrements et étapes :
+  `docs/exploitation.md` §7, à appliquer à la mise en ligne ; HSTS déjà envoyé en production (`nelmio_security.forced_ssl`)
 - [~] Restauration de sauvegarde testée (RPO 24 h, RTO à définir) — scripts testés sur la base de test
   (`ops/backup/`, `docs/exploitation.md` §4) ; à refaire sur la production chaque mois, RTO 4 h proposé
 - [ ] Rotation des secrets de test → prod, clés Stripe live restreintes (restricted keys) — porteur, à la mise en ligne
