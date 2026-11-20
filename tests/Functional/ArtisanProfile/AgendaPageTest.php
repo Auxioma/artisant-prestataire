@@ -84,7 +84,8 @@ final class AgendaPageTest extends WebTestCase
         // Au-delà de l'horizon de 60 jours : aucun créneau généré, la grille montre les jours sans créneau.
         self::assertCount(0, $open);
 
-        $planning = $this->client->request('GET', '/espace-pro/agenda');
+        // Semaine prochaine : la semaine en cours peut ne plus avoir de créneau réservable (fin de semaine, prévenance 48 h).
+        $planning = $this->client->request('GET', '/espace-pro/agenda?date='.new \DateTimeImmutable('monday next week')->format('Y-m-d'));
         self::assertGreaterThan(0, $planning->filter('.tm-agenda__week .tm-agenda__slot.is-open')->count() + $planning->filter('.tm-agenda__week .tm-agenda__slot.is-closed')->count());
         self::assertStringContainsString('Disponible 08:00 – 12:00', $this->client->request('GET', '/espace-pro/agenda?vue=liste&date='.new \DateTimeImmutable('monday next week')->format('Y-m-d'))->filter('.tm-agenda__list')->text());
         self::assertCount(1, $this->client->request('GET', '/espace-pro/agenda?vue=mois')->filter('table.tm-agenda__month'));
