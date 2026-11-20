@@ -110,6 +110,8 @@ final readonly class AgendaHandler implements CommandHandler
             $today,
             $last,
         );
+        // Les créneaux du jour déjà terminés ne sont pas recréés (sinon la purge nocturne les laisserait jusqu'au lendemain).
+        $planned = array_values(array_filter($planned, static fn (array $s): bool => $s[1] > $now));
         $this->store->replaceOpenSlots($artisanId, $today, array_map(fn (array $s): array => [$this->ids->next(), $s[0], $s[1]], $planned));
         $this->events->publish(new AgendaChanged($artisanId, $now));
     }
