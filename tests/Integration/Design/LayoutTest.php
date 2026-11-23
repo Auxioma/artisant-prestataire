@@ -142,7 +142,7 @@ final class LayoutTest extends KernelTestCase
         $footer = $this->render('Footer');
 
         self::assertCount(0, $footer->filter('.tm-footer__socials'), 'Aucun réseau affiché sans URL renseignée en BO');
-        self::assertCount(0, $footer->filter('.tm-footer__newsletter'), 'Pas de formulaire sans route de traitement');
+        self::assertCount(1, $footer->filter('.tm-footer__newsletter input[type="email"][name="email"]'), 'Colonne « Restez informé » (maquette V2)');
         self::assertStringContainsString('Comment sont classés les professionnels ?', $footer->text(), 'Information L111-7');
         self::assertCount(1, $footer->filter('button[data-cookie-consent-open]'), 'Gérer mes cookies (CMP)');
         self::assertStringContainsString('© '.date('Y'), $footer->text());

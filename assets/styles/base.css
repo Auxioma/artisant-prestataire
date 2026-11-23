@@ -189,6 +189,9 @@
         padding-inline: var(--container-gutter);
     }
 
+    /* Conteneur large des pages publiques V2 (maquettes 1440 px : contenu de 1 360 px) */
+    .tm-container--wide { max-width: calc(var(--container-wide) + 2 * var(--container-gutter)); }
+
     .tm-grid {
         display: grid;
         grid-template-columns: repeat(var(--grid-columns), minmax(0, 1fr));

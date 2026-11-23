@@ -1,4 +1,4 @@
-{#- Liste du bloc P01.6 (rendue aussi par /accueil/professionnels autour d'une commune). -#}
+{#- Liste du bloc P01.6 (rendue aussi par /accueil/professionnels autour d'une commune) : carrousel de cartes V2. -#}
 {% if commune %}
     <p class="tm-home-pros__place">
         {% if widened %}Peu de professionnels {{ commune.name|a_lieu }} : voici ceux des environs{% else %}Autour de {{ commune.name }}{% endif %}
@@ -8,7 +8,11 @@
 {% if hits is empty %}
     <p class="tm-catalog__fine">Les premiers professionnels vérifiés arrivent bientôt.</p>
 {% else %}
-    <ul class="tm-catalog__carousel">
-        {% for hit in hits %}<li data-action="click->analytics#track" data-analytics-event-param="pro_card_click">{% include 'catalog/_artisan_card.html.twig' with {hit: hit, job_names: job_names} only %}</li>{% endfor %}
-    </ul>
+    <div class="tm-carousel tm-home-pros" data-controller="carousel">
+        <ul class="tm-carousel__track" data-carousel-target="track">
+            {% for hit in hits %}<li data-action="click->analytics#track" data-analytics-event-param="pro_card_click">{% include 'catalog/_pro_card.html.twig' with {hit: hit, job_names: job_names, footer: 'available', rating_style: 'filled'} only %}</li>{% endfor %}
+        </ul>
+        <button type="button" class="tm-carousel__arrow tm-carousel__arrow--prev" data-carousel-target="prev" data-action="carousel#previous"><twig:Icon name="chevL" size="sm" label="Professionnels précédents" /></button>
+        <button type="button" class="tm-carousel__arrow tm-carousel__arrow--next" data-carousel-target="next" data-action="carousel#next"><twig:Icon name="chevR" size="sm" label="Professionnels suivants" /></button>
+    </div>
 {% endif %}

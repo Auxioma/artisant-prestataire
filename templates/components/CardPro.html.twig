@@ -1,0 +1,44 @@
+{#
+    Carte professionnel des maquettes V2 (accueil « Les mieux notés » et « Des professionnels près de chez vous »,
+    annuaire) : photo de réalisation (sinon logo), note et nombre d'avis en pastille, nom, métiers, lieu, puis
+    « Professionnel vérifié » (footer = verified) ou pastille « Disponible » (footer = available), cœur « favori ».
+    Le nom porte le lien ; toute la carte est cliquable (lien étendu), le cœur reste un contrôle distinct.
+#}
+{% props name, href, trades, location, artisanId, photo = null, rating = null, reviewsCount = 0, footer = 'verified', available = false, headingLevel = 3, ratingStyle = 'outline' %}
+<article {{ attributes.defaults({class: 'tm-card-pro'}) }}>
+    <div class="tm-card-pro__media">
+        {% if photo %}
+            <img src="{{ photo }}" alt="" loading="lazy" decoding="async" width="441" height="170">
+        {% else %}
+            <span class="tm-card-pro__placeholder"><twig:Icon name="briefcase" /></span>
+        {% endif %}
+        {% if rating is not null and reviewsCount > 0 %}
+            <p class="tm-card-pro__rating tm-card-pro__rating--{{ ratingStyle }}">
+                <twig:Icon name="{{ ratingStyle == 'filled' ? 'starFilled' : 'star' }}" size="xs" />
+                <span><span class="tm-visually-hidden">Note : </span>{{ rating|number_format(1, ',', ' ') }}<span class="tm-visually-hidden"> sur 5,</span> ({{ reviewsCount|number_format(0, ',', ' ') }} avis)</span>
+            </p>
+        {% endif %}
+    </div>
+    <div class="tm-card-pro__body">
+        <h{{ headingLevel }} class="tm-card-pro__name"><a class="tm-card-pro__link" href="{{ href }}">{{ name }}</a></h{{ headingLevel }}>
+        {% if trades %}<p class="tm-card-pro__trades">{{ trades }}</p>{% endif %}
+        {% if location %}<p class="tm-card-pro__location"><twig:Icon name="pin" size="xs" />{{ location }}</p>{% endif %}
+        <div class="tm-card-pro__foot">
+            {% if footer == 'available' %}
+                {% if available %}<span class="tm-card-pro__available">Disponible</span>{% endif %}
+            {% else %}
+                <span class="tm-card-pro__verified"><twig:Icon name="checkC" size="xs" />Professionnel vérifié</span>
+            {% endif %}
+            {% if is_granted('ROLE_CLIENT') %}
+                <form class="tm-card-pro__favorite" method="post" action="{{ path('client_favorite_toggle', {artisan: artisanId}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('favorites') }}">
+                    <input type="hidden" name="favori" value="1">
+                    <input type="hidden" name="retour" value="{{ app.request.requestUri }}">
+                    <button type="submit" class="tm-card-pro__heart"><twig:Icon name="heart" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Ajouter {{ name }} à mes favoris</span></button>
+                </form>
+            {% elseif not is_granted('IS_AUTHENTICATED') %}
+                <a class="tm-card-pro__heart tm-card-pro__favorite" href="{{ path('identity_login') }}"><twig:Icon name="heart" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Se connecter pour ajouter {{ name }} à mes favoris</span></a>
+            {% endif %}
+        </div>
+    </div>
+</article>

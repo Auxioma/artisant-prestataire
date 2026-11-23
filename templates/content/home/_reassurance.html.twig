@@ -1,6 +1,6 @@
-{#- P01.3 — bandeau de réassurance (2 à 6 items, lien facultatif). -#}
+{#- P01.3 — bandeau de réassurance (2 à 6 items, lien facultatif), séparés par de petites barres verticales (maquette V2). -#}
 <section class="tm-home-reassurance tm-home-reassurance--{{ s.mobile_layout ?? 'carousel' }}" aria-label="Nos engagements">
-    <ul class="tm-container">
+    <ul class="tm-container tm-container--wide">
         {% for item in s.items %}
             <li>
                 {% if item.href %}<a href="{{ item.href }}">{% endif %}

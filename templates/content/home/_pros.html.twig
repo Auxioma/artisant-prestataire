@@ -1,8 +1,8 @@
-{#- P01.6 — professionnels éligibles (RG-011) : sélection nationale au rendu, puis autour du dernier lieu mémorisé (mode proximité). -#}
+{#- P01.6 — professionnels éligibles (RG-011) : sélection nationale au rendu, puis autour du dernier lieu mémorisé (mode proximité) ; cartes en carrousel (maquette V2). -#}
 {% set ranking = tm_path('content_how_it_works') ~ '#classement' %}
-<section class="tm-container tm-home-section" aria-labelledby="home-pros"
+<section class="tm-container tm-container--wide tm-home-section" aria-labelledby="home-pros"
          {% if s.mode == 'proximity' %}data-controller="home-pros" data-home-pros-url-value="{{ path('home_pros', {rayon: s.radius, nombre: s.count}) }}"{% endif %}>
-    <div class="tm-catalog__head">
+    <div class="tm-home-section__head">
         <h2 class="tm-section-title" id="home-pros">{{ s.title }}</h2>
         <a class="tm-home-section__more" href="{{ path('search_directory') }}">Voir plus de professionnels<twig:Icon name="arrowR" size="sm" /></a>
     </div>

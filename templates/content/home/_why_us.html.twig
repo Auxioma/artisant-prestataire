@@ -1,9 +1,9 @@
-{#- P01.9 — « Pourquoi choisir TrouveMoi ? » (2 à 6 arguments). -#}
-<section class="tm-container tm-home-section" aria-labelledby="home-why">
+{#- P01.9 — « Pourquoi choisir TrouveMoi ? » (2 à 6 arguments), pictogrammes colorés et séparateurs verticaux (maquette V2). -#}
+<section class="tm-container tm-container--wide tm-home-section" aria-labelledby="home-why">
     <h2 class="tm-section-title" id="home-why">{{ s.title }}</h2>
     <ul class="tm-home-why">
         {% for item in s.items %}
-            <li><twig:Icon name="{{ item.icon }}" /><div><h3>{{ item.title }}</h3>{% if item.text %}<p>{{ item.text }}</p>{% endif %}</div></li>
+            <li class="tm-home-why__item--{{ item.icon }}"><twig:Icon name="{{ item.icon }}" /><div><h3>{{ item.title }}</h3>{% if item.text %}<p>{{ item.text }}</p>{% endif %}</div></li>
         {% endfor %}
     </ul>
 </section>

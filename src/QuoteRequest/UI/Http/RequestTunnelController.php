@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\QuoteRequest\UI\Http;
 
+use App\ArtisanProfile\Application\Offer\ActiveOffer;
+use App\ArtisanProfile\Application\Offer\ActiveOfferView;
 use App\ArtisanProfile\Application\PublicProfile\PublicArtisanProfile;
 use App\ArtisanProfile\Application\PublicProfile\PublicProfileView;
 use App\Catalog\Application\Geo\Query\CommunesByInsee;
@@ -108,7 +110,7 @@ final class RequestTunnelController extends AbstractController
     ) {
     }
 
-    /** Entrée du tunnel (liens « Déposer une demande » du site) ; `?pro={id}` prépare une demande directe (RG-062). */
+    /** Entrée du tunnel (liens « Déposer une demande » du site) ; `?pro={id}` prépare une demande directe (RG-062), `&date=…&creneau=…` depuis un créneau P08, `&offre={id}` depuis une offre P09. */
     #[Route('', name: 'request_new', methods: ['GET'])]
     public function start(Request $request): Response
     {
@@ -119,7 +121,18 @@ final class RequestTunnelController extends AbstractController
         $pro = $request->query->getString('pro');
         if ('' !== $pro) {
             try {
-                $this->commands->dispatch(new StartRequestDraft($owner, $this->ids->next(), targetArtisanId: $pro, source: RequestSource::Direct->value));
+                $date = $request->query->getString('date');
+                $slot = $request->query->getString('creneau');
+                $offer = '' === $request->query->getString('offre') ? null : $this->queries->ask(new ActiveOffer($request->query->getString('offre'), $pro));
+                $this->commands->dispatch(new StartRequestDraft(
+                    $owner,
+                    $this->ids->next(),
+                    targetArtisanId: $pro,
+                    source: RequestSource::Direct->value,
+                    desiredDate: '' === $date ? null : $date,
+                    preferredSlot: '' === $slot ? null : $slot,
+                    offerLabel: $offer instanceof ActiveOfferView ? $offer->label() : null
+                ));
             } catch (DraftRejected $e) {
                 $this->addFlash('error', $e->getMessage());
             }

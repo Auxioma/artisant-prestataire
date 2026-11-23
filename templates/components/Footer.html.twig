@@ -1,13 +1,14 @@
 {#
-    TM / Footer (Figma 65:178, P01.10 — CDC §3). Structure de la bibliothèque V2 (65:49) sur fond --background-light
-    (CDC §2.1 ; la variante marine #0A1F5C hors palette n'est pas retenue — P-29). Vague décorative de la variante claire (388:17040).
+    TM / Footer (Figma 65:178, P01.10 — CDC §3), mis à jour d'après la maquette « Accueil — Desktop 1440 · V2 » :
+    marque et réseaux sociaux, colonnes « Liens utiles », « Aide & compte », « Informations » (séparateurs verticaux),
+    colonne « Restez informé » (newsletter), mention de droits et pays. Fond --background-light, vague décorative (388:17040).
     Mobile : colonnes en accordéon (ouvertes sans JavaScript), newsletter pleine largeur.
 #}
 {# BO10.5 — colonnes administrables (tm_menu) #}
 {% set columns = [
     {title: tm_label('footer.column_useful', 'Liens utiles'), links: tm_menu('footer_useful')},
+    {title: tm_label('footer.column_help', 'Aide & compte'), links: tm_menu('footer_help')},
     {title: tm_label('footer.column_info', 'Informations'), links: tm_menu('footer_info')},
-    {title: tm_label('footer.column_help', 'Aide'), links: tm_menu('footer_help')},
 ] %}
 <footer {{ attributes.defaults({class: 'tm-footer'}) }}>
     <svg class="tm-footer__wave" viewBox="0 0 1440 70" preserveAspectRatio="none" aria-hidden="true" focusable="false">
@@ -19,7 +20,7 @@
         <div class="tm-footer__columns">
             <div class="tm-footer__brand">
                 <twig:Logo href="{{ tm_path('public_home') }}" />
-                <p class="tm-footer__tagline">{{ tm_label('footer.tagline', 'La plateforme qui met en relation particuliers, entreprises et artisans vérifiés, partout en France.') }}</p>
+                <p class="tm-footer__tagline">{{ tm_label('footer.tagline', 'La plateforme qui vous met en relation avec des artisans et prestataires de confiance, partout en France.') }}</p>
                 {% set socials = tm_social_links() %}
                 {% if socials is not empty %}
                     <ul class="tm-footer__socials">
@@ -50,19 +51,24 @@
             {% endfor %}
 
             {% if tm_route_exists('content_newsletter_subscribe') %}
-                <form class="tm-footer__newsletter" method="post" action="{{ tm_path('content_newsletter_subscribe') }}">
-                    <p class="tm-footer__title">{{ tm_label('footer.newsletter_title', 'Newsletter') }}</p>
-                    <p class="tm-footer__text">{{ tm_label('footer.newsletter_text', 'Conseils travaux et nouveautés, une fois par mois.') }}</p>
-                    <twig:Field id="newsletter_email" name="email" type="email" label="Votre adresse email" icon="mail" autocomplete="email" required class="tm-footer__field" />
-                    <twig:Checkbox id="newsletter_consent" name="consent" label="J’accepte de recevoir la newsletter TrouveMoi. Désinscription en un clic." required />
-                    <input type="hidden" name="_token" value="{{ csrf_token('newsletter') }}">
-                    <twig:Button type="submit">{{ tm_label('footer.newsletter_submit', 'S’inscrire') }}</twig:Button>
+                <form class="tm-footer__newsletter" id="newsletter" method="post" action="{{ tm_path('content_newsletter_subscribe') }}">
+                    <p class="tm-footer__title">{{ tm_label('footer.newsletter_title', 'Restez informé') }}</p>
+                    <p class="tm-footer__text">{{ tm_label('footer.newsletter_text', 'Recevez nos actualités, offres et nouveautés.') }}</p>
+                    <label class="tm-visually-hidden" for="newsletter_email">Votre adresse e-mail</label>
+                    <span class="tm-footer__email">
+                        <twig:Icon name="mail" size="sm" class="tm-icon--inherit" />
+                        <input id="newsletter_email" name="email" type="email" placeholder="Votre adresse e-mail" autocomplete="email" maxlength="254" required>
+                    </span>
+                    <input type="hidden" name="_token" value="{{ csrf_token('submit') }}">
+                    <button type="submit" class="tm-footer__subscribe">{{ tm_label('footer.newsletter_submit', 'S’inscrire') }}</button>
                 </form>
             {% endif %}
         </div>
         <div class="tm-footer__bottom">
-            <p>© {{ 'now'|date('Y') }} TrouveMoi.com — Auxioma</p>
-            <p>{{ tm_label('footer.operator', 'Opérateur de plateforme en ligne') }} · <a class="tm-footer__link" href="{{ tm_path('content_how_it_works') }}#classement">{{ tm_label('footer.ranking_link', 'Comment sont classés les professionnels ?') }}</a></p>
+            <p>© {{ 'now'|date('Y') }} {{ tm_label('footer.copyright', 'TrouveMoi.com – Artisans & Prestataires. Tous droits réservés.') }}</p>
+            {# Information L111-7 du code de la consommation (critères de classement), accessible depuis toutes les pages. #}
+            <p class="tm-footer__legal"><a class="tm-footer__link" href="{{ tm_path('content_how_it_works') }}#classement">{{ tm_label('footer.ranking_link', 'Comment sont classés les professionnels ?') }}</a></p>
+            <p class="tm-footer__country">{{ tm_label('footer.country', 'France') }}<twig:Icon name="chevD" size="xs" class="tm-icon--inherit" /></p>
         </div>
     </div>
 </footer>

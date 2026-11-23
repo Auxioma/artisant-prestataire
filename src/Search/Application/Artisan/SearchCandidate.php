@@ -27,6 +27,8 @@ final readonly class SearchCandidate
         public array $labels,
         public bool $hasLogo,
         public array $jobIds = [],
+        /** Première photo de réalisation publiée (vignette des cartes V2), sinon le logo. */
+        public ?string $coverPhotoId = null,
     ) {
     }
 }

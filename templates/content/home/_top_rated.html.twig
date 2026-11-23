@@ -1,0 +1,17 @@
+{#- P01.5b (maquette V2) — « Les mieux notés » : professionnels éligibles RG-011 ayant des avis, note bayésienne d'abord ; lien vers le classement P07. -#}
+<section class="tm-container tm-container--wide tm-home-section" aria-labelledby="home-top-rated">
+    <div class="tm-home-top">
+        <div class="tm-home-top__head">
+            <h2 class="tm-home-top__title" id="home-top-rated"><twig:Icon name="star" class="tm-home-top__star" />{{ s.title }}</h2>
+            {% if s.text %}<p class="tm-home-top__text"><twig:Icon name="info" size="sm" />{{ s.text }}</p>{% endif %}
+            {% if d.href %}<a class="tm-home-section__more" href="{{ d.href }}">{{ s.link_label }}<twig:Icon name="arrowR" size="sm" /></a>{% endif %}
+        </div>
+        <div class="tm-carousel tm-home-top__list" data-controller="carousel">
+            <ul class="tm-carousel__track" data-carousel-target="track">
+                {% for hit in d.hits %}<li data-action="click->analytics#track" data-analytics-event-param="pro_card_click">{% include 'catalog/_pro_card.html.twig' with {hit: hit, job_names: d.job_names, footer: 'verified', rating_style: 'outline'} only %}</li>{% endfor %}
+            </ul>
+            <button type="button" class="tm-carousel__arrow tm-carousel__arrow--prev" data-carousel-target="prev" data-action="carousel#previous"><twig:Icon name="chevL" size="sm" label="Professionnels précédents" /></button>
+            <button type="button" class="tm-carousel__arrow tm-carousel__arrow--next" data-carousel-target="next" data-action="carousel#next"><twig:Icon name="chevR" size="sm" label="Professionnels suivants" /></button>
+        </div>
+    </div>
+</section>

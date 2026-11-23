@@ -1,0 +1,84 @@
+{#- P07 « Les mieux notés » (maquette Kerry V2) : bannière, filtres (métier, zone, période), méthode RG-024 en clair, classement avec rang, note bayésienne, avis certifiés et dernier avis. -#}
+{% extends 'base.html.twig' %}
+{% block title %}Les professionnels les mieux notés — TrouveMoi{% endblock %}
+{% set canonical_url = url('search_top_rated') %}
+{% set meta_description = 'Classement des artisans et prestataires les mieux notés sur TrouveMoi, établi uniquement à partir des avis certifiés de leurs clients.' %}
+{% block meta %}
+    {% if filters is not empty %}<meta name="robots" content="noindex, follow">{% endif %}
+{% endblock %}
+{% block body %}
+<div class="tm-ranking" data-controller="analytics" data-analytics-auto-event-value="top_rated_view">
+    <twig:PageBanner title="Les professionnels les mieux notés" subtitle="Classement établi uniquement à partir des avis certifiés déposés sur TrouveMoi." image="images/auth/a02-banner" />
+    <div class="tm-ranking__filters-band">
+        <div class="tm-container">
+            <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Les mieux notés'}]" />
+            <form method="get" action="{{ path('search_top_rated') }}" class="tm-filter-bar" data-controller="autosubmit" data-turbo="false" aria-label="Filtrer le classement">
+                <label class="tm-filter-bar__select">
+                    <span>Métier :</span>
+                    <select name="metier" data-action="change->autosubmit#submit">
+                        <option value="">Tous les métiers</option>
+                        {% for j in jobs %}<option value="{{ j.slug }}"{{ job and job.slug == j.slug ? ' selected' }}>{{ j.name }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="tm-filter-bar__select">
+                    <span>Zone :</span>
+                    <select name="zone" data-action="change->autosubmit#submit">
+                        <option value="">Toute la France</option>
+                        {% for code, name in departments %}<option value="{{ code }}"{{ department == code ~ '' ? ' selected' }}>{{ name }} ({{ code }})</option>{% endfor %}
+                    </select>
+                </label>
+                <fieldset class="tm-filter-bar__chips">
+                    <legend class="tm-visually-hidden">Période</legend>
+                    {% for key, label in periods %}
+                        <label class="tm-chip{{ key == period ? ' is-selected' }}">
+                            <input type="radio" name="periode" value="{{ key }}"{{ key == period ? ' checked' }} data-action="change->autosubmit#submit">
+                            <span>{{ label }}</span>{% if key == period %}<twig:Icon name="x" size="xs" class="tm-icon--inherit" />{% endif %}
+                        </label>
+                    {% endfor %}
+                </fieldset>
+                <noscript><twig:Button type="submit" variant="secondary">Filtrer</twig:Button></noscript>
+            </form>
+        </div>
+    </div>
+
+    <div class="tm-ranking__body">
+        <div class="tm-container">
+            <p class="tm-info-note"><twig:Icon name="info" size="sm" />
+                Méthode : note bayésienne (moyenne globale m = {{ result.mean|number_format(1, ',', ' ') }} · poids C = {{ result.weight }}) avec au moins {{ result.minReviews }} avis certifiés sur la période (RG-024). Un artisan avec 120 avis à 4,8 passe devant un artisan avec 1 avis à 5/5.
+            </p>
+
+            {% if result.entries is empty %}
+                <twig:EmptyState icon="star" title="Aucun professionnel classé pour ces critères" text="Il faut au moins {{ result.minReviews }} avis certifiés sur la période pour figurer au classement. Élargissez la zone ou la période.">
+                    <twig:Button href="{{ path('search_top_rated', {periode: 'toujours'}) }}" variant="secondary">Voir depuis toujours</twig:Button>
+                </twig:EmptyState>
+            {% else %}
+                <ol class="tm-ranking__list">
+                    {% for e in result.entries %}
+                        {% set a = e.artisan %}
+                        {% set main_job = job_names[a.mainJobId] ?? (a.jobIds|map(id => job_names[id] ?? null)|filter(n => n)|first) %}
+                        <li class="tm-ranking__item{{ e.rank <= 3 ? ' is-podium' }}">
+                            <span class="tm-ranking__rank" aria-label="Rang {{ e.rank }}">#{{ e.rank }}</span>
+                            <span class="tm-ranking__avatar">
+                                {% if a.coverPhotoId %}<img src="{{ path('public_portfolio_photo', {id: a.profileId, photo: a.coverPhotoId}) }}" alt="" width="64" height="64" loading="lazy">
+                                {% elseif a.hasLogo %}<img src="{{ path('public_artisan_logo', {id: a.profileId}) }}" alt="" width="64" height="64" loading="lazy">
+                                {% else %}<twig:Icon name="briefcase" />{% endif %}
+                            </span>
+                            <div class="tm-ranking__main">
+                                <h2 class="tm-ranking__name"><a href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}">{{ a.name }}</a> <twig:Badge variant="verified" /></h2>
+                                <p class="tm-ranking__meta">{{ [main_job, a.communeName]|filter(v => v)|join(' · ') }}</p>
+                                {% if e.lastReview %}<p class="tm-ranking__quote">Dernier avis : « {{ e.lastReview|length > 110 ? e.lastReview|slice(0, 109) ~ '…' : e.lastReview }} »</p>{% endif %}
+                            </div>
+                            <div class="tm-ranking__score">
+                                <span class="tm-ranking__stars" aria-hidden="true">{% for i in 1..5 %}<twig:Icon name="star" size="xs" />{% endfor %}</span>
+                                <strong><span class="tm-visually-hidden">Note bayésienne : </span>{{ e.bayesRating|number_format(2, ',', ' ') }} / 5</strong>
+                                <span>{{ e.reviewsCount|number_format(0, ',', ' ') }} avis certifiés</span>
+                            </div>
+                            <twig:Button href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}" variant="secondary" class="tm-ranking__cta">Voir le profil<span class="tm-visually-hidden"> de {{ a.name }}</span></twig:Button>
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

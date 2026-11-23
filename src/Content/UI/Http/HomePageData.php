@@ -66,6 +66,14 @@ final readonly class HomePageData
                 if ([] === $data['categories']) {
                     continue; // aucune catégorie à la une : bloc masqué
                 }
+            } elseif (HomeBlockType::TopRated === $type) {
+                $jobs ??= $this->jobs();
+                $data['hits'] = array_values(array_filter($this->featured(self::int($s['count'] ?? null)), static fn (ArtisanHit $h): bool => $h->artisan->reviewsCount > 0));
+                if ([] === $data['hits']) {
+                    continue; // aucun professionnel noté : section masquée plutôt que vide
+                }
+                $data['job_names'] = array_map(static fn (JobIndexEntry $j): string => $j->name, $jobs);
+                $data['href'] = $this->path('top_rated');
             } elseif (HomeBlockType::Pros === $type) {
                 $jobs ??= $this->jobs();
                 $data['hits'] = $this->featured(self::int($s['count'] ?? null));

@@ -9,6 +9,8 @@ use App\Catalog\Application\Query\MainCategories;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Settings\SettingKey;
 use App\Shared\Application\Settings\SettingsProvider;
+use Symfony\Component\Asset\Packages;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
@@ -18,6 +20,8 @@ use Twig\TwigFunction;
 /**
  * tm_main_categories() : méga-menu et menu mobile (P01.1) — catégories actives, 3 à 5 métiers chacune
  * (catalog.megamenu_jobs), ordre du BO06 ; résultat mis en cache, invalidé à chaque modification du référentiel.
+ * tm_category_image(slug) : photo d'illustration d'une catégorie (maquettes V2), `assets/images/categories/{slug}.webp`,
+ * ou null (la carte garde alors son fond uni et son pictogramme).
  */
 final class CatalogExtension extends AbstractExtension
 {
@@ -28,12 +32,27 @@ final class CatalogExtension extends AbstractExtension
         private readonly SettingsProvider $settings,
         private readonly RouterInterface $router,
         private readonly CacheInterface $catalogCache,
+        private readonly Packages $assets,
+        #[Autowire('%kernel.project_dir%/assets/images/categories')]
+        private readonly string $imagesDir,
     ) {
     }
 
     public function getFunctions(): array
     {
-        return [new TwigFunction('tm_main_categories', $this->mainCategories(...))];
+        return [
+            new TwigFunction('tm_main_categories', $this->mainCategories(...)),
+            new TwigFunction('tm_category_image', $this->categoryImage(...)),
+        ];
+    }
+
+    public function categoryImage(string $slug): ?string
+    {
+        if (1 !== preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug) || !is_file($this->imagesDir.'/'.$slug.'.webp')) {
+            return null;
+        }
+
+        return $this->assets->getUrl('images/categories/'.$slug.'.webp');
     }
 
     /**

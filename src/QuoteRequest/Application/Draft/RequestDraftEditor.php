@@ -120,6 +120,16 @@ final readonly class RequestDraftEditor implements CommandHandler
             $this->assertJob($command->jobId, $changes['target_artisan_id'] ?? $draft->targetArtisanId);
             $changes += $this->jobChange($draft, $command->jobId);
         }
+        if (null !== $command->desiredDate && $this->isAcceptableDate($command->desiredDate)) {
+            $changes['timing'] = Timing::Date->value;
+            $changes['desired_date'] = $command->desiredDate;
+        }
+        if (null !== PreferredSlot::tryFrom($command->preferredSlot ?? '')) {
+            $changes['preferred_slots'] = [$command->preferredSlot];
+        }
+        if (null !== $command->offerLabel && '' === trim($draft->description)) {
+            $changes['description'] = mb_substr(\sprintf('Je souhaite profiter de votre offre « %s ».', $command->offerLabel), 0, RequestDetails::DESCRIPTION_MAX);
+        }
         $this->store($command->owner, $draft->with($changes, $draft->step, $this->clock->now()));
     }
 

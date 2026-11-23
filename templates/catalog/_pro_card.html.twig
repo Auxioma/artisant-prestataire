@@ -1,0 +1,14 @@
+{#- Carte V2 d'un ArtisanHit (CardPro) : hit, job_names (id => nom), footer = verified | available, rating_style = outline | filled. -#}
+{% set a = hit.artisan %}
+<twig:CardPro
+    name="{{ a.name }}"
+    href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}"
+    artisanId="{{ a.profileId }}"
+    trades="{{ a.jobIds|map(id => (job_names[id] ?? null))|filter(n => n)|slice(0, 3)|join(' – ') }}"
+    location="{{ a.communeName ? a.communeName ~ (a.departmentCode ? ' (' ~ a.departmentCode ~ ')') : '' }}"
+    photo="{{ a.coverPhotoId ? path('public_portfolio_photo', {id: a.profileId, photo: a.coverPhotoId}) : (a.hasLogo ? path('public_artisan_logo', {id: a.profileId}) : null) }}"
+    :rating="a.reviewsCount > 0 ? a.ratingAverage : null"
+    :reviewsCount="a.reviewsCount"
+    footer="{{ footer|default('verified') }}"
+    :available="a.available"
+    ratingStyle="{{ rating_style|default('outline') }}" />

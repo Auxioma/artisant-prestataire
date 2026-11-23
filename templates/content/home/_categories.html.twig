@@ -1,18 +1,27 @@
-{#- P01.5 — catégories actives « à la une », dans l'ordre du référentiel ; carrousel au défilement natif (pas d'animation automatique). -#}
-<section class="tm-container tm-home-section" aria-labelledby="home-categories">
-    <div class="tm-catalog__head">
+{#- P01.5 — catégories actives « à la une », dans l'ordre du référentiel : cartes photo en carrousel (flèches, points ; défilement natif sans JavaScript). -#}
+<section class="tm-container tm-container--wide tm-home-section" aria-labelledby="home-categories">
+    <div class="tm-home-section__head">
         <h2 class="tm-section-title" id="home-categories">{{ s.title }}</h2>
         <a class="tm-home-section__more" href="{{ path('catalog_categories') }}">{{ s.link_label }}<twig:Icon name="arrowR" size="sm" /></a>
     </div>
-    <ul class="tm-home-categories">
-        {% for c in d.categories %}
-            <li>
-                <a class="tm-home-categories__card" href="{{ path('catalog_category', {slug: c.summary.slug}) }}" data-action="analytics#track" data-analytics-event-param="category_card_click" data-analytics-type-param="{{ c.summary.slug }}">
-                    <span class="tm-home-categories__icon"><twig:Icon name="{{ c.summary.icon }}" /></span>
-                    <span class="tm-home-categories__name">{{ c.summary.name }}</span>
-                    {% if c.count is not null %}<span class="tm-home-categories__count">{{ c.count }} professionnel{{ c.count > 1 ? 's' }}</span>{% endif %}
-                </a>
-            </li>
-        {% endfor %}
-    </ul>
+    <div class="tm-carousel tm-home-categories" data-controller="carousel">
+        <ul class="tm-carousel__track" data-carousel-target="track">
+            {% for c in d.categories %}
+                {% set image = tm_category_image(c.summary.slug) %}
+                <li>
+                    <a class="tm-home-categories__card{{ image ? '' : ' tm-home-categories__card--plain' }}" href="{{ path('catalog_category', {slug: c.summary.slug}) }}" data-action="analytics#track" data-analytics-event-param="category_card_click" data-analytics-type-param="{{ c.summary.slug }}">
+                        {% if image %}<img src="{{ image }}" alt="" loading="lazy" decoding="async" width="215" height="190">{% endif %}
+                        <span class="tm-home-categories__label">
+                            <twig:Icon name="{{ c.summary.icon }}" size="sm" class="tm-icon--inherit" />
+                            <span class="tm-home-categories__name">{{ c.summary.name|e|replace({' &amp; ': '<br>&amp; '})|raw }}</span>
+                            {% if c.count is not null %}<span class="tm-home-categories__count">{{ c.count }} professionnel{{ c.count > 1 ? 's' }}</span>{% endif %}
+                        </span>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+        <button type="button" class="tm-carousel__arrow tm-carousel__arrow--prev" data-carousel-target="prev" data-action="carousel#previous"><twig:Icon name="chevL" size="sm" label="Catégories précédentes" /></button>
+        <button type="button" class="tm-carousel__arrow tm-carousel__arrow--next" data-carousel-target="next" data-action="carousel#next"><twig:Icon name="chevR" size="sm" label="Catégories suivantes" /></button>
+        <div class="tm-carousel__dots" data-carousel-target="dots"></div>
+    </div>
 </section>
