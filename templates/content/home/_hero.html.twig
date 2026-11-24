@@ -16,29 +16,6 @@
         <path d="M0 22C360 52 900 -6 1440 20V46H0V22Z" fill="currentColor"/>
     </svg>
     <div class="tm-container tm-container--wide tm-home-hero__content">
-        <form method="get" action="{{ path('public_search') }}" class="tm-home-search" role="search" data-turbo="false"
-              data-controller="home-search" data-home-search-url-value="{{ path('search_nearest_commune') }}" data-action="submit->home-search#remember">
-            <div class="tm-home-search__field tm-home-search__field--job" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="metier">
-                <twig:Icon name="wrench" class="tm-home-search__icon" />
-                <label class="tm-home-search__label" for="home_job">{{ s.job_placeholder }}</label>
-                <input class="tm-home-search__input" id="home_job" type="text" placeholder="{{ s.job_example ?? '' }}" autocomplete="off" maxlength="100" data-autocomplete-target="input" data-action="input->autocomplete#suggest">
-                <input type="hidden" name="metier" data-autocomplete-target="value">
-                <twig:Icon name="chevD" size="sm" class="tm-home-search__chevron" />
-                <ul class="tm-area__suggestions" role="listbox" aria-label="Métiers proposés" hidden data-autocomplete-target="list"></ul>
-            </div>
-            <div class="tm-home-search__field tm-home-search__field--place" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="lieu">
-                <twig:Icon name="pin" class="tm-home-search__icon" />
-                <label class="tm-home-search__label" for="home_place">{{ s.place_placeholder }}</label>
-                <input class="tm-home-search__input" id="home_place" name="lieu_libelle" type="text" placeholder="{{ s.place_example ?? '' }}" autocomplete="off" maxlength="100"
-                       data-autocomplete-target="input" data-home-search-target="label" data-action="input->autocomplete#suggest">
-                <input type="hidden" name="lieu" data-autocomplete-target="value" data-home-search-target="insee">
-                <ul class="tm-area__suggestions" role="listbox" aria-label="Communes proposées" hidden data-autocomplete-target="list"></ul>
-                <button type="button" class="tm-home-hero__locate" data-action="home-search#locate" data-home-search-target="locate" hidden>
-                    <twig:Icon name="locate" size="sm" label="Utiliser ma position" />
-                </button>
-            </div>
-            <button type="submit" class="tm-home-search__submit"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><span>{{ s.button }}</span></button>
-            <p class="tm-home-hero__status" role="status" data-home-search-target="status"></p>
-        </form>
+        {% include 'search/_search_pill.html.twig' with {prefix: 'home', job_label: s.job_placeholder, job_example: s.job_example ?? '', place_label: s.place_placeholder, place_example: s.place_example ?? '', button: s.button} only %}
     </div>
 </header>

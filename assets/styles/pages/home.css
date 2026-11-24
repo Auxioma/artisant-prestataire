@@ -36,6 +36,9 @@
     .tm-home-search__field:focus-within { border-radius: var(--radius-md); box-shadow: var(--focus-ring); }
     .tm-home-search__chevron, .tm-home-search .tm-home-hero__locate { grid-area: end; color: var(--color-heading); }
     .tm-home-search .tm-area__suggestions { top: 100%; left: 0; right: 0; }
+    /* Variante une ligne (« Nos professionnels ») : libellé réservé aux lecteurs d'écran, exemple en placeholder. */
+    .tm-home-search--compact .tm-home-search__field { grid-template-areas: 'icon input end'; min-height: 48px; }
+    .tm-home-search--compact .tm-home-search__input { font-size: 14px; }
     .tm-home-search__submit { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: 48px; padding: 0 var(--space-6); border: 0; border-radius: var(--radius-pill); background: var(--gradient-orange); color: var(--color-heading); font: 600 18px/24px var(--font-family); cursor: pointer; }
     .tm-home-search__submit:hover { background: var(--gradient-orange-hover); }
     .tm-home-search__submit:focus-visible { box-shadow: var(--focus-ring); outline: none; }
@@ -134,9 +137,9 @@
     @media (min-width: 768px) {
         .tm-home-hero { min-height: 380px; }
         .tm-home-search { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: center; gap: 0; padding: 10px 10px 10px var(--space-4); border-radius: 36px; }
-        .tm-home-search__field--place { border-left: 1px solid var(--color-border); }
-        .tm-home-search__field--job { padding-right: var(--space-5); }
-        .tm-home-search__field--place { padding-left: var(--space-5); }
+        /* Positionnel : l'ordre service / lieu est un paramètre de la barre (search/_search_pill.html.twig). */
+        .tm-home-search__field + .tm-home-search__field { padding-left: var(--space-5); border-left: 1px solid var(--color-border); }
+        .tm-home-search__field:first-child { padding-right: var(--space-5); }
         .tm-home-reassurance ul, .tm-home-reassurance--grid ul { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: auto; justify-content: space-between; gap: 0; overflow: visible; }
         .tm-home-reassurance li + li { padding-left: var(--space-8); border-left: 1px solid var(--color-border); }
         .tm-home-reassurance li { padding-right: var(--space-8); }

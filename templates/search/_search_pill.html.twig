@@ -1,0 +1,40 @@
+{#-
+    Barre de recherche arrondie des maquettes V2 (accueil P01.2, « Nos professionnels ») : service (autocomplétion
+    métier), lieu (autocomplétion, géolocalisation, dernier lieu mémorisé), bouton « Rechercher » → P02.
+    Paramètres : prefix (identifiants), job_label / job_example, place_label / place_example, button,
+    place_first (lieu avant service), compact (une ligne : libellé lu par les lecteurs d'écran, exemple en placeholder),
+    job_icon (pictogramme du champ service).
+-#}
+{% set place_first = place_first ?? false %}
+{% set compact = compact ?? false %}
+{% set label_class = compact ? 'tm-home-search__label tm-visually-hidden' : 'tm-home-search__label' %}
+{% set job_field %}
+    <div class="tm-home-search__field tm-home-search__field--job" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="metier">
+        <twig:Icon name="{{ job_icon ?? 'wrench' }}" class="tm-home-search__icon" />
+        <label class="{{ label_class }}" for="{{ prefix }}_job">{{ job_label }}</label>
+        <input class="tm-home-search__input" id="{{ prefix }}_job" type="text" placeholder="{{ job_example ?? '' }}" autocomplete="off" maxlength="100" data-autocomplete-target="input" data-action="input->autocomplete#suggest">
+        <input type="hidden" name="metier" data-autocomplete-target="value">
+        {% if not compact %}<twig:Icon name="chevD" size="sm" class="tm-home-search__chevron" />{% endif %}
+        <ul class="tm-area__suggestions" role="listbox" aria-label="Métiers proposés" hidden data-autocomplete-target="list"></ul>
+    </div>
+{% endset %}
+{% set place_field %}
+    <div class="tm-home-search__field tm-home-search__field--place" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="lieu">
+        <twig:Icon name="pin" class="tm-home-search__icon" />
+        <label class="{{ label_class }}" for="{{ prefix }}_place">{{ place_label }}</label>
+        <input class="tm-home-search__input" id="{{ prefix }}_place" name="lieu_libelle" type="text" placeholder="{{ place_example ?? '' }}" autocomplete="off" maxlength="100"
+               data-autocomplete-target="input" data-home-search-target="label" data-action="input->autocomplete#suggest">
+        <input type="hidden" name="lieu" data-autocomplete-target="value" data-home-search-target="insee">
+        <ul class="tm-area__suggestions" role="listbox" aria-label="Communes proposées" hidden data-autocomplete-target="list"></ul>
+        <button type="button" class="tm-home-hero__locate" data-action="home-search#locate" data-home-search-target="locate" hidden>
+            <twig:Icon name="locate" size="sm" label="Utiliser ma position" />
+        </button>
+    </div>
+{% endset %}
+<form method="get" action="{{ path('public_search') }}" class="tm-home-search{{ compact ? ' tm-home-search--compact' }}" role="search" data-turbo="false"
+      data-controller="home-search" data-home-search-url-value="{{ path('search_nearest_commune') }}" data-action="submit->home-search#remember">
+    {{ place_first ? place_field : job_field }}
+    {{ place_first ? job_field : place_field }}
+    <button type="submit" class="tm-home-search__submit"><twig:Icon name="search" size="sm" class="tm-icon--inherit" /><span>{{ button }}</span></button>
+    <p class="tm-home-hero__status" role="status" data-home-search-target="status"></p>
+</form>

@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\Search\UI\Http;
 
 use App\Catalog\Application\Geo\Query\Departments;
+use App\Catalog\Application\Query\CategorySummary;
 use App\Catalog\Application\Query\JobIndexEntries;
 use App\Catalog\Application\Query\JobIndexEntry;
+use App\Catalog\Application\Query\MainCategories;
+use App\Search\Application\Artisan\ArtisanHit;
+use App\Search\Application\Directory\FeaturedArtisans;
 use App\Search\Application\Directory\DirectoryArtisans;
 use App\Search\Application\Directory\DirectoryResult;
 use App\Shared\Application\Bus\QueryBus;
@@ -21,12 +25,17 @@ use Symfony\Component\Routing\Attribute\Route;
 /**
  * P06 — annuaire « Nos professionnels » : tous les artisans vérifiés par ordre alphabétique, filtres métier, département
  * et initiale, pagination numérotée. Pages non filtrées indexables avec des URLs propres (`/nos-professionnels/page/2`) ;
- * pages filtrées en noindex,follow (les pages métier × ville indexables sont les pages P05).
+ * pages filtrées en noindex,follow (les pages métier × ville indexables sont les pages P05). Page d’entrée (maquette
+ * Koubourath « Nos professionnels » V2, sans filtre ni pagination) : recherche, engagements, catégories, professionnels
+ * à la une (RG-011) et encart pro, puis l’annuaire.
  */
 final class DirectoryController extends AbstractController
 {
     private const string LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#';
     private const int FIRST_PAGE = 1;
+    /** Maquette « Nos professionnels » V2 : 11 catégories + « Autres services », 3 professionnels à la une. */
+    private const int CATEGORY_CARDS = 11;
+    private const int FEATURED = 3;
 
     public function __construct(private readonly QueryBus $queries, private readonly SettingsProvider $settings)
     {
@@ -73,7 +82,15 @@ final class DirectoryController extends AbstractController
             $names[$entry->id] = $entry->name;
         }
 
+        // Page d'entrée (maquette V2) : catégories et professionnels à la une, seulement sans filtre ni pagination.
+        $landing = [] === $filters && self::FIRST_PAGE === $page;
+        $categories = $landing ? $this->queries->ask(new MainCategories(1)) : [];
+        $featured = $landing ? $this->queries->ask(new FeaturedArtisans([], self::FEATURED)) : [];
+
         $response = $this->render('search/directory.html.twig', [
+            'landing' => $landing,
+            'categories' => \array_slice(array_values(array_filter(\is_array($categories) ? $categories : [], static fn (mixed $c): bool => $c instanceof CategorySummary)), 0, self::CATEGORY_CARDS),
+            'featured' => array_values(array_filter(\is_array($featured) ? $featured : [], static fn (mixed $h): bool => $h instanceof ArtisanHit)),
             'result' => $result,
             'jobs' => $jobs,
             'job' => $job,
