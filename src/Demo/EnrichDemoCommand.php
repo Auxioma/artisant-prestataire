@@ -6,6 +6,7 @@ namespace App\Demo;
 
 use App\ArtisanProfile\Application\Agenda\RefreshAgendas;
 use App\ArtisanProfile\Application\Agenda\SaveWeeklyRules;
+use App\ArtisanProfile\Application\Edit\UpdateAvailability;
 use App\ArtisanProfile\Application\Portfolio\AddPortfolioPhoto;
 use App\ArtisanProfile\Application\Portfolio\SavePortfolioProject;
 use App\Billing\Application\Credit\CreditLedger;
@@ -18,6 +19,8 @@ use App\QuoteRequest\Application\Submission\SubmitQuoteRequest;
 use App\Review\Application\Review\SubmitReview;
 use App\Shared\Application\Bus\CommandBus;
 use App\Shared\Application\Moderation\ModerateReview;
+use App\Shared\Application\Storage\FileUploader;
+use App\Shared\Domain\Storage\FilePurpose;
 use App\Shared\Infrastructure\Persistence\DbalValue;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
@@ -40,7 +43,7 @@ use Symfony\Component\Uid\Uuid;
  * clients existants et ajoute des clients [DEMO]. Lancer avec un mailer neutre (MAILER_DSN=null://null) et vider la
  * file des événements avec ce même mailer : aucun e-mail réel n'est envoyé. Refusé en prod sans --recette.
  *
- * @phpstan-type DemoArtisan array{id: string, user_id: string, name: string, job_id: string, category: string, insee: string, postal_code: string}
+ * @phpstan-type DemoArtisan array{id: string, user_id: string, name: string, job_id: string, category: string, insee: string, postal_code: string, demo: bool}
  * @phpstan-type DemoClient array{id: string, first_name: string}
  */
 #[AsCommand(name: 'app:demo:enrich', description: 'Enrichit la base de recette : avis, devis, réalisations, agendas, offres (serveur de test)')]
@@ -87,6 +90,7 @@ final class EnrichDemoCommand extends Command
         private readonly CommandBus $commands,
         private readonly CreditLedger $credits,
         private readonly EntityManagerInterface $entities,
+        private readonly FileUploader $uploader,
         #[Autowire('%kernel.environment%')]
         private readonly string $environment,
         #[Autowire('%kernel.project_dir%')]
@@ -141,6 +145,9 @@ final class EnrichDemoCommand extends Command
         $done = $failed = 0;
         $turn = 0;
         foreach ($artisans as $a => $artisan) {
+            if ($artisan['demo']) {
+                $this->completeDemoProfile($artisan, $io);
+            }
             // Relançable : un artisan déjà servi (avis publiés) est passé.
             if (DbalValue::int($this->connection->fetchOne("SELECT count(*) FROM review.review WHERE artisan_id = :a AND status = 'published'", ['a' => $artisan['id']])) >= self::MIN_REVIEWS) {
                 continue;
@@ -292,6 +299,85 @@ final class EnrichDemoCommand extends Command
         $this->entities->clear();
     }
 
+    /**
+     * Profils [DEMO] seulement (jamais les comptes des testeurs) : logo à initiales généré, horaires d'ouverture et une
+     * troisième photo, pour dépasser `pro.min_completion_featured` (RG-011) et apparaître dans les mises en avant.
+     *
+     * @param DemoArtisan $artisan
+     */
+    private function completeDemoProfile(array $artisan, SymfonyStyle $io): void
+    {
+        $row = $this->connection->fetchAssociative('SELECT logo_file_id, opening_hours::text AS hours FROM artisan.artisan_profile WHERE id = :id', ['id' => $artisan['id']]);
+        if (!\is_array($row)) {
+            return;
+        }
+        // Logo : même contrôle et même analyse qu'un envoi réel (FileUploader) ; rattaché directement, le domaine
+        // n'autorisant le changement de logo que pendant l'inscription (le profil [DEMO] est déjà vérifié).
+        if (null === $row['logo_file_id'] && null !== ($logo = $this->initialsLogo($artisan['name']))) {
+            try {
+                $file = $this->uploader->upload($logo, 'logo.png', FilePurpose::ArtisanLogo);
+                $this->connection->executeStatement('UPDATE artisan.artisan_profile SET logo_file_id = :f WHERE id = :id', ['f' => $file->id, 'id' => $artisan['id']]);
+            } catch (\Throwable $e) {
+                $io->text(\sprintf('  · logo %s : %s', $artisan['name'], $e->getMessage()));
+            }
+        }
+        $steps = [];
+        $project = $this->connection->fetchOne('SELECT pr.id FROM artisan.portfolio_project pr WHERE pr.artisan_id = :a AND (SELECT count(*) FROM artisan.portfolio_photo ph WHERE ph.project_id = pr.id) = 2 LIMIT 1', ['a' => $artisan['id']]);
+        $image = $this->projectDir.'/assets/images/categories/'.$artisan['category'].'.webp';
+        if (\is_string($project) && is_file($image) && null !== ($mirror = $this->mirrored($image))) {
+            $steps['photo'] = new AddPortfolioPhoto($artisan['user_id'], $project, $mirror, 'chantier.png', 'after');
+        }
+        if (!str_contains(\is_string($row['hours']) ? $row['hours'] : '', '08:00')) {
+            // En dernier : l'événement de mise à jour du profil recalcule la complétude (logo compris).
+            $days = array_fill_keys(['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi'], ['08:00-12:00', '14:00-18:00']) + ['samedi' => ['09:00-12:00']];
+            $steps['horaires'] = new UpdateAvailability($artisan['user_id'], $days, false, null, false);
+        }
+        foreach ($steps as $label => $command) {
+            try {
+                $this->commands->dispatch($command);
+            } catch (\Throwable $e) {
+                $io->text(\sprintf('  · %s %s : %s', $label, $artisan['name'], $e->getMessage()));
+            }
+            $this->entities->clear();
+        }
+    }
+
+    /** Logo PNG 400 × 400 : initiales blanches sur fond bleu (aucune marque réelle). */
+    private function initialsLogo(string $name): ?string
+    {
+        $words = preg_split('/[\\s\\-’\']+/u', trim(str_replace(SeedDemoCommand::MARK, '', $name))) ?: [];
+        $words = array_values(array_filter($words, static fn (string $w): bool => mb_strlen($w) > 2));
+        $initials = mb_strtoupper(mb_substr($words[0] ?? 'T', 0, 1).mb_substr($words[1] ?? '', 0, 1));
+        $font = $this->projectDir.'/vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf';
+        $image = imagecreatetruecolor(400, 400);
+        $path = tempnam(sys_get_temp_dir(), 'logo');
+        if (false === $image || false === $path || !is_file($font)) {
+            return null;
+        }
+        imagefill($image, 0, 0, (int) imagecolorallocate($image, 0, 87, 184));
+        $box = imagettfbbox(150, 0, $font, $initials);
+        $at = static fn (int $i): int => false !== $box && \is_int($box[$i] ?? null) ? $box[$i] : 0;
+        [$left, $bottom, $right, $top] = [$at(0), $at(1), $at(2), $at(7)];
+        imagettftext($image, 150, 0, (int) ((400 - ($right - $left)) / 2), (int) ((400 + ($bottom - $top)) / 2), (int) imagecolorallocate($image, 255, 255, 255), $font, $initials);
+        imagepng($image, $path);
+
+        return $path;
+    }
+
+    /** Variante miroir d'une photo (troisième vue du chantier). */
+    private function mirrored(string $source): ?string
+    {
+        $image = imagecreatefromwebp($source);
+        $path = tempnam(sys_get_temp_dir(), 'photo');
+        if (false === $image || false === $path) {
+            return null;
+        }
+        imageflip($image, \IMG_FLIP_HORIZONTAL);
+        imagepng($image, $path);
+
+        return $path;
+    }
+
     /** @param DemoArtisan $artisan */
     private function offer(array $artisan, int $n): void
     {
@@ -328,7 +414,7 @@ final class EnrichDemoCommand extends Command
     private function artisans(): array
     {
         $rows = $this->connection->fetchAllAssociative(<<<'SQL'
-            SELECT p.id, p.user_id, v.name, v.main_job_id AS job_id, p.hq_postal_code AS postal_code,
+            SELECT p.id, p.user_id, v.name, v.main_job_id AS job_id, p.hq_postal_code AS postal_code, u.email_canonical LIKE 'demo.artisan.%@exemple.test' AS demo,
                    -- Siège sans commune INSEE (ex. Paris) : commune la plus peuplée du code postal.
                    coalesce(p.hq_city_insee, (SELECT c.insee FROM catalog.commune c WHERE p.hq_postal_code = ANY(c.postal_codes) ORDER BY c.population DESC NULLS LAST LIMIT 1)) AS insee,
                    coalesce((SELECT coalesce(root.slug, c.slug) FROM catalog.job j JOIN catalog.category c ON c.id = j.category_id
@@ -345,6 +431,7 @@ final class EnrichDemoCommand extends Command
         return array_map(static fn (array $r): array => [
             'id' => DbalValue::string($r['id']), 'user_id' => DbalValue::string($r['user_id']), 'name' => DbalValue::string($r['name']), 'job_id' => DbalValue::string($r['job_id']),
             'category' => DbalValue::string($r['category']), 'insee' => DbalValue::string($r['insee']), 'postal_code' => DbalValue::string($r['postal_code']),
+            'demo' => true === $r['demo'],
         ], $rows);
     }
 }
