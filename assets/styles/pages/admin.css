@@ -518,6 +518,10 @@
     .tm-page-block__item { display: grid; gap: 10px; margin: 0; padding: 12px; border: 1px dashed var(--tm-line); border-radius: 10px; }
     .tm-page-block__item legend { padding: 0 6px; font-size: 13px; font-weight: var(--font-weight-semibold); color: var(--tm-ink); }
     .tm-cms-inline { display: inline; }
+    /* BO10.3 — blog : métiers liés en colonnes, catégories en lignes éditables. */
+    .tm-blog-admin__jobs { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 16px; max-height: 320px; overflow-y: auto; }
+    .tm-blog-admin__category { display: block; padding-block: 12px; border-bottom: 1px solid var(--tm-line); }
+    .tm-blog-admin__category fieldset { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); align-items: end; gap: 12px; margin: 0; padding: 0; border: 0; }
     .tm-admin-status { display: inline-block; padding: 2px 10px; border-radius: var(--radius-pill); background: var(--tm-ice); color: var(--tm-navy); font-size: 13px; font-weight: var(--font-weight-semibold); }
     .tm-admin-status.is-published { background: var(--color-success-bg); color: var(--color-success-text); }
     .tm-admin-status.is-scheduled { background: var(--color-warning-bg); color: var(--color-warning-text); }

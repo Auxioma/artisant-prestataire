@@ -1,0 +1,78 @@
+{#- P15.1 — liste du blog (maquette Floriane « Blog — liste » V2) : fil d'Ariane, bannière « Conseils travaux », pastilles de catégories, article à la une (1re page), grille 3/2/1, pagination numérotée indexable. -#}
+{% extends 'base.html.twig' %}
+{% import 'content/blog/_macros.html.twig' as dates %}
+{% set page = result.page %}
+{% set base_route = category ? 'content_blog_category' : 'content_blog' %}
+{% set base_params = category ? {slug: category.slug} : {} %}
+{% macro page_url(route, params, n) %}{{ path(route, n > 1 ? params|merge({page: n}) : params) }}{% endmacro %}
+{% import _self as m %}
+{% block title %}{{ category ? 'Conseils travaux : ' ~ category.name : 'Conseils travaux, guides et prix' }}{{ page > 1 ? ' — page ' ~ page }} — Blog TrouveMoi{% endblock %}
+{% set canonical_url = app.request.schemeAndHttpHost ~ m.page_url(base_route, base_params, page)|trim %}
+{% set meta_description = category ? 'Nos conseils travaux en ' ~ category.name|lower ~ ' : guides, prix et bonnes pratiques pour réussir votre projet avec un artisan vérifié.' : 'Guides, prix et bonnes pratiques pour réussir vos projets de travaux avec un artisan : les conseils du blog TrouveMoi.' %}
+{% set featured = page == 1 ? result.articles|first : null %}
+{% set grid = featured ? result.articles|slice(1) : result.articles %}
+{% block body %}
+<div class="tm-blog" data-controller="analytics" data-analytics-auto-event-value="blog_list_view">
+    <div class="tm-blog__crumbs"><div class="tm-container">
+        <twig:Breadcrumb :items="category ? [{label: 'Accueil', href: tm_path('public_home')}, {label: 'Blog', href: path('content_blog')}, {label: category.name}] : [{label: 'Accueil', href: tm_path('public_home')}, {label: 'Blog'}]" />
+    </div></div>
+    <twig:PageBanner title="{{ category ? 'Conseils travaux : ' ~ category.name : 'Conseils travaux' }}" subtitle="Guides, prix et bonnes pratiques pour réussir vos projets avec un artisan." image="images/auth/a02-banner" class="tm-page-banner--light" />
+
+    <div class="tm-blog__body">
+        <div class="tm-container">
+            {% if categories is not empty %}
+                <nav class="tm-blog__filters" aria-label="Catégories du blog">
+                    <a class="tm-chip{{ not category ? ' is-selected' }}" href="{{ path('content_blog') }}"{% if not category %} aria-current="page"{% endif %}>Tous{% if not category %}<twig:Icon name="x" size="xs" class="tm-icon--inherit" />{% endif %}</a>
+                    {% for c in categories %}
+                        {% set on = category and category.id == c.id %}
+                        <a class="tm-chip{{ on ? ' is-selected' }}" href="{{ on ? path('content_blog') : path('content_blog_category', {slug: c.slug}) }}"{% if on %} aria-current="page"{% endif %}>{{ c.name }}{% if on %}<twig:Icon name="x" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden"> (voir toutes les catégories)</span>{% endif %}</a>
+                    {% endfor %}
+                </nav>
+            {% endif %}
+
+            {% if result.articles is empty %}
+                <twig:EmptyState icon="file" title="Aucun article pour le moment" text="Nos conseils travaux arrivent bientôt. En attendant, trouvez un professionnel vérifié près de chez vous.">
+                    <twig:Button href="{{ tm_path('search_directory') }}" variant="primary">Voir les professionnels</twig:Button>
+                </twig:EmptyState>
+            {% else %}
+                {% if featured %}
+                    <article class="tm-blog-featured">
+                        <div class="tm-blog-featured__media">
+                            {% if featured.coverMediaId %}<twig:Media id="{{ featured.coverMediaId }}" sizes="(min-width: 1024px) 560px, 100vw" loading="eager" alt="" />{% else %}<span class="tm-blog-card__placeholder" aria-hidden="true"><twig:Icon name="file" /></span>{% endif %}
+                        </div>
+                        <div class="tm-blog-featured__body">
+                            <p class="tm-blog-featured__badge">À la une{{ featured.category ? ' · ' ~ featured.category.name }}</p>
+                            <h2 class="tm-blog-featured__title">{{ featured.title }}</h2>
+                            {% if featured.excerpt %}<p class="tm-blog-featured__excerpt">{{ featured.excerpt }}</p>{% endif %}
+                            <p class="tm-blog-card__meta">{{ dates.long_date(featured.publishedAt) }} · {{ featured.readingMinutes }} min de lecture</p>
+                            <twig:Button href="{{ path('content_blog_article', {slug: featured.slug}) }}" variant="secondary" class="tm-blog-featured__cta">Lire l’article<span class="tm-visually-hidden"> : {{ featured.title }}</span></twig:Button>
+                        </div>
+                    </article>
+                {% endif %}
+
+                {% if grid is not empty %}
+                    <ul class="tm-blog__grid">
+                        {% for article in grid %}<li>{% include 'content/blog/_card.html.twig' with {article: article, now: now} only %}</li>{% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if result.pages > 1 %}
+                    <nav class="tm-directory__pagination tm-blog__pagination" aria-label="Pagination">
+                        <ul>
+                            {% if page > 1 %}<li><a href="{{ m.page_url(base_route, base_params, page - 1)|trim }}"><twig:Icon name="chevL" size="sm" /><span class="tm-visually-hidden">Page précédente</span></a></li>{% endif %}
+                            {% for n in 1..result.pages %}
+                                {% if n == 1 or n == result.pages or (n >= page - 2 and n <= page + 2) %}
+                                    <li>{% if n == page %}<span aria-current="page">{{ n }}</span>{% else %}<a href="{{ m.page_url(base_route, base_params, n)|trim }}">{{ n }}</a>{% endif %}</li>
+                                {% elseif n == page - 3 or n == page + 3 %}
+                                    <li><span aria-hidden="true">…</span></li>
+                                {% endif %}
+                            {% endfor %}
+                            {% if page < result.pages %}<li><a href="{{ m.page_url(base_route, base_params, page + 1)|trim }}"><span class="tm-visually-hidden">Page suivante</span><twig:Icon name="chevR" size="sm" /></a></li>{% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

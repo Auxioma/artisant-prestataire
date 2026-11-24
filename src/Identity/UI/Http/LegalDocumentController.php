@@ -8,6 +8,7 @@ use App\Identity\Application\Legal\LegalDocumentVersion;
 use App\Identity\Application\Port\LegalDocuments;
 use App\Identity\Domain\Legal\LegalDocumentType;
 use App\Shared\Domain\Time\Clock;
+use App\Shared\UI\Html\HeadingToc;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -70,7 +71,7 @@ final class LegalDocumentController extends AbstractController
     /** @param list<LegalDocumentVersion> $versions */
     private function page(LegalDocumentVersion $document, array $versions, bool $archived): Response
     {
-        [$html, $toc] = LegalToc::build($document->html);
+        [$html, $toc] = HeadingToc::build($document->html);
 
         return $this->render('legal/document.html.twig', [
             'document' => $document,

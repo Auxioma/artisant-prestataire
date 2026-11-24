@@ -1,0 +1,12 @@
+{#- Carte d'article de la grille (maquette « Blog — liste ») : image, catégorie, titre (lien étendu), date relative et temps de lecture. -#}
+{% import 'content/blog/_macros.html.twig' as dates %}
+<article class="tm-blog-card">
+    <div class="tm-blog-card__media">
+        {% if article.coverMediaId %}<twig:Media id="{{ article.coverMediaId }}" sizes="(min-width: 1024px) 360px, (min-width: 768px) 50vw, 100vw" alt="" />{% else %}<span class="tm-blog-card__placeholder" aria-hidden="true"><twig:Icon name="file" /></span>{% endif %}
+    </div>
+    <div class="tm-blog-card__body">
+        {% if article.category %}<p class="tm-blog-card__category">{{ article.category.name }}</p>{% endif %}
+        <h{{ heading|default(2) }} class="tm-blog-card__title"><a class="tm-blog-card__link" href="{{ path('content_blog_article', {slug: article.slug}) }}">{{ article.title }}</a></h{{ heading|default(2) }}>
+        <p class="tm-blog-card__meta">{{ dates.relative_date(article.publishedAt, now) }} · {{ article.readingMinutes }} min de lecture</p>
+    </div>
+</article>

@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Identity\UI\Http;
+namespace App\Shared\UI\Html;
 
 use App\Shared\Domain\Exception\InvalidValue;
 use App\Shared\Domain\ValueObject\Slug;
 
 /**
- * Sommaire ancré d'un document légal (P17.1) : un identifiant unique est posé sur chaque titre H2 du HTML déjà assaini
- * à la publication ; le texte des titres est échappé dans le sommaire.
+ * Sommaire ancré d'un contenu HTML déjà assaini (documents légaux P17.1, articles de blog P15.2) : un identifiant unique
+ * est posé sur chaque titre H2 ; le texte des titres est échappé dans le sommaire.
  */
-final class LegalToc
+final class HeadingToc
 {
     private const string FALLBACK = 'section';
 

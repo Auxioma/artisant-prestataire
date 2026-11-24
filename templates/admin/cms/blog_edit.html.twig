@@ -1,0 +1,91 @@
+{#- BO10.3 — édition d'un article : contenu (texte riche assaini), image et auteur de la médiathèque, catégorie, métiers liés (encart « Trouvez un {métier} »), à la une, SEO ; publication immédiate, programmée, retrait, aperçu, suppression. P-130. -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'cms' %}
+{% set can_edit = is_granted('admin.cms.edit') %}
+{% set st = article.status(now) %}
+{% set status_labels = {draft: 'Brouillon (non publié)', published: 'Publié', scheduled: 'Publication programmée'} %}
+{% set media_choices = media|reduce((carry, m) => carry|merge({(m.id): m.title ~ ' — « ' ~ m.alt ~ ' »'}), {}) %}
+{% block title %}{{ article.title }} — Blog — CMS{% endblock %}
+{% macro action(label, action, csrf_id, variant) %}
+    <form method="post" class="tm-cms-inline" data-turbo="false">
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="{{ action }}">
+        <twig:Button type="submit" variant="{{ variant }}">{{ label }}</twig:Button>
+    </form>
+{% endmacro %}
+{% macro media_select(id, name, label, value, choices) %}
+    <div class="tm-field">
+        <label class="tm-field__label" for="{{ id }}">{{ label }}</label>
+        <div class="tm-field__control"><select class="tm-field__input" id="{{ id }}" name="{{ name }}">
+            <option value="">Aucune</option>
+            {% for key, text in choices %}<option value="{{ key }}"{% if key == value %} selected{% endif %}>{{ text }}</option>{% endfor %}
+        </select></div>
+    </div>
+{% endmacro %}
+{% import _self as m %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: article.title, crumbs: ['Contenus', 'CMS', 'Blog'], subtitle: status_labels[st] ~ (article.publishedAt ? ' le ' ~ article.publishedAt|date('d/m/Y à H:i', 'Europe/Paris') : '')}) }}
+    {{ include('admin/cms/_tabs.html.twig', {current: 'blog'}) }}
+
+    <div class="tm-cms-toolbar">
+        <a class="tm-button tm-button--secondary" href="{{ path('admin_cms_blog') }}">← Tous les articles</a>
+        <a class="tm-button tm-button--secondary" href="{{ path('admin_cms_blog_preview', {id: article.id}) }}" target="_blank" rel="noopener">Aperçu</a>
+        {% if st == 'published' %}<a class="tm-button tm-button--secondary" href="{{ path('content_blog_article', {slug: article.slug}) }}" target="_blank" rel="noopener">Voir l’article en ligne</a>{% endif %}
+        {% if can_edit %}
+            {% if st != 'published' %}{{ m.action('Publier maintenant', 'publish', csrf_id, 'primary') }}{% endif %}
+            <form method="post" class="tm-cms-publish" data-turbo="false">
+                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="schedule">
+                <div class="tm-field"><label class="tm-field__label" for="article_at">Programmer</label><div class="tm-field__control"><input class="tm-field__input" type="datetime-local" id="article_at" name="at" required></div></div>
+                <twig:Button type="submit" variant="secondary">Programmer</twig:Button>
+            </form>
+            {% if st != 'draft' %}{{ m.action('Retirer du site', 'unpublish', csrf_id, 'secondary') }}{% endif %}
+        {% endif %}
+    </div>
+
+    <form method="post" class="tm-admin-panel tm-media-form" data-turbo="false" aria-labelledby="article-form-title">
+        <h2 id="article-form-title" class="tm-card-title">Article</h2>
+        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="save">
+        <fieldset{% if not can_edit %} disabled{% endif %} class="tm-page-block__fields">
+            <legend class="tm-visually-hidden">Contenu de l’article</legend>
+            <twig:Field id="a_title" name="data[title]" label="Titre (H1)" value="{{ article.title }}" required maxlength="120" />
+            <twig:Field id="a_short" name="data[short_title]" label="Titre court (fil d’Ariane, facultatif)" value="{{ article.shortTitle }}" maxlength="40" />
+            <twig:Field id="a_slug" name="data[slug]" label="Adresse" value="{{ article.slug }}" maxlength="100" help="/blog/… — par défaut, tirée du titre." />
+            <div class="tm-field">
+                <label class="tm-field__label" for="a_category">Catégorie</label>
+                <div class="tm-field__control"><select class="tm-field__input" id="a_category" name="data[category_id]">
+                    <option value="">Aucune</option>
+                    {% for c in categories %}<option value="{{ c.id }}"{% if article.category and article.category.id == c.id %} selected{% endif %}>{{ c.name }}</option>{% endfor %}
+                </select></div>
+                {% if categories is empty %}<p class="tm-caption">Ajoutez des catégories depuis la <a href="{{ path('admin_cms_blog') }}#categories">liste du blog</a>.</p>{% endif %}
+            </div>
+            <div class="tm-field">
+                <label class="tm-field__label" for="a_excerpt">Résumé (carte « À la une », description par défaut)</label>
+                <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="a_excerpt" name="data[excerpt]" rows="3" maxlength="300">{{ article.excerpt }}</textarea></div>
+            </div>
+            {{ m.media_select('a_cover', 'data[cover_media_id]', 'Image principale (médiathèque)', article.coverMediaId, media_choices) }}
+            {% if media is empty %}<p class="tm-caption">Déposez d’abord une image dans la <a href="{{ path('admin_cms_media') }}">médiathèque</a>.</p>{% endif %}
+            <div class="tm-field">
+                <label class="tm-field__label" for="a_html">Texte de l’article *</label>
+                <div class="tm-field__control"><textarea class="tm-field__input tm-field__textarea" id="a_html" name="data[content_html]" rows="18" maxlength="50000">{{ article.html }}</textarea></div>
+                <p class="tm-caption">Chaque intertitre &lt;h2&gt; devient une entrée du sommaire ; l’encart « Trouvez un {métier} » s’insère avant le 2e intertitre. Balises acceptées : &lt;h2&gt;, &lt;h3&gt;, &lt;p&gt;, &lt;ul&gt;/&lt;ol&gt;/&lt;li&gt;, &lt;strong&gt;, &lt;em&gt;, &lt;a href&gt; ; tout le reste est retiré.</p>
+            </div>
+            <fieldset class="tm-page-block__item">
+                <legend>Métiers liés (6 au maximum — le premier alimente l’encart « Trouvez un … »)</legend>
+                <div class="tm-blog-admin__jobs">
+                    {% for j in jobs %}
+                        <label class="tm-check"><input class="tm-check__input" type="checkbox" name="job_ids[]" value="{{ j.id }}"{% if j.id in article.jobIds %} checked{% endif %}><span>{{ j.name }} <span class="tm-caption">({{ j.categoryName }})</span></span></label>
+                    {% endfor %}
+                </div>
+            </fieldset>
+            <twig:Field id="a_author" name="data[author_name]" label="Auteur (« Par … »)" value="{{ article.authorName }}" maxlength="80" placeholder="Julie Martin, rédaction TrouveMoi" />
+            {{ m.media_select('a_author_media', 'data[author_media_id]', 'Portrait de l’auteur (médiathèque, facultatif)', article.authorMediaId, media_choices) }}
+            <label class="tm-check"><input class="tm-check__input" type="checkbox" name="featured" value="1"{% if article.featured %} checked{% endif %}><span>Article à la une (en tête de la liste du blog)</span></label>
+            <twig:Field id="a_meta_title" name="data[meta_title]" label="Titre SEO (facultatif)" value="{{ article.metaTitle }}" maxlength="70" />
+            <twig:Field id="a_meta_description" name="data[meta_description]" label="Description SEO (facultative, sinon le résumé)" value="{{ article.metaDescription }}" maxlength="170" />
+        </fieldset>
+        {% if can_edit %}<twig:Button type="submit">Enregistrer</twig:Button>{% endif %}
+    </form>
+
+    {% if can_edit %}
+        <div class="tm-cms-toolbar">{{ m.action('Supprimer l’article', 'delete', csrf_id, 'danger') }}</div>
+    {% endif %}
+{% endblock %}

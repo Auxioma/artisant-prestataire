@@ -147,6 +147,7 @@
         /* Voile de lisibilité de la bannière de page (Figma A02 393:16167) ; plus couvrant sur mobile (texte sur la photo) */
         --banner-veil: linear-gradient(90deg, rgb(255 255 255 / 0.95) 0%, rgb(255 255 255 / 0.8) 30%, rgb(255 255 255 / 0) 46%);
         --banner-veil-mobile: linear-gradient(90deg, rgb(255 255 255 / 0.95) 0%, rgb(255 255 255 / 0.85) 55%, rgb(255 255 255 / 0.3) 100%);
+        --banner-veil-light: linear-gradient(90deg, rgb(255 255 255 / 0.92) 0%, rgb(255 255 255 / 0.75) 45%, rgb(255 255 255 / 0.15) 70%); /* Bannière claire du blog (maquettes Floriane V2) */
 
         /* ── Dimensions et mise en page (CDC §2.4) ───────────────────────────────────────────────── */
         --control-height: 44px;        /* cible tactile minimale (boutons) */

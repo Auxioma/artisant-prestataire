@@ -1,7 +1,8 @@
-{#- Onglets du CMS (BO10) ; `current` : accueil, medias, pages, faq, menus, libelles. Rubriques non livrées : « Bientôt ». -#}
+{#- Onglets du CMS (BO10) ; `current` : accueil, medias, pages, blog, faq, menus, libelles. Rubriques non livrées : « Bientôt ». -#}
 {% set cms_tabs = [
     {key: 'accueil', route: 'admin_cms', label: 'Page d’accueil'},
     {key: 'pages', route: 'admin_cms_pages', label: 'Pages'},
+    {key: 'blog', route: 'admin_cms_blog', label: 'Blog'},
     {key: 'faq', route: 'admin_cms_faq', label: 'FAQ / Aide'},
     {key: 'menus', route: 'admin_cms_menus', label: 'Menus'},
     {key: 'libelles', route: 'admin_cms_labels', label: 'Libellés'},

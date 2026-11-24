@@ -1,0 +1,10 @@
+{#- Dates du blog en français : date longue (« 12 novembre 2026 ») et date relative des cartes (« Il y a 3 jours »). -#}
+{% macro long_date(d) -%}
+    {%- set months = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] -%}
+    {{- d|date('j', 'Europe/Paris') }} {{ months[d|date('n', 'Europe/Paris') - 1] }} {{ d|date('Y', 'Europe/Paris') -}}
+{%- endmacro %}
+
+{% macro relative_date(d, now) -%}
+    {%- set days = ((now|date('U') - d|date('U')) / 86400)|round(0, 'floor') -%}
+    {%- if days < 1 %}Aujourd’hui{% elseif days < 2 %}Hier{% elseif days < 31 %}Il y a {{ days }} jours{% else %}{{ _self.long_date(d) }}{% endif -%}
+{%- endmacro %}
