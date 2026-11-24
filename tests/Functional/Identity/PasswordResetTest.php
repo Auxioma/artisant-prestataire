@@ -51,6 +51,11 @@ final class PasswordResetTest extends WebTestCase
                 $this->sent[] = $message;
             }
         }
+        // Post/Redirect/Get : la confirmation s'affiche après redirection (sinon Turbo n'affiche rien) ; erreur de saisie : 422 direct.
+        if (422 !== $this->client->getResponse()->getStatusCode()) {
+            self::assertResponseRedirects('/mot-de-passe-oublie', 303);
+            $this->client->followRedirect();
+        }
     }
 
     /** @return list<Email> */

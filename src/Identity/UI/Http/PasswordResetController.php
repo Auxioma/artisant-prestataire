@@ -25,6 +25,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\FlashBagAwareSessionInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\RateLimiter\RateLimiterFactoryInterface;
 use Symfony\Component\Routing\Attribute\Route;
@@ -37,6 +38,7 @@ use Symfony\Component\Security\Core\User\UserProviderInterface;
 final class PasswordResetController extends AbstractController
 {
     private const string CSRF_REQUEST = 'password_forgotten';
+    private const string FLASH_SENT = 'password_reset_sent';
 
     /** @param UserProviderInterface<\Symfony\Component\Security\Core\User\UserInterface> $users */
     public function __construct(
@@ -52,6 +54,18 @@ final class PasswordResetController extends AbstractController
         #[Autowire(service: 'limiter.password_reset_ip')]
         private readonly RateLimiterFactoryInterface $ipLimiter,
     ) {
+    }
+
+    /** Adresse saisie, conservée le temps de la redirection (message « email envoyé »). */
+    private function sentTo(Request $request): ?string
+    {
+        $session = $request->hasSession() ? $request->getSession() : null;
+        if (!$session instanceof FlashBagAwareSessionInterface) {
+            return null;
+        }
+        $sent = $session->getFlashBag()->get(self::FLASH_SENT);
+
+        return \is_string($sent[0] ?? null) ? $sent[0] : null;
     }
 
     #[Route('/mot-de-passe-oublie', name: 'identity_password_forgotten', methods: ['GET', 'POST'])]
@@ -78,13 +92,17 @@ final class PasswordResetController extends AbstractController
                     $this->commands->dispatch(new RequestPasswordReset($email, $ip, $this->ipAnonymizer->hash($ip)));
                 }
 
-                return $this->render('auth/password_forgotten.html.twig', ['email' => $email, 'sent' => true, 'error' => null, 'csrf_id' => self::CSRF_REQUEST]);
+                // Post/Redirect/Get : Turbo ignore une réponse 200 à un POST (rien ne s'affichait après l'envoi).
+                $this->addFlash(self::FLASH_SENT, $email);
+
+                return $this->redirectToRoute('identity_password_forgotten', status: Response::HTTP_SEE_OTHER);
             }
         }
+        $sent = $request->isMethod('GET') ? $this->sentTo($request) : null;
 
         return $this->render('auth/password_forgotten.html.twig', [
-            'email' => '' === $email ? $request->query->getString('email') : $email,
-            'sent' => false,
+            'email' => $sent ?? ('' === $email ? $request->query->getString('email') : $email),
+            'sent' => null !== $sent,
             'error' => $error,
             'csrf_id' => self::CSRF_REQUEST,
         ], new Response(status: null === $error ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY));
