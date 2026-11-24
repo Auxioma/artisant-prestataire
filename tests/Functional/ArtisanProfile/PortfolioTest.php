@@ -79,7 +79,7 @@ final class PortfolioTest extends WebTestCase
         $this->scanPhotos();
         $crawler = $this->client->request('GET', '/pro/atelier-fictif-caen-'.$this->profileId);
         self::assertSelectorTextContains('#realisations h3', 'Salle de bains (chantier fictif)');
-        self::assertSame(['Avant', 'Après'], $crawler->filter('#realisations figcaption')->each(static fn (Crawler $n): string => $n->text()));
+        self::assertSame('2 photos', $crawler->filter('#realisations .tm-profile__project-count')->text(), 'maquette V2 : une vignette par réalisation');
         $src = (string) $crawler->filter('#realisations img')->first()->attr('src');
         $this->client->request('GET', $src);
         self::assertResponseIsSuccessful();

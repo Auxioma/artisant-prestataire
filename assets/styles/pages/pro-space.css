@@ -73,6 +73,8 @@
         .tm-space__body { grid-template-columns: 234px minmax(0, 1fr); gap: var(--space-5); padding: 18px 20px 0 12px; }
         /* Le menu latéral recouvre la bannière (Figma : menu à 14 px du haut du corps de page) */
         .tm-space__aside { display: grid; margin-top: calc(-118px - 18px + 14px); position: relative; z-index: 1; }
+        /* Menu latéral fixe pendant le défilement du contenu (sous l'en-tête réduit à 64 px) ; défilement interne s'il dépasse la hauteur de l'écran. */
+        .tm-space__aside { position: sticky; top: 80px; align-self: start; max-height: calc(100vh - 96px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; margin-inline: -8px; padding: 0 8px 8px; } /* marge interne : ombre de la carte non rognée */
         .tm-space__tabs { display: none; }
     }
 

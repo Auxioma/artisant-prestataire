@@ -18,7 +18,7 @@ use Twig\TwigFunction;
 
 /**
  * Navigation du back-office (Figma 186:76) : seules les rubriques que l'administrateur peut voir (permission
- * `admin.<module>.view`) ; une rubrique dont l'écran n'est pas encore livré est affichée sans lien (« Bientôt »).
+ * `admin.<module>.view`) et dont l'écran existe ; les rubriques sans écran (support, zones…) ne sont pas listées.
  */
 final class AdminNavigationExtension extends AbstractExtension
 {
@@ -53,15 +53,16 @@ final class AdminNavigationExtension extends AbstractExtension
         return [new TwigFunction('tm_admin_navigation', $this->navigation(...))];
     }
 
-    /** @return array<string, list<array{module: string, label: string, icon: string, href: ?string, count: int}>> */
+    /** @return array<string, list<array{module: string, label: string, icon: string, href: string, count: int}>> */
     public function navigation(): array
     {
         $groups = [];
         foreach (AdminModule::cases() as $module) {
-            if (!$this->auth->isGranted($module->permission(AdminAction::View))) {
+            $href = $this->href($module);
+            if (null === $href || !$this->auth->isGranted($module->permission(AdminAction::View))) {
                 continue;
             }
-            $groups[$module->group()][] = ['module' => $module->value, 'label' => $module->label(), 'icon' => self::ICONS[$module->value], 'href' => $this->href($module), 'count' => $this->count($module)];
+            $groups[$module->group()][] = ['module' => $module->value, 'label' => $module->label(), 'icon' => self::ICONS[$module->value], 'href' => $href, 'count' => $this->count($module)];
         }
 
         return $groups;

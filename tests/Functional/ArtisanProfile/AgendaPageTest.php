@@ -175,8 +175,8 @@ final class AgendaPageTest extends WebTestCase
         self::assertFalse($profile->acceptsDirectRequests);
         $this->client->request('GET', '/pro/'.$this->artisan);
         $fiche = $this->client->followRedirect();
-        self::assertStringContainsString('ne prend pas de nouvelles demandes', $fiche->filter('.tm-profile__contact')->text());
-        self::assertCount(0, $fiche->filter('.tm-profile__contact a[href*="pro="]'));
+        self::assertStringContainsStringIgnoringCase('ne prend pas de nouvelles demandes', $fiche->filter('.tm-profile__actions')->text());
+        self::assertCount(0, $fiche->filter('.tm-profile a[href*="pro="], .tm-profile input[name="pro"]'));
     }
 
     public function testLeavePageListsAndRemovesLeave(): void

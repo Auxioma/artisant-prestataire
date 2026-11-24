@@ -26,11 +26,11 @@ final class DashboardAdminTest extends WebTestCase
         self::assertStringContainsString('Note moyenne des avis', $page->filter('.tm-bo01-more')->text());
         self::assertSame('2026-10', $page->filter('#bo01_mois option[selected]')->attr('value'));
 
-        // BO01.2 : les sept files de la maquette, clic → liste filtrée.
-        self::assertCount(7, $page->filter('.tm-bo01-queue'));
+        // BO01.2 : files de la maquette ayant un écran (celles sans écran ne sont plus affichées), clic → liste filtrée.
+        self::assertCount(6, $page->filter('.tm-bo01-queue'));
         self::assertSame('/admin/artisans?statut=documents', $page->filter('.tm-bo01-queue--documents-pending a')->attr('href'));
         self::assertSame('/admin/moderation/signalements', $page->filter('.tm-bo01-queue--reports-open a')->attr('href'));
-        self::assertStringContainsString('Bientôt', $page->filter('.tm-bo01-queue--support-tickets')->text());
+        self::assertCount(0, $page->filter('.tm-bo01-queue--support-tickets'), 'support sans écran : file non affichée');
         // BO01.3 : une paire de barres par jour d'octobre.
         self::assertCount(62, $page->filter('.tm-bo01-chart rect'));
         self::assertCount(31, $page->filter('.tm-bo01-data tbody tr'));
@@ -55,7 +55,7 @@ final class DashboardAdminTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertCount(0, $page->filter('a[href*="tableau-de-bord.csv"]'));
         self::assertCount(0, $page->filter('.tm-bo01-queue--payments-failed'), 'files limitées aux droits du rôle');
-        self::assertCount(6, $page->filter('.tm-bo01-queue'));
+        self::assertCount(5, $page->filter('.tm-bo01-queue'));
         $client->request('GET', '/admin/tableau-de-bord.csv');
         self::assertResponseStatusCodeSame(403);
     }

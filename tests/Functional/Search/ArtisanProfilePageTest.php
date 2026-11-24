@@ -84,7 +84,7 @@ final class ArtisanProfilePageTest extends WebTestCase
 
         $credential = $crawler->filter('.tm-profile__credential')->text();
         self::assertStringContainsString('Responsabilité civile professionnelle', $credential);
-        self::assertStringContainsString('Justificatif vérifié', $credential);
+        self::assertStringContainsString('Vérifié', $credential);
 
         $html = (string) $this->client->getResponse()->getContent();
         self::assertStringNotContainsString('06 11 22 33 44', $html, 'jamais de téléphone dans la page (RG-030)');
