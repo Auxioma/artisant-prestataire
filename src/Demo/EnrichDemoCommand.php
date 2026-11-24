@@ -328,15 +328,19 @@ final class EnrichDemoCommand extends Command
     private function artisans(): array
     {
         $rows = $this->connection->fetchAllAssociative(<<<'SQL'
-            SELECT p.id, p.user_id, v.name, v.main_job_id AS job_id, p.hq_city_insee AS insee, p.hq_postal_code AS postal_code,
+            SELECT p.id, p.user_id, v.name, v.main_job_id AS job_id, p.hq_postal_code AS postal_code,
+                   -- Siège sans commune INSEE (ex. Paris) : commune la plus peuplée du code postal.
+                   coalesce(p.hq_city_insee, (SELECT c.insee FROM catalog.commune c WHERE p.hq_postal_code = ANY(c.postal_codes) ORDER BY c.population DESC NULLS LAST LIMIT 1)) AS insee,
                    coalesce((SELECT coalesce(root.slug, c.slug) FROM catalog.job j JOIN catalog.category c ON c.id = j.category_id
                              LEFT JOIN catalog.category root ON root.id = c.parent_id WHERE j.id = v.main_job_id), '') AS category
             FROM search.artisan_search_view v
             JOIN artisan.artisan_profile p ON p.id = v.artisan_id
             JOIN identity.user_account u ON u.id = p.user_id AND u.status = 'active'
-            WHERE v.main_job_id IS NOT NULL AND p.hq_city_insee IS NOT NULL AND p.hq_postal_code IS NOT NULL
+            WHERE v.main_job_id IS NOT NULL AND p.hq_postal_code IS NOT NULL
             ORDER BY v.name
             SQL);
+
+        $rows = array_values(array_filter($rows, static fn (array $r): bool => \is_string($r['insee'])));
 
         return array_map(static fn (array $r): array => [
             'id' => DbalValue::string($r['id']), 'user_id' => DbalValue::string($r['user_id']), 'name' => DbalValue::string($r['name']), 'job_id' => DbalValue::string($r['job_id']),
