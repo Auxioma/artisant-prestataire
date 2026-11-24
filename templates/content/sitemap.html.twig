@@ -1,0 +1,106 @@
+{#- Plan du site (maquette Mondesir V2) : rubriques en cartes, puces orange, barre « Accès rapide ». Une entrée dont la route n'existe pas encore est omise (tm_route_exists). -#}
+{% extends 'base.html.twig' %}
+{% block title %}Plan du site — TrouveMoi{% endblock %}
+{% set canonical_url = url('content_sitemap') %}
+{% set meta_description = 'Plan du site TrouveMoi.com : accédez rapidement à toutes les pages, classées par rubriques.' %}
+{% set legal = [
+    {label: 'Conditions Générales d’Utilisation (CGU)', slug: 'cgu'},
+    {label: 'Conditions Générales de Vente (CGV)', slug: 'cgv'},
+    {label: 'Politique de confidentialité', slug: 'confidentialite'},
+    {label: 'Mentions légales', slug: 'mentions-legales'},
+    {label: 'Cookies', slug: 'cookies'},
+] %}
+{% set sections = [
+    {title: 'Accueil', icon: 'home', links: [
+        {label: 'Page d’accueil', route: 'public_home'},
+        {label: 'Actualités & nouveautés', route: 'content_blog'},
+    ]},
+    {title: 'Catégories', icon: 'layers', links: [
+        {label: 'Toutes les catégories', route: 'catalog_categories'},
+        {label: 'Par secteur d’activité', route: 'catalog_categories', fragment: 'categories-title'},
+    ]},
+    {title: 'Nos professionnels', icon: 'users', links: [
+        {label: 'Annuaire des professionnels', route: 'search_directory'},
+        {label: 'Rechercher un professionnel', route: 'public_search'},
+        {label: 'Consulter les avis & notes', route: 'search_top_rated'},
+    ]},
+    {title: 'Comment ça marche ?', icon: 'info', links: [
+        {label: 'Découvrir les étapes', route: 'content_how_it_works'},
+        {label: 'Créer un compte (particulier / pro)', route: 'identity_register_choice'},
+        {label: 'Publier une demande', route: 'request_new'},
+        {label: 'Recevoir des devis', route: 'content_how_it_works'},
+    ]},
+    {title: 'Aide / FAQ', icon: 'help', links: [
+        {label: 'Questions fréquentes', route: 'content_faq'},
+        {label: 'Guides et conseils', route: 'content_blog'},
+        {label: 'Nous contacter (support)', route: 'content_contact'},
+    ]},
+    {title: 'Mon compte', icon: 'user', links: [
+        {label: 'Se connecter', route: 'identity_login'},
+        {label: 'Créer un compte', route: 'identity_register_choice'},
+        {label: 'Tableau de bord (particulier)', route: 'client_dashboard'},
+        {label: 'Espace professionnel (pro)', route: 'pro_dashboard'},
+    ]},
+    {title: 'Services', icon: 'briefcase', links: [
+        {label: 'Devis & demandes', route: 'request_new'},
+        {label: 'Agenda / Rendez-vous', route: 'search_availability'},
+        {label: 'Offres & promotions', route: 'search_offers'},
+        {label: 'Paiements (abonnements)', route: 'content_pricing'},
+        {label: 'Avis & recommandations', route: 'search_top_rated'},
+    ]},
+    {title: 'Offres et tarifs', icon: 'tag', links: [
+        {label: 'Nos abonnements professionnels', route: 'content_pricing'},
+        {label: 'Comparer les offres', route: 'content_pricing', fragment: 'plans-title'},
+    ]},
+] %}
+{% set quick = [
+    {label: 'Accueil', icon: 'home', route: 'public_home'},
+    {label: 'Rechercher', icon: 'search', route: 'public_search'},
+    {label: 'Créer un compte', icon: 'plus', route: 'identity_register_choice'},
+    {label: 'Aide / FAQ', icon: 'help', route: 'content_faq'},
+    {label: 'Contact', icon: 'mail', route: 'content_contact'},
+] %}
+{% block body %}
+<div class="tm-sitemap">
+    <twig:PageBanner title="Plan du site" subtitle="Retrouvez l’ensemble des pages du site TrouveMoi.com" image="images/auth/a02-banner" />
+    <div class="tm-container">
+        <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Plan du site'}]" />
+        <div class="tm-sitemap__intro">
+            <span class="tm-sitemap__intro-icon" aria-hidden="true"><twig:Icon name="grid" /></span>
+            <div>
+                <h2 class="tm-sitemap__title">Plan du site</h2>
+                <p class="tm-sitemap__lead">Accédez rapidement à toutes les pages de TrouveMoi.com, classées par rubriques.</p>
+            </div>
+        </div>
+        <div class="tm-sitemap__grid">
+            {% for section in sections %}
+                {% set links = section.links|filter(l => tm_route_exists(l.route)) %}
+                {% if links is not empty %}
+                    <section class="tm-sitemap__card" aria-labelledby="plan-{{ loop.index }}">
+                        <h3 class="tm-sitemap__card-title" id="plan-{{ loop.index }}"><twig:Icon name="{{ section.icon }}" class="tm-sitemap__card-icon" />{{ section.title }}</h3>
+                        <ul class="tm-sitemap__links">
+                            {% for l in links %}<li><a href="{{ tm_path(l.route) ~ (l.fragment ?? false ? '#' ~ l.fragment) }}">{{ l.label }}</a></li>{% endfor %}
+                        </ul>
+                    </section>
+                {% endif %}
+            {% endfor %}
+            <section class="tm-sitemap__card" aria-labelledby="plan-legal">
+                <h3 class="tm-sitemap__card-title" id="plan-legal"><twig:Icon name="file" class="tm-sitemap__card-icon" />Informations légales</h3>
+                <ul class="tm-sitemap__links">
+                    {% for l in legal %}<li><a href="{{ path('identity_legal_document', {slug: l.slug}) }}">{{ l.label }}</a></li>{% endfor %}
+                    <li><a href="{{ path('content_accessibility') }}">Accessibilité</a></li>
+                    <li><a href="{{ path('content_sitemap') }}" aria-current="page">Plan du site</a></li>
+                </ul>
+            </section>
+        </div>
+        <nav class="tm-sitemap__quick" aria-labelledby="plan-quick">
+            <h2 class="tm-sitemap__quick-title" id="plan-quick"><twig:Icon name="grid" class="tm-sitemap__card-icon" />Accès rapide</h2>
+            <ul class="tm-sitemap__quick-links">
+                {% for q in quick|filter(q => tm_route_exists(q.route)) %}
+                    <li><a href="{{ tm_path(q.route) }}"><twig:Icon name="{{ q.icon }}" class="tm-sitemap__quick-icon" />{{ q.label }}</a></li>
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endblock %}
