@@ -21,16 +21,20 @@
             <div class="tm-footer__brand">
                 <twig:Logo href="{{ tm_path('public_home') }}" />
                 <p class="tm-footer__tagline">{{ tm_label('footer.tagline', 'La plateforme qui vous met en relation avec des artisans et prestataires de confiance, partout en France.') }}</p>
-                {% set socials = tm_social_links() %}
-                {% if socials is not empty %}
-                    <ul class="tm-footer__socials">
-                        {% for social in socials %}
-                            <li><a class="tm-footer__social" href="{{ social.url }}" target="_blank" rel="noopener noreferrer">
-                                <twig:Icon name="brand-{{ social.network }}" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">{{ social.label }} (nouvel onglet)</span>
-                            </a></li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
+                {# Maquette V2 : les cinq réseaux sous le texte ; lien seulement si l'URL est renseignée en BO13 (Paramètres > Réseaux sociaux). #}
+                <ul class="tm-footer__socials">
+                    {% for social in tm_social_links(true) %}
+                        <li>
+                            {% if social.url %}
+                                <a class="tm-footer__social" href="{{ social.url }}" target="_blank" rel="noopener noreferrer">
+                                    <twig:Icon name="brand-{{ social.network }}" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">{{ social.label }} (nouvel onglet)</span>
+                                </a>
+                            {% else %}
+                                <span class="tm-footer__social" title="{{ social.label }}" aria-hidden="true"><twig:Icon name="brand-{{ social.network }}" size="sm" class="tm-icon--inherit" /></span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
             </div>
 
             {% for column in columns %}

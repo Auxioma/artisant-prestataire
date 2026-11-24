@@ -26,7 +26,8 @@
     .tm-footer__tagline,
     .tm-footer__text { margin: 0; font: 400 15px/21px var(--font-family); color: var(--color-heading); }
 
-    .tm-footer__socials { display: flex; flex-wrap: wrap; gap: var(--space-1); margin: var(--space-1) 0 0; padding: 0; list-style: none; }
+    /* Marge négative : le pictogramme (et non la zone cliquable de 38 px) s’aligne sur le texte, comme sur la maquette. */
+    .tm-footer__socials { display: flex; flex-wrap: wrap; gap: var(--space-1); margin: var(--space-1) 0 0 -10px; padding: 0; list-style: none; }
 
     .tm-footer__social {
         display: grid;
@@ -37,7 +38,7 @@
         color: var(--color-heading);
     }
 
-    .tm-footer__social:hover { background: var(--color-surface); }
+    a.tm-footer__social:hover { background: var(--color-surface); }
 
     .tm-footer__column { border-bottom: 1px solid var(--color-border); }
 
