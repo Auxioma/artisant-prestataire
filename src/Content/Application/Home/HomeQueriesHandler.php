@@ -25,7 +25,7 @@ final readonly class HomeQueriesHandler implements QueryHandler
         $now = $this->clock->now();
         if ($query instanceof PublishedHome) {
             $version = null === $query->previewVersionId ? $this->versions->live($now) : $this->versions->find($query->previewVersionId);
-            $blocks = $version->blocks ?? $this->defaults->blocks();
+            $blocks = null === $version ? $this->defaults->blocks() : $this->defaults->complete($version->blocks);
 
             return array_values(array_filter($blocks, static fn (array $b): bool => $b['enabled']));
         }
@@ -33,8 +33,10 @@ final readonly class HomeQueriesHandler implements QueryHandler
         $live = $this->versions->live($now);
         $scheduled = $this->versions->scheduled($now);
 
+        $current = $draft ?? $scheduled ?? $live;
+
         return new HomeEditorView(
-            ($draft ?? $scheduled ?? $live)->blocks ?? $this->defaults->blocks(),
+            null === $current ? $this->defaults->blocks() : $this->defaults->complete($current->blocks),
             $draft,
             $live,
             $scheduled,

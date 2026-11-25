@@ -1,4 +1,4 @@
-{#- P06 — annuaire « Nos professionnels » : recherche, filtres (métier, département, initiale), grille 3/2/1 colonnes, pagination numérotée, bloc « Vous êtes artisan ? ». -#}
+{#- P06 — annuaire « Nos professionnels » (maquette Koubourath V2) : bannière et recherche superposée ; page d'entrée (sans filtre ni pagination) : engagements, catégories, professionnels à la une et encart pro ; puis annuaire (filtres métier, département, initiale, grille 3/2/1, pagination numérotée). -#}
 {% extends 'base.html.twig' %}
 {% set active_nav = 'pros' %}
 {% set page = result.page %}
@@ -12,10 +12,80 @@
 {% endblock %}
 {% block body %}
 <div class="tm-catalog tm-directory" data-controller="analytics" data-analytics-auto-event-value="directory_view" data-analytics-auto-type-value="{{ page }}">
-    <twig:PageBanner title="Nos professionnels" subtitle="Découvrez des artisans et prestataires vérifiés près de chez vous." image="images/auth/a02-banner" />
-    <div class="tm-container tm-catalog__body">
-        <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Nos professionnels'}]" />
-        {% include 'catalog/_search_bar.html.twig' with {job: job, place: null} only %}
+    <div class="tm-directory__hero">
+        <twig:PageBanner title="Nos professionnels" subtitle="Découvrez des artisans et prestataires de confiance près de chez vous !" image="images/auth/a02-banner" />
+        <div class="tm-container tm-directory__search">
+            {% include 'search/_search_pill.html.twig' with {prefix: 'directory', compact: true, place_first: true, job_icon: 'bars',
+                place_label: 'Où recherchez-vous ?', place_example: 'Où recherchez-vous ? (ville, code postal, département…)',
+                job_label: 'Quel service ?', job_example: 'Quel service ? (ex. plomberie, électricité…)', button: 'Rechercher'} only %}
+        </div>
+    </div>
+    {% if landing %}
+        <section class="tm-home-reassurance tm-home-reassurance--grid tm-directory__reassurance" aria-label="Nos engagements">
+            <ul class="tm-container tm-container--wide">
+                {% for item in [
+                    {icon: 'shield', lines: ['Professionnels', 'vérifiés']},
+                    {icon: 'star', lines: ['Avis clients', 'et notations']},
+                    {icon: 'zap', lines: ['Devis rapides', 'et gratuits']},
+                    {icon: 'pin', lines: ['Proches de', 'chez vous']},
+                    {icon: 'checkC', lines: ['Qualité &', 'fiabilité']},
+                ] %}
+                    <li><twig:Icon name="{{ item.icon }}" /><span>{{ item.lines|first }}<br>{{ item.lines|last }}</span></li>
+                {% endfor %}
+            </ul>
+        </section>
+    {% endif %}
+    <div class="tm-container tm-container--wide tm-catalog__body">
+        {% if not landing %}<twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Nos professionnels'}]" />{% endif %}
+
+        {% if landing %}
+            <section aria-labelledby="directory-categories">
+                <h2 class="tm-section-title" id="directory-categories">Trouvez le professionnel qu’il vous faut</h2>
+                <ul class="tm-directory__categories">
+                    {% for c in categories %}
+                        {% set image = tm_category_image(c.slug) %}
+                        <li>
+                            <a class="tm-directory__category" href="{{ path('catalog_category', {slug: c.slug}) }}" data-action="analytics#track" data-analytics-event-param="category_card_click" data-analytics-type-param="{{ c.slug }}">
+                                <twig:Icon name="{{ c.icon }}" class="tm-directory__category-icon" />
+                                <span class="tm-directory__category-name">{{ c.name|e|replace({' &amp; ': '<br>&amp; '})|raw }}</span>
+                                {% if image %}<img src="{{ image }}" alt="" loading="lazy" decoding="async" width="136" height="68">{% endif %}
+                            </a>
+                        </li>
+                    {% endfor %}
+                    <li>
+                        <a class="tm-directory__category tm-directory__category--more" href="{{ path('catalog_categories') }}">
+                            <twig:Icon name="more" class="tm-directory__category-icon" />
+                            <span class="tm-directory__category-name">Autres<br>services</span>
+                        </a>
+                    </li>
+                </ul>
+            </section>
+        {% endif %}
+
+        <div class="tm-directory__featured-row">
+            {% if landing and featured is not empty %}
+                <section aria-labelledby="directory-featured">
+                    <h2 class="tm-section-title" id="directory-featured">Nos professionnels à la une</h2>
+                    <ul class="tm-directory__featured">
+                        {% for hit in featured %}<li data-action="click->analytics#track" data-analytics-event-param="pro_card_click">{% include 'catalog/_pro_card.html.twig' with {hit: hit, job_names: job_names, footer: 'profile', rating_style: 'accent'} only %}</li>{% endfor %}
+                    </ul>
+                </section>
+            {% endif %}
+            <aside class="tm-directory__pro" aria-labelledby="pro-title">
+                <twig:Icon name="crown" class="tm-directory__pro-icon" />
+                <div>
+                    <h2 id="pro-title">Vous êtes un professionnel ?</h2>
+                    <ul>
+                        <li><twig:Icon name="checkC" size="sm" />Gagnez en visibilité locale et nationale</li>
+                        <li><twig:Icon name="checkC" size="sm" />Recevez des demandes qualifiées</li>
+                        <li><twig:Icon name="checkC" size="sm" />Gérez vos devis, votre agenda et vos clients</li>
+                        <li><twig:Icon name="checkC" size="sm" />Valorisez vos avis et votre expertise</li>
+                        {% if free_credits > 0 %}<li><twig:Icon name="checkC" size="sm" /><span><strong>{{ free_credits }} devis offerts</strong> à la validation de votre dossier</span></li>{% endif %}
+                    </ul>
+                </div>
+                <twig:Button href="{{ tm_path('identity_register_pro') }}" icon="userPlus" iconPosition="start" data-action="analytics#track" data-analytics-event-param="pro_signup_cta_click" data-analytics-type-param="directory">Créer mon compte professionnel</twig:Button>
+            </aside>
+        </div>
 
         <section aria-labelledby="directory-title">
             <div class="tm-catalog__head">
@@ -53,19 +123,7 @@
             {% else %}
                 <ul class="tm-directory__grid">
                     {% for a in result.artisans %}
-                        <li>
-                            <twig:CardArtisan
-                                name="{{ a.name }}"
-                                href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}"
-                                trades="{{ a.jobIds|map(id => (job_names[id] ?? null))|filter(n => n)|join(' · ') }}"
-                                location="{{ a.communeName ? a.communeName ~ (a.departmentCode ? ' (' ~ a.departmentCode ~ ')') : '' }}"
-                                :rating="a.reviewsCount > 0 ? a.ratingAverage : null"
-                                :reviewsCount="a.reviewsCount"
-                                photo="{{ a.hasLogo ? path('public_artisan_logo', {id: a.profileId}) : null }}"
-                                photoAlt="Logo de {{ a.name }}"
-                                :verified="true"
-                                :available="a.available" />
-                        </li>
+                        <li>{% include 'catalog/_pro_card.html.twig' with {hit: {artisan: a}, job_names: job_names, footer: 'profile', rating_style: 'accent'} only %}</li>
                     {% endfor %}
                 </ul>
             {% endif %}
@@ -86,20 +144,6 @@
                 </nav>
             {% endif %}
         </section>
-
-        <aside class="tm-directory__pro" aria-labelledby="pro-title">
-            <twig:Icon name="crown" class="tm-directory__pro-icon" />
-            <div>
-                <h2 id="pro-title">Vous êtes un professionnel ?</h2>
-                <ul>
-                    <li><twig:Icon name="checkC" size="sm" />Gagnez en visibilité locale et nationale</li>
-                    <li><twig:Icon name="checkC" size="sm" />Recevez des demandes de devis qualifiées</li>
-                    <li><twig:Icon name="checkC" size="sm" />Affichez un profil vérifié : SIRET, Kbis et assurances contrôlés</li>
-                    {% if free_credits > 0 %}<li><twig:Icon name="checkC" size="sm" /><span><strong>{{ free_credits }} devis offerts</strong> à la validation de votre dossier</span></li>{% endif %}
-                </ul>
-            </div>
-            <twig:Button href="{{ tm_path('identity_register_pro') }}" icon="userPlus" iconPosition="start" data-action="analytics#track" data-analytics-event-param="pro_signup_cta_click" data-analytics-type-param="directory">Créer mon compte pro</twig:Button>
-        </aside>
     </div>
 </div>
 {% endblock %}

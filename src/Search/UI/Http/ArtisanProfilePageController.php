@@ -17,12 +17,14 @@ use App\Catalog\Application\Query\JobIndexEntry;
 use App\Search\Application\Artisan\ArtisanHit;
 use App\Search\Application\Artisan\ArtisanSearchResult;
 use App\Search\Application\Artisan\SearchArtisans;
+use App\Search\Application\Availability\ArtisanOpenSlots;
 use App\Search\Application\Favorite\Favorites;
 use App\Search\UI\Twig\ArtisanUrlExtension;
 use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Messaging\ArtisanResponseTime;
 use App\Shared\Application\Review\PublicReviews;
 use App\Shared\Application\Security\CurrentUser;
+use App\Shared\Domain\Time\Clock;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -38,9 +40,9 @@ use Symfony\Component\Routing\Attribute\Route;
 final class ArtisanProfilePageController extends AbstractController
 {
     private const string UUID = '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}';
-    private const int SIMILAR = 3;
+    private const int SIMILAR = 4; // maquette V2 : rangée de 4 cartes
 
-    public function __construct(private readonly QueryBus $queries, private readonly Favorites $favorites, private readonly CurrentUser $user)
+    public function __construct(private readonly QueryBus $queries, private readonly Favorites $favorites, private readonly CurrentUser $user, private readonly Clock $clock)
     {
     }
 
@@ -74,6 +76,9 @@ final class ArtisanProfilePageController extends AbstractController
             'reviews' => $this->queries->ask(new PublicReviews($id, $request->query->getString('tri', 'recents'), $request->query->getString('note', 'toutes'), max(PublicReviews::PAGE, $request->query->getInt('avis', PublicReviews::PAGE)))),
             'review_sorts' => PublicReviews::SORTS,
             'review_filters' => PublicReviews::FILTERS,
+            // Maquette V2 : carte « Disponibilités » (14 prochains jours, créneaux ouverts de l'agenda).
+            'slot_days' => $this->slotDays($id, $today = $this->clock->now()->setTimezone(new \DateTimeZone('Europe/Paris'))->setTime(0, 0)),
+            'today' => $today,
             'is_favorite' => null !== $this->user->id() && $this->favorites->has($this->user->id(), $id),
         ]);
     }
@@ -85,6 +90,15 @@ final class ArtisanProfilePageController extends AbstractController
         $profile = $this->profile($id);
 
         return $this->redirectToRoute('public_artisan_profile', ['slug' => ArtisanUrlExtension::slug($profile->name, $profile->communeName), 'id' => $id], Response::HTTP_MOVED_PERMANENTLY);
+    }
+
+    /** @return array<string, list<array{starts_at: \DateTimeImmutable, ends_at: \DateTimeImmutable}>> */
+    private function slotDays(string $id, \DateTimeImmutable $from): array
+    {
+        $days = $this->queries->ask(new ArtisanOpenSlots($id, $from));
+
+        /** @var array<string, list<array{starts_at: \DateTimeImmutable, ends_at: \DateTimeImmutable}>> */
+        return \is_array($days) ? $days : [];
     }
 
     private function profile(string $id): PublicProfileView

@@ -1,0 +1,101 @@
+{#- P15.2 — article du blog (maquette Floriane « Blog — article » V2) : bannière (titre, rubrique, temps de lecture), fil d'Ariane, auteur et dates, sommaire automatique (H2), image, encart « Trouvez un {métier} », métiers liés, partage, articles liés ; balisage Article. HTML assaini à l'enregistrement. -#}
+{% extends 'base.html.twig' %}
+{% import 'content/blog/_macros.html.twig' as dates %}
+{% set canonical_url = url('content_blog_article', {slug: article.slug}) %}
+{% set meta_description = article.metaDescription ?? article.excerpt ?? article.title %}
+{% set og_type = 'article' %}
+{% set cta_job = jobs|first %}
+{% block title %}{{ article.metaTitle ?? article.title }} — Blog TrouveMoi{% endblock %}
+{% block meta %}
+    {% if preview %}<meta name="robots" content="noindex, follow">{% endif %}
+{% endblock %}
+{% block body %}
+<article class="tm-blog-article" data-controller="analytics" data-analytics-auto-event-value="blog_article_view" data-analytics-auto-type-value="{{ article.slug }}">
+    <twig:PageBanner title="{{ article.title }}" subtitle="{{ ['Conseils travaux', article.category ? article.category.name : null, article.readingMinutes ~ ' min de lecture']|filter(v => v)|join(' · ') }}" image="images/auth/a02-banner" class="tm-page-banner--light" />
+    <div class="tm-blog-article__head">
+        <div class="tm-container">
+            {% set crumbs = [{label: 'Accueil', href: tm_path('public_home')}, {label: 'Blog', href: path('content_blog')}] %}
+            {% if article.category %}{% set crumbs = crumbs|merge([{label: article.category.name, href: path('content_blog_category', {slug: article.category.slug})}]) %}{% endif %}
+            <twig:Breadcrumb :items="crumbs|merge([{label: article.shortTitle ?? article.title}])" />
+            <div class="tm-blog-article__byline">
+                {% if article.authorMediaId %}<twig:Media id="{{ article.authorMediaId }}" sizes="40px" alt="" class="tm-blog-article__avatar" />{% endif %}
+                <div>
+                    {% if article.authorName %}<p class="tm-blog-article__author">Par {{ article.authorName }}</p>{% endif %}
+                    <p class="tm-blog-article__dates">
+                        {% if article.publishedAt %}Publié le <time datetime="{{ article.publishedAt|date('Y-m-d') }}">{{ dates.long_date(article.publishedAt) }}</time>{% else %}Brouillon{% endif %}
+                        {% if article.updatedAfterPublication %} · mis à jour le <time datetime="{{ article.updatedAt|date('Y-m-d') }}">{{ dates.long_date(article.updatedAt) }}</time>{% endif %}
+                        · {{ article.readingMinutes }} min
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tm-blog-article__body">
+        <div class="tm-container tm-blog-article__layout">
+            {% if toc|length > 1 %}
+                <nav class="tm-blog-article__toc" aria-labelledby="toc-title">
+                    <h2 id="toc-title">Sommaire</h2>
+                    <ol>{% for entry in toc %}<li><a href="#{{ entry.id }}">{{ entry.label }}</a></li>{% endfor %}</ol>
+                </nav>
+            {% endif %}
+            <div class="tm-blog-article__main">
+                {% if article.coverMediaId %}<twig:Media id="{{ article.coverMediaId }}" sizes="(min-width: 1024px) 820px, 100vw" loading="eager" class="tm-blog-article__cover" />{% endif %}
+                <div class="tm-blog-article__content">
+                    {# |raw justifié : HTML assaini à l'enregistrement (app.content_sanitizer), seuls des identifiants de titres ajoutés. #}
+                    {{ parts[0]|raw }}
+                    {% if cta_job %}
+                        <aside class="tm-blog-cta" aria-label="Trouver un professionnel">
+                            <div>
+                                <p class="tm-blog-cta__title">Trouvez un {{ cta_job.name|lower }} près de chez vous</p>
+                                <p class="tm-blog-cta__text">Jusqu’à {{ quotes_max }} devis gratuits de professionnels vérifiés.</p>
+                            </div>
+                            <twig:Button href="{{ path('catalog_job', {slug: cta_job.slug}) }}" variant="primary" data-action="analytics#track" data-analytics-event-param="blog_cta_click" data-analytics-type-param="{{ cta_job.slug }}">Trouver un {{ cta_job.name|lower }}</twig:Button>
+                        </aside>
+                    {% endif %}
+                    {{ parts[1]|raw }}
+                </div>
+
+                {% if jobs is not empty %}
+                    <div class="tm-blog-article__jobs">
+                        <span class="tm-blog-article__label">Métiers liés :</span>
+                        <ul>{% for j in jobs %}<li><a class="tm-chip" href="{{ path('catalog_job', {slug: j.slug}) }}">{{ j.name }}</a></li>{% endfor %}</ul>
+                    </div>
+                {% endif %}
+                {% if not preview %}
+                    <div class="tm-blog-article__share" data-controller="share" data-share-url-value="{{ canonical_url }}" data-share-title-value="{{ article.title }}" data-share-event-value="blog_article_share">
+                        <span class="tm-blog-article__label">Partager :</span>
+                        <button type="button" class="tm-blog-article__share-button" data-action="share#share"><twig:Icon name="share" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Partager l’article</span></button>
+                        <a class="tm-blog-article__share-button" href="mailto:?subject={{ article.title|url_encode }}&amp;body={{ canonical_url|url_encode }}"><twig:Icon name="mail" size="sm" class="tm-icon--inherit" /><span class="tm-visually-hidden">Envoyer par e-mail</span></a>
+                        <p class="tm-caption" data-share-target="status" role="status"></p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if related is not empty %}
+            <section class="tm-container tm-blog-related" aria-labelledby="related-title">
+                <h2 class="tm-section-title" id="related-title">Articles liés</h2>
+                <ul>
+                    {% for r in related %}
+                        <li>
+                            <a class="tm-blog-related__card" href="{{ path('content_blog_article', {slug: r.slug}) }}">
+                                {% if r.coverMediaId %}<twig:Media id="{{ r.coverMediaId }}" sizes="96px" alt="" class="tm-blog-related__thumb" />{% endif %}
+                                <span>{{ r.title }}</span>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+    </div>
+</article>
+{% if tm_schema('article') and article.publishedAt and not preview %}
+    {% set schema = {'@context': 'https://schema.org', '@type': 'Article', headline: article.title, datePublished: article.publishedAt|date('c'), dateModified: article.updatedAt|date('c'),
+        mainEntityOfPage: canonical_url, publisher: {'@type': 'Organization', name: 'TrouveMoi.com', url: url('public_home')}}
+        |merge(article.authorName ? {author: {'@type': 'Person', name: article.authorName}} : {})
+        |merge(meta_description ? {description: meta_description} : {}) %}
+    {# |raw justifié : json_encode avec JSON_HEX_TAG/JSON_HEX_AMP. #}
+    <script type="application/ld+json" nonce="{{ csp_nonce('script') }}">{{ schema|json_encode(constant('JSON_UNESCAPED_UNICODE') b-or constant('JSON_UNESCAPED_SLASHES') b-or constant('JSON_HEX_TAG') b-or constant('JSON_HEX_AMP'))|raw }}</script>
+{% endif %}
+{% endblock %}

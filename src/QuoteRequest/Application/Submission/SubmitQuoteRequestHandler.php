@@ -10,6 +10,7 @@ use App\Catalog\Application\Query\JobIndexEntries;
 use App\Catalog\Application\Query\JobIndexEntry;
 use App\QuoteRequest\Application\Port\RequestRiskAssessor;
 use App\QuoteRequest\Application\Port\RequestRiskInput;
+use App\QuoteRequest\Application\Risk\RequestRiskSignal;
 use App\QuoteRequest\Domain\Request\ContactPreference;
 use App\QuoteRequest\Domain\Request\DuplicateKey;
 use App\QuoteRequest\Domain\Request\OccupantStatus;
@@ -67,7 +68,7 @@ final readonly class SubmitQuoteRequestHandler implements CommandHandler
             $command->summary,
             $command->workNature,
         );
-        $this->assertJobAvailable($command->jobId);
+        $proposedJob = $this->assertJobAvailable($command->jobId, null !== $command->targetArtisanId);
         $this->assertCommune($command->cityInsee, $command->postalCode);
 
         $this->requests->lockClient($command->clientId);
@@ -81,12 +82,20 @@ final readonly class SubmitQuoteRequestHandler implements CommandHandler
         }
 
         $risk = $this->risk->assess(new RequestRiskInput($command->clientId, $command->jobId, $details->description, $details->answers, $command->ipHash, $now, array_values(array_filter([$details->title, $details->summary, $details->workNature]))));
+        $threshold = $this->settings->int(SettingKey::ModerationRequestRiskThreshold);
+        $score = $risk->score;
+        $signals = $risk->signals;
+        if ($proposedJob) {
+            // BO06 : métier proposé par le client → demande enregistrée, publiée seulement après validation du référentiel.
+            $score = min(SubmissionTerms::RISK_MAX, max($score, $threshold, 1));
+            $signals[] = RequestRiskSignal::JobProposal->value;
+        }
         $terms = new SubmissionTerms(
             $this->settings->int(SettingKey::QuotesMaxPerRequest),
             $this->settings->int(SettingKey::RequestsExpiryDays),
-            $risk->score,
-            $risk->signals,
-            $this->settings->int(SettingKey::ModerationRequestRiskThreshold),
+            $score,
+            array_values(array_unique($signals)),
+            $threshold,
         );
         $request = QuoteRequest::submit(
             new QuoteRequestId($command->requestId),
@@ -120,12 +129,13 @@ final readonly class SubmitQuoteRequestHandler implements CommandHandler
         ));
     }
 
-    private function assertJobAvailable(string $jobId): void
+    /** @return bool true si le métier est une proposition du client en attente de validation (BO06) */
+    private function assertJobAvailable(string $jobId, bool $direct): bool
     {
         $entries = $this->queries->ask(new JobIndexEntries([$jobId]));
         foreach (\is_array($entries) ? $entries : [] as $entry) {
-            if ($entry instanceof JobIndexEntry && $entry->id === $jobId && $entry->searchable) {
-                return;
+            if ($entry instanceof JobIndexEntry && $entry->id === $jobId && ($entry->searchable || (!$direct && $entry->proposed))) {
+                return !$entry->searchable;
             }
         }
 

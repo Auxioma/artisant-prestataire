@@ -17,7 +17,7 @@ use Twig\TwigFunction;
  * - tm_path() / tm_url() : génèrent une route si elle existe, sinon « # » — les pages cibles arrivent au fil des lots
  *   (annexe A) sans casser la navigation commune.
  * - tm_setting_int() : valeurs métier affichées dans l'interface, toujours lues dans les paramètres (RG-014).
- * - tm_social_links() : réseaux renseignés en BO13 uniquement (aucune URL fictive).
+ * - tm_social_links(all = false) : réseaux renseignés en BO13 (aucune URL fictive) ; `true` : les cinq, url null si non renseigné.
  * (tm_main_categories() est fournie par le module Catalog : Catalog\UI\Twig\CatalogExtension.)
  */
 final class NavigationExtension extends AbstractExtension
@@ -74,14 +74,17 @@ final class NavigationExtension extends AbstractExtension
     }
 
     /**
-     * @return list<array{network: string, label: string, url: string}>
+     * Réseaux renseignés en BO13. `$all` (pied de page, maquette V2) : les cinq réseaux, `url` null pour ceux qui ne
+     * sont pas encore renseignés (icône affichée sans lien : jamais d'URL fictive).
+     *
+     * @return ($all is true ? list<array{network: string, label: string, url: ?string}> : list<array{network: string, label: string, url: string}>)
      */
-    public function socialLinks(): array
+    public function socialLinks(bool $all = false): array
     {
         $links = [];
         foreach (self::SOCIAL_NETWORKS as $network => [$key, $label]) {
             $url = $this->settings->nullableUrl($key);
-            if (null !== $url) {
+            if (null !== $url || $all) {
                 $links[] = ['network' => $network, 'label' => $label, 'url' => $url];
             }
         }

@@ -1,34 +1,21 @@
-{#- P01.2 — hero : photo prioritaire (LCP), voile marine réglable, H1 et sous-titre éditables, recherche métier / lieu avec géolocalisation et dernier lieu mémorisé. -#}
-<header class="tm-home-hero tm-home-hero--veil-{{ ((s.veil ?? 30) / 10)|round * 10 }}">
+{#-
+    P01.2 — hero (maquette « Accueil — Desktop 1440 · V2 ») : photo seule, sans texte affiché (le H1 reste lu par les
+    moteurs et les lecteurs d'écran) ; barre de recherche arrondie, centrée sur le bas de la bannière : service
+    (autocomplétion métier), lieu (autocomplétion, géolocalisation, dernier lieu mémorisé), bouton « Rechercher ».
+-#}
+<header class="tm-home-hero tm-home-hero--veil-{{ ((s.veil ?? 0) / 10)|round * 10 }}">
     {# CDC §8 / P01.2 : photo prioritaire (LCP), AVIF puis WebP avec srcset, préchargée (home.html.twig), sans lazy-load. #}
     <picture>
         <source type="image/avif" srcset="{{ asset('images/auth/a02-banner-960.avif') }} 960w, {{ asset('images/auth/a02-banner@1x.avif') }} 1440w" sizes="100vw">
         <source type="image/webp" srcset="{{ asset('images/auth/a02-banner-960.webp') }} 960w, {{ asset('images/auth/a02-banner@1x.webp') }} 1440w" sizes="100vw">
-        <img class="tm-home-hero__image" src="{{ asset('images/auth/a02-banner@1x.webp') }}" alt="{{ s.image_alt ?? '' }}" width="1440" height="380" fetchpriority="high" decoding="async">
+        <img class="tm-home-hero__image" src="{{ asset('images/auth/a02-banner@1x.webp') }}" alt="{{ s.image_alt ?? '' }}" width="1440" height="430" fetchpriority="high" decoding="async">
     </picture>
-    <div class="tm-container tm-home-hero__content">
-        <h1 class="tm-home-hero__title">{{ s.title }}</h1>
-        {% if s.subtitle %}<p class="tm-home-hero__subtitle">{{ s.subtitle }}</p>{% endif %}
-        <form method="get" action="{{ path('public_search') }}" class="tm-search__bar tm-home-hero__bar" role="search" data-turbo="false"
-              data-controller="home-search" data-home-search-url-value="{{ path('search_nearest_commune') }}" data-action="submit->home-search#remember">
-            <div class="tm-search__field" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="metier">
-                <label class="tm-search__label" for="home_job">Service</label>
-                <input class="tm-search__input" id="home_job" type="text" placeholder="{{ s.job_placeholder }}" autocomplete="off" maxlength="100" data-autocomplete-target="input" data-action="input->autocomplete#suggest">
-                <input type="hidden" name="metier" data-autocomplete-target="value">
-                <ul class="tm-area__suggestions" role="listbox" aria-label="Métiers proposés" hidden data-autocomplete-target="list"></ul>
-            </div>
-            <div class="tm-search__field tm-home-hero__place" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="lieu">
-                <label class="tm-search__label" for="home_place">Où ?</label>
-                <input class="tm-search__input" id="home_place" name="lieu_libelle" type="text" placeholder="{{ s.place_placeholder }}" autocomplete="off" maxlength="100"
-                       data-autocomplete-target="input" data-home-search-target="label" data-action="input->autocomplete#suggest">
-                <input type="hidden" name="lieu" data-autocomplete-target="value" data-home-search-target="insee">
-                <ul class="tm-area__suggestions" role="listbox" aria-label="Communes proposées" hidden data-autocomplete-target="list"></ul>
-                <button type="button" class="tm-home-hero__locate" data-action="home-search#locate" data-home-search-target="locate" hidden>
-                    <twig:Icon name="locate" label="Utiliser ma position" />
-                </button>
-            </div>
-            <twig:Button type="submit" variant="search" icon="search" iconPosition="start">{{ s.button }}</twig:Button>
-            <p class="tm-home-hero__status" role="status" data-home-search-target="status"></p>
-        </form>
+    <h1 class="tm-visually-hidden">{{ s.title }}</h1>
+    {% if s.subtitle %}<p class="tm-visually-hidden tm-home-hero__subtitle">{{ s.subtitle }}</p>{% endif %}
+    <svg class="tm-home-hero__wave" viewBox="0 0 1440 46" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <path d="M0 22C360 52 900 -6 1440 20V46H0V22Z" fill="currentColor"/>
+    </svg>
+    <div class="tm-container tm-container--wide tm-home-hero__content">
+        {% include 'search/_search_pill.html.twig' with {prefix: 'home', job_label: s.job_placeholder, job_example: s.job_example ?? '', place_label: s.place_placeholder, place_example: s.place_example ?? '', button: s.button} only %}
     </div>
 </header>

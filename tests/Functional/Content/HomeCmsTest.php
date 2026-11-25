@@ -91,7 +91,7 @@ final class HomeCmsTest extends WebTestCase
         $crawler = $this->client->request('GET', '/admin/cms');
         self::assertStringContainsString('programmée le', $crawler->filter('.tm-cms-status')->text());
         $types = $crawler->filter('.tm-cms-block strong')->each(static fn (Crawler $n): string => $n->text());
-        self::assertStringContainsString('Pourquoi TrouveMoi', $types[7], 'bloc remonté avant la bannière CTA');
+        self::assertStringContainsString('Pourquoi TrouveMoi', $types[8], 'bloc remonté avant la bannière CTA');
 
         $crawler = $this->client->request('GET', '/');
         $sections = $crawler->filter('.tm-home > section, .tm-home > nav')->each(static fn (Crawler $n): string => (string) $n->attr('class'));

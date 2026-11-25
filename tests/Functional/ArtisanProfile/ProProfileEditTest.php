@@ -77,7 +77,7 @@ final class ProProfileEditTest extends WebTestCase
 
         $crawler = $this->client->request('GET', '/pro/atelier-fictif-caen-'.$this->profileId);
         self::assertSame('<p>Plombier depuis <strong>2009</strong>.</p>'."\n".'<ul><li>Dépannage</li><li>Salles de bains</li></ul>', trim($crawler->filter('.tm-profile__rich')->html()), 'mise en forme limitée, aucune balise saisie interprétée');
-        self::assertStringContainsString('Anglais', $crawler->filter('.tm-profile__facts-list')->text());
+        self::assertStringContainsString('Anglais', $crawler->filter('#presentation .tm-profile__rows')->text());
         self::assertStringContainsString('Devis sous 48 h', $crawler->filter('.tm-profile__strengths')->text());
         self::assertSame($before, $this->completion(), 'description déjà comptée (description courte de l’inscription)');
     }
@@ -95,8 +95,8 @@ final class ProProfileEditTest extends WebTestCase
 
         $crawler = $this->client->request('GET', '/pro/atelier-fictif-caen-'.$this->profileId);
         self::assertStringContainsString('à partir de 450 € TTC', $crawler->filter('.tm-profile__services')->text());
-        self::assertStringContainsString('08:00 – 12:00, 14:00 – 18:00', $crawler->filter('.tm-profile__hours')->text());
-        self::assertStringContainsString('Fermé', $crawler->filter('.tm-profile__hours')->text());
+        self::assertStringContainsString('8 h – 12 h, 14 h – 18 h', $crawler->filter('#zone')->text(), 'maquette V2 : horaires dans « Zone d’intervention et horaires »');
+        self::assertStringContainsString('Fermé', $crawler->filter('#zone')->text());
         self::assertCount(1, $crawler->filter('form[action$="/telephone"]'), 'option téléphone activée (RG-030)');
 
         $crawler = $this->client->request('GET', '/espace-pro/profil');

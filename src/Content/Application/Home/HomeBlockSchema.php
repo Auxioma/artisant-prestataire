@@ -15,7 +15,7 @@ final class HomeBlockSchema
 {
     public const array VARIABLES = ['{max_devis}', '{free_credits}'];
     /** Pictogrammes proposés (sprite du design system). */
-    public const array ICONS = ['shield', 'checkC', 'zap', 'calendar', 'calCheck', 'star', 'search', 'file', 'users', 'userPlus', 'tag', 'leaf', 'pin', 'handshake', 'clock', 'trophy', 'rocket', 'home', 'briefcase', 'msg', 'lock', 'heart'];
+    public const array ICONS = ['shield', 'checkC', 'zap', 'calendar', 'calCheck', 'star', 'search', 'file', 'users', 'userPlus', 'tag', 'leaf', 'pin', 'handshake', 'clock', 'trophy', 'rocket', 'home', 'briefcase', 'msg', 'lock', 'heart', 'euro', 'wrench', 'building', 'info'];
     /** Cibles des liens (route publique) : un lien dont la page n'existe pas ou est désactivée est masqué au rendu. */
     public const array TARGETS = [
         'search' => ['route' => 'public_search', 'label' => 'Recherche (P02)'],
@@ -50,11 +50,13 @@ final class HomeBlockSchema
 
         return match ($type) {
             HomeBlockType::Hero => [
-                'title' => ['type' => 'text', 'label' => 'Titre H1', 'max' => self::TITLE, 'required' => true],
-                'subtitle' => ['type' => 'textarea', 'label' => 'Sous-titre', 'max' => self::TEXT, 'required' => true, 'variables' => true],
+                'title' => ['type' => 'text', 'label' => 'Titre H1 (lu par les moteurs et lecteurs d’écran, non affiché : maquette V2)', 'max' => self::TITLE, 'required' => true],
+                'subtitle' => ['type' => 'textarea', 'label' => 'Sous-titre (non affiché : maquette V2)', 'max' => self::TEXT, 'variables' => true],
                 'image_alt' => ['type' => 'text', 'label' => 'Texte alternatif de l’image (vide : image décorative)', 'max' => self::TITLE],
-                'job_placeholder' => ['type' => 'text', 'label' => 'Placeholder service', 'max' => self::LABEL, 'required' => true],
-                'place_placeholder' => ['type' => 'text', 'label' => 'Placeholder lieu', 'max' => self::LABEL, 'required' => true],
+                'job_placeholder' => ['type' => 'text', 'label' => 'Libellé du champ service', 'max' => self::LABEL, 'required' => true],
+                'job_example' => ['type' => 'text', 'label' => 'Exemple du champ service', 'max' => self::LABEL],
+                'place_placeholder' => ['type' => 'text', 'label' => 'Libellé du champ lieu', 'max' => self::LABEL, 'required' => true],
+                'place_example' => ['type' => 'text', 'label' => 'Exemple du champ lieu', 'max' => self::LABEL],
                 'button' => ['type' => 'text', 'label' => 'Libellé du bouton', 'max' => self::LABEL, 'required' => true],
                 'veil' => ['type' => 'int', 'label' => 'Opacité du voile marine (%)', 'min' => 0, 'max' => self::VEIL_MAX],
             ],
@@ -81,6 +83,12 @@ final class HomeBlockSchema
                 'max' => ['type' => 'int', 'label' => 'Nombre maximum de catégories', 'min' => 1, 'max' => self::CARDS_MAX],
                 'show_counts' => ['type' => 'bool', 'label' => 'Afficher le nombre de professionnels'],
             ],
+            HomeBlockType::TopRated => [
+                'title' => ['type' => 'text', 'label' => 'Titre', 'max' => self::TITLE, 'required' => true],
+                'text' => ['type' => 'text', 'label' => 'Phrase d’accroche', 'max' => self::TITLE],
+                'link_label' => ['type' => 'text', 'label' => 'Libellé du lien vers le classement', 'max' => self::LABEL, 'required' => true],
+                'count' => ['type' => 'int', 'label' => 'Nombre de cartes', 'min' => 1, 'max' => self::CARDS_MAX],
+            ],
             HomeBlockType::Pros => [
                 'title' => ['type' => 'text', 'label' => 'Titre', 'max' => self::TITLE, 'required' => true],
                 'count' => ['type' => 'int', 'label' => 'Nombre de cartes', 'min' => 1, 'max' => self::CARDS_MAX],
@@ -89,7 +97,7 @@ final class HomeBlockSchema
             ],
             HomeBlockType::HowItWorks => [
                 'title' => ['type' => 'text', 'label' => 'Titre', 'max' => self::TITLE, 'required' => true],
-                'link_label' => ['type' => 'text', 'label' => 'Libellé du lien « En savoir plus »', 'max' => self::LABEL, 'required' => true],
+                'link_label' => ['type' => 'text', 'label' => 'Libellé du lien « En savoir plus » (vide : pas de lien, maquette V2)', 'max' => self::LABEL],
                 'items' => $item([
                     'icon' => ['type' => 'choice', 'label' => 'Picto', 'choices' => array_combine(self::ICONS, self::ICONS)],
                     'title' => ['type' => 'text', 'label' => 'Titre', 'max' => self::LABEL, 'required' => true],
@@ -98,6 +106,7 @@ final class HomeBlockSchema
             ],
             HomeBlockType::Cta => [
                 'title' => ['type' => 'text', 'label' => 'Titre', 'max' => self::TITLE, 'required' => true],
+                'highlight' => ['type' => 'text', 'label' => 'Seconde ligne du titre (en orange)', 'max' => self::TITLE],
                 'text' => ['type' => 'textarea', 'label' => 'Texte', 'max' => self::TEXT, 'required' => true, 'variables' => true],
                 'button' => ['type' => 'text', 'label' => 'Libellé du bouton', 'max' => self::LABEL, 'required' => true],
                 'background' => ['type' => 'choice', 'label' => 'Couleur de fond', 'choices' => self::CTA_BACKGROUNDS],

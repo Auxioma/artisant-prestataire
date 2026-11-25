@@ -31,7 +31,7 @@ final readonly class PublicPageCacheSubscriber implements EventSubscriberInterfa
         'search_directory', 'search_directory_page',
         'catalog_categories', 'catalog_category', 'catalog_job', 'catalog_department', 'catalog_city', 'catalog_job_city',
         'content_how_it_works', 'content_pricing', 'content_faq', 'content_faq_topic', 'content_faq_question',
-        'content_page', 'content_accessibility',
+        'content_page', 'content_accessibility', 'content_sitemap', 'content_blog', 'content_blog_category', 'content_blog_article',
         'identity_legal_document', 'identity_legal_versions', 'identity_legal_version',
     ];
 

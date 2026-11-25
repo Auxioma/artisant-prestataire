@@ -58,6 +58,14 @@ final readonly class DoctrineQuoteRequestRepository implements QuoteRequestRepos
         ));
     }
 
+    public function pendingOnJob(string $jobId): array
+    {
+        return array_map(static fn (mixed $id): QuoteRequestId => new QuoteRequestId(DbalValue::string($id)), $this->em->getConnection()->fetchFirstColumn(
+            'SELECT id FROM request.quote_request WHERE job_id = :job AND status = :status ORDER BY submitted_at',
+            ['job' => $jobId, 'status' => RequestStatus::PendingModeration->value],
+        ));
+    }
+
     public function activeOfClient(string $clientId): array
     {
         return array_map(static fn (mixed $id): QuoteRequestId => new QuoteRequestId(DbalValue::string($id)), $this->em->getConnection()->fetchFirstColumn(

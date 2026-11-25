@@ -33,6 +33,15 @@
         --tm-blue-soft: #e6f0fa;   /* Survol du bouton secondaire, fonds d'info */
         --tm-orange-soft: #fff3e4; /* Fond d'alerte (variable Figma --tm-warning) */
         --tm-blue-deep: #003a8c;   /* Encart « Professionnel ? » (Figma A02 393:16263) — texte blanc 10,6:1 */
+        /* Corrections design V2 (maquette « Accueil — Desktop 1440 · V2 ») */
+        --tm-cream: #fff8ee;       /* Encart « Les mieux notés » */
+        --tm-cream-line: #fbd9a8;  /* Bordure de l'encart « Les mieux notés » */
+        --tm-sky: #eaf3fe;         /* Encart « Comment ça marche ? » */
+        --tm-amber: #ffa63d;       /* Accroche orange sur fond photo sombre (« Un projet en tête ? ») */
+        --tm-mist: #c9d3e3;        /* Points de carrousel inactifs */
+        --shadow-float: 0 6px 24px rgb(0 21 104 / 0.16);   /* Barre de recherche posée sur la bannière */
+        --shadow-control: 0 2px 8px rgb(0 21 104 / 0.18);  /* Flèches de carrousel */
+        --overlay-card: linear-gradient(180deg, transparent 38%, rgb(0 32 120 / 0.45) 62%, rgb(0 21 104 / 0.9) 100%); /* Texte sur photo de catégorie */
 
         /* ── Variables imposées par le CDC §2.3 ─────────────────────────────────────────────────── */
         --primary: var(--tm-navy);
@@ -138,6 +147,7 @@
         /* Voile de lisibilité de la bannière de page (Figma A02 393:16167) ; plus couvrant sur mobile (texte sur la photo) */
         --banner-veil: linear-gradient(90deg, rgb(255 255 255 / 0.95) 0%, rgb(255 255 255 / 0.8) 30%, rgb(255 255 255 / 0) 46%);
         --banner-veil-mobile: linear-gradient(90deg, rgb(255 255 255 / 0.95) 0%, rgb(255 255 255 / 0.85) 55%, rgb(255 255 255 / 0.3) 100%);
+        --banner-veil-light: linear-gradient(90deg, rgb(255 255 255 / 0.92) 0%, rgb(255 255 255 / 0.75) 45%, rgb(255 255 255 / 0.15) 70%); /* Bannière claire du blog (maquettes Floriane V2) */
 
         /* ── Dimensions et mise en page (CDC §2.4) ───────────────────────────────────────────────── */
         --control-height: 44px;        /* cible tactile minimale (boutons) */
@@ -149,6 +159,7 @@
         --section-bar-width: 4px;      /* trait orange des titres de section */
         --section-bar-height: 24px;
         --container-max: 1200px;
+        --container-wide: 1360px;      /* pages publiques V2 (maquettes 1440 : marges de 40 px) */
         --container-gutter: 16px;
         --grid-columns: 12;
         /* Points de rupture (non utilisables en variable CSS dans @media) : mobile < 768 · tablette 768–1023 · desktop ≥ 1024 */

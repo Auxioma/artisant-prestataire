@@ -1,0 +1,93 @@
+{#- P09 « Offres & promotions » (maquette Kerry V2) : bannière d'opération plateforme (libellés administrables), filtres en pastilles, cartes offre (RG-026 : prix de référence, date de fin), « J'en profite » → demande directe avec l'offre. -#}
+{% extends 'base.html.twig' %}
+{% block title %}Offres & promotions des artisans — TrouveMoi{% endblock %}
+{% set canonical_url = url('search_offers') %}
+{% set meta_description = 'Remises et prestations offertes par des artisans vérifiés près de chez vous : profitez des offres en cours sur TrouveMoi.' %}
+{% block meta %}
+    {% if params is not empty %}<meta name="robots" content="noindex, follow">{% endif %}
+{% endblock %}
+{% macro euros(cents) %}{{ (cents / 100)|number_format(cents % 100 ? 2 : 0, ',', ' ') }} €{% endmacro %}
+{% import _self as m %}
+{% block body %}
+<div class="tm-discovery tm-offers" data-controller="analytics" data-analytics-auto-event-value="offer_view">
+    <section class="tm-offers__banner" aria-labelledby="offers-title">
+        <div class="tm-container tm-offers__banner-inner">
+            <div class="tm-offers__banner-text">
+                <p class="tm-offers__kicker">{{ tm_label('offers.banner.kicker', 'Offres & promotions') }}</p>
+                <h1 class="tm-offers__title" id="offers-title">{{ tm_label('offers.banner.title', 'Les bons plans des artisans près de chez vous') }}</h1>
+                <p class="tm-offers__period">{{ tm_label('offers.banner.text', 'Remises et prestations offertes par des professionnels vérifiés.') }}</p>
+            </div>
+            {% if tm_category_image('electricite') %}<img class="tm-offers__banner-image" src="{{ tm_category_image('electricite') }}" alt="" width="360" height="200">{% endif %}
+        </div>
+    </section>
+
+    <div class="tm-discovery__body">
+        <div class="tm-container">
+            <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Offres & promotions'}]" />
+            <form method="get" action="{{ path('search_offers') }}" class="tm-filter-bar tm-offers__filters" data-turbo="false" aria-label="Filtrer les offres">
+                <span class="tm-offers__filter-label">Filtrer :</span>
+                <a class="tm-chip{{ not category ? ' is-selected' }}" href="{{ path('search_offers', params|filter((v, k) => k != 'categorie')) }}"{% if not category %} aria-current="true"{% endif %}>Toutes catégories{% if not category %}<twig:Icon name="x" size="xs" class="tm-icon--inherit" />{% endif %}</a>
+                {% for c in categories %}
+                    {% set on = category and category.slug == c.slug %}
+                    <a class="tm-chip{{ on ? ' is-selected' }}" href="{{ path('search_offers', on ? params|filter((v, k) => k != 'categorie') : params|merge({categorie: c.slug})) }}"{% if on %} aria-current="true"{% endif %}>{{ c.name }}{% if on %}<twig:Icon name="x" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden"> (retirer le filtre)</span>{% endif %}</a>
+                {% endfor %}
+                {% if place %}
+                    <a class="tm-chip is-selected" href="{{ path('search_offers', params|filter((v, k) => k != 'lieu')) }}">{{ place.name }} · {{ radius }} km<twig:Icon name="x" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden"> (retirer le lieu)</span></a>
+                {% else %}
+                    <span class="tm-chip tm-offers__place" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="lieu">
+                        <twig:Icon name="pin" size="xs" />
+                        <label class="tm-visually-hidden" for="offers_place">Ville ou code postal</label>
+                        <input id="offers_place" name="lieu_libelle" type="text" placeholder="Ville ou code postal" autocomplete="off" maxlength="80" data-autocomplete-target="input" data-action="input->autocomplete#suggest">
+                        <input type="hidden" name="lieu" value="" data-autocomplete-target="value">
+                        <ul class="tm-area__suggestions" role="listbox" aria-label="Communes proposées" hidden data-autocomplete-target="list"></ul>
+                        <button type="submit" class="tm-offers__place-go"><twig:Icon name="search" size="xs" /><span class="tm-visually-hidden">Filtrer par lieu</span></button>
+                    </span>
+                    {% if category %}<input type="hidden" name="categorie" value="{{ category.slug }}">{% endif %}
+                    {% if type %}<input type="hidden" name="type" value="{{ type }}">{% endif %}
+                {% endif %}
+                {% for key, label in types %}
+                    {% set on = key == type %}
+                    <a class="tm-chip{{ on ? ' is-selected' }}" href="{{ path('search_offers', on ? params|filter((v, k) => k != 'type') : params|merge({type: key})) }}"{% if on %} aria-current="true"{% endif %}>{{ label }}{% if on %}<twig:Icon name="x" size="xs" class="tm-icon--inherit" /><span class="tm-visually-hidden"> (retirer le filtre)</span>{% endif %}</a>
+                {% endfor %}
+            </form>
+
+            {% if offers is empty %}
+                <twig:EmptyState icon="tag" title="Aucune offre en cours près de chez vous" text="Revenez bientôt : les artisans publient régulièrement de nouvelles offres. Vous pouvez aussi déposer une demande de devis gratuite.">
+                    {% if params is not empty %}<twig:Button href="{{ path('search_offers') }}" variant="secondary">Voir toutes les offres</twig:Button>{% endif %}
+                    <twig:Button href="{{ path('request_new') }}" variant="primary">Déposer une demande</twig:Button>
+                </twig:EmptyState>
+            {% else %}
+                <ul class="tm-offers__grid">
+                    {% for o in offers %}
+                        {% set a = o.artisan %}
+                        <li class="tm-offer">
+                            <div class="tm-offer__media">
+                                {% if a.coverPhotoId %}<img src="{{ path('public_portfolio_photo', {id: a.profileId, photo: a.coverPhotoId}) }}" alt="" loading="lazy">
+                                {% elseif a.hasLogo %}<img class="tm-offer__logo" src="{{ path('public_artisan_logo', {id: a.profileId}) }}" alt="" loading="lazy">
+                                {% else %}<span class="tm-offer__placeholder" aria-hidden="true"><twig:Icon name="tag" /></span>{% endif %}
+                                <span class="tm-offer__badge">
+                                    {%- if o.type == 'percent' -%}−{{ o.value|number_format(o.value == o.value|round ? 0 : 1, ',', ' ') }} %
+                                    {%- elseif o.type == 'amount' -%}−{{ o.value|number_format(o.value == o.value|round ? 0 : 2, ',', ' ') }} €
+                                    {%- else -%}Offert{%- endif -%}
+                                </span>
+                            </div>
+                            <div class="tm-offer__body">
+                                <h2 class="tm-offer__title">{{ o.title }}</h2>
+                                {% if o.referencePriceCents %}<p class="tm-offer__price">{{ o.type == 'free' ? 'Valeur' : 'Prix de référence' }} : {{ m.euros(o.referencePriceCents) }} TTC</p>{% endif %}
+                                <p class="tm-offer__artisan">
+                                    <a href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}">{{ a.name }}</a>
+                                    <span class="tm-offer__rating">{% if a.ratingAverage and a.reviewsCount > 0 %}<twig:Icon name="star" size="xs" class="tm-offer__star" /> {{ a.ratingAverage|number_format(1, ',', ' ') }}{{ a.communeName ? ' · ' }}{% endif %}{{ a.communeName }}</span>
+                                </p>
+                                <p class="tm-offer__until"><twig:Icon name="clock" size="xs" /> Jusqu’au {{ o.endsOn|date('d/m/Y', false) }}{{ o.conditions ? ' · conditions : ' ~ o.conditions }}</p>
+                                <twig:Button href="{{ path('request_new', {pro: a.profileId, offre: o.id}) }}" variant="primary" class="tm-offer__cta" rel="nofollow" data-action="analytics#track" data-analytics-event-param="offer_click">J’en profite<span class="tm-visually-hidden"> : {{ o.title }} chez {{ a.name }}</span></twig:Button>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <p class="tm-info-note"><twig:Icon name="info" size="sm" /> Les offres sont modérées avant publication et disparaissent automatiquement à expiration ; toute réduction affiche son prix de référence (RG-026).</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

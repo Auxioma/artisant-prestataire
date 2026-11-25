@@ -1,0 +1,21 @@
+{#- Désinscription de la newsletter (lien personnel) : confirmation par bouton, puis accusé. -#}
+{% extends 'base.html.twig' %}
+{% block title %}Désinscription de la newsletter — TrouveMoi{% endblock %}
+{% block meta %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block body %}
+<section class="tm-container tm-error-page">
+    <span class="tm-error-page__picto"><twig:Icon name="mail" /></span>
+    {% if done %}
+        <h1>Vous êtes désinscrit</h1>
+        <p class="tm-error-page__text">Vous ne recevrez plus la newsletter TrouveMoi. Vous pouvez vous réinscrire à tout moment depuis le bas de page.</p>
+        <twig:Button href="{{ path('public_home') }}" variant="secondary">Retour à l’accueil</twig:Button>
+    {% else %}
+        <h1>Se désinscrire de la newsletter</h1>
+        {% if error %}<p class="tm-error-page__text" role="alert">{{ error }}</p>{% endif %}
+        <p class="tm-error-page__text">Confirmez pour ne plus recevoir nos actualités, offres et nouveautés.</p>
+        <form method="post" action="{{ path('content_newsletter_unsubscribe', {token: token}) }}">
+            <twig:Button type="submit">Confirmer la désinscription</twig:Button>
+        </form>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,75 @@
+{#- BO10.3 « Blog » (pas de maquette dédiée, P-130) : articles (statut, catégorie, date), création ; catégories (ordre, renommage, suppression). -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'cms' %}
+{% set can_edit = is_granted('admin.cms.edit') %}
+{% set status_labels = {draft: 'Brouillon', published: 'Publié', scheduled: 'Programmé'} %}
+{% block title %}Blog — CMS{% endblock %}
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Blog', crumbs: ['Contenus', 'CMS'], subtitle: articles|length ~ ' article' ~ (articles|length > 1 ? 's') ~ ' · ' ~ categories|length ~ ' catégorie' ~ (categories|length > 1 ? 's')}) }}
+    {{ include('admin/cms/_tabs.html.twig', {current: 'blog'}) }}
+    <div class="tm-admin-grid">
+        {% if can_edit %}
+            <section class="tm-admin-panel" aria-labelledby="create-title">
+                <h2 id="create-title" class="tm-card-title">Nouvel article</h2>
+                <form method="post" action="{{ path('admin_cms_blog_post') }}" class="tm-media-form" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="create">
+                    <twig:Field id="article_title" name="data[title]" label="Titre de l’article" required maxlength="120" />
+                    <twig:Button type="submit" icon="plus" iconPosition="start">Créer l’article</twig:Button>
+                </form>
+            </section>
+        {% endif %}
+        <section class="tm-admin-panel" aria-labelledby="list-title">
+            <h2 id="list-title" class="tm-card-title">Articles</h2>
+            {% if articles is empty %}
+                <twig:EmptyState title="Aucun article" text="Créez un article, rédigez-le, choisissez son image dans la médiathèque puis publiez-le ou programmez sa parution." icon="file" />
+            {% else %}
+                <div class="tm-admin-table-wrap">
+                    <table class="tm-admin-table">
+                        <thead><tr><th scope="col">Titre</th><th scope="col">Catégorie</th><th scope="col">Statut</th><th scope="col">Publication</th></tr></thead>
+                        <tbody>
+                            {% for a in articles %}
+                                {% set st = a.status(now) %}
+                                <tr>
+                                    <th scope="row"><a href="{{ path('admin_cms_blog_article', {id: a.id}) }}">{{ a.title }}</a>{% if a.featured %} <span class="tm-caption">· à la une</span>{% endif %}</th>
+                                    <td>{{ a.category ? a.category.name : '—' }}</td>
+                                    <td><span class="tm-admin-status is-{{ st }}">{{ status_labels[st] }}</span></td>
+                                    <td>{{ a.publishedAt ? a.publishedAt|date('d/m/Y H:i', 'Europe/Paris') : '—' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="tm-admin-panel" id="categories" aria-labelledby="categories-title">
+            <h2 id="categories-title" class="tm-card-title">Catégories</h2>
+            <p class="tm-caption">Pastilles de filtre de la liste du blog (seules les catégories ayant un article publié sont affichées), dans l’ordre indiqué.</p>
+            {% for c in categories %}
+                <form method="post" action="{{ path('admin_cms_blog_post') }}" class="tm-cms-inline tm-blog-admin__category" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="id" value="{{ c.id }}">
+                    <fieldset{% if not can_edit %} disabled{% endif %}>
+                        <legend class="tm-visually-hidden">Catégorie {{ c.name }}</legend>
+                        <twig:Field id="cat_{{ c.id }}_name" name="data[name]" label="Nom" value="{{ c.name }}" required maxlength="60" />
+                        <twig:Field id="cat_{{ c.id }}_slug" name="data[slug]" label="Adresse (/blog/categorie/…)" value="{{ c.slug }}" maxlength="80" />
+                        <twig:Field id="cat_{{ c.id }}_position" name="data[position]" label="Ordre" type="number" value="{{ c.position }}" inputmode="numeric" />
+                        <p class="tm-caption">{{ c.publishedCount }} article{{ c.publishedCount > 1 ? 's' }} publié{{ c.publishedCount > 1 ? 's' }}</p>
+                        {% if can_edit %}
+                            <twig:Button type="submit" name="action" value="save_category" variant="secondary">Enregistrer</twig:Button>
+                            <twig:Button type="submit" name="action" value="delete_category" variant="danger">Supprimer</twig:Button>
+                        {% endif %}
+                    </fieldset>
+                </form>
+            {% else %}
+                <p class="tm-caption">Aucune catégorie pour le moment.</p>
+            {% endfor %}
+            {% if can_edit %}
+                <form method="post" action="{{ path('admin_cms_blog_post') }}" class="tm-media-form" data-turbo="false">
+                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="create_category">
+                    <twig:Field id="new_category" name="data[name]" label="Nouvelle catégorie" required maxlength="60" />
+                    <twig:Button type="submit" variant="secondary" icon="plus" iconPosition="start">Ajouter la catégorie</twig:Button>
+                </form>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

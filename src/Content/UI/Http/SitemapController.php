@@ -8,6 +8,9 @@ use App\Catalog\Application\Query\CategorySummary;
 use App\Catalog\Application\Query\JobIndexEntries;
 use App\Catalog\Application\Query\JobIndexEntry;
 use App\Catalog\Application\Query\MainCategories;
+use App\Content\Application\Blog\BlogCategory;
+use App\Content\Application\Blog\BlogPage;
+use App\Content\Application\Blog\BlogQuery;
 use App\Content\Application\Faq\FaqQuery;
 use App\Content\Application\Faq\FaqQuestion;
 use App\Content\Application\Faq\FaqTopic;
@@ -30,7 +33,7 @@ use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 
 /**
- * BO12.3 / §7 — sitemaps XML segmentés générés automatiquement (pages, métiers, villes, artisans ; blog en V2), au
+ * BO12.3 / §7 — sitemaps XML segmentés générés automatiquement (pages, métiers, villes, artisans, blog P15), au
  * plus SITEMAP_MAX_URLS adresses par fichier (< 50 000), et robots.txt. Seules les pages indexables y figurent :
  * pages ville selon RG-023, aucune page filtrée. Mis en cache CACHE_SECONDS.
  */
@@ -38,9 +41,9 @@ final readonly class SitemapController
 {
     private const int SITEMAP_MAX_URLS = 45_000;
     private const int CACHE_SECONDS = 3600;
-    private const array SEGMENTS = ['pages', 'metiers', 'villes', 'artisans'];
+    private const array SEGMENTS = ['pages', 'metiers', 'villes', 'artisans', 'blog'];
     private const array DISALLOW = ['/admin/', '/api/', '/conditions/', '/inscription/', '/connexion', '/mot-de-passe', '/verification-email/', '/accueil/professionnels', '/media/'];
-    private const array STATIC_ROUTES = ['public_home', 'catalog_categories', 'search_directory', 'content_how_it_works', 'content_pricing', 'content_faq', 'content_contact'];
+    private const array STATIC_ROUTES = ['public_home', 'catalog_categories', 'search_directory', 'content_how_it_works', 'content_pricing', 'content_faq', 'content_contact', 'content_sitemap', 'content_blog'];
 
     public function __construct(
         private QueryBus $queries,
@@ -88,7 +91,7 @@ final readonly class SitemapController
         return self::xml($xml);
     }
 
-    #[Route('/sitemaps/{segment}-{page}.xml', name: 'content_sitemap_segment', requirements: ['segment' => 'pages|metiers|villes|artisans', 'page' => '[1-9][0-9]{0,2}'], methods: ['GET'])]
+    #[Route('/sitemaps/{segment}-{page}.xml', name: 'content_sitemap_segment', requirements: ['segment' => 'pages|metiers|villes|artisans|blog', 'page' => '[1-9][0-9]{0,2}'], methods: ['GET'])]
     public function segment(string $segment, int $page): Response
     {
         $chunk = \array_slice($this->entries($segment), ($page - 1) * self::SITEMAP_MAX_URLS, self::SITEMAP_MAX_URLS);
@@ -158,6 +161,7 @@ final readonly class SitemapController
                 'pages' => $this->pages(),
                 'metiers' => $this->catalog(),
                 'villes' => $this->local(),
+                'blog' => $this->blog(),
                 default => $this->artisans(),
             };
         });
@@ -199,6 +203,31 @@ final readonly class SitemapController
                 if ($q instanceof FaqQuestion) {
                     $entries[] = [$this->url('content_faq_question', ['topic' => $q->topicSlug, 'question' => $q->slug]), $q->updatedAt->format('Y-m-d')];
                 }
+            }
+        }
+
+        return $entries;
+    }
+
+    /** @return list<array{0: string, 1: ?string}> P15 : catégories ayant un article publié, articles publiés (pagination incluse) */
+    private function blog(): array
+    {
+        $entries = [];
+        $categories = $this->queries->ask(BlogQuery::categories());
+        foreach (\is_array($categories) ? $categories : [] as $category) {
+            if ($category instanceof BlogCategory && $category->publishedCount > 0) {
+                $entries[] = [$this->url('content_blog_category', ['slug' => $category->slug]), null];
+            }
+        }
+        $first = $this->queries->ask(BlogQuery::published(null, 1, BlogController::PER_PAGE));
+        $pages = $first instanceof BlogPage ? $first->pages() : 1;
+        for ($page = 1; $page <= $pages; ++$page) {
+            $result = 1 === $page ? $first : $this->queries->ask(BlogQuery::published(null, $page, BlogController::PER_PAGE));
+            if ($page > 1) {
+                $entries[] = [$this->url('content_blog', ['page' => $page]), null]; // pagination indexable (§7)
+            }
+            foreach ($result instanceof BlogPage ? $result->articles : [] as $article) {
+                $entries[] = [$this->url('content_blog_article', ['slug' => $article->slug]), $article->updatedAt->format('Y-m-d')];
             }
         }
 

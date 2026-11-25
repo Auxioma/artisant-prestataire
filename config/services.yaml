@@ -99,6 +99,7 @@ services:
             - '../src/Shared/Application/Moderation/{ProfileReviewItem,ModerationDecisionRejected}.php'
             - '../src/QuoteRequest/Application/Draft/{DraftOwner,DraftAttachmentView,RequestDraftView,DraftRejected}.php'
             - '../src/Catalog/Application/Questionnaire/JobQuestionnaireView.php'
+            - '../src/Catalog/Application/Proposal/JobProposalView.php'
 
     # Ports du noyau partagé
     App\Shared\Domain\Time\Clock: '@App\Shared\Infrastructure\Time\SystemClock'
@@ -134,7 +135,7 @@ services:
     # Ports du module Catalog
     App\Catalog\Domain\Category\CategoryRepository: '@App\Catalog\Infrastructure\Doctrine\Repository\DoctrineCategoryRepository'
     App\Catalog\Domain\Job\JobRepository: '@App\Catalog\Infrastructure\Doctrine\Repository\DoctrineJobRepository'
-    App\Catalog\Application\Port\JobUsageCounter: '@App\Catalog\Infrastructure\InterimJobUsageCounter'
+    App\Catalog\Application\Port\JobUsageCounter: '@App\Catalog\Infrastructure\DbalJobUsageCounter'
     App\Catalog\Application\Geo\Port\GeoReferentialStore: '@App\Catalog\Infrastructure\Geo\DbalGeoReferentialStore'
     App\Catalog\Application\Geo\Port\GeoReferentialSourceFactory: '@App\Catalog\Infrastructure\Geo\GeoSourceFactory'
     App\Catalog\UI\Twig\CatalogExtension:

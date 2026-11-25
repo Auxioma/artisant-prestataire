@@ -111,13 +111,40 @@
     .tm-directory__pro li .tm-icon { flex: none; color: var(--color-success-text); }
     .tm-directory__pro-icon { width: 40px; height: 40px; color: var(--orange); }
 
+    /* Maquette Koubourath « Nos professionnels » V2 : recherche à cheval sur la bannière, engagements, catégories,
+       professionnels à la une et encart pro en colonne. */
+    .tm-directory__search { position: relative; z-index: 2; margin-top: -56px; }
+    .tm-directory__reassurance { padding-top: var(--space-6); }
+    .tm-directory .tm-catalog__body { display: grid; gap: var(--space-8); }
+    .tm-directory__categories { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin: var(--space-4) 0 0; padding: 0; list-style: none; }
+    .tm-directory__category { display: grid; justify-items: center; align-content: start; gap: var(--space-1); height: 100%; padding: var(--space-3) var(--space-3) var(--space-2); border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); box-shadow: var(--shadow-card); color: var(--color-heading); text-align: center; text-decoration: none; }
+    .tm-directory__category:hover { box-shadow: var(--shadow-hover); }
+    .tm-directory__category:focus-visible { box-shadow: var(--focus-ring); outline: none; }
+    .tm-directory__category-icon { width: 24px; height: 24px; color: var(--color-heading); }
+    .tm-directory__category-name { display: grid; align-items: center; min-height: 38px; font: 600 15px/19px var(--font-family); }
+    .tm-directory__category img { width: 100%; height: auto; aspect-ratio: 2 / 1; margin-top: var(--space-1); border-radius: var(--radius-sm); object-fit: cover; }
+    .tm-directory__category--more { align-content: center; }
+    .tm-directory__featured-row { display: grid; gap: var(--space-6); }
+    .tm-directory__featured { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); margin: var(--space-4) 0 0; padding: 0; list-style: none; }
+    /* Encart en colonne : couronne à gauche du titre, liste et bouton pleine largeur. */
+    .tm-directory__featured-row:has(section) .tm-directory__pro { grid-template-columns: auto minmax(0, 1fr); align-items: center; align-content: start; align-self: start; column-gap: var(--space-3); }
+    .tm-directory__featured-row:has(section) .tm-directory__pro > div { display: contents; }
+    .tm-directory__featured-row:has(section) .tm-directory__pro h2 { margin: 0; font: 700 24px/30px var(--font-family); }
+    .tm-directory__featured-row:has(section) .tm-directory__pro :is(ul, .tm-button) { grid-column: 1 / -1; }
+    .tm-directory__featured-row:has(section) .tm-directory__pro .tm-button { width: 100%; }
+
     @media (min-width: 768px) {
         .tm-directory__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .tm-directory__categories { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .tm-directory__featured { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .tm-directory__pro { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
     }
 
     @media (min-width: 1024px) {
         .tm-directory__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .tm-directory__categories { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+        .tm-directory__featured-row:has(section) { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
+        .tm-directory__featured-row:has(section) .tm-directory__pro { margin-top: var(--space-10); }
     }
 }
 

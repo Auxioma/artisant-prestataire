@@ -14,6 +14,12 @@ use App\Shared\Application\Settings\SettingsProvider;
  */
 final readonly class HomeDefaults
 {
+    /** Ordre par défaut des blocs (maquette « Accueil — Desktop 1440 · V2 »). */
+    private const array ORDER = [
+        HomeBlockType::Header, HomeBlockType::Hero, HomeBlockType::Reassurance, HomeBlockType::QuickLinks, HomeBlockType::Categories,
+        HomeBlockType::TopRated, HomeBlockType::Pros, HomeBlockType::HowItWorks, HomeBlockType::Cta, HomeBlockType::WhyUs, HomeBlockType::Footer,
+    ];
+
     public function __construct(private SettingsProvider $settings)
     {
     }
@@ -28,9 +34,11 @@ final readonly class HomeDefaults
                 'subtitle' => 'Comparez jusqu’à {max_devis} devis gratuits de professionnels vérifiés, sans engagement.',
                 'image_alt' => '',
                 'job_placeholder' => 'Quel service recherchez-vous ?',
+                'job_example' => 'Ex : Plomberie, Rénovation, Jardin…',
                 'place_placeholder' => 'Où ? (ville, code postal)',
+                'place_example' => 'Ex : Forges-les-Eaux (76440)',
                 'button' => 'Rechercher',
-                'veil' => 30,
+                'veil' => 0,
             ],
             HomeBlockType::Reassurance->value => [
                 'mobile_layout' => 'carousel',
@@ -57,6 +65,12 @@ final readonly class HomeDefaults
                 'max' => $this->settings->int(SettingKey::HomeCategoriesMax),
                 'show_counts' => false,
             ],
+            HomeBlockType::TopRated->value => [
+                'title' => 'Les mieux notés',
+                'text' => 'Découvrez les professionnels les mieux évalués par nos clients',
+                'link_label' => 'Voir le classement complet',
+                'count' => $this->settings->int(SettingKey::HomeProsCount),
+            ],
             HomeBlockType::Pros->value => [
                 'title' => 'Des professionnels près de chez vous',
                 'count' => $this->settings->int(SettingKey::HomeProsCount),
@@ -65,7 +79,7 @@ final readonly class HomeDefaults
             ],
             HomeBlockType::HowItWorks->value => [
                 'title' => 'Comment ça marche ?',
-                'link_label' => 'En savoir plus',
+                'link_label' => '',
                 'items' => [
                     ['icon' => 'search', 'title' => 'Je recherche un professionnel', 'text' => 'Par métier, ville ou code postal.'],
                     ['icon' => 'file', 'title' => 'Je demande un devis gratuit', 'text' => 'Décrivez votre projet en quelques clics.'],
@@ -73,8 +87,9 @@ final readonly class HomeDefaults
                 ],
             ],
             HomeBlockType::Cta->value => [
-                'title' => 'Un projet en tête ? Des travaux à réaliser ?',
-                'text' => 'Recevez jusqu’à {max_devis} devis gratuits de professionnels vérifiés.',
+                'title' => 'Un projet en tête ?',
+                'highlight' => 'Des travaux à réaliser ?',
+                'text' => 'Déposez votre demande, recevez jusqu’à {max_devis} devis gratuits et choisissez le professionnel qui vous convient.',
                 'button' => 'Déposer ma demande de devis',
                 'background' => 'navy',
             ],
@@ -83,17 +98,39 @@ final readonly class HomeDefaults
                 'items' => [
                     ['icon' => 'shield', 'title' => 'Des professionnels sélectionnés et évalués', 'text' => ''],
                     ['icon' => 'users', 'title' => 'Un réseau local et national', 'text' => ''],
-                    ['icon' => 'tag', 'title' => 'Des devis gratuits et sans engagement', 'text' => ''],
+                    ['icon' => 'euro', 'title' => 'Des devis gratuits et sans engagement', 'text' => ''],
                     ['icon' => 'leaf', 'title' => 'Une solution simple, rapide et sécurisée', 'text' => ''],
                 ],
             ],
         ];
 
         $blocks = [];
-        foreach (HomeBlockType::cases() as $type) {
+        foreach (self::ORDER as $type) {
             $blocks[] = ['type' => $type->value, 'enabled' => true, 'settings' => $settings[$type->value] ?? []];
         }
 
         return $blocks;
+    }
+
+    /**
+     * Complète une version enregistrée avant l'arrivée d'un nouveau type de bloc (ex. « Les mieux notés ») : le bloc
+     * manquant est inséré à sa place par défaut, avec son contenu initial, jusqu'à ce qu'il soit réglé et publié.
+     *
+     * @param list<array{type: string, enabled: bool, settings: array<string, mixed>}> $blocks
+     *
+     * @return list<array{type: string, enabled: bool, settings: array<string, mixed>}>
+     */
+    public function complete(array $blocks): array
+    {
+        $present = array_column($blocks, 'type');
+        foreach ($this->blocks() as $index => $default) {
+            if (\in_array($default['type'], $present, true)) {
+                continue;
+            }
+            $after = $index > 0 ? array_search(self::ORDER[$index - 1]->value, array_column($blocks, 'type'), true) : -1;
+            array_splice($blocks, false === $after ? \count($blocks) : $after + 1, 0, [$default]);
+        }
+
+        return array_values($blocks);
     }
 }

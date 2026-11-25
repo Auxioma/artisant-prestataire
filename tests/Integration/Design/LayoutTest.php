@@ -141,8 +141,9 @@ final class LayoutTest extends KernelTestCase
     {
         $footer = $this->render('Footer');
 
-        self::assertCount(0, $footer->filter('.tm-footer__socials'), 'Aucun réseau affiché sans URL renseignée en BO');
-        self::assertCount(0, $footer->filter('.tm-footer__newsletter'), 'Pas de formulaire sans route de traitement');
+        self::assertCount(5, $footer->filter('.tm-footer__socials .tm-footer__social'), 'Les cinq réseaux sous le texte (maquette V2)');
+        self::assertCount(0, $footer->filter('a.tm-footer__social'), 'Aucun lien sans URL renseignée en BO (jamais d’URL fictive)');
+        self::assertCount(1, $footer->filter('.tm-footer__newsletter input[type="email"][name="email"]'), 'Colonne « Restez informé » (maquette V2)');
         self::assertStringContainsString('Comment sont classés les professionnels ?', $footer->text(), 'Information L111-7');
         self::assertCount(1, $footer->filter('button[data-cookie-consent-open]'), 'Gérer mes cookies (CMP)');
         self::assertStringContainsString('© '.date('Y'), $footer->text());
@@ -156,7 +157,7 @@ final class LayoutTest extends KernelTestCase
         self::getContainer()->get('cache.settings')->clear();
         self::assertSame(1, DbalValue::int($connection->fetchOne("SELECT count(*) FROM admin.setting WHERE key = 'social.linkedin'")));
 
-        $link = $this->render('Footer')->filter('.tm-footer__social');
+        $link = $this->render('Footer')->filter('a.tm-footer__social');
         self::assertCount(1, $link);
         self::assertSame('https://www.linkedin.com/company/trouvemoi', $link->attr('href'));
         self::assertSame('noopener noreferrer', $link->attr('rel'));

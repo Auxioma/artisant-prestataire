@@ -1,0 +1,209 @@
+{#- BO06 « Référentiel métiers » : onglet Catégories & métiers (arborescence, édition, ordre, activation) et onglet Propositions (métiers proposés par les clients dans le dépôt de demande). -#}
+{% extends 'admin/base.html.twig' %}
+{% set active_module = 'catalog' %}
+{% set can_edit = is_granted('admin.catalog.edit') %}
+{% set job_count = tree|reduce((n, c) => n + c.jobs|filter(j => j.active)|length, 0) %}
+{% set status_labels = {pending: 'En attente', approved: 'Ajoutée', merged: 'Rattachée', rejected: 'Refusée'} %}
+{% block title %}Référentiel métiers{% endblock %}
+
+{% macro job_options(active_jobs, selected) %}
+    <option value="">Choisissez le métier</option>
+    {% for category, jobs in active_jobs %}
+        <optgroup label="{{ category }}">
+            {% for j in jobs %}<option value="{{ j.slug }}"{{ j.slug == selected ? ' selected' }}>{{ j.name }}</option>{% endfor %}
+        </optgroup>
+    {% endfor %}
+{% endmacro %}
+
+{% macro category_options(tree, selected) %}
+    {% for c in tree %}<option value="{{ c.slug }}"{{ c.slug == selected ? ' selected' }}>{{ c.root ? '' : '— ' }}{{ c.name }}{{ c.active ? '' : ' (inactive)' }}</option>{% endfor %}
+{% endmacro %}
+
+{% block body %}
+    {{ include('admin/_page_header.html.twig', {title: 'Référentiel métiers', crumbs: ['Plateforme'], subtitle: tree|filter(c => c.root)|length ~ ' catégories · ' ~ job_count ~ ' métiers actifs' ~ (pending_count > 0 ? ' · ' ~ pending_count ~ ' proposition' ~ (pending_count > 1 ? 's') ~ ' à traiter')}) }}
+    <nav class="tm-admin-tabs" aria-label="Rubriques du référentiel">
+        <a class="tm-admin-tab{{ tab == 'categories' ? ' is-active' }}" href="{{ path('admin_catalog') }}"{{ tab == 'categories' ? ' aria-current="page"' }}>Catégories &amp; métiers</a>
+        <a class="tm-admin-tab{{ tab == 'propositions' ? ' is-active' }}" href="{{ path('admin_catalog', {onglet: 'propositions'}) }}"{{ tab == 'propositions' ? ' aria-current="page"' }}>Propositions des clients{% if pending_count > 0 %} <span class="tm-catalog__count">{{ pending_count }}</span>{% endif %}</a>
+    </nav>
+
+    {% if tab == 'propositions' %}
+        <section class="tm-admin-panel" aria-labelledby="proposals-title">
+            <h2 id="proposals-title" class="tm-card-title">Prestations proposées</h2>
+            <p class="tm-caption">Saisies par les clients qui ne trouvaient pas leur prestation. Leurs demandes sont enregistrées et attendent votre décision : <strong>ajouter</strong> la prestation (elle apparaît partout sur la plateforme), la <strong>rattacher</strong> à un métier existant, ou la <strong>refuser</strong>. Les demandes en attente sont alors publiées (ou refusées) et les clients prévenus par e-mail et notification.</p>
+            {% set pending = proposals|filter(p => p.pending) %}
+            {% for p in pending %}
+                <article class="tm-catalog__proposal" id="proposition-{{ p.id }}">
+                    <header class="tm-catalog__proposal-head">
+                        <div>
+                            <h3>{{ p.proposedJobName }}</h3>
+                            <p class="tm-caption">Catégorie : <strong>{{ p.categoryName }}</strong>{% if p.newCategory %} <span class="tm-admin-status is-scheduled">nouvelle catégorie</span>{% endif %} · proposée le {{ p.createdAt|date('d/m/Y à H:i', 'Europe/Paris') }} · {{ p.pendingRequests }} demande{{ p.pendingRequests > 1 ? 's' }} en attente</p>
+                        </div>
+                    </header>
+                    {% if can_edit %}
+                        <div class="tm-catalog__decisions">
+                            <form method="post" action="{{ path('admin_catalog_post') }}" class="tm-catalog__form" data-turbo="false">
+                                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="decide"><input type="hidden" name="decision" value="approve"><input type="hidden" name="id" value="{{ p.id }}">
+                                <h4>Ajouter au référentiel</h4>
+                                <twig:Field id="approve_{{ p.id }}_name" name="name" label="Libellé du métier" value="{{ p.jobName }}" maxlength="80" required />
+                                <div class="tm-field">
+                                    <label class="tm-field__label" for="approve_{{ p.id }}_category">Catégorie</label>
+                                    <div class="tm-select"><select class="tm-select__input" id="approve_{{ p.id }}_category" name="category">{{ _self.category_options(tree, p.categorySlug) }}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
+                                </div>
+                                <twig:Button type="submit" icon="check" iconPosition="start">Ajouter et publier les demandes</twig:Button>
+                            </form>
+                            <form method="post" action="{{ path('admin_catalog_post') }}" class="tm-catalog__form" data-turbo="false">
+                                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="decide"><input type="hidden" name="decision" value="merge"><input type="hidden" name="id" value="{{ p.id }}">
+                                <h4>Rattacher à un métier existant</h4>
+                                <div class="tm-field">
+                                    <label class="tm-field__label" for="merge_{{ p.id }}">Métier équivalent</label>
+                                    <div class="tm-select"><select class="tm-select__input" id="merge_{{ p.id }}" name="replacement" required>{{ _self.job_options(active_jobs, null) }}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
+                                </div>
+                                <twig:Button type="submit" variant="secondary">Rattacher et publier</twig:Button>
+                            </form>
+                            <form method="post" action="{{ path('admin_catalog_post') }}" class="tm-catalog__form" data-turbo="false">
+                                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="decide"><input type="hidden" name="decision" value="reject"><input type="hidden" name="id" value="{{ p.id }}">
+                                <h4>Refuser</h4>
+                                <twig:Field id="reject_{{ p.id }}" name="note" label="Motif (communiqué au client)" maxlength="300" required placeholder="Ex. prestation hors du périmètre de la plateforme" />
+                                <twig:Button type="submit" variant="danger">Refuser</twig:Button>
+                            </form>
+                        </div>
+                    {% endif %}
+                </article>
+            {% else %}
+                <twig:EmptyState title="Aucune proposition en attente" text="Les prestations proposées par les clients depuis le dépôt de demande apparaîtront ici." icon="check" />
+            {% endfor %}
+
+            {% set decided = proposals|filter(p => not p.pending) %}
+            {% if decided is not empty %}
+                <h3 class="tm-catalog__subtitle">Dernières décisions</h3>
+                <div class="tm-admin-table-wrap">
+                    <table class="tm-admin-table">
+                        <thead><tr><th scope="col">Prestation proposée</th><th scope="col">Décision</th><th scope="col">Métier retenu / motif</th><th scope="col">Proposée le</th></tr></thead>
+                        <tbody>
+                            {% for p in decided %}
+                                <tr>
+                                    <th scope="row">{{ p.proposedJobName }}{% if p.proposedCategoryName %} <span class="tm-caption">· {{ p.proposedCategoryName }}</span>{% endif %}</th>
+                                    <td><span class="tm-admin-status{{ p.status == 'rejected' ? '' : ' is-published' }}">{{ status_labels[p.status] }}</span></td>
+                                    <td>{{ p.finalJobName ?? p.note ?? '—' }}</td>
+                                    <td>{{ p.createdAt|date('d/m/Y', 'Europe/Paris') }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </section>
+    {% else %}
+        <div class="tm-admin-grid">
+            {% if can_edit %}
+                <section class="tm-admin-panel" aria-labelledby="create-title">
+                    <h2 id="create-title" class="tm-card-title">Nouvelle catégorie</h2>
+                    <form method="post" action="{{ path('admin_catalog_post') }}" class="tm-media-form" data-turbo="false">
+                        <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="create_category">
+                        <twig:Field id="new_category" name="name" label="Nom de la catégorie" required maxlength="80" />
+                        <div class="tm-field">
+                            <label class="tm-field__label" for="new_category_icon">Pictogramme</label>
+                            <div class="tm-select"><select class="tm-select__input" id="new_category_icon" name="icon">{% for key, label in icons %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
+                        </div>
+                        <twig:Checkbox id="new_category_featured" name="featured" value="1" label="Mettre en avant (accueil, méga-menu)" />
+                        <twig:Button type="submit" icon="plus" iconPosition="start">Ajouter la catégorie</twig:Button>
+                    </form>
+                    <p class="tm-caption">Une catégorie n’apparaît sur la plateforme qu’une fois qu’elle contient au moins un métier actif. Toute modification est répercutée automatiquement : recherche, méga-menu, pages catégories et métiers, filtres, dépôt de demande et inscription des professionnels.</p>
+                </section>
+            {% endif %}
+
+            <section class="tm-admin-panel" aria-labelledby="tree-title">
+                <h2 id="tree-title" class="tm-card-title">Catégories &amp; métiers</h2>
+                {% for c in tree %}
+                    {% set active_jobs_count = c.jobs|filter(j => j.active)|length %}
+                    <details class="tm-catalog__category{{ c.root ? '' : ' is-sub' }}" id="categorie-{{ c.slug }}">
+                        <summary>
+                            <twig:Icon name="{{ c.icon }}" size="sm" />
+                            <span class="tm-catalog__name">{{ c.name }}</span>
+                            <span class="tm-caption">{{ active_jobs_count }} métier{{ active_jobs_count > 1 ? 's' }}</span>
+                            {% if not c.active %}<span class="tm-admin-status">inactive</span>{% endif %}
+                            {% if c.featured %}<span class="tm-admin-status is-published">à la une</span>{% endif %}
+                            {% if c.jobs|filter(j => j.proposed)|length > 0 %}<span class="tm-admin-status is-scheduled">proposition en attente</span>{% endif %}
+                        </summary>
+
+                        <form method="post" action="{{ path('admin_catalog_post') }}" class="tm-catalog__row" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="save_category"><input type="hidden" name="slug" value="{{ c.slug }}"><input type="hidden" name="anchor" value="categorie-{{ c.slug }}">
+                            <fieldset{% if not can_edit %} disabled{% endif %}>
+                                <legend class="tm-visually-hidden">Catégorie {{ c.name }}</legend>
+                                <twig:Field id="cat_{{ c.slug }}_name" name="name" label="Nom" value="{{ c.name }}" required maxlength="80" />
+                                <twig:Field id="cat_{{ c.slug }}_slug" name="new_slug" label="Adresse (slug)" value="{{ c.slug }}" maxlength="100" />
+                                <div class="tm-field">
+                                    <label class="tm-field__label" for="cat_{{ c.slug }}_icon">Pictogramme</label>
+                                    <div class="tm-select"><select class="tm-select__input" id="cat_{{ c.slug }}_icon" name="icon">{% for key, label in icons|merge({(c.icon): icons[c.icon] ?? c.icon}) %}<option value="{{ key }}"{{ key == c.icon ? ' selected' }}>{{ label }}</option>{% endfor %}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
+                                </div>
+                                <twig:Field id="cat_{{ c.slug }}_position" name="position" label="Ordre" type="number" value="{{ c.position }}" inputmode="numeric" />
+                                <div class="tm-catalog__checks">
+                                    <input type="hidden" name="active" value="0"><twig:Checkbox id="cat_{{ c.slug }}_active" name="active" value="1" label="Active" :checked="c.active" />
+                                    <input type="hidden" name="featured" value="0"><twig:Checkbox id="cat_{{ c.slug }}_featured" name="featured" value="1" label="À la une" :checked="c.featured" />
+                                </div>
+                                {% if can_edit %}<twig:Button type="submit" variant="secondary">Enregistrer la catégorie</twig:Button>{% endif %}
+                            </fieldset>
+                        </form>
+
+                        <ul class="tm-catalog__jobs">
+                            {% for j in c.jobs %}
+                                <li id="metier-{{ j.slug }}">
+                                    <details class="tm-catalog__job">
+                                        <summary>
+                                            <span class="tm-catalog__name">{{ j.name }}</span>
+                                            <span class="tm-caption">{{ j.artisans }} pro{{ j.artisans > 1 ? 's' }}</span>
+                                            {% if j.proposed %}<span class="tm-admin-status is-scheduled">proposé par un client</span>
+                                            {% elseif not j.active %}<span class="tm-admin-status">inactif{% if j.replaced_by %} → {{ j.replaced_by }}{% endif %}</span>{% endif %}
+                                            {% if j.decennial %}<span class="tm-caption">· décennale</span>{% endif %}
+                                        </summary>
+                                        {% if j.proposed %}
+                                            <p class="tm-caption">Décision depuis l’onglet <a href="{{ path('admin_catalog', {onglet: 'propositions'}) }}">Propositions des clients</a>.</p>
+                                        {% elseif can_edit %}
+                                            <form method="post" action="{{ path('admin_catalog_post') }}" class="tm-catalog__row" data-turbo="false">
+                                                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="save_job"><input type="hidden" name="slug" value="{{ j.slug }}"><input type="hidden" name="anchor" value="categorie-{{ c.slug }}">
+                                                <twig:Field id="job_{{ j.slug }}_name" name="name" label="Libellé" value="{{ j.name }}" required maxlength="80" />
+                                                <twig:Field id="job_{{ j.slug }}_slug" name="new_slug" label="Adresse (slug)" value="{{ j.slug }}" maxlength="100" />
+                                                <div class="tm-field">
+                                                    <label class="tm-field__label" for="job_{{ j.slug }}_category">Catégorie</label>
+                                                    <div class="tm-select"><select class="tm-select__input" id="job_{{ j.slug }}_category" name="category">{{ _self.category_options(tree, c.slug) }}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
+                                                </div>
+                                                <twig:Field id="job_{{ j.slug }}_synonyms" name="synonyms" label="Synonymes (séparés par des virgules)" value="{{ j.synonyms|join(', ') }}" />
+                                                <twig:Button type="submit" variant="secondary">Enregistrer le métier</twig:Button>
+                                            </form>
+                                            {% if j.active %}
+                                                <form method="post" action="{{ path('admin_catalog_post') }}" class="tm-catalog__row" data-turbo="false">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="deactivate_job"><input type="hidden" name="slug" value="{{ j.slug }}"><input type="hidden" name="anchor" value="categorie-{{ c.slug }}">
+                                                    <div class="tm-field">
+                                                        <label class="tm-field__label" for="job_{{ j.slug }}_replacement">Métier de remplacement{{ j.artisans > 0 ? ' (obligatoire : métier utilisé)' : ' (facultatif)' }}</label>
+                                                        <div class="tm-select"><select class="tm-select__input" id="job_{{ j.slug }}_replacement" name="replacement">{{ _self.job_options(active_jobs|map(js => js|filter(x => x.slug != j.slug)), null) }}</select><twig:Icon name="chevD" size="xs" class="tm-select__chevron" /></div>
+                                                    </div>
+                                                    <twig:Button type="submit" variant="danger">Désactiver le métier</twig:Button>
+                                                </form>
+                                            {% else %}
+                                                <form method="post" action="{{ path('admin_catalog_post') }}" data-turbo="false">
+                                                    <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="activate_job"><input type="hidden" name="slug" value="{{ j.slug }}"><input type="hidden" name="anchor" value="categorie-{{ c.slug }}">
+                                                    <twig:Button type="submit" variant="secondary">Réactiver le métier</twig:Button>
+                                                </form>
+                                            {% endif %}
+                                        {% endif %}
+                                    </details>
+                                </li>
+                            {% endfor %}
+                        </ul>
+
+                        {% if can_edit %}
+                            <form method="post" action="{{ path('admin_catalog_post') }}" class="tm-catalog__row tm-catalog__add" data-turbo="false">
+                                <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}"><input type="hidden" name="action" value="create_job"><input type="hidden" name="category" value="{{ c.slug }}"><input type="hidden" name="anchor" value="categorie-{{ c.slug }}">
+                                <twig:Field id="add_{{ c.slug }}_name" name="name" label="Nouveau métier dans « {{ c.name }} »" required maxlength="80" />
+                                <twig:Field id="add_{{ c.slug }}_synonyms" name="synonyms" label="Synonymes (facultatif)" />
+                                <twig:Button type="submit" variant="secondary" icon="plus" iconPosition="start">Ajouter le métier</twig:Button>
+                            </form>
+                        {% endif %}
+                    </details>
+                {% else %}
+                    <twig:EmptyState title="Référentiel vide" text="Ajoutez une première catégorie puis ses métiers." icon="briefcase" />
+                {% endfor %}
+            </section>
+        </div>
+    {% endif %}
+{% endblock %}

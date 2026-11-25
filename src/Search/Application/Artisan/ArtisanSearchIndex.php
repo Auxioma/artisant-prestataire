@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Search\Application\Artisan;
 
 use App\ArtisanProfile\Application\Search\SearchableArtisan;
+use App\Search\Application\Offer\OfferCard;
 
 /** Projection `search.artisan_search_view` (ADR-0004) : une ligne par artisan public. */
 interface ArtisanSearchIndex
@@ -85,4 +86,38 @@ interface ArtisanSearchIndex
 
     /** Note moyenne et nombre d'avis publiés (module Review). */
     public function updateRating(string $profileId, ?float $average, int $count): void;
+
+    /**
+     * P07 / RG-024 — artisans publics ayant au moins `$minReviews` avis publiés : sur les `$months` derniers mois, ou
+     * depuis toujours (null) ; avec l'extrait du dernier avis publié.
+     *
+     * @param list<string> $jobIds
+     *
+     * @return list<array{candidate: SearchCandidate, average: float, count: int, last_review: ?string}>
+     */
+    public function topRated(array $jobIds, ?string $departmentCode, ?int $months, int $minReviews, int $limit): array;
+
+    /** Moyenne des avis publiés sur la période (null : depuis toujours), m par défaut de RG-024. */
+    public function ratingMeanSince(?int $months): ?float;
+
+    /**
+     * P08 / RG-025 — prochains créneaux « ouverts » des artisans, dans la fenêtre donnée, délai de prévenance de chaque
+     * artisan respecté, agendas en pause exclus ; `$partOfDay` : morning (avant 12 h) ou afternoon (à partir de 12 h).
+     *
+     * @param list<string> $artisanIds
+     *
+     * @return array<string, list<array{starts_at: \DateTimeImmutable, ends_at: \DateTimeImmutable}>> par artisan, au plus `$perArtisan`
+     */
+    public function openSlots(array $artisanIds, \DateTimeImmutable $from, \DateTimeImmutable $to, ?string $partOfDay, int $perArtisan): array;
+
+    /**
+     * P09 / RG-026 — offres publiées en cours (début ≤ aujourd'hui ≤ fin) d'artisans publics ; `$artisanIds` null :
+     * partout ; `$jobIds` : métiers de l'offre, ou de l'artisan si l'offre n'en cible aucun.
+     *
+     * @param list<string>|null $artisanIds
+     * @param list<string>      $jobIds
+     *
+     * @return list<OfferCard>
+     */
+    public function activeOffers(?array $artisanIds, array $jobIds, ?string $type, int $limit): array;
 }

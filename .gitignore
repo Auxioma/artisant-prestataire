@@ -32,6 +32,7 @@
 /.php-cs-fixer.cache
 /var/deptrac/
 /var/phpstan/
+.env.local
 .env.*.local
 /config/secrets/*/*.decrypt.private.php
 ###< trouvemoi ###
@@ -42,5 +43,3 @@
 /tools/a11y/rapport-assist.json
 /tools/a11y/*.png
 /tools/perf/rapport.json
-config.bat
-node_modules

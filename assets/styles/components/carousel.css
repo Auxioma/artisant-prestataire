@@ -1,0 +1,23 @@
+/* Carrousel V2 (assets/controllers/carousel_controller.js) : piste à défilement natif, flèches rondes à mi-hauteur, points. */
+@layer components {
+    .tm-carousel { position: relative; }
+    .tm-carousel__track { display: grid; grid-auto-flow: column; grid-auto-columns: var(--carousel-item, 80%); gap: var(--carousel-gap, var(--space-4)); margin: 0; padding: 0; list-style: none; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+    .tm-carousel__track::-webkit-scrollbar { display: none; }
+    .tm-carousel__track > * { scroll-snap-align: start; min-width: 0; }
+    .tm-carousel__arrow { position: absolute; top: var(--carousel-arrow-top, 50%); z-index: 3; display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 1px solid var(--color-border); border-radius: 50%; background: var(--color-surface); box-shadow: var(--shadow-control); color: var(--color-heading); cursor: pointer; translate: 0 -50%; }
+    .tm-carousel__arrow--prev { left: calc(var(--space-4) * -1); }
+    .tm-carousel__arrow--next { right: calc(var(--space-4) * -1); }
+    .tm-carousel__arrow:hover { color: var(--color-link); }
+    .tm-carousel__arrow:focus-visible { box-shadow: var(--focus-ring); outline: none; }
+    .tm-carousel__arrow:disabled { opacity: .45; cursor: default; }
+    .tm-carousel.is-static .tm-carousel__arrow, .tm-carousel.is-static .tm-carousel__dots { display: none; }
+    .tm-carousel__dots { display: flex; justify-content: center; gap: 8px; min-height: 8px; margin-top: var(--space-4); }
+    .tm-carousel__dot { width: 8px; height: 8px; padding: 0; border: 0; border-radius: 50%; background: var(--tm-mist); cursor: pointer; }
+    .tm-carousel__dot[aria-current='true'] { background: var(--orange); }
+    .tm-carousel__dot:focus-visible { box-shadow: var(--focus-ring); outline: none; }
+    /* Sans JavaScript : flèches inutiles (la piste reste défilable) */
+    .tm-carousel:not([data-controller~='carousel']) .tm-carousel__arrow { display: none; }
+    @media (max-width: 767px) {
+        .tm-carousel__arrow { display: none; }
+    }
+}

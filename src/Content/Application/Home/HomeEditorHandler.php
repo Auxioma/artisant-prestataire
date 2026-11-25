@@ -63,7 +63,7 @@ final readonly class HomeEditorHandler implements CommandHandler
 
         $type = HomeBlockType::tryFrom($command->type) ?? throw new HomeContentViolation('Bloc inconnu.');
         $draft = $this->draft($command->adminId, $now);
-        $blocks = $draft->blocks;
+        $blocks = $this->defaults->complete($draft->blocks);
         $index = array_search($type->value, array_column($blocks, 'type'), true);
         if (!\is_int($index)) {
             throw new HomeContentViolation('Bloc inconnu.');

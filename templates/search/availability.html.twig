@@ -1,0 +1,106 @@
+{#- P08 « Disponibilités » (maquette Kerry V2) : sélecteur (métier, lieu, date souhaitée, créneau), cartes avec les 3 prochains créneaux ouverts (RG-025) cliquables vers une demande directe pré-remplie, état vide élargissable. -#}
+{% extends 'base.html.twig' %}
+{% block title %}Professionnels disponibles rapidement — TrouveMoi{% endblock %}
+{% set canonical_url = url('search_availability') %}
+{% set meta_description = 'Urgence ou date souhaitée : trouvez un artisan vérifié disponible près de chez vous grâce aux créneaux ouverts dans son agenda.' %}
+{% block meta %}
+    {% if app.request.query.count > 0 %}<meta name="robots" content="noindex, follow">{% endif %}
+{% endblock %}
+{% set day_names = ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'] %}
+{% macro hour(d) %}{{ d|date('G', 'Europe/Paris') }} h{{ d|date('i', 'Europe/Paris') != '00' ? d|date('i', 'Europe/Paris') }}{% endmacro %}
+{% import _self as m %}
+{% block body %}
+{% set when_text = {aujourdhui: 'aujourd’hui', demain: 'demain', semaine: 'cette semaine', date: date ? 'le ' ~ date|date('d/m/Y', false) : ''}[when] %}
+{% set part_text = {morning: 'matin', afternoon: 'après-midi'}[part] ?? '' %}
+<div class="tm-discovery tm-availability" data-controller="analytics" data-analytics-auto-event-value="availability_search">
+    <twig:PageBanner title="Trouver un professionnel disponible rapidement" subtitle="Urgence ou date souhaitée : affichez les créneaux ouverts dans l’agenda des artisans vérifiés." image="images/auth/a02-banner" />
+    <div class="tm-discovery__filters-band">
+        <div class="tm-container">
+            <twig:Breadcrumb :items="[{label: 'Accueil', href: tm_path('public_home')}, {label: 'Disponibilités'}]" />
+            <form method="get" action="{{ path('search_availability') }}" class="tm-availability__form" data-controller="autosubmit" data-turbo="false" aria-label="Rechercher un créneau">
+                <div class="tm-availability__field" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="metier">
+                    <label class="tm-filter-bar__legend" for="dispo_job">Métier</label>
+                    <input class="tm-availability__input" id="dispo_job" type="text" value="{{ job ? job.name }}" placeholder="Plombier, électricien…" autocomplete="off" maxlength="80" data-autocomplete-target="input" data-action="input->autocomplete#suggest">
+                    <input type="hidden" name="metier" value="{{ job ? job.slug }}" data-autocomplete-target="value">
+                    <ul class="tm-area__suggestions" role="listbox" aria-label="Métiers proposés" hidden data-autocomplete-target="list"></ul>
+                </div>
+                <div class="tm-availability__field" data-controller="autocomplete" data-autocomplete-url-value="{{ path('search_autocomplete') }}" data-autocomplete-scope-value="lieu">
+                    <label class="tm-filter-bar__legend" for="dispo_place">Lieu</label>
+                    <input class="tm-availability__input" id="dispo_place" name="lieu_libelle" type="text" value="{{ place_label }}" placeholder="Ville ou code postal" autocomplete="off" maxlength="80" data-autocomplete-target="input" data-action="input->autocomplete#suggest">
+                    <input type="hidden" name="lieu" value="{{ place ? place.insee }}" data-autocomplete-target="value">
+                    <ul class="tm-area__suggestions" role="listbox" aria-label="Communes proposées" hidden data-autocomplete-target="list"></ul>
+                </div>
+                <fieldset class="tm-filter-bar__group tm-availability__when">
+                    <legend class="tm-filter-bar__legend">Date souhaitée</legend>
+                    <div class="tm-filter-bar__chips">
+                        {% for key, label in when_options %}
+                            <label class="tm-chip">
+                                <input type="radio" name="quand" value="{{ key }}"{{ key == when ? ' checked' }}{% if key != 'date' %} data-action="change->autosubmit#submit"{% endif %}>
+                                <span>{{ label }}</span>{% if key == when %}<twig:Icon name="x" size="xs" class="tm-icon--inherit" />{% endif %}
+                            </label>
+                        {% endfor %}
+                        <label class="tm-availability__date">
+                            <span class="tm-visually-hidden">Date précise</span>
+                            <input class="tm-availability__input" type="date" name="date" value="{{ date ? date|date('Y-m-d', false) }}" min="{{ today|date('Y-m-d', false) }}" max="{{ max_date|date('Y-m-d', false) }}" data-action="change->autosubmit#submit">
+                        </label>
+                    </div>
+                </fieldset>
+                <fieldset class="tm-filter-bar__group">
+                    <legend class="tm-filter-bar__legend">Créneau</legend>
+                    <div class="tm-filter-bar__chips">
+                        {% for key, label in parts %}
+                            <label class="tm-chip">
+                                <input type="checkbox" name="creneau" value="{{ key }}"{{ key == part ? ' checked' }} data-action="change->autosubmit#submit">
+                                <span>{{ label }}</span>{% if key == part %}<twig:Icon name="x" size="xs" class="tm-icon--inherit" />{% endif %}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+                <twig:Button type="submit" variant="search" icon="search" iconPosition="start" class="tm-availability__submit">Rechercher</twig:Button>
+            </form>
+        </div>
+    </div>
+
+    <div class="tm-discovery__body">
+        <div class="tm-container">
+            {% if cards is not empty %}
+                {% set who = job ? job.name|lower ~ (cards|length > 1 ? 's') : 'professionnel' ~ (cards|length > 1 ? 's') %}
+                <h2 class="tm-availability__count" role="status">{{ cards|length }} {{ who }} disponible{{ cards|length > 1 ? 's' }} {{ wide ? 'prochainement' : when_text }}{{ part_text ? ' ' ~ part_text }}{{ place ? ' près de ' ~ place.name }}</h2>
+                <ul class="tm-availability__list">
+                    {% for c in cards %}
+                        {% set a = c.artisan %}
+                        {% set main_job = job_names[a.mainJobId] ?? (a.jobIds|map(id => job_names[id] ?? null)|filter(n => n)|first) %}
+                        <li class="tm-availability__card">
+                            <span class="tm-availability__photo">
+                                {% if a.coverPhotoId %}<img src="{{ path('public_portfolio_photo', {id: a.profileId, photo: a.coverPhotoId}) }}" alt="" width="96" height="96" loading="lazy">
+                                {% elseif a.hasLogo %}<img src="{{ path('public_artisan_logo', {id: a.profileId}) }}" alt="" width="96" height="96" loading="lazy">
+                                {% else %}<twig:Icon name="briefcase" />{% endif %}
+                            </span>
+                            <div class="tm-availability__main">
+                                <h3 class="tm-availability__name"><a href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}">{{ a.name }}</a> <twig:Badge variant="available" /></h3>
+                                <p class="tm-availability__meta">{{ [main_job, a.communeName, a.ratingAverage and a.reviewsCount > 0 ? a.ratingAverage|number_format(1, ',', ' ') ~ '/5' : null]|filter(v => v)|join(' · ') }}</p>
+                                <ul class="tm-availability__slots" aria-label="Prochains créneaux de {{ a.name }}">
+                                    {% for s in c.slots %}
+                                        {% set label = day_names[s.starts_at|date('w', 'Europe/Paris')] ~ ' ' ~ s.starts_at|date('j', 'Europe/Paris') ~ ' · ' ~ m.hour(s.starts_at) ~ '–' ~ m.hour(s.ends_at) %}
+                                        <li><a class="tm-slot" href="{{ path('request_new', {pro: a.profileId, date: s.starts_at|date('Y-m-d', 'Europe/Paris'), creneau: s.starts_at|date('G', 'Europe/Paris') < 12 ? 'morning' : 'afternoon'}) }}" data-action="analytics#track" data-analytics-event-param="slot_click" rel="nofollow">{{ label }}<span class="tm-visually-hidden"> : demander un devis à {{ a.name }} pour ce créneau</span></a></li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <twig:Button href="{{ tm_artisan_url(a.profileId, a.name, a.communeName) }}" variant="secondary" class="tm-availability__cta">Voir le profil<span class="tm-visually-hidden"> de {{ a.name }}</span></twig:Button>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <p class="tm-info-note"><twig:Icon name="info" size="sm" /> Cliquer sur un créneau ouvre une demande de devis directe pré-remplie. Le créneau n’est réservé qu’après confirmation de l’artisan (RG-025).</p>
+
+            {% if cards is empty %}
+                <twig:EmptyState icon="search" title="{{ wide ? 'Aucun créneau ouvert pour le moment' : 'Aucun créneau sous 7 jours' }}" text="{{ wide ? 'Déposez votre demande : les professionnels de votre secteur vous répondront.' : 'Élargissez la période pour voir les prochaines disponibilités.' }}" class="tm-availability__empty">
+                    {% if not wide %}<twig:Button href="{{ path('search_availability', params|filter((v, k) => k not in ['quand', 'date'])|merge({elargir: 1})) }}" variant="secondary">{{ place ? 'Élargir à ' ~ max_radius ~ ' km' : 'Voir les prochaines disponibilités' }}</twig:Button>{% endif %}
+                    <twig:Button href="{{ job ? path('request_new_job', {job: job.slug}) : path('request_new') }}" variant="primary">Déposer une demande</twig:Button>
+                </twig:EmptyState>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

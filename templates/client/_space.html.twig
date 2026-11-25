@@ -1,7 +1,7 @@
 {#-
     Espace client (Figma 159:3905 « Corps espace ») : bannière (titre de la page, accroche « Trouvez le bon artisan »),
     menu latéral « Mon espace client » et zone de contenu ; mobile (239:15124) : barre d'onglets en bas d'écran, menu
-    complet sous « Compte ». Rubriques non livrées grisées. Pied de page : celui du site (P-29).
+    complet sous « Compte ». Seules les rubriques ayant un écran sont listées (les devis se consultent dans chaque demande). Pied de page : celui du site (P-29).
     Variables : space_active, space_title, space_subtitle, space_counts (compteurs par clé).
 -#}
 {% extends 'base.html.twig' %}
@@ -21,18 +21,14 @@
 {% macro nav(items, active, counts) %}
     <p class="tm-cspace__title"><twig:Icon name="user" class="tm-icon--inherit" />Mon espace client</p>
     <ul>
-        {% for item in items %}
+        {% for item in items|filter(i => tm_route_exists(i.route)) %}
             {% set current = item.key == active %}
             {% set count = counts[item.key] ?? 0 %}
             <li>
-                {% if tm_route_exists(item.route) %}
-                    <a class="tm-cspace__link{{ current ? ' is-active' }}" href="{{ path(item.route) }}"{% if current %} aria-current="page"{% endif %}>
-                        <twig:Icon name="{{ item.icon }}" class="tm-icon--inherit" /><span>{{ item.label }}</span>
-                        {% if count > 0 %}<span class="tm-cspace__count">{{ count }}</span>{% endif %}
-                    </a>
-                {% else %}
-                    <span class="tm-cspace__link is-soon" aria-disabled="true" title="Bientôt disponible"><twig:Icon name="{{ item.icon }}" class="tm-icon--inherit" /><span>{{ item.label }}<span class="tm-visually-hidden"> (bientôt disponible)</span></span></span>
-                {% endif %}
+                <a class="tm-cspace__link{{ current ? ' is-active' }}" href="{{ path(item.route) }}"{% if current %} aria-current="page"{% endif %}>
+                    <twig:Icon name="{{ item.icon }}" class="tm-icon--inherit" /><span>{{ item.label }}</span>
+                    {% if count > 0 %}<span class="tm-cspace__count">{{ count }}</span>{% endif %}
+                </a>
             </li>
         {% endfor %}
     </ul>
@@ -74,12 +70,8 @@
         {route: 'client_favorites', label: 'Favoris', icon: 'heart', key: 'favorites'},
     ] %}
     <nav class="tm-space__tabs" aria-label="Mon espace client (raccourcis)">
-        {% for tab in tabs %}
-            {% if tm_route_exists(tab.route) %}
-                <a class="tm-space__tab{{ tab.key == (space_active ?? null) ? ' is-active' }}" href="{{ path(tab.route) }}"{% if tab.key == (space_active ?? null) %} aria-current="page"{% endif %}><twig:Icon name="{{ tab.icon }}" class="tm-icon--inherit" />{{ tab.label }}</a>
-            {% else %}
-                <span class="tm-space__tab is-soon" aria-disabled="true"><twig:Icon name="{{ tab.icon }}" class="tm-icon--inherit" />{{ tab.label }}<span class="tm-visually-hidden"> (bientôt disponible)</span></span>
-            {% endif %}
+        {% for tab in tabs|filter(t => tm_route_exists(t.route)) %}
+            <a class="tm-space__tab{{ tab.key == (space_active ?? null) ? ' is-active' }}" href="{{ path(tab.route) }}"{% if tab.key == (space_active ?? null) %} aria-current="page"{% endif %}><twig:Icon name="{{ tab.icon }}" class="tm-icon--inherit" />{{ tab.label }}</a>
         {% endfor %}
         <details class="tm-space__more">
             <summary class="tm-space__tab"><twig:Icon name="user" class="tm-icon--inherit" />Compte</summary>

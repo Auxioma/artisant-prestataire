@@ -20,6 +20,8 @@ final readonly class UpdateJob implements Command
         public ?array $synonyms = null,
         public ?int $position = null,
         public ?string $actorId = null,
+        /** true : réactive un métier désactivé (la désactivation passe par DeactivateJob, contrôle d'usage). */
+        public ?bool $activate = null,
     ) {
     }
 }

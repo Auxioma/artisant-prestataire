@@ -28,6 +28,7 @@ x-app: &app
 
 services:
   php:
+    restart: unless-stopped   # relance après un redémarrage du serveur (incident 502 du 24/11)
     <<: *app
     ports: ['${TM_HTTP_PORT:-8090}:80']
     healthcheck:
@@ -54,6 +55,7 @@ services:
     restart: unless-stopped
 
   database:
+    restart: unless-stopped   # relance après un redémarrage du serveur (incident 502 du 24/11)
     image: imresamu/postgis:16-3.5-alpine  # multi-arch (amd64 + arm64) ; postgis/postgis n'a pas d'arm64
     environment:
       POSTGRES_DB: trouvemoi
@@ -67,6 +69,7 @@ services:
       - database_data:/var/lib/postgresql/data
 
   redis:
+    restart: unless-stopped   # relance après un redémarrage du serveur (incident 502 du 24/11)
     image: redis:7.4-alpine
     command: ['redis-server', '--appendonly', 'yes', '--appendfsync', 'everysec']
     healthcheck:
@@ -77,6 +80,7 @@ services:
       - redis_data:/data
 
   meilisearch:
+    restart: unless-stopped   # relance après un redémarrage du serveur (incident 502 du 24/11)
     image: getmeili/meilisearch:v1.12
     environment:
       MEILI_MASTER_KEY: trouvemoi-dev-master-key
@@ -86,11 +90,13 @@ services:
       - meili_data:/meili_data
 
   clamav:
+    restart: unless-stopped   # relance après un redémarrage du serveur (incident 502 du 24/11)
     image: clamav/clamav-debian:1.4  # variante Debian : amd64 + arm64
     volumes:
       - clamav_data:/var/lib/clamav
 
   mailer:
+    restart: unless-stopped   # relance après un redémarrage du serveur (incident 502 du 24/11)
     image: axllent/mailpit:v1.21
     environment:
       MP_SMTP_AUTH_ACCEPT_ANY: 1
@@ -98,6 +104,7 @@ services:
 
   # Stockage objet S3 privé de développement (SeaweedFS ; les images MinIO ne sont plus publiées sur Docker Hub).
   s3:
+    restart: unless-stopped   # relance après un redémarrage du serveur (incident 502 du 24/11)
     image: chrislusf/seaweedfs:3.80
     command: ['server', '-s3', '-s3.config=/etc/seaweedfs/s3.json', '-dir=/data']
     volumes:

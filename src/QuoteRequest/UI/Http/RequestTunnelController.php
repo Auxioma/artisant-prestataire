@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace App\QuoteRequest\UI\Http;
 
+use App\ArtisanProfile\Application\Offer\ActiveOffer;
+use App\ArtisanProfile\Application\Offer\ActiveOfferView;
 use App\ArtisanProfile\Application\PublicProfile\PublicArtisanProfile;
 use App\ArtisanProfile\Application\PublicProfile\PublicProfileView;
 use App\Catalog\Application\Geo\Query\CommunesByInsee;
 use App\Catalog\Application\Geo\Query\CommuneSummary;
+use App\Catalog\Application\Proposal\JobProposalOf;
+use App\Catalog\Application\Proposal\JobProposalView;
+use App\Catalog\Application\Proposal\ProposeJob;
 use App\Catalog\Application\Query\JobBySlug;
 use App\Catalog\Application\Query\JobIndexEntries;
 use App\Catalog\Application\Query\JobIndexEntry;
 use App\Catalog\Application\Questionnaire\JobQuestionnaire;
 use App\Catalog\Application\Questionnaire\JobQuestionnaireView;
+use App\Catalog\Domain\Exception\CatalogRuleViolation;
 use App\Catalog\Domain\Questionnaire\QuestionnaireField;
 use App\Catalog\Domain\Questionnaire\QuestionnaireSchema;
 use App\QuoteRequest\Application\Draft\AddDraftAttachment;
@@ -84,6 +90,8 @@ final class RequestTunnelController extends AbstractController
     public const array STEPS = ['Votre besoin', 'Détails', 'Photos', 'Lieu & délai', 'Coordonnées', 'Récapitulatif'];
     public const string COOKIE = 'tm_demande';
     private const string CSRF = 'request_tunnel';
+    /** Valeur « Autre catégorie » du formulaire de proposition de métier (BO06). */
+    private const string NEW_CATEGORY = 'autre';
     private const int TOKEN_BYTES = 32;
     private const string TURNSTILE_FIELD = 'cf-turnstile-response';
     private const string CAPTCHA_ACTION = 'request';
@@ -108,7 +116,7 @@ final class RequestTunnelController extends AbstractController
     ) {
     }
 
-    /** Entrée du tunnel (liens « Déposer une demande » du site) ; `?pro={id}` prépare une demande directe (RG-062). */
+    /** Entrée du tunnel (liens « Déposer une demande » du site) ; `?pro={id}` prépare une demande directe (RG-062), `&date=…&creneau=…` depuis un créneau P08, `&offre={id}` depuis une offre P09. */
     #[Route('', name: 'request_new', methods: ['GET'])]
     public function start(Request $request): Response
     {
@@ -119,7 +127,18 @@ final class RequestTunnelController extends AbstractController
         $pro = $request->query->getString('pro');
         if ('' !== $pro) {
             try {
-                $this->commands->dispatch(new StartRequestDraft($owner, $this->ids->next(), targetArtisanId: $pro, source: RequestSource::Direct->value));
+                $date = $request->query->getString('date');
+                $slot = $request->query->getString('creneau');
+                $offer = '' === $request->query->getString('offre') ? null : $this->queries->ask(new ActiveOffer($request->query->getString('offre'), $pro));
+                $this->commands->dispatch(new StartRequestDraft(
+                    $owner,
+                    $this->ids->next(),
+                    targetArtisanId: $pro,
+                    source: RequestSource::Direct->value,
+                    desiredDate: '' === $date ? null : $date,
+                    preferredSlot: '' === $slot ? null : $slot,
+                    offerLabel: $offer instanceof ActiveOfferView ? $offer->label() : null
+                ));
             } catch (DraftRejected $e) {
                 $this->addFlash('error', $e->getMessage());
             }
@@ -180,7 +199,8 @@ final class RequestTunnelController extends AbstractController
                 } elseif (RequestDraftEditor::STEP_CONTACT === $step) {
                     $this->savePhone($request, $owner);
                 }
-                $this->commands->dispatch(new SaveDraftStep($owner, $draft->id ?? $this->ids->next(), $step, $request->request->all(), true));
+                $input = RequestDraftEditor::STEP_NEED === $step && null === $draft?->targetArtisanId ? $this->withProposedJob($request->request->all(), $owner) : $request->request->all();
+                $this->commands->dispatch(new SaveDraftStep($owner, $draft->id ?? $this->ids->next(), $step, $input, true));
 
                 return $this->toStep($request, $step + 1);
             } catch (DraftRejected $e) {
@@ -446,7 +466,12 @@ final class RequestTunnelController extends AbstractController
             'target' => null === $draft->targetArtisanId ? null : $this->artisan($draft->targetArtisanId),
         ];
         $data += match ($step) {
-            RequestDraftEditor::STEP_NEED => ['categories' => $this->jobsByCategory(), 'project_types' => ProjectType::cases()],
+            RequestDraftEditor::STEP_NEED => [
+                'categories' => $this->jobsByCategory(),
+                'project_types' => ProjectType::cases(),
+                'proposed_job' => null === ($job = $this->job($draft->jobId)) || $job->searchable ? null : $job,
+                'new_category' => self::NEW_CATEGORY,
+            ],
             RequestDraftEditor::STEP_DETAILS => [
                 'job' => $this->job($draft->jobId),
                 'questionnaire' => $questionnaire = null === $draft->jobId ? null : $this->questionnaire($draft->jobId),
@@ -638,6 +663,36 @@ final class RequestTunnelController extends AbstractController
         if (!$this->isCsrfTokenValid(self::CSRF, $request->request->getString('_token'))) {
             throw new AccessDeniedHttpException('Jeton CSRF invalide.');
         }
+    }
+
+    /**
+     * BO06 « Je ne trouve pas ma prestation » : sans prestation choisie, le métier saisi (dans une catégorie de la liste
+     * ou une nouvelle) est proposé au référentiel ; la demande s'y rattache et sera publiée après validation.
+     *
+     * @param array<array-key, mixed> $input
+     *
+     * @return array<array-key, mixed>
+     */
+    private function withProposedJob(array $input, DraftOwner $owner): array
+    {
+        $name = trim(\is_string($input['proposal_job'] ?? null) ? $input['proposal_job'] : '');
+        if ('' !== trim(\is_string($input['job_id'] ?? null) ? $input['job_id'] : '') || '' === $name) {
+            return $input;
+        }
+        $category = \is_string($input['proposal_category'] ?? null) ? $input['proposal_category'] : '';
+        $categoryName = trim(\is_string($input['proposal_category_name'] ?? null) ? $input['proposal_category_name'] : '');
+        if ('' === $category || (self::NEW_CATEGORY === $category && '' === $categoryName)) {
+            throw new DraftRejected('Certaines informations sont manquantes.', ['proposal_category' => self::NEW_CATEGORY === $category ? 'Indiquez le nom de la catégorie.' : 'Choisissez la catégorie la plus proche ou « Autre catégorie ».']);
+        }
+        $proposalId = $this->ids->next();
+        try {
+            $this->commands->dispatch(new ProposeJob($proposalId, $name, self::NEW_CATEGORY === $category ? null : $category, self::NEW_CATEGORY === $category ? $categoryName : null, $owner->userId));
+        } catch (CatalogRuleViolation|InvalidValue $e) {
+            throw new DraftRejected($e->getMessage(), ['proposal_job' => $e->getMessage()]);
+        }
+        $proposal = $this->queries->ask(new JobProposalOf($proposalId));
+
+        return ['job_id' => $proposal instanceof JobProposalView ? $proposal->jobId : null] + $input;
     }
 
     /** @return array<string, list<JobIndexEntry>> */

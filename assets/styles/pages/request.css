@@ -165,3 +165,19 @@
 @layer components {
     .tm-request .tm-caption .tm-link-button { min-height: 0; padding: 0; color: var(--color-link); font: inherit; text-decoration: underline; }
 }
+
+/* BO06 — « Je ne trouve pas ma prestation » : proposition de métier (et de catégorie) au référentiel. */
+@layer components {
+    .tm-request__propose { padding: var(--space-3) var(--space-4); border: 1px dashed var(--color-border); border-radius: var(--radius-card); background: var(--color-surface-subtle, transparent); }
+    .tm-request__propose > summary { display: flex; gap: var(--space-2); align-items: center; color: var(--color-link); font: var(--type-label, inherit); font-weight: 600; cursor: pointer; list-style: none; }
+    .tm-request__propose > summary::-webkit-details-marker { display: none; }
+    .tm-request__propose > summary:focus-visible { border-radius: 4px; box-shadow: var(--focus-ring); }
+    .tm-request__propose-text { margin: var(--space-3) 0; color: var(--color-text-muted); font: var(--type-body-sm); }
+    .tm-request__propose-grid { display: grid; gap: var(--space-3); }
+    .tm-request__propose .tm-field__hint { color: var(--color-text-muted); font-weight: 400; }
+
+    @media (min-width: 768px) {
+        .tm-request__propose-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .tm-request__propose-job { grid-column: 1 / -1; }
+    }
+}

@@ -139,7 +139,7 @@ final class SeedDemoCommand extends Command
         $userId = Uuid::v7()->toRfc4122();
         $artisanId = Uuid::v7()->toRfc4122();
         $this->user($userId, \sprintf('demo.artisan.%02d@exemple.test', $n), 'artisan', $first, self::MARK.' '.$last, $hash, $now);
-        $siret = \sprintf('999999%08d', $n);
+        $siret = self::siret($n);
         $city = self::CITIES[$insee][0];
         $jobs = [['job' => $main, 'main' => true]];
         if (null !== $other) {
@@ -176,6 +176,25 @@ final class SeedDemoCommand extends Command
     private function clientId(int $n): string
     {
         return \sprintf('0190f5e4-0000-7000-8000-0000de%06d', $n + 1);
+    }
+
+    /** SIRET fictif (préfixe 999…) dont la clé de Luhn est valide : les devis le contrôlent. */
+    public static function siret(int $n): string
+    {
+        $base = \sprintf('999999%07d', $n);
+        for ($key = 0; $key <= 9; ++$key) {
+            $candidate = $base.$key;
+            $sum = 0;
+            foreach (str_split(strrev($candidate)) as $i => $digit) {
+                $d = (int) $digit * (1 === $i % 2 ? 2 : 1);
+                $sum += $d > 9 ? $d - 9 : $d;
+            }
+            if (0 === $sum % 10) {
+                return $candidate;
+            }
+        }
+
+        return $base.'0';
     }
 
     private function password(): string

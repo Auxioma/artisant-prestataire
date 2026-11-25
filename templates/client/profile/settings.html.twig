@@ -15,11 +15,11 @@
     <form method="post" action="{{ path('client_settings') }}" class="tm-account__card">
         <input type="hidden" name="_token" value="{{ csrf_token(csrf_id) }}">
         <h2 class="tm-account__title"><twig:Icon name="bell" class="tm-icon--inherit" />Mes notifications</h2>
-        <p class="tm-caption">Cochez les canaux par lesquels vous souhaitez être prévenu. Les SMS arriveront dans une prochaine version. La newsletter se règle dans <a href="{{ path('client_profile') }}#preferences">Mes informations</a>.</p>
+        <p class="tm-caption">Cochez les canaux par lesquels vous souhaitez être prévenu. La newsletter se règle dans <a href="{{ path('client_profile') }}#preferences">Mes informations</a>.</p>
         <div class="tm-account__matrix-wrap">
             <table class="tm-account__matrix">
                 <caption class="tm-visually-hidden">Notifications par sujet et par canal</caption>
-                <thead><tr><th scope="col">Sujet</th>{% for label in channels %}<th scope="col">{{ label }}</th>{% endfor %}<th scope="col">SMS</th></tr></thead>
+                <thead><tr><th scope="col">Sujet</th>{% for label in channels %}<th scope="col">{{ label }}</th>{% endfor %}</tr></thead>
                 <tbody>
                     {% for t in topics %}
                         <tr>
@@ -27,14 +27,12 @@
                             {% for channel, label in channels %}
                                 <td><input class="tm-check__input" type="checkbox" id="m_{{ t.value }}_{{ channel }}" name="matrix[{{ t.value }}][{{ channel }}]" value="1" aria-label="{{ t.label() }} — {{ label }}"{% if matrix[t.value][channel] %} checked{% endif %}></td>
                             {% endfor %}
-                            <td><span class="tm-caption">Bientôt</span></td>
                         </tr>
                     {% endfor %}
                     {% for label in essential %}
                         <tr class="is-locked">
                             <th scope="row">{{ label }} <span class="tm-account__type-badge">Indispensable</span></th>
                             {% for channel, c in channels %}<td><input class="tm-check__input" type="checkbox" checked disabled aria-label="{{ label }} — {{ c }} (toujours envoyé)"></td>{% endfor %}
-                            <td><span class="tm-caption">Bientôt</span></td>
                         </tr>
                     {% endfor %}
                 </tbody>

@@ -13,6 +13,9 @@ interface QuoteRequestRepository
 
     public function add(QuoteRequest $request): void;
 
+    /** @return list<QuoteRequestId> demandes en attente de modération sur ce métier (BO06, métier proposé) */
+    public function pendingOnJob(string $jobId): array;
+
     /** Numéro lisible, unique et croissant (C02 « n° de demande »), par exemple DM-2026-000042. */
     public function nextNumber(\DateTimeImmutable $now): string;
 

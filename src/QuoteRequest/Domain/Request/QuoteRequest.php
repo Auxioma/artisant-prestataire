@@ -149,6 +149,14 @@ final class QuoteRequest extends AggregateRoot
         $this->publish($expiryDays, $now);
     }
 
+    /** BO06 — métier proposé par le client rattaché par le back-office à un métier existant (avant publication). */
+    public function reassignJob(string $jobId, \DateTimeImmutable $now): void
+    {
+        $this->guard(RequestStatus::PendingModeration, 'Cette demande n’est pas en attente de modération.');
+        $this->jobId = $jobId;
+        $this->touch($now);
+    }
+
     public function reject(string $reason, \DateTimeImmutable $now): void
     {
         $this->guard(RequestStatus::PendingModeration, 'Cette demande n’est pas en attente de modération.');

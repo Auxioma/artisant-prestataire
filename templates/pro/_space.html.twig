@@ -1,6 +1,6 @@
 {#-
     Espace professionnel (Figma 159:3176 « Corps espace ») : bannière « Espace Professionnel », menu latéral (carte profil,
-    rubriques, déconnexion) et zone de contenu. Les rubriques non encore livrées sont signalées « Bientôt » (non cliquables).
+    rubriques, déconnexion) et zone de contenu. Seules les rubriques ayant un écran sont listées (route existante).
     Pied de page : celui du site (variante marine hors palette non retenue, P-29).
 -#}
 {% extends 'base.html.twig' %}
@@ -11,7 +11,7 @@
     {route: 'pro_requests', label: 'Mes demandes', icon: 'file', key: 'requests', count: tm_pro_unread_requests()},
     {route: 'pro_quotes', label: 'Mes devis & chantiers', icon: 'fileEuro', key: 'quotes'},
     {route: 'pro_clients', label: 'Mes clients', icon: 'users'},
-    {route: 'pro_invoices', label: 'Mes factures', icon: 'receipt'},
+    {route: 'pro_subscription', params: {onglet: 'factures'}, label: 'Mes factures', icon: 'receipt', key: 'invoices'},
     {route: 'pro_appointments', label: 'Mes rendez-vous', icon: 'calendar', key: 'appointments'},
     {route: 'pro_messages', label: 'Mes messages', icon: 'msg', key: 'messages', count: tm_unread_messages()},
     {route: 'pro_profile', label: 'Mon profil pro', icon: 'user', key: 'profile'},
@@ -40,19 +40,13 @@
         </div>
     {% endif %}
     <ul>
-        {% for item in items %}
+        {% for item in items|filter(i => tm_route_exists(i.route)) %}
             {% set current = item.key is defined and item.key == active %}
             <li>
-                {% if tm_route_exists(item.route) %}
-                    <a class="tm-space__link{{ current ? ' is-active' }}" href="{{ path(item.route) }}"{% if current %} aria-current="page"{% endif %}>
-                        <twig:Icon name="{{ item.icon }}" size="sm" class="tm-icon--inherit" /><span>{{ item.label }}</span>
-                        {% if (item.count ?? 0) > 0 %}<span class="tm-space__count">{{ item.count }}<span class="tm-visually-hidden"> non lue{{ item.count > 1 ? 's' }}</span></span>{% endif %}
-                    </a>
-                {% else %}
-                    <span class="tm-space__link is-soon" aria-disabled="true" title="Bientôt disponible">
-                        <twig:Icon name="{{ item.icon }}" size="sm" class="tm-icon--inherit" /><span>{{ item.label }}<span class="tm-visually-hidden"> (bientôt disponible)</span></span>
-                    </span>
-                {% endif %}
+                <a class="tm-space__link{{ current ? ' is-active' }}" href="{{ path(item.route, item.params ?? {}) }}"{% if current %} aria-current="page"{% endif %}>
+                    <twig:Icon name="{{ item.icon }}" size="sm" class="tm-icon--inherit" /><span>{{ item.label }}</span>
+                    {% if (item.count ?? 0) > 0 %}<span class="tm-space__count">{{ item.count }}<span class="tm-visually-hidden"> non lue{{ item.count > 1 ? 's' }}</span></span>{% endif %}
+                </a>
             </li>
         {% endfor %}
     </ul>
@@ -98,12 +92,8 @@
         {route: 'pro_messages', label: 'Messages', icon: 'msg', key: 'messages'},
     ] %}
     <nav class="tm-space__tabs" aria-label="Espace professionnel (raccourcis)">
-        {% for tab in tabs %}
-            {% if tm_route_exists(tab.route) %}
-                <a class="tm-space__tab{{ (tab.key ?? null) == (space_active ?? null) ? ' is-active' }}" href="{{ path(tab.route) }}"{% if (tab.key ?? null) == (space_active ?? null) %} aria-current="page"{% endif %}><twig:Icon name="{{ tab.icon }}" class="tm-icon--inherit" />{{ tab.label }}</a>
-            {% else %}
-                <span class="tm-space__tab is-soon" aria-disabled="true"><twig:Icon name="{{ tab.icon }}" class="tm-icon--inherit" />{{ tab.label }}<span class="tm-visually-hidden"> (bientôt disponible)</span></span>
-            {% endif %}
+        {% for tab in tabs|filter(t => tm_route_exists(t.route)) %}
+            <a class="tm-space__tab{{ (tab.key ?? null) == (space_active ?? null) ? ' is-active' }}" href="{{ path(tab.route) }}"{% if (tab.key ?? null) == (space_active ?? null) %} aria-current="page"{% endif %}><twig:Icon name="{{ tab.icon }}" class="tm-icon--inherit" />{{ tab.label }}</a>
         {% endfor %}
         <details class="tm-space__more">
             <summary class="tm-space__tab"><twig:Icon name="menu" class="tm-icon--inherit" />Plus</summary>

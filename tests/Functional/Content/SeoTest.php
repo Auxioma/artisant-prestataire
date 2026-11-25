@@ -61,7 +61,7 @@ final class SeoTest extends WebTestCase
 
         $this->client->request('GET', '/sitemap.xml');
         self::assertResponseHeaderSame('Content-Type', 'application/xml; charset=UTF-8');
-        self::assertSame(4, substr_count((string) $this->client->getResponse()->getContent(), '<sitemap>'));
+        self::assertSame(5, substr_count((string) $this->client->getResponse()->getContent(), '<sitemap>'), 'pages, métiers, villes, artisans, blog');
 
         $this->client->request('GET', '/sitemaps/artisans-1.xml');
         self::assertStringContainsString('<loc>http://localhost/pro/atelier-fictif-caen-'.$this->profileId.'</loc>', (string) $this->client->getResponse()->getContent());

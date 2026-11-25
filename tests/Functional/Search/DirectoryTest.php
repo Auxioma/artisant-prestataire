@@ -56,13 +56,28 @@ final class DirectoryTest extends WebTestCase
         $settings->reset();
     }
 
+    /** Maquette Koubourath « Nos professionnels » V2 : recherche, engagements, catégories + « Autres services », encart pro. */
+    public function testLandingSectionsOnlyOnFirstUnfilteredPage(): void
+    {
+        $crawler = $this->client->request('GET', '/nos-professionnels');
+        self::assertCount(1, $crawler->filter('.tm-directory__search form[role="search"][action="/recherche"]'));
+        self::assertCount(5, $crawler->filter('.tm-directory__reassurance li'));
+        self::assertGreaterThan(1, $crawler->filter('.tm-directory__category')->count());
+        self::assertSame('/categories', $crawler->filter('.tm-directory__category--more')->attr('href'));
+        self::assertStringContainsString('Créer mon compte professionnel', $crawler->filter('.tm-directory__pro')->text());
+
+        $page2 = $this->client->request('GET', '/nos-professionnels/page/2');
+        self::assertCount(0, $page2->filter('.tm-directory__category'), 'page d’entrée seulement');
+        self::assertCount(1, $page2->filter('.tm-directory__pro'), 'encart pro toujours présent (P06.3)');
+    }
+
     public function testAlphabeticalListWithCleanPagination(): void
     {
         $crawler = $this->client->request('GET', '/nos-professionnels');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('.tm-search__count', '7 professionnels · page 1 sur 2');
-        $names = $crawler->filter('.tm-card-artisan h3')->each(static fn ($n): string => trim($n->text()));
+        $names = $crawler->filter('.tm-directory__grid .tm-card-pro__name')->each(static fn ($n): string => trim($n->text()));
         self::assertSame(['3D Rénovation Fictive', 'Atelier Fictif Alpha', 'Bâti Fictif', 'Carrelage Fictif', 'Électricité Fictive'], array_map(static fn (string $n): string => trim(str_replace('Vérifié', '', $n)), $names), 'ordre alphabétique sans accents');
         self::assertSame('/nos-professionnels/page/2', $crawler->filter('.tm-directory__pagination a')->last()->attr('href'));
         self::assertCount(0, $crawler->filter('meta[name="robots"]'), 'annuaire non filtré indexable');
@@ -72,7 +87,7 @@ final class DirectoryTest extends WebTestCase
         $crawler = $this->client->request('GET', '/nos-professionnels/page/2');
         self::assertResponseIsSuccessful();
         self::assertSame('http://localhost/nos-professionnels/page/2', $crawler->filter('link[rel="canonical"]')->attr('href'));
-        self::assertCount(2, $crawler->filter('.tm-card-artisan'));
+        self::assertCount(2, $crawler->filter('.tm-directory__grid .tm-card-pro'));
 
         $this->client->request('GET', '/nos-professionnels/page/1');
         self::assertResponseRedirects('/nos-professionnels', 301);
@@ -88,15 +103,15 @@ final class DirectoryTest extends WebTestCase
         self::assertSame('14 — Calvados', $crawler->filter('#departement option[selected]')->text(), 'codes numériques conservés comme valeurs');
 
         $crawler = $this->client->request('GET', '/nos-professionnels?lettre=e');
-        self::assertSame('Électricité Fictive', trim(str_replace('Vérifié', '', $crawler->filter('.tm-card-artisan h3')->text())), 'initiale sans accent');
+        self::assertSame('Électricité Fictive', trim(str_replace('Vérifié', '', $crawler->filter('.tm-card-pro__name')->text())), 'initiale sans accent');
         self::assertCount(1, $crawler->filter('.tm-directory__letters span[aria-disabled]:contains("Z")'), 'lettre sans artisan désactivée');
 
         $crawler = $this->client->request('GET', '/nos-professionnels?lettre=%23');
-        self::assertSame('3D Rénovation Fictive', trim(str_replace('Vérifié', '', $crawler->filter('.tm-card-artisan h3')->text())));
+        self::assertSame('3D Rénovation Fictive', trim(str_replace('Vérifié', '', $crawler->filter('.tm-card-pro__name')->text())));
 
         $this->client->request('GET', '/nos-professionnels?metier=plombier&departement=76');
         self::assertSelectorTextContains('.tm-search__count', '1 professionnel');
-        self::assertSelectorTextContains('.tm-card-artisan', 'Plombier');
+        self::assertSelectorTextContains('.tm-card-pro', 'Plombier');
     }
 
     private function dispatch(Command $command): void

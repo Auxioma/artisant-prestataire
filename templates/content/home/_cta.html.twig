@@ -1,10 +1,18 @@
-{#- P01.8 — bannière CTA : {max_devis} lu dans quotes.max_per_request (RG-014) ; vers la demande de devis dès qu'elle existe, sinon la recherche. -#}
-<section class="tm-home-cta tm-home-cta--{{ s.background }}" aria-labelledby="home-cta">
-    <div class="tm-container tm-catalog-cta__inner">
-        <div>
-            <h2 class="tm-catalog-cta__title" id="home-cta">{{ s.title }}</h2>
-            <p class="tm-catalog-cta__text">{{ s.text }}</p>
+{#- P01.8 — bannière CTA (maquette V2 : encart arrondi, photo à gauche, titre sur deux lignes dont la seconde en orange) ; {max_devis} lu dans quotes.max_per_request (RG-014) ; vers la demande de devis dès qu'elle existe, sinon la recherche. -#}
+<section class="tm-container tm-container--wide tm-home-section tm-home-cta-section" aria-labelledby="home-cta">
+    <div class="tm-home-cta tm-home-cta--{{ s.background }}">
+        <picture class="tm-home-cta__media">
+            <source type="image/avif" srcset="{{ asset('images/home/projet@1x.avif') }}">
+            <img src="{{ asset('images/home/projet@1x.webp') }}" alt="" width="360" height="150" loading="lazy" decoding="async">
+        </picture>
+        <div class="tm-home-cta__text">
+            <h2 class="tm-home-cta__title" id="home-cta">{{ s.title }}{% if s.highlight ?? null %}<span class="tm-home-cta__highlight">{{ s.highlight }}</span>{% endif %}</h2>
+            <p>{{ s.text }}</p>
         </div>
-        {% if d.href %}<twig:Button href="{{ d.href }}" icon="arrowR" data-action="analytics#track" data-analytics-event-param="cta_quote_click" data-analytics-placement-param="home_banner">{{ s.button }}</twig:Button>{% endif %}
+        {% if d.href %}
+            <a class="tm-home-cta__button" href="{{ d.href }}" data-action="analytics#track" data-analytics-event-param="cta_quote_click" data-analytics-placement-param="home_banner">
+                <twig:Icon name="send" size="sm" class="tm-icon--inherit" /><span>{{ s.button }}</span><twig:Icon name="arrowR" size="sm" class="tm-icon--inherit" />
+            </a>
+        {% endif %}
     </div>
 </section>

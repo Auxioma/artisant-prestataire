@@ -120,6 +120,16 @@ final readonly class RequestDraftEditor implements CommandHandler
             $this->assertJob($command->jobId, $changes['target_artisan_id'] ?? $draft->targetArtisanId);
             $changes += $this->jobChange($draft, $command->jobId);
         }
+        if (null !== $command->desiredDate && $this->isAcceptableDate($command->desiredDate)) {
+            $changes['timing'] = Timing::Date->value;
+            $changes['desired_date'] = $command->desiredDate;
+        }
+        if (null !== PreferredSlot::tryFrom($command->preferredSlot ?? '')) {
+            $changes['preferred_slots'] = [$command->preferredSlot];
+        }
+        if (null !== $command->offerLabel && '' === trim($draft->description)) {
+            $changes['description'] = mb_substr(\sprintf('Je souhaite profiter de votre offre « %s ».', $command->offerLabel), 0, RequestDetails::DESCRIPTION_MAX);
+        }
         $this->store($command->owner, $draft->with($changes, $draft->step, $this->clock->now()));
     }
 
@@ -388,7 +398,8 @@ final readonly class RequestDraftEditor implements CommandHandler
         $entries = $this->queries->ask(new JobIndexEntries([$jobId]));
         $available = false;
         foreach (\is_array($entries) ? $entries : [] as $entry) {
-            $available = $available || ($entry instanceof JobIndexEntry && $entry->id === $jobId && $entry->searchable);
+            // BO06 : un métier proposé (en attente de validation) n'est accepté que pour une demande non adressée à un pro.
+            $available = $available || ($entry instanceof JobIndexEntry && $entry->id === $jobId && ($entry->searchable || ($entry->proposed && null === $targetArtisanId)));
         }
         if (!$available || null === $targetArtisanId) {
             return $available;

@@ -42,7 +42,7 @@
         <section class="tm-admin-panel" aria-labelledby="files-titre">
             <h2 id="files-titre" class="tm-card-title">Files d’attente</h2>
             <ul class="tm-bo01-queues">
-                {% for q in queues %}
+                {% for q in queues|filter(q => q.count is not null) %}
                     {% set inner %}<twig:Icon name="{{ q.icon }}" size="sm" class="tm-icon--inherit" /><span class="tm-bo01-queue__label">{{ q.label }}</span>{% if q.count is null %}<span class="tm-admin__soon">Bientôt</span>{% else %}<span class="tm-bo01-queue__count{{ q.count > 0 ? ' is-todo' }}">{{ q.count|number_format(0, ',', ' ') }}</span>{% endif %}{% endset %}
                     <li class="tm-bo01-queue tm-bo01-queue--{{ q.key|replace({'_': '-'}) }}">
                         {% if q.href %}<a href="{{ q.href }}">{{ inner }}<twig:Icon name="chevR" size="xs" class="tm-icon--inherit tm-bo01-queue__chev" /></a>{% else %}<span class="tm-bo01-queue__static">{{ inner }}</span>{% endif %}
