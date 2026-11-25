@@ -44,7 +44,7 @@ final class OffersController extends AbstractController
             $jobs = $this->queries->ask(new JobIndexEntries());
             $jobIds = array_values(array_map(
                 static fn (JobIndexEntry $j): string => $j->id,
-                array_filter(\is_array($jobs) ? $jobs : [], static fn (mixed $j): bool => $j instanceof JobIndexEntry && $j->categorySlug === $category->slug),
+                array_filter(\is_array($jobs) ? $jobs : [], static fn (mixed $j): bool => $j instanceof JobIndexEntry && $j->searchable && $j->categorySlug === $category->slug),
             ));
         }
         $place = $this->places->resolve($request->query->getString('lieu'), trim($request->query->getString('lieu_libelle')));

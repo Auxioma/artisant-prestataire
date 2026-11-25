@@ -72,7 +72,7 @@ final class BlogController extends AbstractController
         $jobs = [];
         $entries = $this->queries->ask(new JobIndexEntries());
         foreach (\is_array($entries) ? $entries : [] as $entry) {
-            if ($entry instanceof JobIndexEntry && \in_array($entry->id, $article->jobIds, true)) {
+            if ($entry instanceof JobIndexEntry && $entry->searchable && \in_array($entry->id, $article->jobIds, true)) {
                 $jobs[array_search($entry->id, $article->jobIds, true)] = $entry;
             }
         }

@@ -398,7 +398,8 @@ final readonly class RequestDraftEditor implements CommandHandler
         $entries = $this->queries->ask(new JobIndexEntries([$jobId]));
         $available = false;
         foreach (\is_array($entries) ? $entries : [] as $entry) {
-            $available = $available || ($entry instanceof JobIndexEntry && $entry->id === $jobId && $entry->searchable);
+            // BO06 : un métier proposé (en attente de validation) n'est accepté que pour une demande non adressée à un pro.
+            $available = $available || ($entry instanceof JobIndexEntry && $entry->id === $jobId && ($entry->searchable || ($entry->proposed && null === $targetArtisanId)));
         }
         if (!$available || null === $targetArtisanId) {
             return $available;

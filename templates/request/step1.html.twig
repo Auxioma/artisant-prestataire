@@ -31,6 +31,7 @@
             <div class="tm-select">
                 <select class="tm-select__input" id="job_id" name="job_id" data-request-tunnel-target="jobSelect"{{ errors.job_id is defined ? ' aria-invalid="true" aria-describedby="job_id_error"' }}>
                     <option value="">Choisissez la prestation</option>
+                    {% if proposed_job %}<option value="{{ proposed_job.id }}"{{ proposed_job.id == job_id ? ' selected' }}>{{ proposed_job.name }} (proposée, en attente de validation)</option>{% endif %}
                     {% for category, jobs in categories %}
                         <optgroup label="{{ category }}">
                             {% for job in jobs %}
@@ -43,6 +44,40 @@
             </div>
             {{ include('request/_error.html.twig', {key: 'job_id'}) }}
         </div>
+
+        {% if not target %}
+            {#- BO06 : métier ou catégorie absents → proposition au référentiel ; la demande continue et sera publiée après validation. -#}
+            {% set proposal_open = (posted.proposal_job ?? '') is not empty or errors.proposal_job is defined or errors.proposal_category is defined %}
+            <details class="tm-request__propose"{{ proposal_open ? ' open' }}>
+                <summary><twig:Icon name="plus" size="xs" />Je ne trouve pas ma prestation dans la liste</summary>
+                <p class="tm-request__propose-text">Indiquez-la ci-dessous et poursuivez votre demande : elle sera publiée auprès des professionnels dès que notre équipe aura ajouté cette prestation (vous serez prévenu par e-mail).</p>
+                <div class="tm-request__propose-grid">
+                    <div class="tm-field tm-field--inset{{ errors.proposal_category is defined ? ' tm-field--error' }}">
+                        <label class="tm-field__label" for="proposal_category">Catégorie</label>
+                        <div class="tm-select">
+                            <select class="tm-select__input" id="proposal_category" name="proposal_category">
+                                <option value="">Choisissez la catégorie</option>
+                                {% for category, jobs in categories %}
+                                    <option value="{{ (jobs|first).categorySlug }}"{{ (jobs|first).categorySlug == (posted.proposal_category ?? '') ? ' selected' }}>{{ category }}</option>
+                                {% endfor %}
+                                <option value="{{ new_category }}"{{ new_category == (posted.proposal_category ?? '') ? ' selected' }}>Autre catégorie (à préciser)</option>
+                            </select>
+                            <twig:Icon name="chevD" size="xs" class="tm-select__chevron" />
+                        </div>
+                        {{ include('request/_error.html.twig', {key: 'proposal_category'}) }}
+                    </div>
+                    <div class="tm-field tm-field--inset">
+                        <label class="tm-field__label" for="proposal_category_name">Nouvelle catégorie <span class="tm-field__hint">(si « Autre catégorie »)</span></label>
+                        <div class="tm-field__control"><input class="tm-field__input" id="proposal_category_name" name="proposal_category_name" type="text" maxlength="80" value="{{ posted.proposal_category_name ?? '' }}" placeholder="Ex. Piscine et spa"></div>
+                    </div>
+                    <div class="tm-field tm-field--inset tm-request__propose-job{{ errors.proposal_job is defined ? ' tm-field--error' }}">
+                        <label class="tm-field__label" for="proposal_job">Prestation recherchée</label>
+                        <div class="tm-field__control"><input class="tm-field__input" id="proposal_job" name="proposal_job" type="text" maxlength="80" value="{{ posted.proposal_job ?? '' }}" placeholder="Ex. Pisciniste"></div>
+                        {{ include('request/_error.html.twig', {key: 'proposal_job'}) }}
+                    </div>
+                </div>
+            </details>
+        {% endif %}
 
         <div class="tm-field tm-field--inset">
             <label class="tm-field__label" for="work_nature">Nature des travaux</label>

@@ -54,6 +54,9 @@ final readonly class UpdateJobHandler implements CommandHandler
         if (null !== $command->position) {
             $job->moveTo($command->position, $now);
         }
+        if (true === $command->activate && !$job->isActive()) {
+            $job->activate($now);
+        }
 
         $this->events->publish(...$job->releaseEvents());
         $this->audit->record($command->actorId, 'job_updated', 'job', $job->id()->value, ['slug_before' => $previousSlug, 'slug_after' => $job->slug()->value]);

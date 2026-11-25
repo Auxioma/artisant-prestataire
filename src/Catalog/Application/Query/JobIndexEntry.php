@@ -18,6 +18,8 @@ final readonly class JobIndexEntry
         public string $categorySlug,
         public bool $searchable,
         public ?string $description = null,
+        /** Métier proposé par un client, en attente de validation (BO06) : invisible, mais une demande peut s'y rattacher. */
+        public bool $proposed = false,
     ) {
     }
 }

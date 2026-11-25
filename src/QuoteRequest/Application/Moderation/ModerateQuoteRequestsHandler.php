@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\QuoteRequest\Application\Moderation;
 
+use App\Catalog\Application\Query\JobIndexEntries;
+use App\Catalog\Application\Query\JobIndexEntry;
 use App\QuoteRequest\Domain\Request\QuoteRequestId;
 use App\QuoteRequest\Domain\Request\QuoteRequestRepository;
 use App\QuoteRequest\Domain\Request\RejectionReason;
@@ -11,6 +13,7 @@ use App\QuoteRequest\Domain\Request\RequestRuleViolation;
 use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Application\Bus\CommandHandler;
 use App\Shared\Application\Bus\EventBus;
+use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Settings\SettingKey;
 use App\Shared\Application\Settings\SettingsProvider;
 use App\Shared\Domain\Audit\AuditRecord;
@@ -35,6 +38,7 @@ final readonly class ModerateQuoteRequestsHandler implements CommandHandler
         private AuditTrail $audit,
         private IdGenerator $ids,
         private Clock $clock,
+        private QueryBus $queries,
     ) {
     }
 
@@ -58,6 +62,9 @@ final readonly class ModerateQuoteRequestsHandler implements CommandHandler
                 throw new ModerationRejected('Demande introuvable.');
             }
             $request = $this->requests->findForUpdate(new QuoteRequestId($id)) ?? throw new ModerationRejected('Demande introuvable.');
+            if (ModerateQuoteRequests::APPROVE === $command->decision && !$this->jobPublished($request->jobId())) {
+                throw new ModerationRejected(\sprintf('Demande %s : validez d’abord le métier proposé par le client (Référentiel métiers › Propositions).', $request->number()));
+            }
             try {
                 match ($command->decision) {
                     ModerateQuoteRequests::APPROVE => $request->approve($this->settings->int(SettingKey::RequestsExpiryDays), $now),
@@ -81,5 +88,18 @@ final readonly class ModerateQuoteRequestsHandler implements CommandHandler
                 context: array_filter(['number' => $request->number(), 'reason' => $reason?->value, 'comment' => '' === $comment ? null : $comment]),
             ));
         }
+    }
+
+    /** BO06 : une demande sur un métier proposé non encore validé ne peut pas être diffusée. */
+    private function jobPublished(string $jobId): bool
+    {
+        $entries = $this->queries->ask(new JobIndexEntries([$jobId]));
+        foreach (\is_array($entries) ? $entries : [] as $entry) {
+            if ($entry instanceof JobIndexEntry && $entry->id === $jobId) {
+                return $entry->searchable;
+            }
+        }
+
+        return false;
     }
 }

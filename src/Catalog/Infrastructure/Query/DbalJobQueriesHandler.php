@@ -17,7 +17,8 @@ final readonly class DbalJobQueriesHandler implements QueryHandler
 {
     private const string SELECT = <<<'SQL'
         SELECT j.id, j.name, j.slug, j.synonyms, j.active, j.description, root.name AS category_name, root.slug AS category_slug,
-               (j.active AND c.active AND root.active) AS searchable
+               (j.active AND c.active AND root.active) AS searchable,
+               EXISTS (SELECT 1 FROM catalog.job_proposal p WHERE p.job_id = j.id AND p.status = 'pending') AS proposed
         FROM catalog.job j
         JOIN catalog.category c ON c.id = j.category_id
         JOIN catalog.category root ON root.id = COALESCE(c.parent_id, c.id)
@@ -84,6 +85,7 @@ final readonly class DbalJobQueriesHandler implements QueryHandler
             DbalValue::string($row['category_slug']),
             true === $row['searchable'],
             DbalValue::nullableString($row['description'] ?? null),
+            true === ($row['proposed'] ?? false),
         );
     }
 }
