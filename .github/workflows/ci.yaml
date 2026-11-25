@@ -103,9 +103,9 @@ jobs:
           docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.21.2 detect --source=/repo --config=/repo/.gitleaks.toml --redact --verbose --log-opts=HEAD
 
   # Mise en production sur trouvemoi.pro (serveur Plesk du client) après fusion dans main, une fois la qualité validée.
-  # Même mécanisme que le déploiement configuré par le client pour trouvemoi.eu : secrets du dépôt APP_HOST, APP_USER,
-  # APP_PASS (ou DEPLOY_SSH_KEY), APP_PORT ; code récupéré par git sur le serveur, puis tools/deploy/production-remote.sh
-  # sous l'utilisateur Plesk du site. Variables facultatives : DEPLOY_PATH, DEPLOY_URL, DEPLOY_RESTART.
+  # Accès SSH lu dans les secrets du dépôt configurés par le client (noms reconnus : tools/deploy/ssh-from-secrets.sh) ;
+  # code récupéré par git sur le serveur, puis tools/deploy/production-remote.sh sous l'utilisateur Plesk du site.
+  # Variables facultatives : DEPLOY_PATH, DEPLOY_URL, DEPLOY_RESTART. Diagnostic : workflow « Diagnostic serveur ».
   deploy:
     name: Déploiement trouvemoi.pro
     needs: [quality, secrets]
@@ -116,44 +116,21 @@ jobs:
       group: deploy-production
       cancel-in-progress: false
     env:
-      APP_HOST: ${{ secrets.APP_HOST }}
-      APP_USER: ${{ secrets.APP_USER }}
-      SSHPASS: ${{ secrets.APP_PASS }}
-      SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-      APP_PORT: ${{ secrets.APP_PORT || '22' }}
+      SECRETS_JSON: ${{ toJSON(secrets) }}
       SITE_DIR: ${{ vars.DEPLOY_PATH || '/var/www/vhosts/trouvemoi.pro/httpdocs' }}
       SITE_URL: ${{ vars.DEPLOY_URL || 'https://trouvemoi.pro' }}
     steps:
-      - name: Configuration présente ?
-        id: config
-        run: |
-          if [ -z "$APP_HOST" ] || [ -z "$APP_USER" ] || { [ -z "$SSHPASS" ] && [ -z "$SSH_KEY" ]; }; then
-            echo "::warning::Secrets APP_HOST / APP_USER / APP_PASS absents : déploiement ignoré."
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: actions/checkout@v4
-        if: steps.config.outputs.ready == 'true'
+
+      - name: Accès SSH (secrets du dépôt, noms détectés automatiquement)
+        id: config
+        run: bash tools/deploy/ssh-from-secrets.sh
 
       - name: Garde-fou (aucun fichier piégé)
         if: steps.config.outputs.ready == 'true'
         run: |
           if [ -d .vscode ] || git grep -qI -e createRequire -- assets templates config public; then
             echo "::error::Fichiers suspects (.vscode/ ou createRequire) : déploiement refusé."; exit 1
-          fi
-
-      - name: Connexion SSH
-        if: steps.config.outputs.ready == 'true'
-        run: |
-          opts="-q -o StrictHostKeyChecking=no -o ConnectTimeout=20 -p $APP_PORT"
-          if [ -n "$SSH_KEY" ]; then
-            install -d -m 700 ~/.ssh && printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
-            echo "SSH=ssh $opts -i $HOME/.ssh/deploy_key $APP_USER@$APP_HOST" >> "$GITHUB_ENV"
-          else
-            sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
-            echo "SSH=sshpass -e ssh $opts $APP_USER@$APP_HOST" >> "$GITHUB_ENV"
           fi
 
       - name: Purger le cache et rendre les fichiers au site
