@@ -15,6 +15,8 @@ final readonly class CategorySummary
         public string $icon,
         public int $activeJobCount,
         public array $jobs,
+        /** Image d'illustration (médiathèque du CMS) choisie en BO06, sinon visuel par défaut. */
+        public ?string $imageMediaId = null,
     ) {
     }
 }

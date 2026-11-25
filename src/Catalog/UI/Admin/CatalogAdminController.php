@@ -86,7 +86,7 @@ final class CatalogAdminController extends AbstractController
         try {
             $command = match ($action) {
                 'create_category' => new CreateCategory((string) $text('name'), $text('icon') ?? 'briefcase', featured: $in->getBoolean('featured'), actorId: $actor),
-                'save_category' => new UpdateCategory($in->getString('slug'), $text('name'), $text('new_slug'), $text('icon'), $in->getBoolean('active'), $in->getBoolean('featured'), null === $text('position') ? null : $in->getInt('position'), $actor),
+                'save_category' => new UpdateCategory($in->getString('slug'), $text('name'), $text('new_slug'), $text('icon'), $in->getBoolean('active'), $in->getBoolean('featured'), null === $text('position') ? null : $in->getInt('position'), $actor, $in->has('image_media_id') ? $in->getString('image_media_id') : null),
                 'create_job' => new CreateJob($in->getString('category'), (string) $text('name'), synonyms: self::list($in->getString('synonyms')), actorId: $actor),
                 'save_job' => new UpdateJob($in->getString('slug'), $text('name'), $text('new_slug'), $text('category'), self::list($in->getString('synonyms')), null === $text('position') ? null : $in->getInt('position'), $actor),
                 'deactivate_job' => new DeactivateJob($in->getString('slug'), $text('replacement'), $actor),

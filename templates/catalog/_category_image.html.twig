@@ -1,0 +1,8 @@
+{#- BO06 — visuel d'une catégorie : image choisie dans la médiathèque (Référentiel métiers), sinon photo par défaut
+    assets/images/categories/{slug}.webp, sinon rien (la carte garde son fond uni et son pictogramme).
+    Paramètres : category (slug, imageMediaId), sizes, width, height. -#}
+{% if category.imageMediaId and tm_media(category.imageMediaId) %}
+    <twig:Media id="{{ category.imageMediaId }}" sizes="{{ sizes }}" alt="" class="tm-category-image" />
+{% elseif tm_category_image(category.slug) %}
+    <img src="{{ tm_category_image(category.slug) }}" alt="" loading="lazy" decoding="async" width="{{ width }}" height="{{ height }}">
+{% endif %}

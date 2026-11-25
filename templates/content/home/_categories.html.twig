@@ -7,10 +7,10 @@
     <div class="tm-carousel tm-home-categories" data-controller="carousel">
         <ul class="tm-carousel__track" data-carousel-target="track">
             {% for c in d.categories %}
-                {% set image = tm_category_image(c.summary.slug) %}
+                {% set image = (c.summary.imageMediaId and tm_media(c.summary.imageMediaId)) or tm_category_image(c.summary.slug) %}
                 <li>
                     <a class="tm-home-categories__card{{ image ? '' : ' tm-home-categories__card--plain' }}" href="{{ path('catalog_category', {slug: c.summary.slug}) }}" data-action="analytics#track" data-analytics-event-param="category_card_click" data-analytics-type-param="{{ c.summary.slug }}">
-                        {% if image %}<img src="{{ image }}" alt="" loading="lazy" decoding="async" width="215" height="190">{% endif %}
+                        {{ include('catalog/_category_image.html.twig', {category: c.summary, sizes: '(min-width: 1024px) 215px, 45vw', width: 215, height: 190}) }}
                         <span class="tm-home-categories__label">
                             <twig:Icon name="{{ c.summary.icon }}" size="sm" class="tm-icon--inherit" />
                             <span class="tm-home-categories__name">{{ c.summary.name|e|replace({' &amp; ': '<br>&amp; '})|raw }}</span>

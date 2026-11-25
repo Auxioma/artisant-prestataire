@@ -23,6 +23,8 @@ final class Category extends AggregateRoot
     private ?string $description = null;
     private bool $active = true;
     private bool $featured = false;
+    /** Image d'illustration (médiathèque du CMS), ou null : visuel par défaut de la catégorie. */
+    private ?string $imageMediaId = null;
     private \DateTimeImmutable $updatedAt;
     private int $version = 1;
 
@@ -63,6 +65,24 @@ final class Category extends AggregateRoot
         if (!$previousSlug->equals($slug)) {
             $this->recordEvent(new CategorySlugChanged($this->id->value, $previousSlug->value, $slug->value, $now));
         }
+    }
+
+    /** BO06 : image de la carte catégorie (identifiant d'une image de la médiathèque), null pour la retirer. */
+    public function illustrate(?string $mediaId, \DateTimeImmutable $now): void
+    {
+        if (null !== $mediaId && 1 !== preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/', $mediaId)) {
+            throw new CatalogRuleViolation('Image invalide : choisissez une image de la médiathèque.');
+        }
+        if ($mediaId === $this->imageMediaId) {
+            return;
+        }
+        $this->imageMediaId = $mediaId;
+        $this->touch($now, 'image');
+    }
+
+    public function imageMediaId(): ?string
+    {
+        return $this->imageMediaId;
     }
 
     public function describe(?string $description, \DateTimeImmutable $now): void

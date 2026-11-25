@@ -16,7 +16,7 @@ final readonly class DbalCatalogTreeHandler implements QueryHandler
     }
 
     /**
-     * @return list<array{name: string, slug: string, root: bool, active: bool, featured: bool, icon: string, position: int, jobs: list<array{name: string, slug: string, active: bool, decennial: bool, synonyms: list<string>, proposed: bool, replaced_by: ?string, artisans: int}>}>
+     * @return list<array{name: string, slug: string, root: bool, active: bool, featured: bool, icon: string, image: ?string, position: int, jobs: list<array{name: string, slug: string, active: bool, decennial: bool, synonyms: list<string>, proposed: bool, replaced_by: ?string, artisans: int}>}>
      */
     public function __invoke(CatalogTree $query): array
     {
@@ -43,7 +43,7 @@ final readonly class DbalCatalogTreeHandler implements QueryHandler
 
         $tree = [];
         foreach ($this->connection->fetchAllAssociative(<<<'SQL'
-            SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.position, c.active, c.featured
+            SELECT c.id, c.parent_id, c.name, c.slug, c.icon, c.position, c.active, c.featured, c.image_media_id
             FROM catalog.category c LEFT JOIN catalog.category p ON p.id = c.parent_id
             ORDER BY COALESCE(p.position, c.position), COALESCE(c.parent_id, c.id), c.parent_id NULLS FIRST, c.position, c.name
             SQL) as $category) {
@@ -54,6 +54,7 @@ final readonly class DbalCatalogTreeHandler implements QueryHandler
                 'active' => true === $category['active'],
                 'featured' => true === $category['featured'],
                 'icon' => DbalValue::string($category['icon']),
+                'image' => DbalValue::nullableString($category['image_media_id']),
                 'position' => DbalValue::int($category['position']),
                 'jobs' => $jobsByCategory[DbalValue::string($category['id'])] ?? [],
             ];

@@ -45,6 +45,9 @@ final readonly class UpdateCategoryHandler implements CommandHandler
         if (null !== $command->featured) {
             $category->feature($command->featured, $now);
         }
+        if (null !== $command->imageMediaId) {
+            $category->illustrate('' === $command->imageMediaId ? null : $command->imageMediaId, $now);
+        }
         if (null !== $command->position) {
             $category->moveTo($command->position, $now);
         }
