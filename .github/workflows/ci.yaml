@@ -112,6 +112,10 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    # Secrets du dépôt ET de l'environnement « production » (ces derniers ne sont visibles que si le job le déclare).
+    environment:
+      name: production
+      url: ${{ vars.DEPLOY_URL || 'https://trouvemoi.pro' }}
     concurrency:
       group: deploy-production
       cancel-in-progress: false

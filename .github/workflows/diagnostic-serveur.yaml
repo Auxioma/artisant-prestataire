@@ -16,6 +16,8 @@ jobs:
   diagnostic:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    # Secrets du dépôt ET de l'environnement « production » (ces derniers ne sont visibles que si le job le déclare).
+    environment: production
     env:
       SECRETS_JSON: ${{ toJSON(secrets) }}
       SITE_DIR: ${{ vars.DEPLOY_PATH || '/var/www/vhosts/trouvemoi.pro/httpdocs' }}
