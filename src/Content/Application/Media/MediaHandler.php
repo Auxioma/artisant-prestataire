@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Content\Application\Media;
 
+use App\Catalog\Application\Query\CategoriesUsingMedia;
 use App\Content\Application\Blog\BlogStore;
 use App\Content\Application\Page\PageStore;
 use App\Shared\Application\Audit\AuditTrail;
 use App\Shared\Application\Bus\CommandHandler;
+use App\Shared\Application\Bus\QueryBus;
 use App\Shared\Application\Storage\FileShredder;
 use App\Shared\Application\Storage\FileUploader;
 use App\Shared\Application\Storage\RejectedUpload;
@@ -26,6 +28,7 @@ final readonly class MediaHandler implements CommandHandler
         private MediaLibrary $library,
         private PageStore $pages,
         private BlogStore $blog,
+        private QueryBus $queries,
         private FileUploader $uploader,
         private FileShredder $shredder,
         private AuditTrail $audit,
@@ -39,9 +42,10 @@ final readonly class MediaHandler implements CommandHandler
         $now = $this->clock->now();
         if ($command instanceof DeleteMedia) {
             $media = $this->library->find($command->mediaId) ?? throw new MediaRejected('media', 'Image introuvable.');
-            $used = [...$this->pages->usingMedia($media->id), ...$this->blog->usingMedia($media->id)];
+            $categories = $this->queries->ask(new CategoriesUsingMedia($media->id));
+            $used = [...$this->pages->usingMedia($media->id), ...$this->blog->usingMedia($media->id), ...(\is_array($categories) ? array_filter($categories, \is_string(...)) : [])];
             if ([] !== $used) {
-                throw new MediaRejected('media', \sprintf('Image utilisée par : %s. Retirez-la de ces pages ou articles avant de la supprimer.', implode(', ', $used)));
+                throw new MediaRejected('media', \sprintf('Image utilisée par : %s. Retirez-la de ces pages, articles ou catégories avant de la supprimer.', implode(', ', $used)));
             }
             $this->library->delete($media->id);
             $files = [$media->fileId];

@@ -18,6 +18,8 @@ final readonly class UpdateCategory implements Command
         public ?bool $featured = null,
         public ?int $position = null,
         public ?string $actorId = null,
+        /** Image de la médiathèque : null = inchangée, '' = retirée, sinon identifiant de l'image. */
+        public ?string $imageMediaId = null,
     ) {
     }
 }

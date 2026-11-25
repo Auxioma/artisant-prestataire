@@ -11,7 +11,10 @@ use Symfony\Component\HttpFoundation\RequestStack;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
 
-/** `tm_media(id)` : image de la médiathèque prête à afficher (composant `<twig:Media>`), null sinon. */
+/**
+ * `tm_media(id)` : image de la médiathèque prête à afficher (composant `<twig:Media>`), null sinon.
+ * `tm_media_library()` : images prêtes de la médiathèque, pour les sélecteurs d'image des écrans d'administration.
+ */
 final class MediaExtension extends AbstractExtension
 {
     /** @var array<string, ?MediaView> */
@@ -24,7 +27,15 @@ final class MediaExtension extends AbstractExtension
 
     public function getFunctions(): array
     {
-        return [new TwigFunction('tm_media', $this->media(...))];
+        return [new TwigFunction('tm_media', $this->media(...)), new TwigFunction('tm_media_library', $this->library(...))];
+    }
+
+    /** @return list<MediaView> */
+    public function library(): array
+    {
+        $media = $this->queries->ask(new MediaList());
+
+        return array_values(array_filter(\is_array($media) ? $media : [], static fn (mixed $m): bool => $m instanceof MediaView && $m->ready()));
     }
 
     public function media(?string $id): ?MediaView

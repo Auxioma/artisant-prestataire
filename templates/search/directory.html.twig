@@ -43,12 +43,12 @@
                 <h2 class="tm-section-title" id="directory-categories">Trouvez le professionnel qu’il vous faut</h2>
                 <ul class="tm-directory__categories">
                     {% for c in categories %}
-                        {% set image = tm_category_image(c.slug) %}
+                        
                         <li>
                             <a class="tm-directory__category" href="{{ path('catalog_category', {slug: c.slug}) }}" data-action="analytics#track" data-analytics-event-param="category_card_click" data-analytics-type-param="{{ c.slug }}">
                                 <twig:Icon name="{{ c.icon }}" class="tm-directory__category-icon" />
                                 <span class="tm-directory__category-name">{{ c.name|e|replace({' &amp; ': '<br>&amp; '})|raw }}</span>
-                                {% if image %}<img src="{{ image }}" alt="" loading="lazy" decoding="async" width="136" height="68">{% endif %}
+                                {{ include('catalog/_category_image.html.twig', {category: c, sizes: '136px', width: 136, height: 68}) }}
                             </a>
                         </li>
                     {% endfor %}

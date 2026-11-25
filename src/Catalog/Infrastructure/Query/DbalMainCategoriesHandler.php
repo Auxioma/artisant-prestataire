@@ -23,7 +23,7 @@ final readonly class DbalMainCategoriesHandler implements QueryHandler
     {
         $rows = $this->connection->fetchAllAssociative(<<<'SQL'
             WITH root AS (
-                SELECT id, name, slug, icon, position FROM catalog.category
+                SELECT id, name, slug, icon, position, image_media_id FROM catalog.category
                 WHERE parent_id IS NULL AND active AND (NOT :featured_only OR featured)
             ), active_jobs AS (
                 SELECT r.id AS root_id, j.name, j.slug,
@@ -33,7 +33,7 @@ final readonly class DbalMainCategoriesHandler implements QueryHandler
                 LEFT JOIN catalog.category sub ON sub.parent_id = r.id AND sub.active
                 JOIN catalog.job j ON j.active AND (j.category_id = r.id OR j.category_id = sub.id)
             )
-            SELECT r.name, r.slug, r.icon, r.position, aj.total, aj.rank, aj.name AS job_name, aj.slug AS job_slug
+            SELECT r.name, r.slug, r.icon, r.position, r.image_media_id, aj.total, aj.rank, aj.name AS job_name, aj.slug AS job_slug
             FROM root r JOIN active_jobs aj ON aj.root_id = r.id
             WHERE aj.rank <= :limit
             ORDER BY r.position, r.name, aj.rank
@@ -42,13 +42,13 @@ final readonly class DbalMainCategoriesHandler implements QueryHandler
         $categories = [];
         foreach ($rows as $row) {
             $slug = DbalValue::string($row['slug']);
-            $categories[$slug] ??= ['name' => DbalValue::string($row['name']), 'icon' => DbalValue::string($row['icon']), 'total' => DbalValue::int($row['total']), 'jobs' => []];
+            $categories[$slug] ??= ['name' => DbalValue::string($row['name']), 'icon' => DbalValue::string($row['icon']), 'image' => DbalValue::nullableString($row['image_media_id']), 'total' => DbalValue::int($row['total']), 'jobs' => []];
             $categories[$slug]['jobs'][] = ['name' => DbalValue::string($row['job_name']), 'slug' => DbalValue::string($row['job_slug'])];
         }
 
         $summaries = [];
         foreach ($categories as $slug => $category) {
-            $summaries[] = new CategorySummary($category['name'], (string) $slug, $category['icon'], $category['total'], $category['jobs']);
+            $summaries[] = new CategorySummary($category['name'], (string) $slug, $category['icon'], $category['total'], $category['jobs'], $category['image']);
         }
 
         return $summaries;
