@@ -103,31 +103,32 @@ jobs:
           docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:v8.21.2 detect --source=/repo --config=/repo/.gitleaks.toml --redact --verbose --log-opts=HEAD
 
   # Mise en production sur trouvemoi.pro (serveur Plesk du client) après fusion dans main, une fois la qualité validée.
-  # Environnement GitHub « production » : secrets DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS ;
-  # variables DEPLOY_PATH, DEPLOY_PORT, DEPLOY_OWNER, DEPLOY_PHP, DEPLOY_RESTART, DEPLOY_URL (voir docs/exploitation.md).
+  # Même mécanisme que le déploiement configuré par le client pour trouvemoi.eu : secrets du dépôt APP_HOST, APP_USER,
+  # APP_PASS (ou DEPLOY_SSH_KEY), APP_PORT ; code récupéré par git sur le serveur, puis tools/deploy/production-remote.sh
+  # sous l'utilisateur Plesk du site. Variables facultatives : DEPLOY_PATH, DEPLOY_URL, DEPLOY_RESTART.
   deploy:
     name: Déploiement trouvemoi.pro
     needs: [quality, secrets]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
-    environment:
-      name: production
-      url: ${{ vars.DEPLOY_URL || 'https://trouvemoi.pro' }}
+    timeout-minutes: 20
     concurrency:
       group: deploy-production
       cancel-in-progress: false
     env:
-      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-      DEPLOY_PORT: ${{ vars.DEPLOY_PORT || '22' }}
-      DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/var/www/vhosts/trouvemoi.pro/httpdocs' }}
-      DEPLOY_URL: ${{ vars.DEPLOY_URL || 'https://trouvemoi.pro' }}
+      APP_HOST: ${{ secrets.APP_HOST }}
+      APP_USER: ${{ secrets.APP_USER }}
+      SSHPASS: ${{ secrets.APP_PASS }}
+      SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      APP_PORT: ${{ secrets.APP_PORT || '22' }}
+      SITE_DIR: ${{ vars.DEPLOY_PATH || '/var/www/vhosts/trouvemoi.pro/httpdocs' }}
+      SITE_URL: ${{ vars.DEPLOY_URL || 'https://trouvemoi.pro' }}
     steps:
       - name: Configuration présente ?
         id: config
         run: |
-          if [ -z "$DEPLOY_HOST" ] || [ -z "$DEPLOY_USER" ]; then
-            echo "::warning::Secrets DEPLOY_HOST / DEPLOY_USER absents de l'environnement « production » : déploiement ignoré."
+          if [ -z "$APP_HOST" ] || [ -z "$APP_USER" ] || { [ -z "$SSHPASS" ] && [ -z "$SSH_KEY" ]; }; then
+            echo "::warning::Secrets APP_HOST / APP_USER / APP_PASS absents : déploiement ignoré."
             echo "ready=false" >> "$GITHUB_OUTPUT"
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
@@ -143,50 +144,41 @@ jobs:
             echo "::error::Fichiers suspects (.vscode/ ou createRequire) : déploiement refusé."; exit 1
           fi
 
-      - uses: shivammathur/setup-php@v2
-        if: steps.config.outputs.ready == 'true'
-        with:
-          php-version: '8.4'
-          extensions: intl, pdo_pgsql, sodium, zip, apcu, gd, exif
-          coverage: none
-          tools: composer:v2
-
-      - name: Dépendances de production
+      - name: Connexion SSH
         if: steps.config.outputs.ready == 'true'
         run: |
-          composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader --classmap-authoritative --no-scripts
-          git rev-parse --short HEAD > REVISION
+          opts="-q -o StrictHostKeyChecking=no -o ConnectTimeout=20 -p $APP_PORT"
+          if [ -n "$SSH_KEY" ]; then
+            install -d -m 700 ~/.ssh && printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+            echo "SSH=ssh $opts -i $HOME/.ssh/deploy_key $APP_USER@$APP_HOST" >> "$GITHUB_ENV"
+          else
+            sudo apt-get update -qq && sudo apt-get install -y -qq sshpass
+            echo "SSH=sshpass -e ssh $opts $APP_USER@$APP_HOST" >> "$GITHUB_ENV"
+          fi
 
-      - name: Clé SSH
+      - name: Purger le cache et rendre les fichiers au site
         if: steps.config.outputs.ready == 'true'
         run: |
-          install -d -m 700 ~/.ssh
-          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          $SSH "set -e; cd '$SITE_DIR'; u=\$(stat -c %U .); rm -rf var/cache/prod public/assets; if [ \$(id -u) = 0 ]; then find . -mindepth 1 ! -user \$u -exec chown -h \$u:psacln {} +; fi"
 
-      - name: Copie du code (fichiers du serveur préservés)
+      - name: Déployer (code, dépendances, cache, assets, migrations, synchronisations, workers)
         if: steps.config.outputs.ready == 'true'
         run: |
-          rsync -az --delete -e "ssh -i ~/.ssh/deploy_key -p $DEPLOY_PORT -o StrictHostKeyChecking=yes" \
-            --filter='P /.env.local' --filter='P /.env.local.php' --filter='P /.env.*.local' \
-            --filter='P /var/' --filter='P /public/assets/' --filter='P /public/bundles/' --filter='P /assets/vendor/' \
-            --filter='P /config/secrets/*/*.decrypt.private.php' --filter='P /public/.well-known/' --filter='P /.well-known/' \
-            --filter='P /.user.ini' --filter='P /public/.user.ini' --filter='P /public/.htaccess' --filter='P /.git/' \
-            --exclude=/.git/ --exclude=/.github/ --exclude=/.vscode/ --exclude=/tests/ --exclude=/docs/ \
-            --exclude=/var/ --exclude=/public/assets/ --exclude=/assets/vendor/ --exclude='/compose*.yaml' \
-            ./ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_PATH/"
-
-      - name: Mise en production (cache, assets, migrations, synchronisations, workers)
-        if: steps.config.outputs.ready == 'true'
-        run: |
-          ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" -o StrictHostKeyChecking=yes "$DEPLOY_USER@$DEPLOY_HOST" \
-            "DEPLOY_PHP='${{ vars.DEPLOY_PHP }}' DEPLOY_OWNER='${{ vars.DEPLOY_OWNER }}' DEPLOY_RESTART='${{ vars.DEPLOY_RESTART }}' bash '$DEPLOY_PATH/tools/deploy/production-remote.sh'"
+          $SSH "cd '$SITE_DIR' && if [ \$(id -u) = 0 ]; then sudo -u \$(stat -c %U .) -H bash -s; else bash -s; fi" << EOF
+            set -e
+            cd '$SITE_DIR'
+            [ -d .git ] || git init -q
+            git fetch -q --depth=1 "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ${{ github.sha }}
+            git reset -q --hard FETCH_HEAD
+            git log -1 --oneline
+            DEPLOY_RESTART='${{ vars.DEPLOY_RESTART }}' bash tools/deploy/production-remote.sh
+          EOF
 
       - name: Vérification en ligne
         if: steps.config.outputs.ready == 'true'
         run: |
-          for i in 1 2 3 4 5; do curl -fsS "$DEPLOY_URL/healthz" >/dev/null && curl -fsS -o /dev/null "$DEPLOY_URL/" && { echo "✓ $DEPLOY_URL en ligne ($(cat REVISION))"; exit 0; }; sleep 5; done
-          echo "::error::$DEPLOY_URL ne répond pas après déploiement"; exit 1
+          for i in 1 2 3 4 5 6; do curl -fsS "$SITE_URL/healthz" >/dev/null && curl -fsS -o /dev/null "$SITE_URL/" && { echo "✓ $SITE_URL en ligne (${GITHUB_SHA::8})"; exit 0; }; sleep 10; done
+          echo "::error::$SITE_URL ne répond pas après déploiement"; exit 1
 
       - name: Nettoyage de la clé
         if: always()
